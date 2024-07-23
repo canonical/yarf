@@ -1,0 +1,9 @@
+# docs build files
+/*env*/
+__pycache__
+.DS_Store
+.pytest_cache
+.idea/
+.vscode/
+*.egg-info/
+package*.json
