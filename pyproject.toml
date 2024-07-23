@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "yarf"
+authors = [
+    {name = "Hou Nam Chiang", email = "douglas.chiang@canonical.com"},
+    {name = "Paolo Gentili", email = "paolo.gentili@canonical.com"},
+]
+description = """
+Yet Another Robot Framework (YARF) is an interface that 
+allows developers to build complex test scenarios and 
+bootstrap them locally, then work towards automated runs.
+"""
+version = "0.0.1"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+yarf = "main:main"
+
+[tool.setuptools]
+package-dir = {"" = "yarf"}
+
+[tool.black]
+line-length = 79
+extend-exclude = '''
+'''
