@@ -25,8 +25,9 @@ def main() -> None:
         help="be less verbose",
     )
 
-    args = top_level_parser.parse_args()
+    top_level_parser.parse_args()
     print("Hello yarf!")
+
 
 if __name__ == "__main__":
     main()

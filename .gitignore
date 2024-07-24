@@ -1,8 +1,12 @@
 # docs build files
 /*env*/
 __pycache__
+coverage_html_report
 .DS_Store
 .pytest_cache
+.ruff_cache
+.tox
+.coverage
 .idea/
 .vscode/
 *.egg-info/
