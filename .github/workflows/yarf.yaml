@@ -1,0 +1,21 @@
+name: Unit testing and quality control for YARF codebase
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    defaults:
+      run:
+        working-directory: yarf
+    runs-on: [self-hosted, linux, jammy, x64, large]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+    - name: Install tox
+      run: pip install tox
+    - name: Run tests
+      run: |
+        tox
