@@ -1,9 +1,9 @@
 # Yet Another Robot Framework (YARF)
-YARF is a tool build upon the [Robot Framework](https://robotframework.org/) 
-that allows developers to build complex visual test scenario and bootstrap them 
+YARF is a tool built upon the [Robot Framework](https://robotframework.org/) 
+that allows developers to build complex visual test scenarios and bootstrap them 
 locally, and then work towards automated runs in continuous integration (CI) and
 use of platforms/fixtures like [Example](https://github.com/canonical/Example) 
-with minimal effort. This reduce turnaround times without sacrificing quality 
+with minimal effort. This reduces turnaround times without sacrificing quality 
 and trust in the test results.
 
 
@@ -24,20 +24,20 @@ This repository requires the following dependencies
 
 
 ### Installing for contribution
-1.  **Create a python virtual environment**
+1.  **Create a Python virtual environment**
 
-    To contribute to the repository, we first create a python virtual enviroment.
+    To contribute to the repository, we first create a Python virtual environment.
     To create a virtual environment we need to install the `virtualenv` package:
     ```
     python3 -m pip install virtualenv
     ```
     
-    Then we create a virtual environemnt:
+    Then we create a virtual environment:
     ```
     python3 -m virtualenv venv
     ```
     
-    After that we enter the virtual environment:
+    After that, we enter the virtual environment:
     ```
     . venv/bin/activate
     ```
@@ -52,6 +52,7 @@ This repository requires the following dependencies
     We can start working on the repository here.
 
 3.  **Leaving the virtual environment**
+
     When we finish working with the repository and leaving the virtual environment,
     we can execute:
     ```
@@ -67,6 +68,7 @@ This repository requires the following dependencies
     ```
 
 2.  **Install the Snap package**
+
     Then we should see a `yarf_<version>_<architeccture>.snap` under 
     the repository folder. To install it use the command:
     ```
