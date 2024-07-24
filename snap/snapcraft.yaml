@@ -1,0 +1,26 @@
+name: yarf
+base: core24
+adopt-info: yarf
+summary: Yet Another Robot Framework
+description: |
+  Yet Another Robot Framework (YARF) is an interface that 
+  allows developers to build complex test scenarios and 
+  bootstrap them locally, then work towards automated runs.
+
+grade: devel
+confinement: strict
+
+parts:
+  yarf:
+    plugin: python
+    source: .
+    build-packages:
+      - yq
+    override-pull: |
+      craftctl default
+      craftctl set version=$(tomlq -r .project.version pyproject.toml)
+
+
+apps:
+  yarf:
+    command: bin/yarf
