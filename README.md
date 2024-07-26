@@ -69,7 +69,7 @@ This repository requires the following dependencies
 
 2.  **Install the Snap package**
 
-    Then we should see a `yarf_<version>_<architeccture>.snap` under 
+    Then we should see a `yarf_<version>_<architecture>.snap` under 
     the repository folder. To install it use the command:
     ```
     sudo snap install yarf_{version}_{architecture}.snap --dangerous

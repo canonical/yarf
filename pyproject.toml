@@ -27,10 +27,17 @@ package-dir = {"" = "yarf"}
 [tool.black]
 line-length = 79
 extend-exclude = '''
+docs/*
 '''
 
+[tool.ruff]
+# In addition to the standard set of exclusions, omit all tests, plus a specific file.
+extend-exclude = [
+    "docs/*",
+]
+
 [tool.pytest.ini_options]
-addopts = "--doctest-modules --cov=. --cov-fail-under=100 --cov-report term-missing"
+addopts = "--doctest-modules --cov=. --cov-fail-under=100 --cov-report term-missing --ignore=docs/"
 
 [tool.coverage.report]
 # Regexes for lines to exclude from consideration
@@ -49,7 +56,7 @@ exclude_also = [
 
     # Don't complain about abstract methods, they aren't run:
     "@(abc\\.)?abstractmethod",
-    ]
+]
 
 [tool.coverage.html]
 directory = "coverage_html_report"
