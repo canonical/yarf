@@ -15,14 +15,22 @@ bootstrap them locally, then work towards automated runs.
 """
 version = "0.0.1"
 readme = "README.md"
-requires-python = ">=3.10"
-dependencies = []
+requires-python = ">=3.10, <3.12"
+dependencies = [
+    "robotframework",
+    "robotframework-sshlibrary",
+    "rpaframework",
+]
 
 [project.scripts]
-yarf = "main:main"
+yarf = "yarf.main:main"
 
 [tool.setuptools]
-package-dir = {"" = "yarf"}
+packages = [
+    "yarf",
+    "yarf.robot",
+    "yarf.robot.libraries"
+]
 
 [tool.black]
 line-length = 79
@@ -53,6 +61,8 @@ exclude_also = [
     # Don't complain if non-runnable code isn't run:
     "if 0:",
     "if __name__ == .__main__.:",
+    "pass",
+    "continue",
 
     # Don't complain about abstract methods, they aren't run:
     "@(abc\\.)?abstractmethod",

@@ -2,6 +2,7 @@
 /*env*/
 __pycache__
 coverage_html_report
+results
 .DS_Store
 .pytest_cache
 .ruff_cache
