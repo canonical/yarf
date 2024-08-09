@@ -94,6 +94,7 @@ if not 'ogp_image' in locals():
 ### General configuration
 ############################################################
 
+myst_heading_anchors = 3
 exclude_patterns = [
     '_build',
     'Thumbs.db',

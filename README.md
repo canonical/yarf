@@ -70,7 +70,7 @@ This repository requires the following dependencies
 2.  **Install the Snap package**
 
     Then we should see a `yarf_<version>_<architecture>.snap` under 
-    the repository folder. To install it use the command:
+    the repository directory. To install it use the command:
     ```
     sudo snap install yarf_{version}_{architecture}.snap --dangerous
     ```
@@ -89,7 +89,7 @@ including:
 * Unit test with coverage ([pytest](https://docs.pytest.org/en/stable/))
 
 To run the above quality control tasks, simply execute the command under 
-the repository folder:
+the repository directory:
 ```
 tox
 ```
