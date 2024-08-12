@@ -1,0 +1,28 @@
+name: Test snap builds without errors
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - snap/**
+      - pyproject.toml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-amd:
+    name: Build snap on amd64
+    runs-on: [self-hosted, linux, jammy, x64, large]
+    steps:
+      - name: Build snap on amd64
+        uses: snapcrafters/ci/test-snap-build@main
+
+  build-arm:
+    name: Build snap on arm64
+    runs-on: [self-hosted, linux, jammy, arm64, large]
+    steps:
+      - name: Build snap on arm64
+        uses: snapcrafters/ci/test-snap-build@main

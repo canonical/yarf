@@ -5,6 +5,8 @@ on:
     branches: [ main ]
     paths-ignore:
       - 'docs/**'
+      - 'snap/**'
+      - '.github/workflows/**'
 
 jobs:
   build:
