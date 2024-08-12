@@ -1,5 +1,5 @@
 name: yarf
-base: core24
+base: core22
 adopt-info: yarf
 summary: Yet Another Robot Framework
 description: |
@@ -14,11 +14,11 @@ parts:
   yarf:
     plugin: python
     source: .
-    build-packages:
+    build-snaps:
       - yq
     override-pull: |
       craftctl default
-      craftctl set version=$(tomlq -r .project.version pyproject.toml)
+      craftctl set version=$(yq -r .project.version pyproject.toml)
 
 
 apps:
