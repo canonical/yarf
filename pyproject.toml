@@ -20,6 +20,7 @@ dependencies = [
     "robotframework",
     "robotframework-sshlibrary",
     "rpaframework",
+    "rpyc~=5.3.1",
 ]
 
 [project.scripts]
