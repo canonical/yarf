@@ -15,7 +15,7 @@ jobs:
       id: snapcraft
     - uses: actions/upload-artifact@v4
       with:
-        name: snap
+        name: yarf-amd64
         path: ${{ steps.snapcraft.outputs.snap }}
     - uses: snapcore/action-publish@v1
       env:
@@ -32,7 +32,7 @@ jobs:
       id: snapcraft
     - uses: actions/upload-artifact@v4
       with:
-        name: snap
+        name: yarf-arm64
         path: ${{ steps.snapcraft.outputs.snap }}
     - uses: snapcore/action-publish@v1
       env:
