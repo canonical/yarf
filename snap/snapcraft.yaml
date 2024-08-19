@@ -16,6 +16,8 @@ parts:
     source: .
     build-snaps:
       - yq
+    stage-packages:
+      - tesseract-ocr
     override-pull: |
       craftctl default
       craftctl set version=$(yq -r .project.version pyproject.toml)

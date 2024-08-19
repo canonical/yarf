@@ -10,11 +10,13 @@ on:
 
 jobs:
   build:
-    defaults:
-      run:
-        working-directory: yarf
     runs-on: [self-hosted, linux, jammy, x64, large]
     steps:
+    - name: Install dependencies
+      run: |
+        sudo apt update -qq
+        sudo apt install -y \
+          libgl1
     - uses: actions/checkout@v4
     - name: Set up Python
       uses: actions/setup-python@v5
