@@ -1,0 +1,42 @@
+name: Build YARF snap and publish to the store
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build_and_publish_amd64:
+    runs-on: [self-hosted, linux, jammy, x64, large]
+    steps:
+    - uses: actions/checkout@v4
+    - uses: snapcore/action-build@v1
+      id: snapcraft
+    - uses: actions/upload-artifact@v4
+      with:
+        name: snap
+        path: ${{ steps.snapcraft.outputs.snap }}
+    - uses: snapcore/action-publish@v1
+      env:
+        SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT }}
+      with:
+        snap: ${{ steps.snapcraft.outputs.snap }}
+        release: edge
+
+  build_and_publish_arm64:
+    runs-on: [self-hosted, linux, jammy, arm64, large]
+    steps:
+    - uses: actions/checkout@v4
+    - uses: snapcore/action-build@v1
+      id: snapcraft
+    - uses: actions/upload-artifact@v4
+      with:
+        name: snap
+        path: ${{ steps.snapcraft.outputs.snap }}
+    - uses: snapcore/action-publish@v1
+      env:
+        SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT }}
+      with:
+        snap: ${{ steps.snapcraft.outputs.snap }}
+        release: edge
