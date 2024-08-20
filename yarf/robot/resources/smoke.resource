@@ -1,5 +1,6 @@
 *** Settings ***
-Library    Smoke.py
+Library     Smoke.py
+
 
 *** Keywords ***
 Print Library
