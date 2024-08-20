@@ -1,0 +1,270 @@
+"""
+This module provides tests for the Zapper HID library.
+"""
+
+import unittest
+from unittest.mock import ANY, MagicMock, call, Mock, patch
+
+from yarf.robot.libraries.zapper import ZapperException
+from yarf.robot.libraries.zapper.Hid import Hid
+
+
+class HidTests(unittest.TestCase):
+    """
+    This class provides tests for the Zapper HID library.
+    """
+
+    @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
+    def test_init(self, mock_zap):
+        """
+        Test init function attempts to initialize the
+        Zapper HID devices including the pointer.
+        """
+
+        service = mock_zap.return_value.__enter__.return_value
+        service.hid_set_devices.side_effect = ZapperException
+
+        Hid()
+
+        service.assert_has_calls(
+            [
+                call.hid_set_devices(["KEYBOARD", "MOUSE", "POINTER"]),
+                call.reset_hid_state(),
+            ]
+        )
+
+    @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
+    def test_keys_combo(self, mock_zap):
+        """
+        Test if the key combination is correctly translated and the
+        action requested.
+        """
+        keys = ["LEFT_ALT", "F4"]
+
+        zapper_hid = Hid()
+        zapper_hid.keys_combo(keys)
+
+        service = mock_zap.return_value.__enter__.return_value
+
+        service.hid_translator.assert_called_once_with(
+            "generate_actions_for_raw_combo", keys
+        )
+        service.handle_hid_actions.assert_called_once_with(
+            service.hid_translator.return_value
+        )
+
+    @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
+    def test_type_string(self, mock_zap):
+        """
+        Test if the string to type is correctly translated and the
+        action requested.
+        """
+        string = "hello there."
+
+        zapper_hid = Hid()
+        zapper_hid.type_string(string)
+
+        service = mock_zap.return_value.__enter__.return_value
+
+        service.hid_translator.assert_called_once_with(
+            "generate_actions_for_typing", string
+        )
+        service.handle_hid_actions.assert_called_once_with(
+            service.hid_translator.return_value
+        )
+
+    @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
+    def test_pointer_button_press_release(self, mock_zap):
+        """
+        Test that button press and release works.
+        """
+
+        zapper_hid = Hid()
+
+        button1, button2 = Mock(), Mock()
+        zapper_hid.press_pointer_button(button1)
+        zapper_hid.press_pointer_button(button2)
+        zapper_hid.release_pointer_button(button1)
+
+        service = mock_zap.return_value.__enter__.return_value
+        service.hid_mouse.assert_has_calls(
+            (
+                call((button1,), 0, 0, 0),
+                call(ANY, 0, 0, 0),
+                call((button2,), 0, 0, 0),
+            )
+        )
+
+        # To complete the assertion above, with the ANY
+        self.assertSetEqual(
+            {button1, button2},
+            set(service.hid_mouse.call_args_list[1].args[0]),
+        )
+
+    @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
+    def test_click_pointer_button(self, mock_zap):
+        """
+        Test that button click calls the dedicated Zapper API.
+        """
+
+        zapper_hid = Hid()
+        zapper_hid.click_pointer_button("LEFT")
+
+        service = mock_zap.return_value.__enter__.return_value
+        service.mouse_click.assert_called_once_with(("LEFT",))
+
+    @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
+    def test_release_pointer_buttons(self, mock_zap):
+        """
+        Test that function release all pressed buttons.
+        """
+
+        zapper_hid = Hid()
+        zapper_hid.release_pointer_buttons()
+
+        service = mock_zap.return_value.__enter__.return_value
+        service.hid_mouse.assert_called_once_with(0, 0, 0, 0)
+
+    @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
+    def test_unpressed_button_release(self, mock_zap):
+        """
+        Test that unpressed button release doesn't raise.
+        """
+
+        zapper_hid = Hid()
+        service = mock_zap.return_value.__enter__.return_value
+
+        zapper_hid.release_pointer_button("LEFT")
+        service.assert_not_called()
+
+    @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
+    def test_move_pointer_to_absolute(self, mock_zap):
+        """
+        Test the mouse movement processing.
+        """
+        zapper_hid = Hid()
+
+        service = mock_zap.return_value.__enter__.return_value
+        service.get_hdmi_resolution.return_value = "1000x1000"
+
+        zapper_hid.move_pointer_to_absolute(100, 200)
+        self.assertEqual(zapper_hid.pointer_position, [100 / 1000, 200 / 1000])
+        service.hid_pointer.assert_called_with(
+            False,
+            100 / 1000,
+            200 / 1000,
+        )
+
+    @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
+    def test_move_pointer_to_absolute_raises(self, mock_zap):
+        """
+        Test the mouse movement processing.
+        """
+        zapper_hid = Hid()
+
+        service = mock_zap.return_value.__enter__.return_value
+        service.get_hdmi_resolution.return_value = "1000x1000"
+
+        with self.assertRaises(AssertionError):
+            zapper_hid.move_pointer_to_absolute(1001, 0)
+
+        with self.assertRaises(AssertionError):
+            zapper_hid.move_pointer_to_absolute(0, 1001)
+
+    @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
+    def test_move_pointer_to_proportional(self, mock_zap):
+        """
+        Test the proportional mouse movement processing.
+        """
+        zapper_hid = Hid()
+
+        service = mock_zap.return_value.__enter__.return_value
+
+        zapper_hid.move_pointer_to_proportional(0.5, 0.5)
+        self.assertEqual(zapper_hid.pointer_position, [0.5, 0.5])
+        service.hid_pointer.assert_called_with(False, 0.5, 0.5)
+
+    @patch("yarf.robot.libraries.zapper.Hid.zapper_api", MagicMock())
+    def test_move_pointer_to_proportional_raises(self):
+        """
+        Test the function raises an exception if the target position is
+        out of screen.
+        """
+        zapper_hid = Hid()
+
+        with self.assertRaises(AssertionError):
+            zapper_hid.move_pointer_to_proportional(1.1, 0)
+
+        with self.assertRaises(AssertionError):
+            zapper_hid.move_pointer_to_proportional(0, 1.1)
+
+    @patch("time.sleep")
+    @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
+    def test_walk_pointer_to_proportional(self, mock_zap, mock_sleep):
+        """
+        Test the function moves the pointer by the requested step to the
+        target position given in proportional coordinates.
+        """
+        service = mock_zap.return_value.__enter__.return_value
+
+        zapper_hid = Hid()
+        zapper_hid.pointer_position = [0.15, 0.35]
+        service.hid_pointer.reset_mock()
+
+        zapper_hid.walk_pointer_to_proportional(0.5, 0.5, 0.05, 0.2)
+
+        expected_list = [
+            (False, 0.2, 0.4),
+            (False, 0.25, 0.45),
+            (False, 0.3, 0.5),
+            (False, 0.35, 0.5),
+            (False, 0.4, 0.5),
+            (False, 0.45, 0.5),
+            (False, 0.5, 0.5),
+        ]
+
+        print(service.hid_pointer.mock_calls)
+
+        for expected, actual in zip(
+            expected_list, service.hid_pointer.mock_calls
+        ):
+            self.assertEqual(expected[0], actual.args[0])
+            self.assertAlmostEqual(expected[1], actual.args[1])
+            self.assertAlmostEqual(expected[2], actual.args[2])
+
+        mock_sleep.assert_has_calls(len(expected_list) * [call(0.2)])
+        self.assertAlmostEqual(zapper_hid.pointer_position[0], 0.5)
+        self.assertAlmostEqual(zapper_hid.pointer_position[1], 0.5)
+
+    @patch("time.sleep")
+    @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
+    def test_walk_pointer_to_absolute(self, mock_zap, mock_sleep):
+        """
+        Test the function moves the pointer by the requested step to the
+        target position given in absolute coordinates.
+        """
+
+        service = mock_zap.return_value.__enter__.return_value
+        service.get_hdmi_resolution.return_value = "1000x1000"
+
+        zapper_hid = Hid()
+        zapper_hid.pointer_position = [0.15, 0.35]
+        service.hid_pointer.reset_mock()
+
+        zapper_hid.walk_pointer_to_absolute(100, 200, 0.05, 0.2)
+
+        expected_list = [
+            (False, 0.1, 0.3),
+            (False, 0.1, 0.25),
+            (False, 0.1, 0.2),
+        ]
+        for expected, actual in zip(
+            expected_list, service.hid_pointer.mock_calls
+        ):
+            self.assertEqual(expected[0], actual.args[0])
+            self.assertAlmostEqual(expected[1], actual.args[1])
+            self.assertAlmostEqual(expected[2], actual.args[2])
+
+        mock_sleep.assert_has_calls(len(expected_list) * [call(0.2)])
+        self.assertAlmostEqual(zapper_hid.pointer_position[0], 0.1)
+        self.assertAlmostEqual(zapper_hid.pointer_position[1], 0.2)

@@ -1,0 +1,229 @@
+import contextlib
+import time
+from typing import Optional
+
+from rpyc.core.service import Service
+from robot.api import logger
+from robot.api.deco import keyword, library
+
+from yarf.robot.libraries.zapper import zapper_api, ZapperException
+from yarf.robot.libraries.hid_base import HidBase
+
+MAX_POINTER_VALUE = 10000  # defined by Zapper service
+
+
+@library
+class Hid(HidBase):
+    """
+    This class provides the Robot interface for HID interactions.
+    """
+
+    def __init__(self):
+        """Configure Zapper to use Keyboard and Pointer."""
+
+        self.pressed_buttons = set()
+        self.pointer_position = [0, 0]
+        self.mouse_position = None
+
+        try:
+            with zapper_api() as service:
+                service.hid_set_devices(
+                    [
+                        "KEYBOARD",
+                        "MOUSE",
+                        "POINTER",
+                    ],
+                )
+        except ZapperException:
+            logger.warn(
+                "Cannot set the necessary HID devices, "
+                "some functions might not be available.\n"
+                "Please, consider upgrading Zapper Mainboard FW."
+            )
+
+        with zapper_api() as service:
+            service.reset_hid_state()
+
+        self.move_pointer_to_proportional(0, 0)
+
+    @keyword
+    def keys_combo(self, combo: list[str]):
+        """
+        Press and release a combination of keys.
+        :param combo: list of keys to press at the same time.
+        """
+
+        with zapper_api() as service:
+            actions = service.hid_translator(
+                "generate_actions_for_raw_combo",
+                combo,
+            )
+            service.handle_hid_actions(actions)
+
+    @keyword
+    def type_string(self, string: str):
+        """
+        Type a string.
+
+        :param string: string to type.
+        """
+        with zapper_api() as service:
+            actions = service.hid_translator(
+                "generate_actions_for_typing",
+                string,
+            )
+            service.handle_hid_actions(actions)
+
+    @keyword
+    def press_pointer_button(self, button: str) -> None:
+        """
+        Press the specified pointer button.
+
+        :param button: either LEFT, MIDDLE or RIGHT.
+        """
+        self.pressed_buttons.add(button)
+        with zapper_api() as service:
+            service.hid_mouse(tuple(self.pressed_buttons), 0, 0, 0)
+
+    @keyword
+    def release_pointer_button(self, button: str) -> None:
+        """
+        Release the specified pointer button.
+
+        :param button: either LEFT, MIDDLE or RIGHT.
+        """
+        with contextlib.suppress(KeyError):
+            self.pressed_buttons.remove(button)
+
+            with zapper_api() as service:
+                service.hid_mouse(tuple(self.pressed_buttons), 0, 0, 0)
+
+    @keyword
+    def click_pointer_button(self, button: str) -> None:
+        """
+        Press and release the specified pointer button.
+
+        :param button: either LEFT, MIDDLE or RIGHT.
+        """
+        with zapper_api() as service:
+            service.mouse_click((button,))
+
+    @keyword
+    def release_pointer_buttons(self) -> None:
+        """Release all pointer buttons."""
+        self.pressed_buttons.clear()
+        with zapper_api() as service:
+            service.hid_mouse(0, 0, 0, 0)
+
+    @keyword
+    def move_pointer_to_absolute(self, x: int, y: int) -> None:
+        """
+        Move the virtual pointer to an absolute position within the output.
+        """
+
+        assert isinstance(x, int) and isinstance(
+            y, int
+        ), "Coordinates must be integers"
+
+        with zapper_api() as service:
+            resolution = service.get_hdmi_resolution()
+            resolution = [int(value) for value in resolution.split("x")]
+        assert 0 <= x <= resolution[0], "X coordinate outside of screen"
+        assert 0 <= y <= resolution[1], "Y coordinate outside of screen"
+
+        proportional = (x / resolution[0], y / resolution[1])
+        self.move_pointer_to_proportional(*proportional)
+
+    @keyword
+    def move_pointer_to_proportional(
+        self,
+        x: float,
+        y: float,
+        service: Optional[Service] = None,
+    ) -> None:
+        """
+        Move the virtual pointer to a position proportional to the size
+        of the output.
+        """
+
+        assert 0 <= x <= 1, "x not in range 0..1"
+        assert 0 <= y <= 1, "y not in range 0..1"
+
+        if service:
+            service.hid_pointer(False, x, y)
+        else:
+            with zapper_api() as service:
+                service.hid_pointer(False, x, y)
+
+        self.pointer_position = [x, y]
+
+    @keyword
+    def walk_pointer_to_absolute(
+        self,
+        x: int,
+        y: int,
+        step_distance: float,
+        delay: float,
+    ) -> None:
+        """
+        Walk the virtual pointer to an absolute position within the output,
+        maximum `step_distance` at a time, with `delay` seconds in between.
+        """
+
+        assert isinstance(x, int) and isinstance(
+            y, int
+        ), "Coordinates must be integers"
+
+        with zapper_api() as service:
+            resolution = service.get_hdmi_resolution()
+            resolution = [int(value) for value in resolution.split("x")]
+        assert 0 <= x <= resolution[0], "X coordinate outside of screen"
+        assert 0 <= y <= resolution[1], "Y coordinate outside of screen"
+
+        proportional = (x / resolution[0], y / resolution[1])
+        self.walk_pointer_to_proportional(
+            *proportional,
+            step_distance,
+            delay,
+        )
+
+    @keyword
+    def walk_pointer_to_proportional(
+        self,
+        x: float,
+        y: float,
+        step_distance: float,
+        delay: float,
+    ) -> None:
+        """
+        Walk the virtual pointer to a position proportional to the size
+        of the output, maximum `step_distance` at a time,
+        with `delay` seconds in between.
+        """
+
+        assert 0 <= x <= 1, "x not in range 0..1"
+        assert 0 <= y <= 1, "y not in range 0..1"
+
+        with zapper_api() as service:
+            while self.pointer_position != [x, y]:
+                dist_x = x - self.pointer_position[0]
+                dist_y = y - self.pointer_position[1]
+                step_x = min(abs(dist_x), step_distance) * (
+                    dist_x < 0 and -1 or 1
+                )
+                step_y = min(abs(dist_y), step_distance) * (
+                    dist_y < 0 and -1 or 1
+                )
+
+                if all(
+                    abs(step) < (1 / MAX_POINTER_VALUE)
+                    for step in (step_x, step_y)
+                ):
+                    return
+
+                self.move_pointer_to_proportional(
+                    self.pointer_position[0] + step_x,
+                    self.pointer_position[1] + step_y,
+                    service,
+                )
+                time.sleep(delay)
