@@ -47,7 +47,7 @@ This repository requires the following dependencies
     We can install YARF along with the dependencies specified in 
     `pyproject.toml` in the virtual environment using the command:
     ```
-    python3 -m pip install -e .
+    python3 -m pip install -e '.[develop]'
     ```
     We can start working on the repository here.
 
