@@ -17,6 +17,9 @@ parts:
     build-snaps:
       - yq
     stage-packages:
+      - libice6
+      - libgl1
+      - libsm6
       - tesseract-ocr
     override-pull: |
       craftctl default
@@ -26,3 +29,6 @@ parts:
 apps:
   yarf:
     command: bin/yarf
+    plugs:
+      - home
+      - network
