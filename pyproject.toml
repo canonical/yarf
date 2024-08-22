@@ -30,12 +30,12 @@ dependencies = [
 [project.scripts]
 yarf = "yarf.main:main"
 
-[tool.setuptools]
-packages = [
-    "yarf",
-    "yarf.robot",
-    "yarf.robot.libraries"
-]
+[tool.setuptools.package-data]
+"yarf.robot.resources" = ["*.resource"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["yarf", "yarf.*"]
 
 [tool.black]
 line-length = 79
