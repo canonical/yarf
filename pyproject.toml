@@ -22,7 +22,7 @@ dependencies = [
     "pytesseract~=0.3.10",
     "robotframework~=6.1.1",
     "robotframework-sshlibrary~=3.8.0",
-    "rpaframework~=27.7.0",
+    "rpaframework~=28.6.2",
     "rpaframework-recognition~=5.2.3",
     "rpyc~=5.3.1",
 ]
