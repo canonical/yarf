@@ -19,13 +19,13 @@ import datetime
 ############################################################
 
 # Product name
-project = 'Yet Another Robot Framework'
-author = 'Canonical Ltd.'
+project = "Yet Another Robot Framework"
+author = "Canonical Ltd."
 
 # The title you want to display for the documentation in the sidebar.
 # You might want to include a version number here.
 # To not display any title, set this option to an empty string.
-html_title = project + ' documentation'
+html_title = project + " documentation"
 
 # The default value uses CC-BY-SA as the license and the current year
 # as the copyright year.
@@ -48,7 +48,7 @@ html_title = project + ' documentation'
 #   -H 'Accept: application/vnd.github.v3.raw' \
 #   https://api.github.com/repos/canonical/<REPO> | jq '.created_at'
 
-copyright = '%s CC-BY-SA, %s' % (datetime.date.today().year, author)
+copyright = "%s CC-BY-SA, %s" % (datetime.date.today().year, author)
 
 ## Open Graph configuration - defines what is displayed as a link preview
 ## when linking to the documentation from another website (see https://ogp.me/)
@@ -56,68 +56,58 @@ copyright = '%s CC-BY-SA, %s' % (datetime.date.today().year, author)
 # don't know yet)
 # NOTE: If no ogp_* variable is defined (e.g. if you remove this section) the
 # sphinxext.opengraph extension will be disabled.
-ogp_site_url = 'https://canonical-starter-pack.readthedocs-hosted.com/'
+ogp_site_url = "https://canonical-starter-pack.readthedocs-hosted.com/"
 # The documentation website name (usually the same as the product name)
 ogp_site_name = project
 # The URL of an image or logo that is used in the preview
-ogp_image = 'https://assets.ubuntu.com/v1/253da317-image-document-ubuntudocs.svg'
+ogp_image = (
+    "https://assets.ubuntu.com/v1/253da317-image-document-ubuntudocs.svg"
+)
 
 # Update with the local path to the favicon for your product
 # (default is the circle of friends)
-html_favicon = '.sphinx/_static/favicon.png'
+html_favicon = ".sphinx/_static/favicon.png"
 
 # (Some settings must be part of the html_context dictionary, while others
 #  are on root level. Don't move the settings.)
 html_context = {
-
     # Change to the link to the website of your product (without "https://")
     # For example: "ubuntu.com/lxd" or "microcloud.is"
     # If there is no product website, edit the header template to remove the
     # link (see the readme for instructions).
-    'product_page': 'certification.ubuntu.com',
-
+    "product_page": "certification.ubuntu.com",
     # Add your product tag (the orange part of your logo, will be used in the
     # header) to ".sphinx/_static" and change the path here (start with "_static")
     # (default is the circle of friends)
-    'product_tag': '_static/tag.png',
-
+    "product_tag": "_static/tag.png",
     # Change to the discourse instance you want to be able to link to
     # using the :discourse: metadata at the top of a file
     # (use an empty value if you don't want to link)
-    'discourse': 'https://discourse.ubuntu.com/c/certification/165',
-
+    "discourse": "https://discourse.ubuntu.com/c/certification/165",
     # Change to the Mattermost channel you want to link to
     # (use an empty value if you don't want to link)
-    'mattermost': '',
-
+    "mattermost": "",
     # Change to the Matrix channel you want to link to
     # (use an empty value if you don't want to link)
-    'matrix': '',
-
+    "matrix": "",
     # Change to the GitHub URL for your project
     # This is used, for example, to link to the source files and allow creating GitHub issues directly from the documentation.
-    'github_url': 'https://github.com/canonical/yet-another-robot-framework',
-
+    "github_url": "https://github.com/canonical/yet-another-robot-framework",
     # Change to the branch for this version of the documentation
-    'github_version': 'main',
-
+    "github_version": "main",
     # Change to the folder that contains the documentation
     # (usually "/" or "/docs/")
-    'github_folder': '/docs/',
-
+    "github_folder": "/docs/",
     # Change to an empty value if your GitHub repo doesn't have issues enabled.
     # This will disable the feedback button and the issue link in the footer.
-    'github_issues': 'enabled',
-
+    "github_issues": "enabled",
     # Controls the existence of Previous / Next buttons at the bottom of pages
     # Valid options: none, prev, next, both
-    'sequential_nav': "both",
-
+    "sequential_nav": "both",
     # Controls if to display the contributors of a file or not
     "display_contributors": True,
-
     # Controls time frame for showing the contributors
-    "display_contributors_since": ""
+    "display_contributors_since": "",
 }
 
 # If your project is on documentation.ubuntu.com, specify the project
@@ -141,9 +131,7 @@ redirects = {}
 ############################################################
 
 # Links to ignore when checking links
-linkcheck_ignore = [
-    'http://127.0.0.1:8000'
-]
+linkcheck_ignore = ["http://127.0.0.1:8000"]
 
 # Pages on which to ignore anchors
 # (This list will be appended to linkcheck_anchors_ignore_for_url)
@@ -165,13 +153,13 @@ custom_myst_extensions = []
 # not need to be added here: myst_parser, sphinx_copybutton, sphinx_design,
 # sphinx_reredirects, sphinxcontrib.jquery, sphinxext.opengraph
 custom_extensions = [
-    'sphinx_tabs.tabs',
-    'canonical.youtube-links',
-    'canonical.related-links',
-    'canonical.custom-rst-roles',
-    'canonical.terminal-output',
-    'notfound.extension',
-    'sphinxcontrib.mermaid',
+    "sphinx_tabs.tabs",
+    "canonical.youtube-links",
+    "canonical.related-links",
+    "canonical.custom-rst-roles",
+    "canonical.terminal-output",
+    "notfound.extension",
+    "sphinxcontrib.mermaid",
 ]
 
 # Add custom required Python modules that must be added to the
@@ -181,11 +169,16 @@ custom_extensions = [
 # pyspelling, sphinx, sphinx-autobuild, sphinx-copybutton, sphinx-design,
 # sphinx-notfound-page, sphinx-reredirects, sphinx-tabs, sphinxcontrib-jquery,
 # sphinxext-opengraph
-custom_required_modules = []
+custom_required_modules = [
+    "robotframework",
+    "rpaframework",
+    "rpaframework-recognition",
+]
 
 # Add files or directories that should be excluded from processing.
 custom_excludes = [
-    'doc-cheat-sheet*',
+    "doc-cheat-sheet*",
+    "**/README*",
 ]
 
 # Add CSS files (located in .sphinx/_static/)
@@ -220,7 +213,7 @@ custom_tags = []
 ## Add any configuration that is not covered by the common conf.py file.
 
 # Define a :center: role that can be used to center the content of table cells.
-rst_prolog = '''
+rst_prolog = """
 .. role:: center
    :class: align-center
-'''
+"""

@@ -43,7 +43,7 @@ Press And Wait For Match
 Get Center Of ${region}
     [Documentation]    Get the center point of a region.
     ...
-    ...    Arguments:
+    ...    Embedded arguments:
     ...    - ${region}: Rectangular region represented by a dictionary
     ...    of integer values for "left", "right", "top", and "bottom" keys.
     ...
@@ -57,7 +57,7 @@ Displace ${point} By (${x}, ${y})
     [Documentation]    Shift a point by the specified displacements along
     ...    the x and y axes.
     ...
-    ...    Arguments:
+    ...    Embedded arguments:
     ...    - ${point}: Point to be displaced, as a tuple (x, y).
     ...    - ${x}: Displacement along the x-axis.
     ...    - ${y}: Displacement along the y-axis.
@@ -70,7 +70,7 @@ Displace ${point} By (${x}, ${y})
 Move Pointer To (${x}, ${y})
     [Documentation]    Move the pointer to an absolute position.
     ...
-    ...    Arguments:
+    ...    Embedded arguments:
     ...    - ${x}: Integer absolute x-coordinate to move the pointer to.
     ...    - ${y}: Integer absolute y-coordinate to move the pointer to.
     HID.Move Pointer To Absolute    ${x}    ${y}
@@ -79,7 +79,7 @@ Move Pointer To ${destination}
     [Documentation]    Move the pointer to an absolute position or image
     ...    template.
     ...
-    ...    Arguments:
+    ...    Embedded arguments:
     ...    - ${destination}: Where to move the pointer to. If ${destination}
     ...    is a tuple (x, y) of integers, the pointer will move to the
     ...    absolute position given by the tuple. Otherwise, if
@@ -102,7 +102,7 @@ Move Pointer To Proportional (${x}, ${y})
     [Documentation]    Move the pointer to a destination position given as
     ...    proportions to the size of the display output.
     ...
-    ...    Arguments:
+    ...    Embedded arguments:
     ...    - ${x}: Output-relative x-coordinate to move the pointer to.
     ...    It must be in the range 0..1, where 0 represents the left edge,
     ...    and 1 represents the right edge of the output.
@@ -120,7 +120,7 @@ Walk Pointer To (${x}, ${y})
     [Documentation]    Move the pointer in incremental steps from the
     ...    current pointer position to an absolute position.
     ...
-    ...    Arguments:
+    ...    Embedded arguments:
     ...    - ${x}: Integer absolute x-coordinate to walk the pointer to.
     ...    - ${y}: Integer absolute y-coordinate to walk the pointer to.
     ...    - ${step_distance} (optional): Size of each step, in pixels.
@@ -139,7 +139,7 @@ Walk Pointer To ${destination}
     ...    current pointer position to an absolute position or image
     ...    template.
     ...
-    ...    Arguments:
+    ...    Embedded arguments:
     ...    - ${destination}: Where to walk the pointer to. If ${destination}
     ...    is a tuple (x, y) of integers, the pointer will walk to the
     ...    absolute position given by the tuple. Otherwise, if
@@ -172,7 +172,7 @@ Walk Pointer To Proportional (${x}, ${y})
     ...    current pointer position to a destination position given as
     ...    proportions to the size of the display output.
     ...
-    ...    Arguments:
+    ...    Embedded arguments:
     ...    - ${x}: Output-relative x-coordinate to move the pointer to.
     ...    It must be in the range 0..1, where 0 represents the left edge,
     ...    and 1 represents the right edge of the output.
@@ -198,21 +198,21 @@ Walk Pointer To Proportional (${x}, ${y})
 Press ${button} Button
     [Documentation]    Press a button on the virtual pointer.
     ...
-    ...    Arguments:
+    ...    Embedded arguments:
     ...    - ${button}: Button to press (LEFT|RIGHT|MIDDLE).
     HID.Press Pointer Button    ${button}
 
 Release ${button} Button
     [Documentation]    Release a button on the virtual pointer.
     ...
-    ...    Arguments:
+    ...    Embedded arguments:
     ...    - ${button}: Button to release (LEFT|RIGHT|MIDDLE).
     HID.Release Pointer Button    ${button}
 
 Click ${button} Button
     [Documentation]    Click a button on the virtual pointer.
     ...
-    ...    Arguments:
+    ...    Embedded arguments:
     ...    - ${button}: Button to click (LEFT|RIGHT|MIDDLE).
     HID.Click Pointer Button    ${button}
 

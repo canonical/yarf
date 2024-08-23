@@ -20,7 +20,7 @@ ADDPREREQS    ?=
 
 .PHONY: sp-full-help sp-woke-install sp-pa11y-install sp-install sp-run sp-html \
         sp-epub sp-serve sp-clean sp-clean-doc sp-spelling sp-spellcheck sp-linkcheck sp-woke \
-        sp-pa11y Makefile.sp sp-vale
+        sp-pa11y Makefile.sp sp-vale sp-libdoc-convert
 
 sp-full-help: $(VENVDIR)
 	@. $(VENV); $(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
@@ -64,11 +64,14 @@ sp-pa11y-install:
 
 sp-install: $(VENVDIR)
 
-sp-run: sp-install
+sp-libdoc-convert: sp-install
+	. $(VENV); python3 $(SPHINXDIR)/robot/convert_libdoc_to_md.py
+
+sp-run: sp-install sp-libdoc-convert
 	. $(VENV); sphinx-autobuild -b dirhtml "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
 
 # Doesn't depend on $(BUILDDIR) to rebuild properly at every run.
-sp-html: sp-install
+sp-html: sp-install sp-libdoc-convert
 	. $(VENV); $(SPHINXBUILD) -W --keep-going -b dirhtml "$(SOURCEDIR)" "$(BUILDDIR)" -w $(SPHINXDIR)/warnings.txt $(SPHINXOPTS)
 
 sp-epub: sp-install
