@@ -4,6 +4,7 @@ import sys
 from argparse import ArgumentParser, Namespace
 from robot.api import TestSuite
 from yarf.robot import robot_in_path
+from yarf.robot.suite_parser import SuiteParser
 from yarf.robot.libraries import SUPPORTED_PLATFORMS, PlatformBase
 
 
@@ -45,6 +46,13 @@ def parse_arguments(argv: list[str] = None) -> Namespace:
     )
 
     top_level_parser.add_argument(
+        "--variant",
+        type=str,
+        default="",
+        help="Specify the suite variant",
+    )
+
+    top_level_parser.add_argument(
         "suite",
         type=str,
         default=None,
@@ -79,9 +87,12 @@ def main(argv: list[str] = None) -> None:
     logging.basicConfig(level=args.verbosity)
 
     variables = []
+    sp = SuiteParser(args.suite)
     lib_cls = SUPPORTED_PLATFORMS.get(args.platform)
-    test_suite = TestSuite.from_file_system(args.suite)
-    run_robot_suite(test_suite, lib_cls, variables)
+    with sp.suite_in_temp_folder(args.variant) as temp_folder_path:
+        test_suite = TestSuite.from_file_system(temp_folder_path)
+        run_robot_suite(test_suite, lib_cls, variables)
+
     _logger.info(f"Results exported to: {RESULT_PATH}")
 
 
