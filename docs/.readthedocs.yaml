@@ -27,6 +27,8 @@ build:
       - ./git-lfs-3.5.1/git-lfs fetch
       # Make local files to have the real content on them
       - ./git-lfs-3.5.1/git-lfs checkout
+    pre_build:
+      - cd docs && make libdoc-convert
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:

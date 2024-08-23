@@ -10,6 +10,9 @@ furo
 linkify-it-py
 myst-parser
 pyspelling
+robotframework
+rpaframework
+rpaframework-recognition
 sphinx
 sphinx-autobuild
 sphinx-copybutton
