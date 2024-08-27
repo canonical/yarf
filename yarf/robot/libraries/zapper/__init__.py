@@ -4,8 +4,8 @@ from contextlib import contextmanager
 from pathlib import Path
 
 import rpyc
-from yarf.robot.libraries import PlatformBase
 
+from yarf.robot.libraries import PlatformBase
 
 logger = logging.getLogger()
 

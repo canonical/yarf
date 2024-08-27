@@ -2,12 +2,12 @@ import contextlib
 import time
 from typing import Optional
 
-from rpyc.core.service import Service
 from robot.api import logger
 from robot.api.deco import keyword, library
+from rpyc.core.service import Service
 
-from yarf.robot.libraries.zapper import zapper_api, ZapperException
 from yarf.robot.libraries.hid_base import HidBase
+from yarf.robot.libraries.zapper import ZapperException, zapper_api
 
 MAX_POINTER_VALUE = 10000  # defined by Zapper service
 

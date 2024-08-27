@@ -8,9 +8,8 @@ from abc import ABC, abstractmethod
 from enum import Enum
 
 import cv2
-from robot.api.deco import library, keyword
 from PIL import Image
-
+from robot.api.deco import keyword, library
 
 from yarf.robot.libraries.video_input_base import VideoInputBase
 from yarf.robot.libraries.zapper import zapper_api

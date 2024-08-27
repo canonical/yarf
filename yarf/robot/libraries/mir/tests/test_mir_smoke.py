@@ -1,5 +1,6 @@
 import unittest
 from unittest.mock import patch
+
 from yarf.robot.libraries.mir.Smoke import Smoke
 
 

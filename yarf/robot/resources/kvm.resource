@@ -12,33 +12,33 @@ Library             VideoInput.py    AS    VIDEO
 
 *** Keywords ***
 Press Key And Match
-    [Arguments]    ${key}    ${template}    ${tentatives}=1    ${delay}=1
-    ${combo}=    Create List    ${key}
+    [Arguments]             ${key}                  ${template}             ${tentatives}=1         ${delay}=1
+    ${combo}=               Create List             ${key}
     Press Combo And Match
-    ...    ${combo}
-    ...    ${template}
-    ...    ${tentatives}
-    ...    ${delay}
+    ...                     ${combo}
+    ...                     ${template}
+    ...                     ${tentatives}
+    ...                     ${delay}
 
 Press Combo And Match
-    [Arguments]    ${keys-combo}    ${template}    ${tentatives}=1    ${delay}=1
+    [Arguments]             ${keys-combo}           ${template}             ${tentatives}=1         ${delay}=1
 
-    ${match}=    Set Variable    ${FALSE}
+    ${match}=               Set Variable            ${FALSE}
     FOR    ${index}    IN RANGE    ${tentatives}
-        HID.Keys Combo    ${keys-combo}
-        Sleep    ${delay}
-        ${match}=    Run Keyword And Return Status
-        ...    VIDEO.Match    ${template}    0.1
+        HID.Keys Combo          ${keys-combo}
+        Sleep                   ${delay}
+        ${match}=               Run Keyword And Return Status
+        ...                     VIDEO.Match             ${template}             0.1
         IF    ${match}    BREAK
     END
 
     IF    ${match} == ${FALSE}    Fail    No match found
 
 Press And Wait For Match
-    [Arguments]    ${keys-combo}    ${template}    ${timeout}=10
+    [Arguments]             ${keys-combo}           ${template}             ${timeout}=10
 
-    Keys Combo    ${keys-combo}
-    VIDEO.Match    ${template}    ${timeout}
+    Keys Combo              ${keys-combo}
+    VIDEO.Match             ${template}             ${timeout}
 
 Get Center Of ${region}
     [Documentation]    Get the center point of a region.
@@ -51,7 +51,7 @@ Get Center Of ${region}
     ...    Center of the region, as a tuple (x, y) of integers.
     ${point}=    Evaluate
     ...    (int((${region}[left] + ${region}[right]) / 2), int((${region}[top] + ${region}[bottom]) / 2))
-    RETURN    ${point}
+    RETURN                  ${point}
 
 Displace ${point} By (${x}, ${y})
     [Documentation]    Shift a point by the specified displacements along
@@ -64,8 +64,8 @@ Displace ${point} By (${x}, ${y})
     ...
     ...    Return:
     ...    Displaced point, as a tuple (x, y) of integers.
-    ${point}=    Evaluate    (int(${point}[0] + ${x}), int(${point}[1] + ${y}))
-    RETURN    ${point}
+    ${point}=               Evaluate                (int(${point}[0] + ${x}), int(${point}[1] + ${y}))
+    RETURN                  ${point}
 
 Move Pointer To (${x}, ${y})
     [Documentation]    Move the pointer to an absolute position.
@@ -73,7 +73,7 @@ Move Pointer To (${x}, ${y})
     ...    Embedded arguments:
     ...    - ${x}: Integer absolute x-coordinate to move the pointer to.
     ...    - ${y}: Integer absolute y-coordinate to move the pointer to.
-    HID.Move Pointer To Absolute    ${x}    ${y}
+    HID.Move Pointer To Absolute                    ${x}                    ${y}
 
 Move Pointer To ${destination}
     [Documentation]    Move the pointer to an absolute position or image
@@ -90,13 +90,13 @@ Move Pointer To ${destination}
     ...    Absolute position of the pointer after the move, as a tuple (x, y)
     ...    of integers.
     IF    ${{isinstance($destination, str)}}
-        ${regions}=    VIDEO.Match    ${destination}
-        ${position}=    Get Center Of ${regions}[0]
+        ${regions}=             VIDEO.Match             ${destination}
+        ${position}=            Get Center Of ${regions}[0]
     ELSE
-        ${position}=    Set Variable    ${destination}
+        ${position}=            Set Variable            ${destination}
     END
-    HID.Move Pointer To Absolute    ${position}[0]    ${position}[1]
-    RETURN    ${position}
+    HID.Move Pointer To Absolute                    ${position}[0]          ${position}[1]
+    RETURN                  ${position}
 
 Move Pointer To Proportional (${x}, ${y})
     [Documentation]    Move the pointer to a destination position given as
@@ -113,8 +113,8 @@ Move Pointer To Proportional (${x}, ${y})
     ...    Return:
     ...    Absolute position of the pointer after the move, as a tuple (x, y)
     ...    of integers.
-    ${position}=    HID.Move Pointer To Proportional    ${x}    ${y}
-    RETURN    ${position}
+    ${position}=            HID.Move Pointer To Proportional                ${x}                    ${y}
+    RETURN                  ${position}
 
 Walk Pointer To (${x}, ${y})
     [Documentation]    Move the pointer in incremental steps from the
@@ -127,12 +127,12 @@ Walk Pointer To (${x}, ${y})
     ...    Default is 16.
     ...    - ${delay} (optional): Time to sleep after each step, in seconds.
     ...    Default is 0.01.
-    [Arguments]    ${step_distance}=16    ${delay}=0.01
+    [Arguments]             ${step_distance}=16     ${delay}=0.01
     HID.Walk Pointer To Absolute
-    ...    ${x}
-    ...    ${y}
-    ...    ${step_distance}
-    ...    ${delay}
+    ...                     ${x}
+    ...                     ${y}
+    ...                     ${step_distance}
+    ...                     ${delay}
 
 Walk Pointer To ${destination}
     [Documentation]    Moves the pointer in incremental steps from the
@@ -153,19 +153,19 @@ Walk Pointer To ${destination}
     ...    Return:
     ...    Absolute position of the pointer after the walk, as a tuple (x, y)
     ...    of integers.
-    [Arguments]    ${step_distance}=16    ${delay}=0.01
+    [Arguments]             ${step_distance}=16     ${delay}=0.01
     IF    ${{isinstance($destination, str)}}
-        ${regions}=    VIDEO.Match    ${destination}
-        ${position}=    Get Center Of ${regions}[0]
+        ${regions}=             VIDEO.Match             ${destination}
+        ${position}=            Get Center Of ${regions}[0]
     ELSE
-        ${position}=    Set Variable    ${destination}
+        ${position}=            Set Variable            ${destination}
     END
     HID.Walk Pointer To Absolute
-    ...    ${position}[0]
-    ...    ${position}[1]
-    ...    ${step_distance}
-    ...    ${delay}
-    RETURN    ${position}
+    ...                     ${position}[0]
+    ...                     ${position}[1]
+    ...                     ${step_distance}
+    ...                     ${delay}
+    RETURN                  ${position}
 
 Walk Pointer To Proportional (${x}, ${y})
     [Documentation]    Move the pointer in incremental steps from the
@@ -187,34 +187,34 @@ Walk Pointer To Proportional (${x}, ${y})
     ...    Return:
     ...    Absolute position of the pointer after the walk, as a tuple (x, y)
     ...    of integers.
-    [Arguments]    ${step_distance}=16    ${delay}=0.01
-    ${position}=    HID.Walk Pointer To Proportional
-    ...    ${x}
-    ...    ${y}
-    ...    ${step_distance}
-    ...    ${delay}
-    RETURN    ${position}
+    [Arguments]             ${step_distance}=16     ${delay}=0.01
+    ${position}=            HID.Walk Pointer To Proportional
+    ...                     ${x}
+    ...                     ${y}
+    ...                     ${step_distance}
+    ...                     ${delay}
+    RETURN                  ${position}
 
 Press ${button} Button
     [Documentation]    Press a button on the virtual pointer.
     ...
     ...    Embedded arguments:
     ...    - ${button}: Button to press (LEFT|RIGHT|MIDDLE).
-    HID.Press Pointer Button    ${button}
+    HID.Press Pointer Button                        ${button}
 
 Release ${button} Button
     [Documentation]    Release a button on the virtual pointer.
     ...
     ...    Embedded arguments:
     ...    - ${button}: Button to release (LEFT|RIGHT|MIDDLE).
-    HID.Release Pointer Button    ${button}
+    HID.Release Pointer Button                      ${button}
 
 Click ${button} Button
     [Documentation]    Click a button on the virtual pointer.
     ...
     ...    Embedded arguments:
     ...    - ${button}: Button to click (LEFT|RIGHT|MIDDLE).
-    HID.Click Pointer Button    ${button}
+    HID.Click Pointer Button                        ${button}
 
 Release Buttons
     [Documentation]    Release all buttons on the virtual pointer.

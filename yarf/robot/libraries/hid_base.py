@@ -2,7 +2,7 @@
 This module provides the Robot interface for HID interactions.
 """
 
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
 
 from robot.api.deco import keyword
 

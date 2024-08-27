@@ -3,9 +3,10 @@ This module provides tests for the Zapper Video Input module.
 """
 
 import unittest
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, call, patch
 
 import cv2
+
 from yarf.robot.libraries.zapper.VideoInput import HdmiIn, VideoInput
 
 

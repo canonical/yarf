@@ -2,11 +2,12 @@ import logging
 import os
 import sys
 from argparse import ArgumentParser, Namespace
-from robot.api import TestSuite
-from yarf.robot import robot_in_path
-from yarf.robot.suite_parser import SuiteParser
-from yarf.robot.libraries import SUPPORTED_PLATFORMS, PlatformBase
 
+from robot.api import TestSuite
+
+from yarf.robot import robot_in_path
+from yarf.robot.libraries import SUPPORTED_PLATFORMS, PlatformBase
+from yarf.robot.suite_parser import SuiteParser
 
 _logger = logging.getLogger(__name__)
 RESULT_PATH = f"{os.getcwd()}/results"
@@ -66,7 +67,6 @@ def run_robot_suite(
     test_suite: TestSuite, lib_cls: PlatformBase, variables: list[str]
 ) -> None:
     with robot_in_path(lib_cls.get_pkg_path()):
-
         result = test_suite.run(
             # TODO: the below two variables should depends on `yarf_sequential` metadata.
             # exitonerror=True,

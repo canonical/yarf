@@ -6,6 +6,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from RPA.recognition.templates import ImageNotFoundError
+
 from yarf.robot.libraries.video_input_base import VideoInputBase
 
 

@@ -3,7 +3,7 @@ This module provides tests for the Zapper HID library.
 """
 
 import unittest
-from unittest.mock import ANY, MagicMock, call, Mock, patch
+from unittest.mock import ANY, MagicMock, Mock, call, patch
 
 from yarf.robot.libraries.zapper import ZapperException
 from yarf.robot.libraries.zapper.Hid import Hid

@@ -1,0 +1,55 @@
+# Exclude doc starter pack (but keep .md, .rst)
+exclude: '^docs/(doc-cheat-sheet.*|(?!.+\.(md|rst)).+)$'
+
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.6.0
+  hooks:
+  - id: trailing-whitespace
+  - id: end-of-file-fixer
+  - id: check-yaml
+  - id: check-added-large-files
+
+- repo: https://github.com/executablebooks/mdformat
+  rev: 0.7.17
+  hooks:
+  - id: mdformat
+    additional_dependencies:
+    - mdformat-black
+    - mdformat-gfm
+    - mdformat-myst
+
+- repo: https://github.com/PyCQA/isort
+  rev: 5.13.2
+  hooks:
+  - id: isort
+
+#- repo: https://github.com/pre-commit/mirrors-mypy
+#  rev: v1.11.1
+#  hooks:
+#  - id: mypy
+
+- repo: https://github.com/MarketSquare/robotframework-tidy
+  rev: 4.14.0
+  hooks:
+  - id: robotidy
+    args:
+    - --configure
+    - RenameTestCases:enabled=true
+    - --configure
+    - RenameVariables:enabled=true
+    - --configure
+    - IndentNestedKeywords:enabled=true
+    - --configure
+    - AlignKeywordsSection:enabled=true
+    - --configure
+    - AlignTestCasesSection:enabled=true
+    - --configure
+    - AlignTemplatedTestCases:enabled=true
+
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.6.2
+  hooks:
+  - id: ruff
+    args: [ --fix ]
+  - id: ruff-format

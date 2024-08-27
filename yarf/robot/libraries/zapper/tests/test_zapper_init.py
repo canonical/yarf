@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from yarf.robot.libraries.zapper import zapper_api, Zapper
+from yarf.robot.libraries.zapper import Zapper, zapper_api
 
 
 class TestZapper(unittest.TestCase):
