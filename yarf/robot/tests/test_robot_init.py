@@ -1,7 +1,8 @@
-import unittest
-from unittest.mock import patch, MagicMock
-from yarf.robot import robot_in_path, ROBOT_RESOURCE_PATH
 import sys
+import unittest
+from unittest.mock import MagicMock, patch
+
+from yarf.robot import ROBOT_RESOURCE_PATH, robot_in_path
 
 
 class TestRobotInit(unittest.TestCase):

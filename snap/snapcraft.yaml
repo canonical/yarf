@@ -3,8 +3,8 @@ base: core22
 adopt-info: yarf
 summary: Yet Another Robot Framework
 description: |
-  Yet Another Robot Framework (YARF) is an interface that 
-  allows developers to build complex test scenarios and 
+  Yet Another Robot Framework (YARF) is an interface that
+  allows developers to build complex test scenarios and
   bootstrap them locally, then work towards automated runs.
 
 grade: devel

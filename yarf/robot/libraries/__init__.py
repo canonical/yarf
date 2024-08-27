@@ -1,6 +1,6 @@
 import abc
-import pathlib
 import importlib
+import pathlib
 
 SUPPORTED_PLATFORMS = {}
 
@@ -17,7 +17,6 @@ class PlatformMeta(abc.ABCMeta):
 
 
 class PlatformBase(abc.ABC, metaclass=PlatformMeta):
-
     @staticmethod
     @abc.abstractmethod
     def get_pkg_path() -> str:

@@ -1,7 +1,9 @@
 import unittest
-from unittest.mock import Mock
-from pyfakefs.fake_filesystem_unittest import patchfs, FakeFilesystem
 from pathlib import Path
+from unittest.mock import Mock
+
+from pyfakefs.fake_filesystem_unittest import FakeFilesystem, patchfs
+
 from yarf.robot.suite_parser import SuiteParser
 
 
@@ -232,9 +234,7 @@ class TestSuiteParser(unittest.TestCase):
             ),
         }
         mock_precedence_list = [Path("var1/var2"), Path("var1"), Path("var2")]
-        mock_suite_parser_instance.get_variants_precedence_list.return_value = (
-            mock_precedence_list
-        )
+        mock_suite_parser_instance.get_variants_precedence_list.return_value = mock_precedence_list
         actual_assets = SuiteParser.select_assets(
             mock_suite_parser_instance, mock_variant
         )

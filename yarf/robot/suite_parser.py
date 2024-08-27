@@ -1,10 +1,9 @@
 import logging
-import tempfile
 import shutil
-from typing import Final
-from pathlib import Path
+import tempfile
 from contextlib import contextmanager, suppress
-
+from pathlib import Path
+from typing import Final
 
 _logger = logging.getLogger(__name__)
 
@@ -24,7 +23,6 @@ class SuiteParser:
         """
         has_robot_ext = False
         for path in (p for p in self.suite_path.rglob("*") if not p.is_dir()):
-
             relative_path = path.relative_to(self.suite_path)
             if relative_path.parts[0] == SuiteParser.VARIANTS_DIR:
                 self.variants[Path().joinpath(*relative_path.parts[1:])] = path

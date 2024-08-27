@@ -9,8 +9,8 @@ authors = [
     {name = "Paolo Gentili", email = "paolo.gentili@canonical.com"},
 ]
 description = """
-Yet Another Robot Framework (YARF) is an interface that 
-allows developers to build complex test scenarios and 
+Yet Another Robot Framework (YARF) is an interface that
+allows developers to build complex test scenarios and
 bootstrap them locally, then work towards automated runs.
 """
 version = "0.0.1"
@@ -29,10 +29,10 @@ dependencies = [
 
 [project.optional-dependencies]
 develop = [
-    "black",
+    "pre-commit",
+    "pyfakefs",
     "pytest",
     "pytest-cov",
-    "ruff",
     "tox",
 ]
 
@@ -46,13 +46,12 @@ yarf = "yarf.main:main"
 where = ["."]
 include = ["yarf", "yarf.*"]
 
-[tool.black]
-line-length = 79
-extend-exclude = '''
-docs/*
-'''
+[tool.isort]
+profile = "black"
+line_length = 79
 
 [tool.ruff]
+line-length = 79
 # In addition to the standard set of exclusions, omit all tests, plus a specific file.
 extend-exclude = [
     "docs/*",

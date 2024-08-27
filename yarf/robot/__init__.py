@@ -5,11 +5,10 @@ More details on the project structure can be found at
 - https://docs.robotframework.org/docs/examples/project_structure
 """
 
-import sys
 import os
-from pathlib import Path
+import sys
 from contextlib import contextmanager
-
+from pathlib import Path
 
 ROBOT_RESOURCE_PATH = os.path.abspath(
     os.path.join(str(Path(__file__).parent), "resources")

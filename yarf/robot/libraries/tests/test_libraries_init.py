@@ -1,8 +1,9 @@
 import unittest
+
 from yarf.robot.libraries import (
     SUPPORTED_PLATFORMS,
-    PlatformMeta,
     PlatformBase,
+    PlatformMeta,
     import_libraries,
 )
 

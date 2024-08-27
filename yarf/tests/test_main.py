@@ -1,9 +1,11 @@
-import unittest
 import sys
-from unittest.mock import patch, MagicMock, Mock
-from pyfakefs.fake_filesystem_unittest import patchfs, FakeFilesystem
+import unittest
+from unittest.mock import MagicMock, Mock, patch
+
+from pyfakefs.fake_filesystem_unittest import FakeFilesystem, patchfs
+
 from yarf import main
-from yarf.main import run_robot_suite, parse_arguments, RESULT_PATH
+from yarf.main import RESULT_PATH, parse_arguments, run_robot_suite
 from yarf.robot.libraries import SUPPORTED_PLATFORMS
 from yarf.robot.libraries.Example import Example
 

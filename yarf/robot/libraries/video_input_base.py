@@ -10,12 +10,12 @@ from abc import ABC, abstractmethod
 from io import BytesIO
 from typing import List, Optional, Sequence
 
+from PIL import Image
 from robot.api import logger
 from robot.api.deco import keyword
-from RPA.recognition.templates import ImageNotFoundError
-from PIL import Image
 from RPA.Images import Images, Region, to_image
 from RPA.recognition import ocr
+from RPA.recognition.templates import ImageNotFoundError
 
 
 class VideoInputBase(ABC):
