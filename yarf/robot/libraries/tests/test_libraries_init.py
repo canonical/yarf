@@ -1,4 +1,4 @@
-import unittest
+import pytest
 
 from yarf.robot.libraries import (
     SUPPORTED_PLATFORMS,
@@ -8,7 +8,7 @@ from yarf.robot.libraries import (
 )
 
 
-class TestPlatformMeta(unittest.TestCase):
+class TestPlatformMeta:
     """Test the Platform metaclass."""
 
     def test_new(self):
@@ -21,12 +21,10 @@ class TestPlatformMeta(unittest.TestCase):
         class TestModule(metaclass=PlatformMeta):
             pass
 
-        self.assertEqual(
-            SUPPORTED_PLATFORMS.get(TestModule.__name__), TestModule
-        )
+        assert SUPPORTED_PLATFORMS.get(TestModule.__name__) == TestModule
 
 
-class TestPlatformBase(unittest.TestCase):
+class TestPlatformBase:
     """Test the Platform base class."""
 
     def test_not_implemented(self):
@@ -38,7 +36,7 @@ class TestPlatformBase(unittest.TestCase):
         class TestModule(PlatformBase):
             pass
 
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             TestModule()
 
     def test_get_pkg_path(self):
@@ -53,10 +51,10 @@ class TestPlatformBase(unittest.TestCase):
                 return test_lib_path
 
         platform = TestModule()
-        self.assertEqual(platform.get_pkg_path(), test_lib_path)
+        assert platform.get_pkg_path() == test_lib_path
 
 
-class TestInit(unittest.TestCase):
+class TestInit:
     """Test the commonly available, module-level functions."""
 
     def test_import_libraries(self) -> None:
@@ -71,4 +69,4 @@ class TestInit(unittest.TestCase):
 
         SUPPORTED_PLATFORMS[PlatformBase.__name__] = TestModule()
         import_libraries()
-        self.assertTrue(PlatformBase.__name__ not in SUPPORTED_PLATFORMS)
+        assert PlatformBase.__name__ not in SUPPORTED_PLATFORMS

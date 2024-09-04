@@ -1,8 +1,8 @@
 import sys
-import unittest
 from unittest.mock import MagicMock, Mock, patch
 
-from pyfakefs.fake_filesystem_unittest import FakeFilesystem, patchfs
+import pytest
+from pyfakefs.fake_filesystem_unittest import FakeFilesystem
 
 from yarf import main
 from yarf.main import RESULT_PATH, parse_arguments, run_robot_suite
@@ -10,32 +10,32 @@ from yarf.robot.libraries import SUPPORTED_PLATFORMS
 from yarf.robot.libraries.Example import Example
 
 
-class TestMain(unittest.TestCase):
+class TestMain:
     def test_parse_arguments(self) -> None:
         """
         Test whether the "parse_arguments" function returns the expected Namespace.
         """
         argv = ["--debug", "suite-path"]
         args = parse_arguments(argv)
-        self.assertEqual(args.verbosity, "DEBUG")
-        self.assertEqual(args.suite, "suite-path")
+        assert args.verbosity == "DEBUG"
+        assert args.suite == "suite-path"
 
         argv = ["--quiet", "suite-path"]
         args = parse_arguments(argv)
-        self.assertEqual(args.verbosity, "WARNING")
-        self.assertEqual(args.suite, "suite-path")
+        assert args.verbosity == "WARNING"
+        assert args.suite == "suite-path"
 
         argv = ["--variant", "var1/var2/var3", "suite-path"]
         args = parse_arguments(argv)
-        self.assertEqual(args.variant, "var1/var2/var3")
-        self.assertEqual(args.suite, "suite-path")
+        assert args.variant == "var1/var2/var3"
+        assert args.suite == "suite-path"
 
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Example"] = Example
         argv = ["--platform", "Example", "suite-path"]
         args = parse_arguments(argv)
-        self.assertEqual(args.platform, "Example")
-        self.assertEqual(args.suite, "suite-path")
+        assert args.platform == "Example"
+        assert args.suite == "suite-path"
 
     def test_parse_arguments_system_argv(self) -> None:
         """
@@ -48,9 +48,9 @@ class TestMain(unittest.TestCase):
             ["prog", "--debug", "--platform", "Example", "suite-path"],
         ):
             args = parse_arguments()
-            self.assertEqual(args.verbosity, "DEBUG")
-            self.assertEqual(args.platform, "Example")
-            self.assertEqual(args.suite, "suite-path")
+            assert args.verbosity == "DEBUG"
+            assert args.platform == "Example"
+            assert args.suite == "suite-path"
 
     def test_parse_arguments_invalid_choice(self) -> None:
         """
@@ -58,7 +58,7 @@ class TestMain(unittest.TestCase):
         raises SystemExit for invalid choices.
         """
         argv = ["--platform", "InvalidPlatform", "suite-path"]
-        with self.assertRaises(SystemExit):
+        with pytest.raises(SystemExit):
             parse_arguments(argv)
 
     @patch("yarf.main.rebot")
@@ -96,15 +96,14 @@ class TestMain(unittest.TestCase):
         mock_test_suite = Mock()
         mock_test_suite.run.return_value.return_code = 1
         mock_test_suite.run.return_value.errors.messages = [Mock()]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             run_robot_suite(
                 mock_test_suite, SUPPORTED_PLATFORMS["Example"], variables
             )
 
-    @patchfs
     @patch("yarf.main.TestSuite.from_file_system")
     def test_main(
-        self, mock_fs: FakeFilesystem, mock_test_suite: MagicMock
+        self, mock_test_suite: MagicMock, fs: FakeFilesystem
     ) -> None:
         """
         Test whether the function runs a Robot Test Suite
@@ -112,7 +111,7 @@ class TestMain(unittest.TestCase):
         """
 
         test_path = "suite-path"
-        mock_fs.create_file(f"{test_path}/test.robot")
+        fs.create_file(f"{test_path}/test.robot")
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Example"] = Example
 

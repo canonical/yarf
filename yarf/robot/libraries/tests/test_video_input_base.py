@@ -2,15 +2,15 @@
 This module provides tests for the Video Input base module.
 """
 
-import unittest
 from unittest.mock import Mock, patch
 
+import pytest
 from RPA.recognition.templates import ImageNotFoundError
 
 from yarf.robot.libraries.video_input_base import VideoInputBase
 
 
-class VideoInputBaseTests(unittest.TestCase):
+class TestVideoInputBase:
     """
     This class provides tests for the VideoInputBase class
     """
@@ -49,18 +49,17 @@ class VideoInputBaseTests(unittest.TestCase):
         video_input._rpa_images.find_template_in_image.return_value = (
             mock_regions
         )
-        self.assertListEqual(
-            video_input.match("path"),
-            [
-                {
-                    "left": mock_regions[0].left,
-                    "top": mock_regions[0].top,
-                    "right": mock_regions[0].right,
-                    "bottom": mock_regions[0].bottom,
-                    "path": "path",
-                }
-            ],
-        )
+
+        expected = [
+            {
+                "left": mock_regions[0].left,
+                "top": mock_regions[0].top,
+                "right": mock_regions[0].right,
+                "bottom": mock_regions[0].bottom,
+                "path": "path",
+            }
+        ]
+        assert video_input.match("path") == expected
 
     @patch("time.time")
     @patch("yarf.robot.libraries.video_input_base.to_image")
@@ -79,18 +78,16 @@ class VideoInputBaseTests(unittest.TestCase):
         video_input._rpa_images.find_template_in_image.return_value = (
             mock_regions
         )
-        self.assertListEqual(
-            video_input.match_any(["path1", "path2"]),
-            [
-                {
-                    "left": mock_regions[0].left,
-                    "top": mock_regions[0].top,
-                    "right": mock_regions[0].right,
-                    "bottom": mock_regions[0].bottom,
-                    "path": "path1",
-                }
-            ],
-        )
+        expected = [
+            {
+                "left": mock_regions[0].left,
+                "top": mock_regions[0].top,
+                "right": mock_regions[0].right,
+                "bottom": mock_regions[0].bottom,
+                "path": "path1",
+            }
+        ]
+        assert video_input.match_any(["path1", "path2"]) == expected
 
     @patch("time.time")
     @patch("yarf.robot.libraries.video_input_base.to_image")
@@ -114,25 +111,23 @@ class VideoInputBaseTests(unittest.TestCase):
             mock_regions,
             mock_regions,
         ]
-        self.assertListEqual(
-            video_input.match_all(["path1", "path2"]),
-            [
-                {
-                    "left": mock_regions[0].left,
-                    "top": mock_regions[0].top,
-                    "right": mock_regions[0].right,
-                    "bottom": mock_regions[0].bottom,
-                    "path": "path1",
-                },
-                {
-                    "left": mock_regions[0].left,
-                    "top": mock_regions[0].top,
-                    "right": mock_regions[0].right,
-                    "bottom": mock_regions[0].bottom,
-                    "path": "path2",
-                },
-            ],
-        )
+        expected = [
+            {
+                "left": mock_regions[0].left,
+                "top": mock_regions[0].top,
+                "right": mock_regions[0].right,
+                "bottom": mock_regions[0].bottom,
+                "path": "path1",
+            },
+            {
+                "left": mock_regions[0].left,
+                "top": mock_regions[0].top,
+                "right": mock_regions[0].right,
+                "bottom": mock_regions[0].bottom,
+                "path": "path2",
+            },
+        ]
+        assert video_input.match_all(["path1", "path2"]) == expected
 
     @patch("time.time")
     @patch("yarf.robot.libraries.video_input_base.to_image", Mock())
@@ -147,7 +142,7 @@ class VideoInputBaseTests(unittest.TestCase):
         video_input._rpa_images.find_template_in_image.side_effect = ValueError
         mock_time.side_effect = [0, 0, 2]
 
-        with self.assertRaises(ImageNotFoundError):
+        with pytest.raises(ImageNotFoundError):
             video_input.match("path", timeout=1)
         video_input._log_failed_match.assert_called_with(
             video_input.screenshot, "path"
@@ -159,7 +154,7 @@ class VideoInputBaseTests(unittest.TestCase):
         )
         mock_time.side_effect = [0, 0, 2]
 
-        with self.assertRaises(ImageNotFoundError):
+        with pytest.raises(ImageNotFoundError):
             video_input.match("path", timeout=1)
 
     @patch("time.time")
