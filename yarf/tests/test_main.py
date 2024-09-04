@@ -61,7 +61,8 @@ class TestMain(unittest.TestCase):
         with self.assertRaises(SystemExit):
             parse_arguments(argv)
 
-    def test_run_robot_suite(self) -> None:
+    @patch("yarf.main.rebot")
+    def test_run_robot_suite(self, mock_rebot: MagicMock) -> None:
         """
         Test if the function runs the robot suite with
         the specified variables and output directory.
@@ -77,6 +78,9 @@ class TestMain(unittest.TestCase):
         )
         mock_test_suite.run.assert_called_once_with(
             variable=variables, outputdir=RESULT_PATH
+        )
+        mock_rebot.assert_called_once_with(
+            f"{RESULT_PATH}/output.xml", outputdir=RESULT_PATH
         )
 
     def test_run_robot_suite_with_errors(self) -> None:

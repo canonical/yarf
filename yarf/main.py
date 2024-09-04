@@ -3,6 +3,7 @@ import os
 import sys
 from argparse import ArgumentParser, Namespace
 
+from robot import rebot
 from robot.api import TestSuite
 
 from yarf.robot import robot_in_path
@@ -75,6 +76,8 @@ def run_robot_suite(
             outputdir=RESULT_PATH,
         )
 
+    # Generate HTML report.html and log.html using rebot().
+    rebot(f"{RESULT_PATH}/output.xml", outputdir=RESULT_PATH)
     if result.return_code:
         for error_message in result.errors.messages:
             _logger.error("ROBOT: %s", error_message.message)
@@ -87,10 +90,11 @@ def main(argv: list[str] = None) -> None:
     logging.basicConfig(level=args.verbosity)
 
     variables = []
-    sp = SuiteParser(args.suite)
+    suite_parser = SuiteParser(args.suite)
     lib_cls = SUPPORTED_PLATFORMS.get(args.platform)
-    with sp.suite_in_temp_folder(args.variant) as temp_folder_path:
+    with suite_parser.suite_in_temp_folder(args.variant) as temp_folder_path:
         test_suite = TestSuite.from_file_system(temp_folder_path)
+        test_suite.name = suite_parser.suite_path.absolute().name
         run_robot_suite(test_suite, lib_cls, variables)
 
     _logger.info(f"Results exported to: {RESULT_PATH}")
