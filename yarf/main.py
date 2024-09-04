@@ -2,7 +2,9 @@ import logging
 import os
 import sys
 from argparse import ArgumentParser, Namespace
+from importlib import metadata
 
+from packaging import version
 from robot import rebot
 from robot.api import TestSuite
 
@@ -11,6 +13,7 @@ from yarf.robot.libraries import SUPPORTED_PLATFORMS, PlatformBase
 from yarf.robot.suite_parser import SuiteParser
 
 _logger = logging.getLogger(__name__)
+YARF_VERSION = version.parse(metadata.version("yarf"))
 RESULT_PATH = f"{os.getcwd()}/results"
 
 
@@ -64,16 +67,35 @@ def parse_arguments(argv: list[str] = None) -> Namespace:
     return top_level_parser.parse_args(argv)
 
 
+def get_robot_settings(test_suite: TestSuite) -> dict[str, str]:
+    min_version_prefix = "yarf:min-version-"
+    robot_settings = {}
+    skip_tags = set()
+    for test in test_suite.all_tests:
+        for tag in test.tags:
+            if not tag.startswith("yarf:"):
+                continue
+
+            if tag.startswith(min_version_prefix):
+                skip_tags.add(tag)
+
+    if skip_tags:
+        robot_settings["skip"] = filter(
+            lambda x: version.parse(x[len(min_version_prefix) :])
+            > YARF_VERSION,
+            skip_tags,
+        )
+
+    return robot_settings
+
+
 def run_robot_suite(
     test_suite: TestSuite, lib_cls: PlatformBase, variables: list[str]
 ) -> None:
+    robot_settings = get_robot_settings(test_suite)
     with robot_in_path(lib_cls.get_pkg_path()):
         result = test_suite.run(
-            # TODO: the below two variables should depends on `yarf_sequential` metadata.
-            # exitonerror=True,
-            # exitonfailure=True,
-            variable=variables,
-            outputdir=RESULT_PATH,
+            variable=variables, outputdir=RESULT_PATH, **robot_settings
         )
 
     # Generate HTML report.html and log.html using rebot().

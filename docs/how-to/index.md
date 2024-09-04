@@ -7,5 +7,6 @@ This section provides step-by-step instructions on using the features of YARF.
 titlesonly:
 ---
 Run a robot test suite in YARF <./run-a-robot-test-suite-in-yarf.md>
+Write a Robot File with YARF Tags<./write-a-robot-file-with-yarf-tags.md>
 
 ```

@@ -19,7 +19,7 @@ suite
 
 <u><center>Code Snippet 1: An example of a simplest test suite</center></u>
 
-This is the simplest test suite YARF will accept. A directory without a `.robot` file will result in an error.
+This is the simplest test suite YARF will accept. A directory without a `.robot` file will result in an error. There are tag(s) that we support in YARF, for details please visit [Write a Robot File with YARF Tags](./write-a-robot-file-with-yarf-tags.md)
 
 A more comprehensive example of a test suite would be:
 
