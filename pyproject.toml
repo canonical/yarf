@@ -21,6 +21,7 @@ dependencies = [
     "opencv-python~=4.10.0.84",
     "Pillow~=10.4.0",
     "pytesseract~=0.3.10",
+    "pywayland",
     "robotframework~=6.1.1",
     "robotframework-sshlibrary~=3.8.0",
     "robotframework-debug~=4.5.0",
@@ -47,6 +48,11 @@ exclude = [
   "tests",
 ]
 
+[tool.hatch.build.hooks.custom]
+dependencies = [
+    "pywayland",
+]
+
 [tool.isort]
 profile = "black"
 line_length = 79
@@ -59,8 +65,13 @@ extend-exclude = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "--doctest-modules --ignore=docs/"
-asyncio_default_fixture_loop_scope = "auto"
+addopts = "--doctest-modules --ignore=docs/ --ignore=hatch_build.py"
+
+[tool.coverage.run]
+omit = [
+    "hatch_build.py",
+    "yarf/lib/wayland/protocols/*/*",
+]
 
 [tool.coverage.report]
 # Regexes for lines to exclude from consideration
