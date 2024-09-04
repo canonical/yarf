@@ -2,14 +2,15 @@
 This module provides tests for the Zapper HID library.
 """
 
-import unittest
 from unittest.mock import ANY, MagicMock, Mock, call, patch
+
+import pytest
 
 from yarf.robot.libraries.zapper import ZapperException
 from yarf.robot.libraries.zapper.Hid import Hid
 
 
-class HidTests(unittest.TestCase):
+class TestHid:
     """
     This class provides tests for the Zapper HID library.
     """
@@ -96,9 +97,8 @@ class HidTests(unittest.TestCase):
         )
 
         # To complete the assertion above, with the ANY
-        self.assertSetEqual(
-            {button1, button2},
-            set(service.hid_mouse.call_args_list[1].args[0]),
+        assert {button1, button2} == set(
+            service.hid_mouse.call_args_list[1].args[0]
         )
 
     @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
@@ -148,7 +148,7 @@ class HidTests(unittest.TestCase):
         service.get_hdmi_resolution.return_value = "1000x1000"
 
         zapper_hid.move_pointer_to_absolute(100, 200)
-        self.assertEqual(zapper_hid.pointer_position, [100 / 1000, 200 / 1000])
+        assert zapper_hid.pointer_position == [100 / 1000, 200 / 1000]
         service.hid_pointer.assert_called_with(
             False,
             100 / 1000,
@@ -165,10 +165,10 @@ class HidTests(unittest.TestCase):
         service = mock_zap.return_value.__enter__.return_value
         service.get_hdmi_resolution.return_value = "1000x1000"
 
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError):
             zapper_hid.move_pointer_to_absolute(1001, 0)
 
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError):
             zapper_hid.move_pointer_to_absolute(0, 1001)
 
     @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
@@ -181,7 +181,7 @@ class HidTests(unittest.TestCase):
         service = mock_zap.return_value.__enter__.return_value
 
         zapper_hid.move_pointer_to_proportional(0.5, 0.5)
-        self.assertEqual(zapper_hid.pointer_position, [0.5, 0.5])
+        assert zapper_hid.pointer_position == [0.5, 0.5]
         service.hid_pointer.assert_called_with(False, 0.5, 0.5)
 
     @patch("yarf.robot.libraries.zapper.Hid.zapper_api", MagicMock())
@@ -192,10 +192,10 @@ class HidTests(unittest.TestCase):
         """
         zapper_hid = Hid()
 
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError):
             zapper_hid.move_pointer_to_proportional(1.1, 0)
 
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError):
             zapper_hid.move_pointer_to_proportional(0, 1.1)
 
     @patch("time.sleep")
@@ -228,13 +228,13 @@ class HidTests(unittest.TestCase):
         for expected, actual in zip(
             expected_list, service.hid_pointer.mock_calls
         ):
-            self.assertEqual(expected[0], actual.args[0])
-            self.assertAlmostEqual(expected[1], actual.args[1])
-            self.assertAlmostEqual(expected[2], actual.args[2])
+            assert expected[0] == actual.args[0]
+            assert expected[1] == pytest.approx(actual.args[1])
+            assert expected[2] == pytest.approx(actual.args[2])
 
         mock_sleep.assert_has_calls(len(expected_list) * [call(0.2)])
-        self.assertAlmostEqual(zapper_hid.pointer_position[0], 0.5)
-        self.assertAlmostEqual(zapper_hid.pointer_position[1], 0.5)
+        assert zapper_hid.pointer_position[0] == pytest.approx(0.5)
+        assert zapper_hid.pointer_position[1] == pytest.approx(0.5)
 
     @patch("time.sleep")
     @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
@@ -261,10 +261,10 @@ class HidTests(unittest.TestCase):
         for expected, actual in zip(
             expected_list, service.hid_pointer.mock_calls
         ):
-            self.assertEqual(expected[0], actual.args[0])
-            self.assertAlmostEqual(expected[1], actual.args[1])
-            self.assertAlmostEqual(expected[2], actual.args[2])
+            assert expected[0] == actual.args[0]
+            assert expected[1] == pytest.approx(actual.args[1])
+            assert expected[2] == pytest.approx(actual.args[2])
 
         mock_sleep.assert_has_calls(len(expected_list) * [call(0.2)])
-        self.assertAlmostEqual(zapper_hid.pointer_position[0], 0.1)
-        self.assertAlmostEqual(zapper_hid.pointer_position[1], 0.2)
+        assert zapper_hid.pointer_position[0] == pytest.approx(0.1)
+        assert zapper_hid.pointer_position[1] == pytest.approx(0.2)

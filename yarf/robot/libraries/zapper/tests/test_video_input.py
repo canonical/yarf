@@ -2,15 +2,15 @@
 This module provides tests for the Zapper Video Input module.
 """
 
-import unittest
 from unittest.mock import MagicMock, call, patch
 
 import cv2
+import pytest
 
 from yarf.robot.libraries.zapper.VideoInput import HdmiIn, VideoInput
 
 
-class VideoInputTests(unittest.TestCase):
+class TestVideoInput:
     """This class provides tests for the Zapper-specific VideoInput class."""
 
     @patch("yarf.robot.libraries.zapper.VideoInput.UsbCam")
@@ -38,7 +38,7 @@ class VideoInputTests(unittest.TestCase):
         the requested video source doesn't exist.
         """
 
-        with self.assertRaises(SystemExit):
+        with pytest.raises(SystemExit):
             VideoInput().init("UNKNOWN")
 
     @patch("yarf.robot.libraries.zapper.VideoInput.HdmiIn")
@@ -75,10 +75,10 @@ class VideoInputTests(unittest.TestCase):
 
         screenshot = video_input._grab_screenshot()
         video_source.grab_screenshot.assert_called_once()
-        self.assertEqual(screenshot, video_source.grab_screenshot.return_value)
+        assert screenshot == video_source.grab_screenshot.return_value
 
 
-class HdmiInTests(unittest.TestCase):
+class TestHdmiIn:
     """
     This class provides tests for the HdmiIn class.
     """
@@ -134,7 +134,7 @@ class HdmiInTests(unittest.TestCase):
         hdmi_in = HdmiIn()
 
         mock_videocap.return_value.read.return_value = (False, None)
-        with self.assertRaises(RuntimeError):
+        with pytest.raises(RuntimeError):
             hdmi_in.grab_screenshot()
 
     @patch("yarf.robot.libraries.zapper.VideoInput.zapper_api")
@@ -147,7 +147,7 @@ class HdmiInTests(unittest.TestCase):
         service.hdmi_stream_stop.assert_called_once()
 
 
-class UsbCamTests(unittest.TestCase):
+class TestUsbCam:
     """
     This class provides tests for the UsbCam class.
     """

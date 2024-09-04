@@ -1,10 +1,9 @@
-import unittest
 from unittest.mock import patch
 
 from yarf.robot.libraries.zapper import Zapper, zapper_api
 
 
-class TestZapper(unittest.TestCase):
+class TestZapper:
     """Test the Mir class."""
 
     def test_get_pkg_path(self) -> None:
@@ -12,12 +11,10 @@ class TestZapper(unittest.TestCase):
         Test whether the "get_pkg_path" method returns the expected path.
         """
 
-        self.assertTrue(
-            Zapper.get_pkg_path().endswith("/yarf/robot/libraries/zapper")
-        )
+        assert Zapper.get_pkg_path().endswith("/yarf/robot/libraries/zapper")
 
 
-class ConnectionTests(unittest.TestCase):
+class TestConnection:
     """Test the RPyC connection."""
 
     @patch("rpyc.connect")

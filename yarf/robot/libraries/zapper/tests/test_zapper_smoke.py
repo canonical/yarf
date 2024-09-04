@@ -1,10 +1,9 @@
-import unittest
 from unittest.mock import patch
 
 from yarf.robot.libraries.zapper.Smoke import Smoke
 
 
-class TestZapperSmoke(unittest.TestCase):
+class TestZapperSmoke:
     """Test the Smoke class."""
 
     def test_print_smoke(self) -> None:
