@@ -8,7 +8,7 @@ import os
 import time
 from abc import ABC, abstractmethod
 from io import BytesIO
-from typing import List, Optional, Sequence
+from typing import Awaitable, List, Optional, Sequence
 
 from PIL import Image
 from robot.api import logger
@@ -36,7 +36,9 @@ class VideoInputBase(ABC):
         """Handles platform-specific initialization."""
 
     @keyword
-    def match(self, template: str, timeout: int = 10) -> List[Region]:
+    async def match(
+        self, template: str, timeout: int = 10
+    ) -> Awaitable[List[Region]]:
         """
         Grab screenshots and compare until there's a match with the provided
         template or timeout.
@@ -46,12 +48,12 @@ class VideoInputBase(ABC):
         :return: list of matched regions
         :raises ImageNotFoundError: if no match is found within the timeout
         """
-        return self.match_any([template], timeout=timeout)
+        return await self.match_any([template], timeout=timeout)
 
     @keyword
-    def match_all(
+    async def match_all(
         self, templates: Sequence[str], timeout: int = 10
-    ) -> List[Region]:
+    ) -> Awaitable[List[Region]]:
         """
         Grab screenshots and compare with the provided templates until a frame
         is found which matches all templates simultaneously or timeout.
@@ -61,12 +63,14 @@ class VideoInputBase(ABC):
         :return: list of matched regions and template path matched
         :raises ImageNotFoundError: if no match is found within the timeout
         """
-        return self._do_match(templates, accept_any=False, timeout=timeout)
+        return await self._do_match(
+            templates, accept_any=False, timeout=timeout
+        )
 
     @keyword
-    def match_any(
+    async def match_any(
         self, templates: Sequence[str], timeout: int = 10
-    ) -> List[Region]:
+    ) -> Awaitable[List[Region]]:
         """
         Grab screenshots and compare with the provided templates until there's
         at least one match or timeout.
@@ -76,13 +80,15 @@ class VideoInputBase(ABC):
         :return: list of matched regions and template path matched
         :raises ImageNotFoundError: if no match is found within the timeout
         """
-        return self._do_match(templates, accept_any=True, timeout=timeout)
+        return await self._do_match(
+            templates, accept_any=True, timeout=timeout
+        )
 
     @keyword
-    def read_text(
+    async def read_text(
         self,
         image: Optional[Image.Image] = None,
-    ) -> str:
+    ) -> Awaitable[str]:
         """
         Read the text from the provided image or grab a screenshot
         to read from.
@@ -90,33 +96,33 @@ class VideoInputBase(ABC):
         The region of interest can be limited with the `region` argument.
         """
         if not image:
-            image = self._grab_screenshot()
+            image = await self._grab_screenshot()
 
         return ocr.read(image)
 
     @abstractmethod
     @keyword
-    def start_video_input(self):
+    async def start_video_input(self):
         """Start video stream process if needed."""
 
     @abstractmethod
     @keyword
-    def stop_video_input(self):
+    async def stop_video_input(self):
         """Stop video stream process if needed."""
 
     @keyword
-    def restart_video_input(self):
+    async def restart_video_input(self):
         """Restart video stream process if needed."""
-        self.stop_video_input()
-        self.start_video_input()
+        await self.stop_video_input()
+        await self.start_video_input()
 
     @abstractmethod
-    def _grab_screenshot(self) -> Image.Image:
+    async def _grab_screenshot(self) -> Image.Image:
         """Grab and return a screenshot from the video feed."""
 
-    def _do_match(
+    async def _do_match(
         self, templates: Sequence[str], accept_any: bool, timeout: int = 10
-    ) -> List[Region]:
+    ) -> Awaitable[List[Region]]:
         """
         Platform-specific implementation of :meth:`match_all` and
         :meth:`match_any`.
@@ -143,7 +149,7 @@ class VideoInputBase(ABC):
         end_time = time.time() + float(timeout)
         while time.time() < end_time:
             try:
-                screenshot = self._grab_screenshot()
+                screenshot = await self._grab_screenshot()
             except RuntimeError:
                 continue
             matches = []

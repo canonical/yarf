@@ -16,7 +16,7 @@ class HidBase(ABC):
 
     @abstractmethod
     @keyword
-    def keys_combo(self, combo: list[str]):
+    async def keys_combo(self, combo: list[str]):
         """
         Press and release a combination of keys.
         :param combo: list of keys to press at the same time.
@@ -24,7 +24,7 @@ class HidBase(ABC):
 
     @abstractmethod
     @keyword
-    def type_string(self, string: str):
+    async def type_string(self, string: str):
         """
         Type a string.
 
@@ -33,7 +33,7 @@ class HidBase(ABC):
 
     @abstractmethod
     @keyword
-    def press_pointer_button(self, button: str) -> None:
+    async def press_pointer_button(self, button: str) -> None:
         """
         Press the specified pointer button.
 
@@ -42,7 +42,7 @@ class HidBase(ABC):
 
     @abstractmethod
     @keyword
-    def release_pointer_button(self, button: str) -> None:
+    async def release_pointer_button(self, button: str) -> None:
         """
         Release the specified pointer button.
 
@@ -51,7 +51,7 @@ class HidBase(ABC):
 
     @abstractmethod
     @keyword
-    def click_pointer_button(self, button: str) -> None:
+    async def click_pointer_button(self, button: str) -> None:
         """
         Press and release the specified pointer button.
 
@@ -60,19 +60,19 @@ class HidBase(ABC):
 
     @abstractmethod
     @keyword
-    def release_pointer_buttons(self) -> None:
+    async def release_pointer_buttons(self) -> None:
         """Release all pointer buttons."""
 
     @abstractmethod
     @keyword
-    def move_pointer_to_absolute(self, x: int, y: int) -> None:
+    async def move_pointer_to_absolute(self, x: int, y: int) -> None:
         """
         Move the virtual pointer to an absolute position within the output.
         """
 
     @abstractmethod
     @keyword
-    def move_pointer_to_proportional(self, x: float, y: float) -> None:
+    async def move_pointer_to_proportional(self, x: float, y: float) -> None:
         """
         Move the virtual pointer to a position proportional to the size
         of the output.
@@ -80,7 +80,7 @@ class HidBase(ABC):
 
     @abstractmethod
     @keyword
-    def walk_pointer_to_absolute(
+    async def walk_pointer_to_absolute(
         self,
         x: int,
         y: int,
@@ -94,7 +94,7 @@ class HidBase(ABC):
 
     @abstractmethod
     @keyword
-    def walk_pointer_to_proportional(
+    async def walk_pointer_to_proportional(
         self,
         x: float,
         y: float,
