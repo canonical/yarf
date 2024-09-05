@@ -1,5 +1,5 @@
+import asyncio
 import contextlib
-import time
 from typing import Optional
 
 from robot.api import logger
@@ -43,11 +43,10 @@ class Hid(HidBase):
 
         with zapper_api() as service:
             service.reset_hid_state()
-
-        self.move_pointer_to_proportional(0, 0)
+            service.hid_pointer(False, 0, 0)
 
     @keyword
-    def keys_combo(self, combo: list[str]):
+    async def keys_combo(self, combo: list[str]):
         """
         Press and release a combination of keys.
         :param combo: list of keys to press at the same time.
@@ -61,7 +60,7 @@ class Hid(HidBase):
             service.handle_hid_actions(actions)
 
     @keyword
-    def type_string(self, string: str):
+    async def type_string(self, string: str):
         """
         Type a string.
 
@@ -75,7 +74,7 @@ class Hid(HidBase):
             service.handle_hid_actions(actions)
 
     @keyword
-    def press_pointer_button(self, button: str) -> None:
+    async def press_pointer_button(self, button: str) -> None:
         """
         Press the specified pointer button.
 
@@ -86,7 +85,7 @@ class Hid(HidBase):
             service.hid_mouse(tuple(self.pressed_buttons), 0, 0, 0)
 
     @keyword
-    def release_pointer_button(self, button: str) -> None:
+    async def release_pointer_button(self, button: str) -> None:
         """
         Release the specified pointer button.
 
@@ -99,7 +98,7 @@ class Hid(HidBase):
                 service.hid_mouse(tuple(self.pressed_buttons), 0, 0, 0)
 
     @keyword
-    def click_pointer_button(self, button: str) -> None:
+    async def click_pointer_button(self, button: str) -> None:
         """
         Press and release the specified pointer button.
 
@@ -109,14 +108,14 @@ class Hid(HidBase):
             service.mouse_click((button,))
 
     @keyword
-    def release_pointer_buttons(self) -> None:
+    async def release_pointer_buttons(self) -> None:
         """Release all pointer buttons."""
         self.pressed_buttons.clear()
         with zapper_api() as service:
             service.hid_mouse(0, 0, 0, 0)
 
     @keyword
-    def move_pointer_to_absolute(self, x: int, y: int) -> None:
+    async def move_pointer_to_absolute(self, x: int, y: int) -> None:
         """
         Move the virtual pointer to an absolute position within the output.
         """
@@ -132,10 +131,10 @@ class Hid(HidBase):
         assert 0 <= y <= resolution[1], "Y coordinate outside of screen"
 
         proportional = (x / resolution[0], y / resolution[1])
-        self.move_pointer_to_proportional(*proportional)
+        await self.move_pointer_to_proportional(*proportional)
 
     @keyword
-    def move_pointer_to_proportional(
+    async def move_pointer_to_proportional(
         self,
         x: float,
         y: float,
@@ -158,7 +157,7 @@ class Hid(HidBase):
         self.pointer_position = [x, y]
 
     @keyword
-    def walk_pointer_to_absolute(
+    async def walk_pointer_to_absolute(
         self,
         x: int,
         y: int,
@@ -181,14 +180,14 @@ class Hid(HidBase):
         assert 0 <= y <= resolution[1], "Y coordinate outside of screen"
 
         proportional = (x / resolution[0], y / resolution[1])
-        self.walk_pointer_to_proportional(
+        await self.walk_pointer_to_proportional(
             *proportional,
             step_distance,
             delay,
         )
 
     @keyword
-    def walk_pointer_to_proportional(
+    async def walk_pointer_to_proportional(
         self,
         x: float,
         y: float,
@@ -221,9 +220,9 @@ class Hid(HidBase):
                 ):
                     return
 
-                self.move_pointer_to_proportional(
+                await self.move_pointer_to_proportional(
                     self.pointer_position[0] + step_x,
                     self.pointer_position[1] + step_y,
                     service,
                 )
-                time.sleep(delay)
+                await asyncio.sleep(delay)

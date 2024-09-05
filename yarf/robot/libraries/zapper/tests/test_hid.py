@@ -2,12 +2,18 @@
 This module provides tests for the Zapper HID library.
 """
 
-from unittest.mock import ANY, MagicMock, Mock, call, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, Mock, call, patch
 
 import pytest
 
 from yarf.robot.libraries.zapper import ZapperException
 from yarf.robot.libraries.zapper.Hid import Hid
+
+
+@pytest.fixture
+def mock_sleep():
+    with patch("asyncio.sleep", AsyncMock()) as mock:
+        yield mock
 
 
 class TestHid:
@@ -34,8 +40,9 @@ class TestHid:
             ]
         )
 
+    @pytest.mark.asyncio
     @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
-    def test_keys_combo(self, mock_zap):
+    async def test_keys_combo(self, mock_zap):
         """
         Test if the key combination is correctly translated and the
         action requested.
@@ -43,7 +50,7 @@ class TestHid:
         keys = ["LEFT_ALT", "F4"]
 
         zapper_hid = Hid()
-        zapper_hid.keys_combo(keys)
+        await zapper_hid.keys_combo(keys)
 
         service = mock_zap.return_value.__enter__.return_value
 
@@ -54,8 +61,9 @@ class TestHid:
             service.hid_translator.return_value
         )
 
+    @pytest.mark.asyncio
     @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
-    def test_type_string(self, mock_zap):
+    async def test_type_string(self, mock_zap):
         """
         Test if the string to type is correctly translated and the
         action requested.
@@ -63,7 +71,7 @@ class TestHid:
         string = "hello there."
 
         zapper_hid = Hid()
-        zapper_hid.type_string(string)
+        await zapper_hid.type_string(string)
 
         service = mock_zap.return_value.__enter__.return_value
 
@@ -74,8 +82,9 @@ class TestHid:
             service.hid_translator.return_value
         )
 
+    @pytest.mark.asyncio
     @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
-    def test_pointer_button_press_release(self, mock_zap):
+    async def test_pointer_button_press_release(self, mock_zap):
         """
         Test that button press and release works.
         """
@@ -83,9 +92,9 @@ class TestHid:
         zapper_hid = Hid()
 
         button1, button2 = Mock(), Mock()
-        zapper_hid.press_pointer_button(button1)
-        zapper_hid.press_pointer_button(button2)
-        zapper_hid.release_pointer_button(button1)
+        await zapper_hid.press_pointer_button(button1)
+        await zapper_hid.press_pointer_button(button2)
+        await zapper_hid.release_pointer_button(button1)
 
         service = mock_zap.return_value.__enter__.return_value
         service.hid_mouse.assert_has_calls(
@@ -101,32 +110,35 @@ class TestHid:
             service.hid_mouse.call_args_list[1].args[0]
         )
 
+    @pytest.mark.asyncio
     @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
-    def test_click_pointer_button(self, mock_zap):
+    async def test_click_pointer_button(self, mock_zap):
         """
         Test that button click calls the dedicated Zapper API.
         """
 
         zapper_hid = Hid()
-        zapper_hid.click_pointer_button("LEFT")
+        await zapper_hid.click_pointer_button("LEFT")
 
         service = mock_zap.return_value.__enter__.return_value
         service.mouse_click.assert_called_once_with(("LEFT",))
 
+    @pytest.mark.asyncio
     @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
-    def test_release_pointer_buttons(self, mock_zap):
+    async def test_release_pointer_buttons(self, mock_zap):
         """
         Test that function release all pressed buttons.
         """
 
         zapper_hid = Hid()
-        zapper_hid.release_pointer_buttons()
+        await zapper_hid.release_pointer_buttons()
 
         service = mock_zap.return_value.__enter__.return_value
         service.hid_mouse.assert_called_once_with(0, 0, 0, 0)
 
+    @pytest.mark.asyncio
     @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
-    def test_unpressed_button_release(self, mock_zap):
+    async def test_unpressed_button_release(self, mock_zap):
         """
         Test that unpressed button release doesn't raise.
         """
@@ -134,11 +146,12 @@ class TestHid:
         zapper_hid = Hid()
         service = mock_zap.return_value.__enter__.return_value
 
-        zapper_hid.release_pointer_button("LEFT")
+        await zapper_hid.release_pointer_button("LEFT")
         service.assert_not_called()
 
+    @pytest.mark.asyncio
     @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
-    def test_move_pointer_to_absolute(self, mock_zap):
+    async def test_move_pointer_to_absolute(self, mock_zap):
         """
         Test the mouse movement processing.
         """
@@ -147,7 +160,7 @@ class TestHid:
         service = mock_zap.return_value.__enter__.return_value
         service.get_hdmi_resolution.return_value = "1000x1000"
 
-        zapper_hid.move_pointer_to_absolute(100, 200)
+        await zapper_hid.move_pointer_to_absolute(100, 200)
         assert zapper_hid.pointer_position == [100 / 1000, 200 / 1000]
         service.hid_pointer.assert_called_with(
             False,
@@ -155,8 +168,9 @@ class TestHid:
             200 / 1000,
         )
 
+    @pytest.mark.asyncio
     @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
-    def test_move_pointer_to_absolute_raises(self, mock_zap):
+    async def test_move_pointer_to_absolute_raises(self, mock_zap):
         """
         Test the mouse movement processing.
         """
@@ -166,13 +180,14 @@ class TestHid:
         service.get_hdmi_resolution.return_value = "1000x1000"
 
         with pytest.raises(AssertionError):
-            zapper_hid.move_pointer_to_absolute(1001, 0)
+            await zapper_hid.move_pointer_to_absolute(1001, 0)
 
         with pytest.raises(AssertionError):
-            zapper_hid.move_pointer_to_absolute(0, 1001)
+            await zapper_hid.move_pointer_to_absolute(0, 1001)
 
+    @pytest.mark.asyncio
     @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
-    def test_move_pointer_to_proportional(self, mock_zap):
+    async def test_move_pointer_to_proportional(self, mock_zap):
         """
         Test the proportional mouse movement processing.
         """
@@ -180,12 +195,13 @@ class TestHid:
 
         service = mock_zap.return_value.__enter__.return_value
 
-        zapper_hid.move_pointer_to_proportional(0.5, 0.5)
+        await zapper_hid.move_pointer_to_proportional(0.5, 0.5)
         assert zapper_hid.pointer_position == [0.5, 0.5]
         service.hid_pointer.assert_called_with(False, 0.5, 0.5)
 
+    @pytest.mark.asyncio
     @patch("yarf.robot.libraries.zapper.Hid.zapper_api", MagicMock())
-    def test_move_pointer_to_proportional_raises(self):
+    async def test_move_pointer_to_proportional_raises(self):
         """
         Test the function raises an exception if the target position is
         out of screen.
@@ -193,14 +209,14 @@ class TestHid:
         zapper_hid = Hid()
 
         with pytest.raises(AssertionError):
-            zapper_hid.move_pointer_to_proportional(1.1, 0)
+            await zapper_hid.move_pointer_to_proportional(1.1, 0)
 
         with pytest.raises(AssertionError):
-            zapper_hid.move_pointer_to_proportional(0, 1.1)
+            await zapper_hid.move_pointer_to_proportional(0, 1.1)
 
-    @patch("time.sleep")
+    @pytest.mark.asyncio
     @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
-    def test_walk_pointer_to_proportional(self, mock_zap, mock_sleep):
+    async def test_walk_pointer_to_proportional(self, mock_zap, mock_sleep):
         """
         Test the function moves the pointer by the requested step to the
         target position given in proportional coordinates.
@@ -211,7 +227,7 @@ class TestHid:
         zapper_hid.pointer_position = [0.15, 0.35]
         service.hid_pointer.reset_mock()
 
-        zapper_hid.walk_pointer_to_proportional(0.5, 0.5, 0.05, 0.2)
+        await zapper_hid.walk_pointer_to_proportional(0.5, 0.5, 0.05, 0.2)
 
         expected_list = [
             (False, 0.2, 0.4),
@@ -236,9 +252,9 @@ class TestHid:
         assert zapper_hid.pointer_position[0] == pytest.approx(0.5)
         assert zapper_hid.pointer_position[1] == pytest.approx(0.5)
 
-    @patch("time.sleep")
+    @pytest.mark.asyncio
     @patch("yarf.robot.libraries.zapper.Hid.zapper_api")
-    def test_walk_pointer_to_absolute(self, mock_zap, mock_sleep):
+    async def test_walk_pointer_to_absolute(self, mock_zap, mock_sleep):
         """
         Test the function moves the pointer by the requested step to the
         target position given in absolute coordinates.
@@ -251,7 +267,7 @@ class TestHid:
         zapper_hid.pointer_position = [0.15, 0.35]
         service.hid_pointer.reset_mock()
 
-        zapper_hid.walk_pointer_to_absolute(100, 200, 0.05, 0.2)
+        await zapper_hid.walk_pointer_to_absolute(100, 200, 0.05, 0.2)
 
         expected_list = [
             (False, 0.1, 0.3),

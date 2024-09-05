@@ -13,67 +13,72 @@ from yarf.robot.libraries.zapper.VideoInput import HdmiIn, VideoInput
 class TestVideoInput:
     """This class provides tests for the Zapper-specific VideoInput class."""
 
+    @pytest.mark.asyncio
     @patch("yarf.robot.libraries.zapper.VideoInput.UsbCam")
     @patch("yarf.robot.libraries.zapper.VideoInput.HdmiIn")
-    def test_init(self, mock_hdmi, mock_cam):
+    async def test_init(self, mock_hdmi, mock_cam):
         """
         Test whether the init function initialize the requested
         video source.
         """
 
-        VideoInput().init("HDMI")
+        await VideoInput().init("HDMI")
         mock_hdmi.assert_called_once()
         mock_cam.assert_not_called()
 
         mock_hdmi.reset_mock()
         mock_cam.reset_mock()
 
-        VideoInput().init("CAMERA")
+        await VideoInput().init("CAMERA")
         mock_cam.assert_called_once()
         mock_hdmi.assert_not_called()
 
-    def test_init_exit(self):
+    @pytest.mark.asyncio
+    async def test_init_exit(self):
         """
         Test whether the init function exits in case
         the requested video source doesn't exist.
         """
 
         with pytest.raises(SystemExit):
-            VideoInput().init("UNKNOWN")
+            await VideoInput().init("UNKNOWN")
 
+    @pytest.mark.asyncio
     @patch("yarf.robot.libraries.zapper.VideoInput.HdmiIn")
-    def test_start_video_input(self, mock_hdmi):
+    async def test_start_video_input(self, mock_hdmi):
         """
         Test the start video function calls the inner,
         source-specific, function.
         """
         video_input = VideoInput()
-        video_input.init(source_name="HDMI")
-        video_input.start_video_input()
+        await video_input.init(source_name="HDMI")
+        await video_input.start_video_input()
         mock_hdmi.return_value.start_video_input.assert_called_once()
 
+    @pytest.mark.asyncio
     @patch("yarf.robot.libraries.zapper.VideoInput.HdmiIn")
-    def test_stop_video_input(self, mock_hdmi):
+    async def test_stop_video_input(self, mock_hdmi):
         """
         Test the stop video function calls the inner,
         source-specific, function.
         """
         video_input = VideoInput()
-        video_input.init(source_name="HDMI")
-        video_input.stop_video_input()
+        await video_input.init(source_name="HDMI")
+        await video_input.stop_video_input()
         mock_hdmi.return_value.stop_video_input.assert_called_once()
 
+    @pytest.mark.asyncio
     @patch("yarf.robot.libraries.zapper.VideoInput.HdmiIn")
-    def test_grab_screenshot(self, mock_hdmi):
+    async def test_grab_screenshot(self, mock_hdmi):
         """
         Test the grab_screenshot function calls the inner,
         source-specific, function.
         """
         video_input = VideoInput()
-        video_input.init(source_name="HDMI")
+        await video_input.init(source_name="HDMI")
         video_source = mock_hdmi.return_value
 
-        screenshot = video_input._grab_screenshot()
+        screenshot = await video_input._grab_screenshot()
         video_source.grab_screenshot.assert_called_once()
         assert screenshot == video_source.grab_screenshot.return_value
 

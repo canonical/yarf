@@ -2,7 +2,7 @@
 This module provides tests for the Video Input base module.
 """
 
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from RPA.recognition.templates import ImageNotFoundError
@@ -10,43 +10,63 @@ from RPA.recognition.templates import ImageNotFoundError
 from yarf.robot.libraries.video_input_base import VideoInputBase
 
 
+class StubVideoInput(VideoInputBase):
+    """
+    Test class with basic implementation for abstract
+    methods.
+    """
+
+    async def start_video_input(self):
+        pass
+
+    async def stop_video_input(self):
+        pass
+
+    async def _grab_screenshot(self):
+        pass
+
+
+@pytest.fixture
+def stub_videoinput():
+    vi = StubVideoInput()
+    vi._rpa_images = Mock()
+    vi._grab_screenshot = AsyncMock()
+    yield vi
+
+
+@pytest.fixture(autouse=True)
+def mock_time():
+    with patch("time.time") as p:
+        p.return_value = 0
+        yield p
+
+
+@pytest.fixture(autouse=True)
+def mock_to_image():
+    with patch("yarf.robot.libraries.video_input_base.to_image") as p:
+        yield p
+
+
+@pytest.fixture
+def mock_ocr():
+    with patch("yarf.robot.libraries.video_input_base.ocr") as p:
+        yield p
+
+
 class TestVideoInputBase:
     """
     This class provides tests for the VideoInputBase class
     """
 
-    class VideoInput(VideoInputBase):
-        """
-        Test class with basic implementation for abstract
-        methods.
-        """
-
-        screenshot = Mock()
-
-        def start_video_input(self):
-            pass
-
-        def stop_video_input(self):
-            pass
-
-        def _grab_screenshot(self):
-            return self.screenshot
-
-    @patch("time.time")
-    @patch("yarf.robot.libraries.video_input_base.to_image")
-    def test_match(self, mock_to_image, mock_time):
+    @pytest.mark.asyncio
+    async def test_match(self, stub_videoinput):
         """Check the *Match* keyword returns the regions found."""
 
-        video_input = self.VideoInput()
-        video_input._rpa_images = Mock()
-        video_input._grab_screenshot = Mock()
-        video_input._grab_screenshot.side_effect = [RuntimeError, None]
+        stub_videoinput._grab_screenshot.side_effect = [RuntimeError, None]
 
-        mock_time.return_value = 0
-        mock_to_image.return_value = Mock()
         mock_regions = [Mock()]
 
-        video_input._rpa_images.find_template_in_image.return_value = (
+        stub_videoinput._rpa_images.find_template_in_image.return_value = (
             mock_regions
         )
 
@@ -59,23 +79,17 @@ class TestVideoInputBase:
                 "path": "path",
             }
         ]
-        assert video_input.match("path") == expected
+        assert await stub_videoinput.match("path") == expected
 
-    @patch("time.time")
-    @patch("yarf.robot.libraries.video_input_base.to_image")
-    def test_match_any(self, mock_to_image, mock_time):
+    @pytest.mark.asyncio
+    async def test_match_any(self, stub_videoinput):
         """
         Check the *Match Any* keyword returns the regions found in the first
         matched template
         """
 
-        video_input = self.VideoInput()
-        video_input._rpa_images = Mock()
-
-        mock_time.return_value = 0
-        mock_to_image.return_value = Mock()
         mock_regions = [Mock()]
-        video_input._rpa_images.find_template_in_image.return_value = (
+        stub_videoinput._rpa_images.find_template_in_image.return_value = (
             mock_regions
         )
         expected = [
@@ -87,23 +101,17 @@ class TestVideoInputBase:
                 "path": "path1",
             }
         ]
-        assert video_input.match_any(["path1", "path2"]) == expected
+        assert await stub_videoinput.match_any(["path1", "path2"]) == expected
 
-    @patch("time.time")
-    @patch("yarf.robot.libraries.video_input_base.to_image")
-    def test_match_all(self, mock_to_image, mock_time):
+    @pytest.mark.asyncio
+    async def test_match_all(self, stub_videoinput):
         """
         Check the *Match All* keyword returns the regions found only
         when every template matches.
         """
 
-        video_input = self.VideoInput()
-        video_input._rpa_images = Mock()
-
-        mock_time.return_value = 0
-        mock_to_image.return_value = Mock()
         mock_regions = [Mock()]
-        video_input._rpa_images.find_template_in_image.side_effect = [
+        stub_videoinput._rpa_images.find_template_in_image.side_effect = [
             # At first attempt the second template doesn't match
             mock_regions,
             ValueError,
@@ -127,104 +135,94 @@ class TestVideoInputBase:
                 "path": "path2",
             },
         ]
-        assert video_input.match_all(["path1", "path2"]) == expected
+        assert await stub_videoinput.match_all(["path1", "path2"]) == expected
 
-    @patch("time.time")
-    @patch("yarf.robot.libraries.video_input_base.to_image", Mock())
-    def test_match_fail(self, mock_time):
+    @pytest.mark.asyncio
+    async def test_match_fail(self, stub_videoinput, mock_time):
         """Check the function returns correctly unless there's no match."""
 
-        video_input = self.VideoInput()
-        video_input._rpa_images = Mock()
-        video_input._log_failed_match = Mock()
+        stub_videoinput._log_failed_match = Mock()
 
         # Screenshot not valid
-        video_input._rpa_images.find_template_in_image.side_effect = ValueError
+        stub_videoinput._rpa_images.find_template_in_image.side_effect = (
+            ValueError
+        )
         mock_time.side_effect = [0, 0, 2]
 
         with pytest.raises(ImageNotFoundError):
-            video_input.match("path", timeout=1)
-        video_input._log_failed_match.assert_called_with(
-            video_input.screenshot, "path"
+            await stub_videoinput.match("path", timeout=1)
+        stub_videoinput._log_failed_match.assert_called_with(
+            stub_videoinput._grab_screenshot.return_value, "path"
         )
 
         # Template not found
-        video_input._rpa_images.find_template_in_image.side_effect = (
+        stub_videoinput._rpa_images.find_template_in_image.side_effect = (
             ImageNotFoundError
         )
         mock_time.side_effect = [0, 0, 2]
 
         with pytest.raises(ImageNotFoundError):
-            video_input.match("path", timeout=1)
+            await stub_videoinput.match("path", timeout=1)
 
-    @patch("time.time")
-    @patch("yarf.robot.libraries.video_input_base.to_image")
-    def test_match_converts_to_rgb(self, mock_to_image, mock_time):
+    @pytest.mark.asyncio
+    async def test_match_converts_to_rgb(self, stub_videoinput, mock_to_image):
         """
         Check the Match keyword accepts non-RGB images and converts them
         """
-        video_input = self.VideoInput()
-        video_input._rpa_images = Mock()
-
-        mock_time.return_value = 0
-        mock_to_image.return_value = Mock()
         mock_to_image.return_value.mode = "L"
         mock_regions = [Mock()]
-        video_input._rpa_images.find_template_in_image.return_value = (
+        stub_videoinput._rpa_images.find_template_in_image.return_value = (
             mock_regions
         )
-        video_input.match("path")
+        await stub_videoinput.match("path")
         mock_to_image.return_value.convert.assert_called_with("RGB")
 
-    @patch("yarf.robot.libraries.video_input_base.ocr")
-    def test_read_text(self, mock_ocr):
+    @pytest.mark.asyncio
+    async def test_read_text(self, stub_videoinput, mock_ocr):
         """
         Test whether the function grabs a new screenshot and runs OCR on it.
         """
-        video_input = self.VideoInput()
+        await stub_videoinput.read_text()
 
-        video_input.read_text()
+        mock_ocr.read.assert_called_once_with(
+            stub_videoinput._grab_screenshot.return_value
+        )
 
-        mock_ocr.read.assert_called_once_with(video_input.screenshot)
-
-    @patch("yarf.robot.libraries.video_input_base.ocr")
-    def test_read_text_image(self, mock_ocr):
+    @pytest.mark.asyncio
+    async def test_read_text_image(self, stub_videoinput, mock_ocr):
         """Test whether the function runs OCR on the provided image."""
 
-        video_input = self.VideoInput()
         image = Mock()
 
-        video_input.read_text(image)
+        await stub_videoinput.read_text(image)
         mock_ocr.read.assert_called_once_with(image)
 
-    def test_restart_video_input(self):
+    @pytest.mark.asyncio
+    async def test_restart_video_input(self, stub_videoinput):
         """
         Test the restart video function calls the inner
         relative functions.
         """
+        stub_videoinput.start_video_input = AsyncMock()
+        stub_videoinput.stop_video_input = AsyncMock()
 
-        video_input = self.VideoInput()
-        video_input.start_video_input = Mock()
-        video_input.stop_video_input = Mock()
+        await stub_videoinput.restart_video_input()
 
-        video_input.restart_video_input()
-
-        video_input.stop_video_input.assert_called_once()
-        video_input.start_video_input.assert_called_once()
+        stub_videoinput.stop_video_input.assert_called_once()
+        stub_videoinput.start_video_input.assert_called_once()
 
     @patch("yarf.robot.libraries.video_input_base.logger")
     @patch("yarf.robot.libraries.video_input_base.Image")
-    def test_log_failed_match(self, mock_image, mock_logger):
+    def test_log_failed_match(self, mock_image, mock_logger, stub_videoinput):
         """
         Test whether the function converts the images to base64
         and add them to the HTML Robot log.
         """
 
-        video_input = self.VideoInput()
         image = Mock()
         template = mock_image.open.return_value
 
-        video_input._log_failed_match(image, "template")
+        stub_videoinput._log_failed_match(image, "template")
 
         mock_image.open.assert_called_with("template")
         template.convert.assert_called_with("RGB")

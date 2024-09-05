@@ -123,7 +123,7 @@ class VideoInput(VideoInputBase):
     """
 
     @keyword
-    def init(self, source_name: str):
+    async def init(self, source_name: str):
         """Handles platform-specific initialization."""
         try:
             source = Source[source_name]
@@ -138,14 +138,14 @@ class VideoInput(VideoInputBase):
             self._source = UsbCam()
 
     @keyword
-    def start_video_input(self):
+    async def start_video_input(self):
         """Start video stream process if needed."""
         self._source.start_video_input()
 
     @keyword
-    def stop_video_input(self):
+    async def stop_video_input(self):
         """Start video stream process if needed."""
         self._source.stop_video_input()
 
-    def _grab_screenshot(self) -> Image.Image:
+    async def _grab_screenshot(self) -> Image.Image:
         return self._source.grab_screenshot()
