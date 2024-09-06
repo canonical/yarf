@@ -3,6 +3,7 @@ This module provides the Robot interface for Video-driven interaction
 and assertion.
 """
 
+import asyncio
 import base64
 import os
 import time
@@ -147,9 +148,11 @@ class VideoInputBase(ABC):
             for template, image in template_images.items()
         }
         end_time = time.time() + float(timeout)
-        while time.time() < end_time:
+        while (now := time.time()) < end_time:
             try:
-                screenshot = await self._grab_screenshot()
+                screenshot = await asyncio.wait_for(
+                    self._grab_screenshot(), end_time - now
+                )
             except RuntimeError:
                 continue
             matches = []
