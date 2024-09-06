@@ -2,6 +2,7 @@
 This module provides tests for the Video Input base module.
 """
 
+import asyncio
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -228,3 +229,13 @@ class TestVideoInputBase:
         template.convert.assert_called_with("RGB")
 
         mock_logger.info.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_screenshot_timeout(self, stub_videoinput):
+        async def timeout():
+            await asyncio.sleep(0.2)
+
+        stub_videoinput._grab_screenshot = timeout
+
+        with pytest.raises(asyncio.exceptions.TimeoutError):
+            await stub_videoinput.match("path", timeout=0.1)
