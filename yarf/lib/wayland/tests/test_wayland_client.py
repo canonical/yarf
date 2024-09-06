@@ -5,6 +5,8 @@ import pytest
 
 from yarf.lib.wayland.wayland_client import WaylandClient
 
+from .fixtures import mock_pwc  # noqa:F401
+
 
 class StubWaylandClient(WaylandClient):
     def registry_global(self, *args):
@@ -25,14 +27,8 @@ def stub_wc():
     yield wc
 
 
-@pytest.fixture(autouse=True)
-def mock_pwc():
-    with patch("pywayland.client") as mock:
-        yield mock
-
-
 class TestWaylandClient:
-    def test_init_display(self, stub_wc, mock_pwc):
+    def test_init_display(self, stub_wc, mock_pwc):  # noqa:F811
         assert stub_wc.display is mock_pwc.Display.return_value
         mock_pwc.Display.assert_called_once_with(sentinel.display_name)
 

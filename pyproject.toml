@@ -66,6 +66,11 @@ extend-exclude = [
 
 [tool.pytest.ini_options]
 addopts = "--doctest-modules --ignore=docs/ --ignore=hatch_build.py"
+asyncio_default_fixture_loop_scope = "auto"
+markers = [
+    "output_size",
+    "wayland_globals",
+]
 
 [tool.coverage.run]
 omit = [
