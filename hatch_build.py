@@ -22,4 +22,6 @@ def generate_protocol(name: str, imports: Dict[str, str]) -> Dict[str, str]:
 
 class CustomBuildHook(BuildHookInterface):
     def initialize(self, version, build_data):
-        generate_protocol("wayland", {})
+        core_imports = generate_protocol("wayland", {})
+        generate_protocol("wlr-virtual-pointer-unstable-v1", core_imports)
+        generate_protocol("xdg-output-unstable-v1", core_imports)
