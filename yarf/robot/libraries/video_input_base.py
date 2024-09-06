@@ -6,6 +6,8 @@ and assertion.
 import asyncio
 import base64
 import os
+import subprocess
+import tempfile
 import time
 from abc import ABC, abstractmethod
 from io import BytesIO
@@ -26,11 +28,49 @@ class VideoInputBase(ABC):
     """
 
     ROBOT_LIBRARY_SCOPE = "GLOBAL"
+    ROBOT_LISTENER_API_VERSION = 3
     TOLERANCE = 0.8
 
     def __init__(self):
         """Initialize the Video Input."""
         self._rpa_images = Images()
+        self.ROBOT_LIBRARY_LISTENER = self
+        self._frame_count: int = 0
+        self._screenshots_dir: Optional[tempfile.TemporaryDirectory] = None
+
+    def _start_suite(self, data, result) -> None:
+        self._frame_count = 0
+        self._screenshots_dir = tempfile.TemporaryDirectory()
+
+    def _end_suite(self, data, result) -> None:
+        if not result.passed and self._frame_count > 0:
+            assert self._screenshots_dir
+            video_path = f"{self._screenshots_dir.name}/video.webm"
+            try:
+                subprocess.run(
+                    (
+                        "ffmpeg",
+                        "-f",
+                        "image2",
+                        "-r",
+                        "5",
+                        "-pattern_type",
+                        "glob",
+                        "-i",
+                        f"{self._screenshots_dir.name}/*.png",
+                        video_path,
+                    ),
+                    capture_output=True,
+                    check=True,
+                )
+            except (
+                FileNotFoundError,
+                PermissionError,
+                subprocess.CalledProcessError,
+            ) as ex:
+                logger.warn(ex)
+            else:
+                self._log_video(video_path)
 
     @keyword
     def init(self, *args, **kwargs):
@@ -155,6 +195,13 @@ class VideoInputBase(ABC):
                 )
             except RuntimeError:
                 continue
+            else:
+                assert self._screenshots_dir
+                self._frame_count += 1
+                screenshot.save(
+                    f"{self._screenshots_dir.name}/{self._frame_count:010d}.png",
+                    compress_level=1,
+                )
             matches = []
             for path, image in template_images.items():
                 try:
@@ -230,3 +277,11 @@ class VideoInputBase(ABC):
             template_string + image_string,
             html=True,
         )
+
+    def _log_video(self, video_path: str):
+        with open(video_path, "rb") as f:
+            logger.error(
+                '<video controls style="max-width: 50%" src="data:video/webm;base64,'
+                f'{base64.b64encode(f.read()).decode()}" />',
+                html=True,
+            )

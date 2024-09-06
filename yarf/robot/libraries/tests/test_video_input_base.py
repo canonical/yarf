@@ -3,7 +3,16 @@ This module provides tests for the Video Input base module.
 """
 
 import asyncio
-from unittest.mock import AsyncMock, Mock, patch
+import subprocess
+from unittest.mock import (
+    ANY,
+    AsyncMock,
+    Mock,
+    call,
+    mock_open,
+    patch,
+    sentinel,
+)
 
 import pytest
 from RPA.recognition.templates import ImageNotFoundError
@@ -31,7 +40,8 @@ class StubVideoInput(VideoInputBase):
 def stub_videoinput():
     vi = StubVideoInput()
     vi._rpa_images = Mock()
-    vi._grab_screenshot = AsyncMock()
+    vi._grab_screenshot = AsyncMock(return_value=Mock())
+    vi._start_suite(None, None)
     yield vi
 
 
@@ -45,6 +55,25 @@ def mock_time():
 @pytest.fixture(autouse=True)
 def mock_to_image():
     with patch("yarf.robot.libraries.video_input_base.to_image") as p:
+        yield p
+
+
+@pytest.fixture()
+def mock_logger():
+    with patch("yarf.robot.libraries.video_input_base.logger") as p:
+        yield p
+
+
+@pytest.fixture(autouse=True)
+def mock_run():
+    with patch("subprocess.run") as p:
+        yield p
+
+
+@pytest.fixture(autouse=True)
+def mock_tempdir():
+    with patch("tempfile.TemporaryDirectory") as p:
+        p.return_value.name = sentinel.tempdir
         yield p
 
 
@@ -63,7 +92,10 @@ class TestVideoInputBase:
     async def test_match(self, stub_videoinput):
         """Check the *Match* keyword returns the regions found."""
 
-        stub_videoinput._grab_screenshot.side_effect = [RuntimeError, None]
+        stub_videoinput._grab_screenshot.side_effect = [
+            RuntimeError,
+            stub_videoinput._grab_screenshot.return_value,
+        ]
 
         mock_regions = [Mock()]
 
@@ -81,6 +113,23 @@ class TestVideoInputBase:
             }
         ]
         assert await stub_videoinput.match("path") == expected
+        stub_videoinput._grab_screenshot.return_value.save.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_match_no_video(self, stub_videoinput, mock_run):
+        """Check that successful matches don't log video"""
+
+        stub_videoinput._rpa_images.find_template_in_image.return_value = [
+            Mock()
+        ]
+
+        await stub_videoinput.match("path")
+
+        stub_videoinput._grab_screenshot.return_value.save.assert_called_once()
+        stub_videoinput._log_video = Mock()
+        stub_videoinput._end_suite(None, Mock(passed=True))
+        stub_videoinput._log_video.assert_not_called()
+        mock_run.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_match_any(self, stub_videoinput):
@@ -137,6 +186,9 @@ class TestVideoInputBase:
             },
         ]
         assert await stub_videoinput.match_all(["path1", "path2"]) == expected
+        assert (
+            stub_videoinput._grab_screenshot.return_value.save.call_count == 2
+        )
 
     @pytest.mark.asyncio
     async def test_match_fail(self, stub_videoinput, mock_time):
@@ -166,7 +218,68 @@ class TestVideoInputBase:
             await stub_videoinput.match("path", timeout=1)
 
     @pytest.mark.asyncio
-    async def test_match_converts_to_rgb(self, stub_videoinput, mock_to_image):
+    async def test_match_fail_logs_video(
+        self, stub_videoinput, mock_time, mock_run
+    ):
+        """Check that a video of all screenshots grabbed is logged on test failure"""
+
+        stub_videoinput._log_failed_match = Mock()
+        stub_videoinput._log_video = Mock()
+
+        stub_videoinput._rpa_images.find_template_in_image.side_effect = (
+            ImageNotFoundError
+        )
+        mock_time.side_effect = [0, 0, 0, 2]
+
+        with pytest.raises(ImageNotFoundError):
+            await stub_videoinput.match("path", timeout=1)
+
+        assert (
+            stub_videoinput._grab_screenshot.return_value.save.call_args_list
+            == [
+                call("sentinel.tempdir/0000000001.png", compress_level=ANY),
+                call("sentinel.tempdir/0000000002.png", compress_level=ANY),
+            ]
+        )
+        stub_videoinput._end_suite(None, Mock(passed=False))
+        mock_run.assert_called_once()
+        assert set(mock_run.call_args.args[0]) & {
+            "ffmpeg",
+            "sentinel.tempdir/*.png",
+            "sentinel.tempdir/video.webm",
+        }, "`ffmpeg` wasn't called right"
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "run_error",
+        (
+            FileNotFoundError,
+            PermissionError,
+            subprocess.CalledProcessError(None, None),
+        ),
+    )
+    async def test_match_fail_logs_ffmpeg_warning(
+        self, stub_videoinput, mock_logger, mock_time, mock_run, run_error
+    ):
+        """Check that a warning is logged on failure if `ffmpeg` is unavailable or fails"""
+
+        stub_videoinput._log_failed_match = Mock()
+
+        stub_videoinput._rpa_images.find_template_in_image.side_effect = (
+            ImageNotFoundError
+        )
+        mock_time.side_effect = [0, 0, 2]
+
+        with pytest.raises(ImageNotFoundError):
+            await stub_videoinput.match("path", timeout=1)
+
+        mock_run.side_effect = run_error
+        stub_videoinput._end_suite(None, Mock(passed=False))
+        mock_run.assert_called_once()
+        mock_logger.warn.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_match_converts_to_rgb(self, mock_to_image, stub_videoinput):
         """
         Check the Match keyword accepts non-RGB images and converts them
         """
@@ -212,9 +325,8 @@ class TestVideoInputBase:
         stub_videoinput.stop_video_input.assert_called_once()
         stub_videoinput.start_video_input.assert_called_once()
 
-    @patch("yarf.robot.libraries.video_input_base.logger")
     @patch("yarf.robot.libraries.video_input_base.Image")
-    def test_log_failed_match(self, mock_image, mock_logger, stub_videoinput):
+    def test_log_failed_match(self, mock_image, stub_videoinput, mock_logger):
         """
         Test whether the function converts the images to base64
         and add them to the HTML Robot log.
@@ -239,3 +351,20 @@ class TestVideoInputBase:
 
         with pytest.raises(asyncio.exceptions.TimeoutError):
             await stub_videoinput.match("path", timeout=0.1)
+
+    def test_log_video(self, stub_videoinput, mock_logger):
+        """
+        Test that _log_video() logs the given path as error.
+        """
+
+        with patch(
+            "yarf.robot.libraries.video_input_base.open",
+            mock_open(read_data=b""),
+        ) as m:
+            stub_videoinput._log_video("videopath")
+            m.assert_called_once_with("videopath", ANY)
+
+        mock_logger.error.assert_called_once_with(ANY, html=True)
+        assert mock_logger.error.call_args.args[0].startswith(
+            "<video controls"
+        )
