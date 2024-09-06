@@ -105,3 +105,27 @@ Example_IP=<Example_IP> yarf <path-to-suite>/suite
 ```
 
 <u><center>Code Snippet 7: `yarf` command without `--platform` option</center></u>
+
+## Debug failing tests
+
+When developing tests, you will often need more feedback than the command line gives you. `yarf` will output
+a handful of files in the `results` folder:
+
+```
+suite
+└── results
+    ├── log.html
+    ├── output.xml
+    └── report.html
+```
+
+You can read about them in [Robot's documentation](https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html#different-output-files).
+
+When any test fails, YARF adds two important features here:
+
+- For each failing test, it will log the template(s) and the last screenshot.
+  This allows you to easily see why the template(s) didn't match. We also recommend that you cut out
+  your template(s) from the screenshot provided, so you get them pixel-perfect.
+- For the whole suite, it will log a video with all screenshots taken leading up to the failure.
+  You'll be able to see what went wrong _before_ the test failed and hopefully identify the problem
+  directly from the log file, without having to look at the test run live.
