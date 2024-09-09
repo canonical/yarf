@@ -1,11 +1,12 @@
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "yarf"
 authors = [
     {name = "Hou Nam Chiang", email = "douglas.chiang@canonical.com"},
+    {name = "Michał Sawicz", email = "michal.sawicz@canonical.com"},
     {name = "Paolo Gentili", email = "paolo.gentili@canonical.com"},
 ]
 description = """
@@ -40,12 +41,10 @@ develop = [
 [project.scripts]
 yarf = "yarf.main:main"
 
-[tool.setuptools.package-data]
-"yarf.robot.resources" = ["*.resource"]
-
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["yarf", "yarf.*"]
+[tool.hatch.build]
+exclude = [
+  "tests",
+]
 
 [tool.isort]
 profile = "black"
