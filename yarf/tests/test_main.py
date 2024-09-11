@@ -1,4 +1,6 @@
 import sys
+import tempfile
+from pathlib import Path
 from textwrap import dedent
 from unittest.mock import MagicMock, Mock, patch
 
@@ -8,12 +10,7 @@ from pyfakefs.fake_filesystem_unittest import FakeFilesystem
 from robot.api import TestSuite
 
 from yarf import main
-from yarf.main import (
-    RESULT_PATH,
-    get_robot_settings,
-    parse_arguments,
-    run_robot_suite,
-)
+from yarf.main import get_robot_settings, parse_arguments, run_robot_suite
 from yarf.robot.libraries import SUPPORTED_PLATFORMS
 from yarf.robot.libraries.Example import Example
 
@@ -36,6 +33,11 @@ class TestMain:
         argv = ["--variant", "var1/var2/var3", "suite-path"]
         args = parse_arguments(argv)
         assert args.variant == "var1/var2/var3"
+        assert args.suite == "suite-path"
+
+        argv = ["--outdir", "out/dir", "suite-path"]
+        args = parse_arguments(argv)
+        assert args.outdir == "out/dir"
         assert args.suite == "suite-path"
 
         SUPPORTED_PLATFORMS.clear()
@@ -170,6 +172,7 @@ class TestMain:
         the specified variables and output directory.
         """
         variables = ["VAR1:value1", "VAR2:value2"]
+        outdir = Path(tempfile.gettempdir()) / "yarf-outdir"
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Example"] = Example
 
@@ -177,25 +180,27 @@ class TestMain:
         mock_test_suite.run.return_value.return_code = 0
         mock_get_robot_settings.return_value = {}
         run_robot_suite(
-            mock_test_suite, SUPPORTED_PLATFORMS["Example"], variables
+            mock_test_suite, SUPPORTED_PLATFORMS["Example"], variables, outdir
         )
         mock_get_robot_settings.assert_called_once()
         mock_test_suite.run.assert_called_once_with(
-            variable=variables, outputdir=RESULT_PATH
+            variable=variables, outputdir=outdir
         )
         mock_rebot.assert_called_once_with(
-            f"{RESULT_PATH}/output.xml", outputdir=RESULT_PATH
+            f"{outdir}/output.xml", outputdir=outdir
         )
 
     @patch("yarf.main.get_robot_settings")
     def test_run_robot_suite_with_errors(
-        self, mock_get_robot_settings: MagicMock
+        self, mock_get_robot_settings: MagicMock, fs: FakeFilesystem
     ) -> None:
         """
         Test if the function raise exception if test suite
         did not run successfully.
         """
 
+        outdir = "/testoutdir"
+        fs.create_dir(outdir)
         variables = ["VAR1:value1", "VAR2:value2"]
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Example"] = Example
@@ -204,9 +209,12 @@ class TestMain:
         mock_test_suite = Mock()
         mock_test_suite.run.return_value.return_code = 1
         mock_test_suite.run.return_value.errors.messages = [Mock()]
-        with pytest.raises(Exception):
+        with patch("yarf.main.robot_in_path"), pytest.raises(Exception):
             run_robot_suite(
-                mock_test_suite, SUPPORTED_PLATFORMS["Example"], variables
+                mock_test_suite,
+                SUPPORTED_PLATFORMS["Example"],
+                variables,
+                outdir,
             )
 
     @patch("yarf.main.TestSuite.from_file_system")
@@ -229,5 +237,33 @@ class TestMain:
 
         mock_test_suite.assert_called_once()
         main.run_robot_suite.assert_called_once_with(
-            mock_test_suite(), SUPPORTED_PLATFORMS["Example"], []
+            mock_test_suite(),
+            SUPPORTED_PLATFORMS["Example"],
+            [],
+            Path(tempfile.gettempdir()) / "yarf-outdir",
+        )
+
+    @patch("yarf.main.TestSuite.from_file_system")
+    def test_main_custom_outdir(
+        self, mock_test_suite: MagicMock, fs: FakeFilesystem
+    ) -> None:
+        """
+        Test whether the function runs a Robot Test Suite
+        with specified path, platform and output directory.
+        """
+
+        test_path = "suite-path"
+        outdir = "outdir"
+        fs.create_file(f"{test_path}/test.robot")
+        fs.create_dir(outdir)
+        SUPPORTED_PLATFORMS.clear()
+        SUPPORTED_PLATFORMS["Example"] = Example
+
+        main.run_robot_suite = Mock()
+        argv = [test_path, "--outdir", outdir]
+        main.main(argv)
+
+        mock_test_suite.assert_called_once()
+        main.run_robot_suite.assert_called_once_with(
+            mock_test_suite(), SUPPORTED_PLATFORMS["Example"], [], Path(outdir)
         )

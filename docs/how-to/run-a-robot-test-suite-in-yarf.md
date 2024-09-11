@@ -7,6 +7,7 @@ In general, there are three steps:
 1. [Identify the platform](#identify-the-platform)
 1. [Provide the correct variant](#provide-the-correct-variant)
 1. [Run the `yarf` command](#run-the-yarf-command)
+1. [Debug failing tests](#debug-failing-tests)
 
 ## Prepare the test suite
 
@@ -90,14 +91,15 @@ If assets need to be shared between variant directories, symbolic links may be u
 
 ## Run the `yarf` command
 
-To run a test suite named `<suite>` using a given `<platform>` and a `<variant>`, the `yarf` command would be:
+To run a test suite named `<suite>` using a given `<platform>`, a `<variant>` and a `<outdir>`, the `yarf` command would be:
 
 ```
-yarf --variant <variant> --platform <platform> <path-to-test-suite>/suite
+yarf --variant <variant> --platform <platform> --outdir <outdir> <path-to-test-suite>/suite
 ```
 
 <u><center>Code Snippet 6: `yarf` command</center></u>
 
+For information about the option `--outdir`, please refer to the section [Debug failing tests](#debug-failing-tests).
 If the `--platform` argument is not specified, then YARF will use Example as the platform:
 
 ```
@@ -109,11 +111,11 @@ Example_IP=<Example_IP> yarf <path-to-suite>/suite
 ## Debug failing tests
 
 When developing tests, you will often need more feedback than the command line gives you. `yarf` will output
-a handful of files in the `results` folder:
+log files in the `tmp/yarf-outdir` directory. The user can override the target path with the `--outdir` argument:
 
 ```
-suite
-└── results
+tmp
+└── yarf-outdir
     ├── log.html
     ├── output.xml
     └── report.html

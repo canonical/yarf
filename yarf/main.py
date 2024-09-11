@@ -1,8 +1,10 @@
 import logging
-import os
+import shutil
 import sys
+import tempfile
 from argparse import ArgumentParser, Namespace
 from importlib import metadata
+from pathlib import Path
 
 from packaging import version
 from robot import rebot
@@ -14,7 +16,6 @@ from yarf.robot.suite_parser import SuiteParser
 
 _logger = logging.getLogger(__name__)
 YARF_VERSION = version.parse(metadata.version("yarf"))
-RESULT_PATH = f"{os.getcwd()}/results"
 
 
 def parse_arguments(argv: list[str] = None) -> Namespace:
@@ -58,6 +59,12 @@ def parse_arguments(argv: list[str] = None) -> Namespace:
     )
 
     top_level_parser.add_argument(
+        "--outdir",
+        type=str,
+        help="Specify output directory.",
+    )
+
+    top_level_parser.add_argument(
         "suite",
         type=str,
         default=None,
@@ -90,16 +97,19 @@ def get_robot_settings(test_suite: TestSuite) -> dict[str, str]:
 
 
 def run_robot_suite(
-    test_suite: TestSuite, lib_cls: PlatformBase, variables: list[str]
+    test_suite: TestSuite,
+    lib_cls: PlatformBase,
+    variables: list[str],
+    outdir: Path,
 ) -> None:
     robot_settings = get_robot_settings(test_suite)
     with robot_in_path(lib_cls.get_pkg_path()):
         result = test_suite.run(
-            variable=variables, outputdir=RESULT_PATH, **robot_settings
+            variable=variables, outputdir=outdir, **robot_settings
         )
 
     # Generate HTML report.html and log.html using rebot().
-    rebot(f"{RESULT_PATH}/output.xml", outputdir=RESULT_PATH)
+    rebot(f"{outdir}/output.xml", outputdir=outdir)
     if result.return_code:
         for error_message in result.errors.messages:
             _logger.error("ROBOT: %s", error_message.message)
@@ -111,15 +121,22 @@ def main(argv: list[str] = None) -> None:
     args = parse_arguments(argv)
     logging.basicConfig(level=args.verbosity)
 
+    outdir = Path(
+        args.outdir if args.outdir else f"{tempfile.gettempdir()}/yarf-outdir"
+    )
+    if outdir.exists():
+        _logger.warning(f"Removing existing output directory: {outdir}")
+        shutil.rmtree(outdir)
+
     variables = []
     suite_parser = SuiteParser(args.suite)
     lib_cls = SUPPORTED_PLATFORMS.get(args.platform)
     with suite_parser.suite_in_temp_folder(args.variant) as temp_folder_path:
         test_suite = TestSuite.from_file_system(temp_folder_path)
         test_suite.name = suite_parser.suite_path.absolute().name
-        run_robot_suite(test_suite, lib_cls, variables)
+        run_robot_suite(test_suite, lib_cls, variables, outdir)
 
-    _logger.info(f"Results exported to: {RESULT_PATH}")
+    _logger.info(f"Results exported to: {outdir}")
 
 
 if __name__ == "__main__":
