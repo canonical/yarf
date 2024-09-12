@@ -2,12 +2,12 @@
 Documentation       Keyword definitions for specialised functionality
 ...                 for Keyboard, Mouse and Video-based manipulation.
 ...
-...                 These keywords rely on VIDEO library to be initialized
-...                 using the VIDEO.Init keyword. The initialization is
+...                 These keywords rely on PlatformVideoInput library to be initialized
+...                 using the PlatformVideoInput.Init keyword. The initialization is
 ...                 platform-specific.
 
-Library             Hid.py    AS    HID
-Library             VideoInput.py    AS    VIDEO
+Library             Hid.py    AS    PlatformHid
+Library             VideoInput.py    AS    PlatformVideoInput
 
 
 *** Keywords ***
@@ -25,10 +25,10 @@ Press Combo And Match
 
     ${match}=               Set Variable            ${FALSE}
     FOR    ${index}    IN RANGE    ${tentatives}
-        HID.Keys Combo          ${keys-combo}
+        PlatformHid.Keys Combo                          ${keys-combo}
         Sleep                   ${delay}
         ${match}=               Run Keyword And Return Status
-        ...                     VIDEO.Match             ${template}             0.1
+        ...                     PlatformVideoInput.Match                        ${template}             0.1
         IF    ${match}    BREAK
     END
 
@@ -38,7 +38,7 @@ Press And Wait For Match
     [Arguments]             ${keys-combo}           ${template}             ${timeout}=10
 
     Keys Combo              ${keys-combo}
-    VIDEO.Match             ${template}             ${timeout}
+    PlatformVideoInput.Match                        ${template}             ${timeout}
 
 Get Center Of ${region}
     [Documentation]    Get the center point of a region.
@@ -73,7 +73,7 @@ Move Pointer To (${x}, ${y})
     ...    Embedded arguments:
     ...    - ${x}: Integer absolute x-coordinate to move the pointer to.
     ...    - ${y}: Integer absolute y-coordinate to move the pointer to.
-    HID.Move Pointer To Absolute                    ${x}                    ${y}
+    PlatformHid.Move Pointer To Absolute            ${x}                    ${y}
 
 Move Pointer To ${destination}
     [Documentation]    Move the pointer to an absolute position or image
@@ -90,12 +90,12 @@ Move Pointer To ${destination}
     ...    Absolute position of the pointer after the move, as a tuple (x, y)
     ...    of integers.
     IF    ${{isinstance($destination, str)}}
-        ${regions}=             VIDEO.Match             ${destination}
+        ${regions}=             PlatformVideoInput.Match                        ${destination}
         ${position}=            Get Center Of ${regions}[0]
     ELSE
         ${position}=            Set Variable            ${destination}
     END
-    HID.Move Pointer To Absolute                    ${position}[0]          ${position}[1]
+    PlatformHid.Move Pointer To Absolute            ${position}[0]          ${position}[1]
     RETURN                  ${position}
 
 Move Pointer To Proportional (${x}, ${y})
@@ -113,7 +113,7 @@ Move Pointer To Proportional (${x}, ${y})
     ...    Return:
     ...    Absolute position of the pointer after the move, as a tuple (x, y)
     ...    of integers.
-    ${position}=            HID.Move Pointer To Proportional                ${x}                    ${y}
+    ${position}=            PlatformHid.Move Pointer To Proportional        ${x}                    ${y}
     RETURN                  ${position}
 
 Walk Pointer To (${x}, ${y})
@@ -128,7 +128,7 @@ Walk Pointer To (${x}, ${y})
     ...    - ${delay} (optional): Time to sleep after each step, in seconds.
     ...    Default is 0.01.
     [Arguments]             ${step_distance}=16     ${delay}=0.01
-    HID.Walk Pointer To Absolute
+    PlatformHid.Walk Pointer To Absolute
     ...                     ${x}
     ...                     ${y}
     ...                     ${step_distance}
@@ -155,12 +155,12 @@ Walk Pointer To ${destination}
     ...    of integers.
     [Arguments]             ${step_distance}=16     ${delay}=0.01
     IF    ${{isinstance($destination, str)}}
-        ${regions}=             VIDEO.Match             ${destination}
+        ${regions}=             PlatformVideoInput.Match                        ${destination}
         ${position}=            Get Center Of ${regions}[0]
     ELSE
         ${position}=            Set Variable            ${destination}
     END
-    HID.Walk Pointer To Absolute
+    PlatformHid.Walk Pointer To Absolute
     ...                     ${position}[0]
     ...                     ${position}[1]
     ...                     ${step_distance}
@@ -188,7 +188,7 @@ Walk Pointer To Proportional (${x}, ${y})
     ...    Absolute position of the pointer after the walk, as a tuple (x, y)
     ...    of integers.
     [Arguments]             ${step_distance}=16     ${delay}=0.01
-    ${position}=            HID.Walk Pointer To Proportional
+    ${position}=            PlatformHid.Walk Pointer To Proportional
     ...                     ${x}
     ...                     ${y}
     ...                     ${step_distance}
@@ -200,22 +200,22 @@ Press ${button} Button
     ...
     ...    Embedded arguments:
     ...    - ${button}: Button to press (LEFT|RIGHT|MIDDLE).
-    HID.Press Pointer Button                        ${button}
+    PlatformHid.Press Pointer Button                ${button}
 
 Release ${button} Button
     [Documentation]    Release a button on the virtual pointer.
     ...
     ...    Embedded arguments:
     ...    - ${button}: Button to release (LEFT|RIGHT|MIDDLE).
-    HID.Release Pointer Button                      ${button}
+    PlatformHid.Release Pointer Button              ${button}
 
 Click ${button} Button
     [Documentation]    Click a button on the virtual pointer.
     ...
     ...    Embedded arguments:
     ...    - ${button}: Button to click (LEFT|RIGHT|MIDDLE).
-    HID.Click Pointer Button                        ${button}
+    PlatformHid.Click Pointer Button                ${button}
 
 Release Buttons
     [Documentation]    Release all buttons on the virtual pointer.
-    HID.Release Pointer Buttons
+    PlatformHid.Release Pointer Buttons
