@@ -1,0 +1,206 @@
+yarf/lib/wayland/virtual_pointer.py
+    DOC101: Method `VirtualPointer.registry_global`: Docstring contains fewer arguments than in function signature.
+    DOC107: Method `VirtualPointer.registry_global`: The option `--arg-type-hints-in-signature` is `True` but not all args in the signature have type hints
+    DOC103: Method `VirtualPointer.registry_global`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [id_num: int, iface_name: str, registry: , version: int].
+    DOC101: Method `VirtualPointer.xdg_output_logical_size`: Docstring contains fewer arguments than in function signature.
+    DOC107: Method `VirtualPointer.xdg_output_logical_size`: The option `--arg-type-hints-in-signature` is `True` but not all args in the signature have type hints
+    DOC103: Method `VirtualPointer.xdg_output_logical_size`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [height: int, width: int, xdg_output: ].
+    DOC101: Method `VirtualPointer.move_to_absolute`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `VirtualPointer.move_to_absolute`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [x: int, y: int].
+    DOC101: Method `VirtualPointer.move_to_proportional`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `VirtualPointer.move_to_proportional`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [x: float, y: float].
+    DOC101: Method `VirtualPointer.button`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `VirtualPointer.button`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [button: Button, state: bool].
+--------------------
+yarf/lib/wayland/wayland_client.py
+    DOC301: Class `WaylandClient`: __init__() should not have a docstring; please combine it with the docstring of the class
+    DOC101: Method `WaylandClient.__init__`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `WaylandClient.__init__`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [display_name: str].
+    DOC201: Method `WaylandClient.timestamp` does not have a return section in docstring
+    DOC203: Method `WaylandClient.timestamp` return type(s) in docstring not consistent with the return annotation. Return annotation has 1 type(s); docstring return section has 0 type(s).
+    DOC101: Method `WaylandClient.registry_global`: Docstring contains fewer arguments than in function signature.
+    DOC107: Method `WaylandClient.registry_global`: The option `--arg-type-hints-in-signature` is `True` but not all args in the signature have type hints
+    DOC103: Method `WaylandClient.registry_global`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [id_num: int, iface_name: str, registry: , version: int].
+    DOC201: Method `WaylandClient.connect` does not have a return section in docstring
+    DOC203: Method `WaylandClient.connect` return type(s) in docstring not consistent with the return annotation. Return annotation has 1 type(s); docstring return section has 0 type(s).
+    DOC501: Method `WaylandClient.connect` has "raise" statements, but the docstring does not have a "Raises" section
+    DOC503: Method `WaylandClient.connect` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['e'].
+--------------------
+yarf/main.py
+    DOC101: Function `parse_arguments`: Docstring contains fewer arguments than in function signature.
+    DOC103: Function `parse_arguments`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [argv: list[str]].
+    DOC201: Function `parse_arguments` does not have a return section in docstring
+    DOC203: Function `parse_arguments` return type(s) in docstring not consistent with the return annotation. Return annotation has 1 type(s); docstring return section has 0 type(s).
+    DOC101: Function `get_robot_settings`: Docstring contains fewer arguments than in function signature.
+    DOC103: Function `get_robot_settings`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [test_suite: TestSuite].
+    DOC201: Function `get_robot_settings` does not have a return section in docstring
+    DOC203: Function `get_robot_settings` return type(s) in docstring not consistent with the return annotation. Return annotation has 1 type(s); docstring return section has 0 type(s).
+    DOC101: Function `run_robot_suite`: Docstring contains fewer arguments than in function signature.
+    DOC103: Function `run_robot_suite`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [lib_cls: PlatformBase, outdir: Path, test_suite: TestSuite, variables: list[str]].
+    DOC501: Function `run_robot_suite` has "raise" statements, but the docstring does not have a "Raises" section
+    DOC503: Function `run_robot_suite` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['Exception'].
+    DOC101: Function `run_interactive_console`: Docstring contains fewer arguments than in function signature.
+    DOC103: Function `run_interactive_console`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [console_suite: TestSuite, lib_cls: PlatformBase, outdir: Path, rf_debug_history_log_path: Path].
+    DOC101: Function `main`: Docstring contains fewer arguments than in function signature.
+    DOC103: Function `main`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [argv: list[str]].
+    DOC501: Function `main` has "raise" statements, but the docstring does not have a "Raises" section
+    DOC503: Function `main` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['FileNotFoundError'].
+--------------------
+yarf/robot/__init__.py
+    DOC101: Function `robot_in_path`: Docstring contains fewer arguments than in function signature.
+    DOC103: Function `robot_in_path`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [lib_path: str].
+    DOC402: Function `robot_in_path` has "yield" statements, but the docstring does not have a "Yields" section
+    DOC404: Function `robot_in_path` yield type(s) in docstring not consistent with the return annotation. Return annotation exists, but docstring "yields" section does not exist or has 0 type(s).
+    DOC501: Function `robot_in_path` has "raise" statements, but the docstring does not have a "Raises" section
+    DOC503: Function `robot_in_path` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['ValueError'].
+--------------------
+yarf/robot/libraries/__init__.py
+    DOC101: Method `PlatformMeta.__new__`: Docstring contains fewer arguments than in function signature.
+    DOC106: Method `PlatformMeta.__new__`: The option `--arg-type-hints-in-signature` is `True` but there are no argument type hints in the signature
+    DOC107: Method `PlatformMeta.__new__`: The option `--arg-type-hints-in-signature` is `True` but not all args in the signature have type hints
+    DOC103: Method `PlatformMeta.__new__`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [**kwargs: , bases: , name: , namespace: ].
+    DOC201: Method `PlatformMeta.__new__` does not have a return section in docstring
+    DOC201: Method `PlatformBase.get_pkg_path` does not have a return section in docstring
+    DOC203: Method `PlatformBase.get_pkg_path` return type(s) in docstring not consistent with the return annotation. Return annotation has 1 type(s); docstring return section has 0 type(s).
+    DOC501: Method `PlatformBase.get_pkg_path` has "raise" statements, but the docstring does not have a "Raises" section
+    DOC503: Method `PlatformBase.get_pkg_path` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['NotImplementedError'].
+--------------------
+yarf/robot/libraries/hid_base.py
+    DOC601: Class `HidBase`: Class docstring contains fewer class attributes than actual class attributes.  (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
+    DOC603: Class `HidBase`: Class docstring attributes are different from actual class attributes. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Attributes in the class definition but not in the docstring: [ROBOT_LIBRARY_SCOPE: ]. (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
+    DOC101: Method `HidBase.keys_combo`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `HidBase.keys_combo`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [combo: list[str]].
+    DOC101: Method `HidBase.type_string`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `HidBase.type_string`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [string: str].
+    DOC101: Method `HidBase.press_pointer_button`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `HidBase.press_pointer_button`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [button: str].
+    DOC101: Method `HidBase.release_pointer_button`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `HidBase.release_pointer_button`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [button: str].
+    DOC101: Method `HidBase.click_pointer_button`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `HidBase.click_pointer_button`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [button: str].
+    DOC201: Method `HidBase._get_display_size` does not have a return section in docstring
+    DOC203: Method `HidBase._get_display_size` return type(s) in docstring not consistent with the return annotation. Return annotation has 1 type(s); docstring return section has 0 type(s).
+    DOC101: Method `HidBase._move_pointer`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `HidBase._move_pointer`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [x: float, y: float].
+    DOC101: Method `HidBase.move_pointer_to_proportional`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `HidBase.move_pointer_to_proportional`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [x: float, y: float].
+    DOC101: Method `HidBase.move_pointer_to_absolute`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `HidBase.move_pointer_to_absolute`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [x: int, y: int].
+    DOC101: Method `HidBase.walk_pointer_to_absolute`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `HidBase.walk_pointer_to_absolute`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [delay: float, step_distance: float, x: int, y: int].
+    DOC101: Method `HidBase.walk_pointer_to_proportional`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `HidBase.walk_pointer_to_proportional`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [delay: float, step_distance: float, x: float, y: float].
+--------------------
+yarf/robot/libraries/mir/Hid.py
+    DOC601: Class `Hid`: Class docstring contains fewer class attributes than actual class attributes.  (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
+    DOC603: Class `Hid`: Class docstring attributes are different from actual class attributes. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Attributes in the class definition but not in the docstring: [ROBOT_LISTENER_API_VERSION: ]. (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
+--------------------
+yarf/robot/libraries/video_input_base.py
+    DOC601: Class `VideoInputBase`: Class docstring contains fewer class attributes than actual class attributes.  (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
+    DOC603: Class `VideoInputBase`: Class docstring attributes are different from actual class attributes. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Attributes in the class definition but not in the docstring: [ROBOT_LIBRARY_SCOPE: , ROBOT_LISTENER_API_VERSION: , TOLERANCE: ]. (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
+    DOC301: Class `VideoInputBase`: __init__() should not have a docstring; please combine it with the docstring of the class
+    DOC101: Method `VideoInputBase.init`: Docstring contains fewer arguments than in function signature.
+    DOC106: Method `VideoInputBase.init`: The option `--arg-type-hints-in-signature` is `True` but there are no argument type hints in the signature
+    DOC103: Method `VideoInputBase.init`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [**kwargs: , *args: ].
+    DOC101: Method `VideoInputBase.match`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `VideoInputBase.match`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [template: str, timeout: int].
+    DOC201: Method `VideoInputBase.match` does not have a return section in docstring
+    DOC203: Method `VideoInputBase.match` return type(s) in docstring not consistent with the return annotation. Return annotation has 1 type(s); docstring return section has 0 type(s).
+    DOC101: Method `VideoInputBase.match_all`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `VideoInputBase.match_all`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [templates: Sequence[str], timeout: int].
+    DOC201: Method `VideoInputBase.match_all` does not have a return section in docstring
+    DOC203: Method `VideoInputBase.match_all` return type(s) in docstring not consistent with the return annotation. Return annotation has 1 type(s); docstring return section has 0 type(s).
+    DOC101: Method `VideoInputBase.match_any`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `VideoInputBase.match_any`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [templates: Sequence[str], timeout: int].
+    DOC201: Method `VideoInputBase.match_any` does not have a return section in docstring
+    DOC203: Method `VideoInputBase.match_any` return type(s) in docstring not consistent with the return annotation. Return annotation has 1 type(s); docstring return section has 0 type(s).
+    DOC101: Method `VideoInputBase.read_text`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `VideoInputBase.read_text`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [image: Optional[Image.Image]].
+    DOC201: Method `VideoInputBase.read_text` does not have a return section in docstring
+    DOC203: Method `VideoInputBase.read_text` return type(s) in docstring not consistent with the return annotation. Return annotation has 1 type(s); docstring return section has 0 type(s).
+    DOC201: Method `VideoInputBase._grab_screenshot` does not have a return section in docstring
+    DOC203: Method `VideoInputBase._grab_screenshot` return type(s) in docstring not consistent with the return annotation. Return annotation has 1 type(s); docstring return section has 0 type(s).
+    DOC101: Method `VideoInputBase._do_match`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `VideoInputBase._do_match`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [accept_any: bool, templates: Sequence[str], timeout: int].
+    DOC201: Method `VideoInputBase._do_match` does not have a return section in docstring
+    DOC203: Method `VideoInputBase._do_match` return type(s) in docstring not consistent with the return annotation. Return annotation has 1 type(s); docstring return section has 0 type(s).
+    DOC501: Method `VideoInputBase._do_match` has "raise" statements, but the docstring does not have a "Raises" section
+    DOC503: Method `VideoInputBase._do_match` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['ImageNotFoundError'].
+    DOC101: Method `VideoInputBase._to_base64`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `VideoInputBase._to_base64`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [image: Image.Image].
+    DOC201: Method `VideoInputBase._to_base64` does not have a return section in docstring
+    DOC203: Method `VideoInputBase._to_base64` return type(s) in docstring not consistent with the return annotation. Return annotation has 1 type(s); docstring return section has 0 type(s).
+    DOC101: Method `VideoInputBase._log_failed_match`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `VideoInputBase._log_failed_match`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [screenshot: Image.Image, template: str].
+--------------------
+yarf/robot/libraries/Example/Hid.py
+    DOC301: Class `Hid`: __init__() should not have a docstring; please combine it with the docstring of the class
+    DOC101: Method `Hid.keys_combo`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `Hid.keys_combo`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [combo: list[str]].
+    DOC101: Method `Hid.type_string`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `Hid.type_string`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [string: str].
+    DOC101: Method `Hid.press_pointer_button`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `Hid.press_pointer_button`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [button: str].
+    DOC101: Method `Hid.release_pointer_button`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `Hid.release_pointer_button`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [button: str].
+    DOC101: Method `Hid.click_pointer_button`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `Hid.click_pointer_button`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [button: str].
+    DOC201: Method `Hid._get_display_size` does not have a return section in docstring
+    DOC203: Method `Hid._get_display_size` return type(s) in docstring not consistent with the return annotation. Return annotation has 1 type(s); docstring return section has 0 type(s).
+    DOC101: Method `Hid._move_pointer`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `Hid._move_pointer`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [x: float, y: float].
+    DOC101: Method `Hid.walk_pointer_to_proportional`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `Hid.walk_pointer_to_proportional`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [delay: float, step_distance: float, x: float, y: float].
+--------------------
+yarf/robot/libraries/Example/VideoInput.py
+    DOC601: Class `Source`: Class docstring contains fewer class attributes than actual class attributes.  (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
+    DOC603: Class `Source`: Class docstring attributes are different from actual class attributes. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Attributes in the class definition but not in the docstring: [CAMERA: , HDMI: ]. (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
+    DOC201: Method `VideoSource.grab_screenshot` does not have a return section in docstring
+    DOC203: Method `VideoSource.grab_screenshot` return type(s) in docstring not consistent with the return annotation. Return annotation has 1 type(s); docstring return section has 0 type(s).
+    DOC601: Class `HdmiIn`: Class docstring contains fewer class attributes than actual class attributes.  (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
+    DOC603: Class `HdmiIn`: Class docstring attributes are different from actual class attributes. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Attributes in the class definition but not in the docstring: [RESOLUTION: , STREAM_FPS: , STREAM_QUALITY: , USTREAMER_PORT: , USTREAMER_SNAPSHOT: ]. (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
+    DOC301: Class `HdmiIn`: __init__() should not have a docstring; please combine it with the docstring of the class
+    DOC201: Method `HdmiIn.grab_screenshot` does not have a return section in docstring
+    DOC203: Method `HdmiIn.grab_screenshot` return type(s) in docstring not consistent with the return annotation. Return annotation has 1 type(s); docstring return section has 0 type(s).
+    DOC501: Method `HdmiIn.grab_screenshot` has "raise" statements, but the docstring does not have a "Raises" section
+    DOC503: Method `HdmiIn.grab_screenshot` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['RuntimeError'].
+    DOC301: Class `UsbCam`: __init__() should not have a docstring; please combine it with the docstring of the class
+    DOC501: Method `UsbCam.__init__` has "raise" statements, but the docstring does not have a "Raises" section
+    DOC503: Method `UsbCam.__init__` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['NotImplementedError'].
+    DOC501: Method `UsbCam.start_video_input` has "raise" statements, but the docstring does not have a "Raises" section
+    DOC503: Method `UsbCam.start_video_input` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['NotImplementedError'].
+    DOC501: Method `UsbCam.stop_video_input` has "raise" statements, but the docstring does not have a "Raises" section
+    DOC503: Method `UsbCam.stop_video_input` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['NotImplementedError'].
+    DOC201: Method `UsbCam.grab_screenshot` does not have a return section in docstring
+    DOC203: Method `UsbCam.grab_screenshot` return type(s) in docstring not consistent with the return annotation. Return annotation has 1 type(s); docstring return section has 0 type(s).
+    DOC501: Method `UsbCam.grab_screenshot` has "raise" statements, but the docstring does not have a "Raises" section
+    DOC503: Method `UsbCam.grab_screenshot` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['NotImplementedError'].
+    DOC101: Method `VideoInput.init`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `VideoInput.init`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [source_name: str].
+    DOC501: Method `VideoInput.init` has "raise" statements, but the docstring does not have a "Raises" section
+    DOC503: Method `VideoInput.init` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['SystemExit'].
+--------------------
+yarf/robot/libraries/Example/__init__.py
+    DOC601: Class `Example`: Class docstring contains fewer class attributes than actual class attributes.  (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
+    DOC603: Class `Example`: Class docstring attributes are different from actual class attributes. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Attributes in the class definition but not in the docstring: [RPYC_PORT: , RPYC_TIMEOUT: ]. (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
+    DOC101: Function `Example_api`: Docstring contains fewer arguments than in function signature.
+    DOC103: Function `Example_api`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [timeout: int].
+    DOC402: Function `Example_api` has "yield" statements, but the docstring does not have a "Yields" section
+    DOC404: Function `Example_api` yield type(s) in docstring not consistent with the return annotation. Return annotation exists, but docstring "yields" section does not exist or has 0 type(s).
+--------------------
+yarf/robot/suite_parser.py
+    DOC501: Method `SuiteParser.read_suite` has "raise" statements, but the docstring does not have a "Raises" section
+    DOC503: Method `SuiteParser.read_suite` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['ValueError'].
+    DOC101: Method `SuiteParser.suite_in_temp_folder`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `SuiteParser.suite_in_temp_folder`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [variant: str].
+    DOC402: Method `SuiteParser.suite_in_temp_folder` has "yield" statements, but the docstring does not have a "Yields" section
+    DOC404: Method `SuiteParser.suite_in_temp_folder` yield type(s) in docstring not consistent with the return annotation. Return annotation exists, but docstring "yields" section does not exist or has 0 type(s).
+    DOC101: Method `SuiteParser.select_assets`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `SuiteParser.select_assets`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [variant: str].
+    DOC201: Method `SuiteParser.select_assets` does not have a return section in docstring
+    DOC203: Method `SuiteParser.select_assets` return type(s) in docstring not consistent with the return annotation. Return annotation has 1 type(s); docstring return section has 0 type(s).
+    DOC101: Method `SuiteParser.get_variants_precedence_list`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `SuiteParser.get_variants_precedence_list`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [variant_str: str].
+    DOC201: Method `SuiteParser.get_variants_precedence_list` does not have a return section in docstring
+    DOC203: Method `SuiteParser.get_variants_precedence_list` return type(s) in docstring not consistent with the return annotation. Return annotation has 1 type(s); docstring return section has 0 type(s).
+--------------------

@@ -65,3 +65,8 @@ repos:
   hooks:
   - id: interrogate
     pass_filenames: false
+
+- repo: https://github.com/jsh9/pydoclint.git
+  rev: 0.5.7
+  hooks:
+  - id: pydoclint

@@ -108,3 +108,9 @@ exclude = [
 ]
 verbose = 1
 fail-under = 52.9
+
+[tool.pydoclint]
+exclude = "docs/|tests/|yarf/lib/wayland/protocols/"
+style = "google"
+skip-checking-short-docstrings = "False"
+baseline = "pydoclint-baseline.txt"
