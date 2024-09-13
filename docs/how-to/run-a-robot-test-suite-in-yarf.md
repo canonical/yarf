@@ -108,6 +108,8 @@ Example_IP=<Example_IP> yarf <path-to-suite>/suite
 
 <u><center>Code Snippet 7: `yarf` command without `--platform` option</center></u>
 
+If you do not have a test suite, you can still use YARF to explore and come up with the robot script you need by using the [Interactive console](interactive-console.md).
+
 ## Debug failing tests
 
 When developing tests, you will often need more feedback than the command line gives you. `yarf` will output

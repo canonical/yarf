@@ -1,7 +1,9 @@
+import os
 import sys
 import tempfile
 from pathlib import Path
 from textwrap import dedent
+from unittest import mock
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -10,7 +12,12 @@ from pyfakefs.fake_filesystem_unittest import FakeFilesystem
 from robot.api import TestSuite
 
 from yarf import main
-from yarf.main import get_robot_settings, parse_arguments, run_robot_suite
+from yarf.main import (
+    get_robot_settings,
+    parse_arguments,
+    run_interactive_console,
+    run_robot_suite,
+)
 from yarf.robot.libraries import SUPPORTED_PLATFORMS
 from yarf.robot.libraries.Example import Example
 
@@ -198,7 +205,6 @@ class TestMain:
         Test if the function raise exception if test suite
         did not run successfully.
         """
-
         outdir = "/testoutdir"
         fs.create_dir(outdir)
         variables = ["VAR1:value1", "VAR2:value2"]
@@ -216,6 +222,37 @@ class TestMain:
                 variables,
                 outdir,
             )
+
+    @mock.patch.dict(os.environ, {"RFDEBUG_HISTORY": "/testoutdir"})
+    @patch("yarf.main._logger")
+    @patch("yarf.main.rebot")
+    def test_run_interactive_console(
+        self,
+        mock_rebot: MagicMock,
+        mock_logger: MagicMock,
+    ) -> None:
+        """
+        Test if the function goes to interactive console
+        if empty path is supplied
+        """
+        outdir = Path("/testoutdir")
+        rf_debug_log_path = outdir / "rfdebug_history.log"
+        mock_console_suite = Mock()
+        mock_console_suite.run.return_value.return_code = 0
+
+        SUPPORTED_PLATFORMS.clear()
+        SUPPORTED_PLATFORMS["Example"] = Example
+
+        run_interactive_console(
+            mock_console_suite,
+            SUPPORTED_PLATFORMS["Example"],
+            outdir,
+            rf_debug_log_path,
+        )
+        mock_rebot.assert_called_once_with(
+            f"{outdir}/output.xml", outputdir=outdir
+        )
+        mock_logger.info.assert_called_once()
 
     @patch("yarf.main.TestSuite.from_file_system")
     def test_main(
@@ -253,7 +290,7 @@ class TestMain:
         """
 
         test_path = "suite-path"
-        outdir = "outdir"
+        outdir = "testoutdir"
         fs.create_file(f"{test_path}/test.robot")
         fs.create_dir(outdir)
         SUPPORTED_PLATFORMS.clear()
@@ -267,3 +304,47 @@ class TestMain:
         main.run_robot_suite.assert_called_once_with(
             mock_test_suite(), SUPPORTED_PLATFORMS["Example"], [], Path(outdir)
         )
+
+    @patch("yarf.main.TestSuiteBuilder.build")
+    def test_main_interactive_console(
+        self, mock_test_suite_builder: MagicMock
+    ) -> None:
+        """
+        Test whether the function goes to interactive console
+        if empty path is supplied
+        """
+        outdir = Path(f"{tempfile.gettempdir()}/yarf-outdir")
+        rf_debug_log_path = outdir / "rfdebug_history.log"
+        SUPPORTED_PLATFORMS.clear()
+        SUPPORTED_PLATFORMS["Example"] = Example
+
+        main.run_interactive_console = Mock()
+        argv = []
+        main.main(argv)
+
+        mock_test_suite_builder.assert_called_once()
+        main.run_interactive_console.assert_called_once_with(
+            mock_test_suite_builder(),
+            SUPPORTED_PLATFORMS["Example"],
+            outdir,
+            rf_debug_log_path,
+        )
+
+    @patch("yarf.main.Path.exists")
+    def test_main_interactive_console_start_robot_not_exist(
+        self, mock_path_exists: MagicMock
+    ) -> None:
+        """
+        Test whether the function raises an error
+        if start_robot command does not exist
+        """
+
+        mock_path_exists.return_value = False
+
+        SUPPORTED_PLATFORMS.clear()
+        SUPPORTED_PLATFORMS["Example"] = Example
+
+        main.run_interactive_console = Mock()
+        argv = [""]
+        with pytest.raises(FileNotFoundError):
+            main.main(argv)
