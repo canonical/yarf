@@ -59,3 +59,9 @@ repos:
   hooks:
   - id: docformatter
     args: [--in-place, --pre-summary-newline, --make-summary-multi-line]
+
+- repo: https://github.com/econchick/interrogate
+  rev: 1.7.0
+  hooks:
+  - id: interrogate
+    pass_filenames: false
