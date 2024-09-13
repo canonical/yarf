@@ -101,3 +101,10 @@ exclude_also = [
 
 [tool.coverage.html]
 directory = "coverage_html_report"
+
+[tool.interrogate]
+exclude = [
+    "yarf/lib/wayland/protocols",
+]
+verbose = 1
+fail-under = 52.9
