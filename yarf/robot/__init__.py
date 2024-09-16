@@ -18,8 +18,8 @@ ROBOT_RESOURCE_PATH = os.path.abspath(
 @contextmanager
 def robot_in_path(lib_path: str):
     """
-    This context manager setup the python environment
-    targeting the requested platform
+    This context manager setup the python environment targeting the requested
+    platform.
     """
     if not os.path.exists(lib_path):
         raise ValueError("Please specify a valid library path.")

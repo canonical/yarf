@@ -12,11 +12,11 @@ logger = logging.getLogger()
 
 class Zapper(PlatformBase):
     """
-    This platform relies on the Zapper unit connected
-    to the DUT as a support machine.
+    This platform relies on the Zapper unit connected to the DUT as a support
+    machine.
 
-    Requests are handled by RPyC and the server IP
-    is retrieved from the ZAPPER_IP environment variable.
+    Requests are handled by RPyC and the server IP is retrieved from the
+    ZAPPER_IP environment variable.
     """
 
     RPYC_PORT = 60000
@@ -32,7 +32,9 @@ class Zapper(PlatformBase):
 
 @contextmanager
 def zapper_api(timeout: int = Zapper.RPYC_TIMEOUT):
-    """Connect to the Zapper RPyC service and yields the Service object."""
+    """
+    Connect to the Zapper RPyC service and yields the Service object.
+    """
 
     ip_addr = os.getenv("ZAPPER_IP", "localhost")
     connection = rpyc.connect(
@@ -51,7 +53,9 @@ def zapper_api(timeout: int = Zapper.RPYC_TIMEOUT):
 
 
 class ZapperException(Exception):
-    """Generic Zapper Exception"""
+    """
+    Generic Zapper Exception.
+    """
 
 
 # Required by RPyC when the server might raise custom exceptions.

@@ -67,17 +67,23 @@ class Hid(HidBase):
             self._virtual_pointer.button(button, False)
 
     async def _connect(self):
-        """Connect to the display."""
+        """
+        Connect to the display.
+        """
         if not self._connected:
             await self._virtual_pointer.connect()
             self._connected = True
 
     async def _disconnect(self):
-        """Disconnect from the display."""
+        """
+        Disconnect from the display.
+        """
         if self._connected:
             self._connected = False
             await self._virtual_pointer.disconnect()
 
     def _close(self):
-        """Listener method called when the library goes out of scope."""
+        """
+        Listener method called when the library goes out of scope.
+        """
         asyncio.get_event_loop().run_until_complete(self._disconnect())

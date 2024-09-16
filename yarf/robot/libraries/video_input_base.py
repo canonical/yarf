@@ -1,6 +1,6 @@
 """
-This module provides the Robot interface for Video-driven interaction
-and assertion.
+This module provides the Robot interface for Video-driven interaction and
+assertion.
 """
 
 import asyncio
@@ -23,8 +23,8 @@ from RPA.recognition.templates import ImageNotFoundError
 
 class VideoInputBase(ABC):
     """
-    This module provides the Robot interface for Video-driven interaction
-    and assertion.
+    This module provides the Robot interface for Video-driven interaction and
+    assertion.
     """
 
     ROBOT_LIBRARY_SCOPE = "GLOBAL"
@@ -32,7 +32,9 @@ class VideoInputBase(ABC):
     TOLERANCE = 0.8
 
     def __init__(self):
-        """Initialize the Video Input."""
+        """
+        Initialize the Video Input.
+        """
         self._rpa_images = Images()
         self.ROBOT_LIBRARY_LISTENER = self
         self._frame_count: int = 0
@@ -74,7 +76,9 @@ class VideoInputBase(ABC):
 
     @keyword
     def init(self, *args, **kwargs):
-        """Handles platform-specific initialization."""
+        """
+        Handles platform-specific initialization.
+        """
 
     @keyword
     async def match(
@@ -87,7 +91,8 @@ class VideoInputBase(ABC):
         :param template: path to an image file to be used as template
         :param timeout: timeout in seconds
         :return: list of matched regions
-        :raises ImageNotFoundError: if no match is found within the timeout
+        :raises ImageNotFoundError: if no match is found within the
+            timeout
         """
         return await self.match_any([template], timeout=timeout)
 
@@ -99,10 +104,12 @@ class VideoInputBase(ABC):
         Grab screenshots and compare with the provided templates until a frame
         is found which matches all templates simultaneously or timeout.
 
-        :param templates: sequence of paths to image files to use as templates
+        :param templates: sequence of paths to image files to use as
+            templates
         :param timeout: timeout in seconds
         :return: list of matched regions and template path matched
-        :raises ImageNotFoundError: if no match is found within the timeout
+        :raises ImageNotFoundError: if no match is found within the
+            timeout
         """
         return await self._do_match(
             templates, accept_any=False, timeout=timeout
@@ -116,10 +123,12 @@ class VideoInputBase(ABC):
         Grab screenshots and compare with the provided templates until there's
         at least one match or timeout.
 
-        :param templates: sequence of paths to image files to use as templates
+        :param templates: sequence of paths to image files to use as
+            templates
         :param timeout: timeout in seconds
         :return: list of matched regions and template path matched
-        :raises ImageNotFoundError: if no match is found within the timeout
+        :raises ImageNotFoundError: if no match is found within the
+            timeout
         """
         return await self._do_match(
             templates, accept_any=True, timeout=timeout
@@ -131,8 +140,8 @@ class VideoInputBase(ABC):
         image: Optional[Image.Image] = None,
     ) -> Awaitable[str]:
         """
-        Read the text from the provided image or grab a screenshot
-        to read from.
+        Read the text from the provided image or grab a screenshot to read
+        from.
 
         The region of interest can be limited with the `region` argument.
         """
@@ -144,22 +153,30 @@ class VideoInputBase(ABC):
     @abstractmethod
     @keyword
     async def start_video_input(self):
-        """Start video stream process if needed."""
+        """
+        Start video stream process if needed.
+        """
 
     @abstractmethod
     @keyword
     async def stop_video_input(self):
-        """Stop video stream process if needed."""
+        """
+        Stop video stream process if needed.
+        """
 
     @keyword
     async def restart_video_input(self):
-        """Restart video stream process if needed."""
+        """
+        Restart video stream process if needed.
+        """
         await self.stop_video_input()
         await self.start_video_input()
 
     @abstractmethod
     async def _grab_screenshot(self) -> Image.Image:
-        """Grab and return a screenshot from the video feed."""
+        """
+        Grab and return a screenshot from the video feed.
+        """
 
     async def _do_match(
         self, templates: Sequence[str], accept_any: bool, timeout: int = 10
@@ -169,10 +186,12 @@ class VideoInputBase(ABC):
         :meth:`match_any`.
 
         :param templates: path to an image file to be used as template
-        :param accept_any: whether to terminate on the first match (when True)
+        :param accept_any: whether to terminate on the first match (when
+            True)
         :param timeout: timeout in seconds
         :return: list of matched regions
-        :raises ImageNotFoundError: if no match is found within the timeout
+        :raises ImageNotFoundError: if no match is found within the
+            timeout
         """
         regions = []
         screenshot = None
@@ -250,7 +269,9 @@ class VideoInputBase(ABC):
 
     @staticmethod
     def _to_base64(image: Image.Image) -> str:
-        """Convert Pillow Image to b64"""
+        """
+        Convert Pillow Image to b64.
+        """
 
         im_file = BytesIO()
         image = image.convert("RGB")
@@ -260,7 +281,9 @@ class VideoInputBase(ABC):
         return im_b64.decode()
 
     def _log_failed_match(self, screenshot: Image.Image, template: str):
-        """Log a failure with template matching."""
+        """
+        Log a failure with template matching.
+        """
 
         template_img = Image.open(template)
         template_string = (

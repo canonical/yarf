@@ -4,7 +4,9 @@ from yarf.robot.libraries.zapper.Smoke import Smoke
 
 
 class TestZapperSmoke:
-    """Test the Smoke class."""
+    """
+    Test the Smoke class.
+    """
 
     def test_print_smoke(self) -> None:
         """
