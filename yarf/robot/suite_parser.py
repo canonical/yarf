@@ -42,10 +42,12 @@ class SuiteParser:
     @contextmanager
     def suite_in_temp_folder(self, variant: str):
         """
-        A context manager that creates a temporary directory that contains
-        the suite robot file(s) and asset(s), and exposes a path to the
-        temporary directory. The temporary directory will be automatically
-        destroyed when the program exits the scope under this context manager.
+        A context manager that creates a temporary directory that contains the
+        suite robot file(s) and asset(s), and exposes a path to the temporary
+        directory.
+
+        The temporary directory will be automatically destroyed when the
+        program exits the scope under this context manager.
         """
         actual_assets = self.select_assets(variant)
         with tempfile.TemporaryDirectory() as temp_directory_path:
@@ -91,8 +93,8 @@ class SuiteParser:
 
     def get_variants_precedence_list(self, variant_str: str) -> list[Path]:
         """
-        Form a list of paths according to the variant string
-        and the reversed ascending sort them by specificity degree.
+        Form a list of paths according to the variant string and the reversed
+        ascending sort them by specificity degree.
         """
         if variant_str == "" or variant_str is None:
             return []

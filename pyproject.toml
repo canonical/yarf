@@ -101,3 +101,16 @@ exclude_also = [
 
 [tool.coverage.html]
 directory = "coverage_html_report"
+
+[tool.interrogate]
+exclude = [
+    "yarf/lib/wayland/protocols",
+]
+verbose = 1
+fail-under = 52.9
+
+[tool.pydoclint]
+exclude = "docs/|tests/|yarf/lib/wayland/protocols/"
+style = "google"
+skip-checking-short-docstrings = "False"
+baseline = "pydoclint-baseline.txt"

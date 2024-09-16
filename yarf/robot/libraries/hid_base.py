@@ -34,6 +34,7 @@ class HidBase(ABC):
     async def keys_combo(self, combo: list[str]):
         """
         Press and release a combination of keys.
+
         :param combo: list of keys to press at the same time.
         """
 
@@ -76,7 +77,9 @@ class HidBase(ABC):
     @abstractmethod
     @keyword
     async def release_pointer_buttons(self) -> None:
-        """Release all pointer buttons."""
+        """
+        Release all pointer buttons.
+        """
 
     @abstractmethod
     async def _get_display_size() -> Size:
@@ -93,8 +96,8 @@ class HidBase(ABC):
     @keyword
     async def move_pointer_to_proportional(self, x: float, y: float) -> None:
         """
-        Move the virtual pointer to a position proportional to the size
-        of the output.
+        Move the virtual pointer to a position proportional to the size of the
+        output.
         """
 
         assert 0 <= x <= 1, "x not in range 0..1"
@@ -154,9 +157,9 @@ class HidBase(ABC):
         self, x: float, y: float, step_distance: float, delay: float
     ) -> None:
         """
-        Walk the virtual pointer to a position proportional to the size
-        of the output, maximum `step_distance` at a time,
-        with `delay` seconds in between.
+        Walk the virtual pointer to a position proportional to the size of the
+        output, maximum `step_distance` at a time, with `delay` seconds in
+        between.
         """
         assert 0 <= x <= 1, "x not in range 0..1"
         assert 0 <= y <= 1, "y not in range 0..1"
