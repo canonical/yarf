@@ -1,15 +1,10 @@
-import asyncio
 import contextlib
-from typing import Optional
 
 from robot.api import logger
 from robot.api.deco import keyword, library
-from rpyc.core.service import Service
 
-from yarf.robot.libraries.hid_base import HidBase
+from yarf.robot.libraries.hid_base import HidBase, Size
 from yarf.robot.libraries.zapper import ZapperException, zapper_api
-
-MAX_POINTER_VALUE = 10000  # defined by Zapper service
 
 
 @library
@@ -21,9 +16,11 @@ class Hid(HidBase):
     def __init__(self):
         """Configure Zapper to use Keyboard and Pointer."""
 
+        super().__init__()
+
         self.pressed_buttons = set()
-        self.pointer_position = [0, 0]
-        self.mouse_position = None
+
+        self._service = None
 
         try:
             with zapper_api() as service:
@@ -114,77 +111,26 @@ class Hid(HidBase):
         with zapper_api() as service:
             service.hid_mouse(0, 0, 0, 0)
 
-    @keyword
-    async def move_pointer_to_absolute(self, x: int, y: int) -> None:
-        """
-        Move the virtual pointer to an absolute position within the output.
-        """
-
-        assert isinstance(x, int) and isinstance(
-            y, int
-        ), "Coordinates must be integers"
-
+    async def _get_display_size(self) -> Size:
+        """Return Zapper display resolution"""
         with zapper_api() as service:
             resolution = service.get_hdmi_resolution()
-            resolution = [int(value) for value in resolution.split("x")]
-        assert 0 <= x <= resolution[0], "X coordinate outside of screen"
-        assert 0 <= y <= resolution[1], "Y coordinate outside of screen"
+            return Size(*(int(value) for value in resolution.split("x")))
 
-        proportional = (x / resolution[0], y / resolution[1])
-        await self.move_pointer_to_proportional(*proportional)
-
-    @keyword
-    async def move_pointer_to_proportional(
+    async def _move_pointer(
         self,
         x: float,
         y: float,
-        service: Optional[Service] = None,
     ) -> None:
         """
         Move the virtual pointer to a position proportional to the size
         of the output.
         """
-
-        assert 0 <= x <= 1, "x not in range 0..1"
-        assert 0 <= y <= 1, "y not in range 0..1"
-
-        if service:
-            service.hid_pointer(False, x, y)
+        if self._service:
+            self._service.hid_pointer(False, x, y)
         else:
             with zapper_api() as service:
                 service.hid_pointer(False, x, y)
-
-        self.pointer_position = [x, y]
-
-    @keyword
-    async def walk_pointer_to_absolute(
-        self,
-        x: int,
-        y: int,
-        step_distance: float,
-        delay: float,
-    ) -> None:
-        """
-        Walk the virtual pointer to an absolute position within the output,
-        maximum `step_distance` at a time, with `delay` seconds in between.
-        """
-
-        assert isinstance(x, int) and isinstance(
-            y, int
-        ), "Coordinates must be integers"
-
-        with zapper_api() as service:
-            resolution = service.get_hdmi_resolution()
-            resolution = [int(value) for value in resolution.split("x")]
-        assert 0 <= x <= resolution[0], "X coordinate outside of screen"
-        assert 0 <= y <= resolution[1], "Y coordinate outside of screen"
-
-        proportional = (x / resolution[0], y / resolution[1])
-        await self.walk_pointer_to_proportional(
-            *proportional,
-            step_distance,
-            delay,
-        )
 
     @keyword
     async def walk_pointer_to_proportional(
@@ -199,30 +145,11 @@ class Hid(HidBase):
         of the output, maximum `step_distance` at a time,
         with `delay` seconds in between.
         """
-
-        assert 0 <= x <= 1, "x not in range 0..1"
-        assert 0 <= y <= 1, "y not in range 0..1"
-
-        with zapper_api() as service:
-            while self.pointer_position != [x, y]:
-                dist_x = x - self.pointer_position[0]
-                dist_y = y - self.pointer_position[1]
-                step_x = min(abs(dist_x), step_distance) * (
-                    dist_x < 0 and -1 or 1
+        with zapper_api() as svc:
+            self._service = svc
+            try:
+                await super().walk_pointer_to_proportional(
+                    x, y, step_distance, delay
                 )
-                step_y = min(abs(dist_y), step_distance) * (
-                    dist_y < 0 and -1 or 1
-                )
-
-                if all(
-                    abs(step) < (1 / MAX_POINTER_VALUE)
-                    for step in (step_x, step_y)
-                ):
-                    return
-
-                await self.move_pointer_to_proportional(
-                    self.pointer_position[0] + step_x,
-                    self.pointer_position[1] + step_y,
-                    service,
-                )
-                await asyncio.sleep(delay)
+            finally:
+                self._service = None

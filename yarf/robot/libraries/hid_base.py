@@ -2,9 +2,21 @@
 This module provides the Robot interface for HID interactions.
 """
 
+import asyncio
 from abc import ABC, abstractmethod
+from typing import NamedTuple
 
 from robot.api.deco import keyword
+
+
+class Size(NamedTuple):
+    width: int
+    height: int
+
+
+class PointerPosition(NamedTuple):
+    x: float
+    y: float
 
 
 class HidBase(ABC):
@@ -13,6 +25,9 @@ class HidBase(ABC):
     """
 
     ROBOT_LIBRARY_SCOPE = "TEST"
+
+    def __init__(self):
+        self._pointer_position = PointerPosition(0, 0)
 
     @abstractmethod
     @keyword
@@ -64,13 +79,17 @@ class HidBase(ABC):
         """Release all pointer buttons."""
 
     @abstractmethod
-    @keyword
-    async def move_pointer_to_absolute(self, x: int, y: int) -> None:
+    async def _get_display_size() -> Size:
         """
-        Move the virtual pointer to an absolute position within the output.
+        Return the size of the screen in platform coordinates.
         """
 
     @abstractmethod
+    async def _move_pointer(self, x: float, y: float) -> None:
+        """
+        Platform implementation of the pointer move.
+        """
+
     @keyword
     async def move_pointer_to_proportional(self, x: float, y: float) -> None:
         """
@@ -78,13 +97,36 @@ class HidBase(ABC):
         of the output.
         """
 
-    @abstractmethod
+        assert 0 <= x <= 1, "x not in range 0..1"
+        assert 0 <= y <= 1, "y not in range 0..1"
+
+        await self._move_pointer(x, y)
+        self._pointer_position = PointerPosition(x, y)
+
+    @keyword
+    async def move_pointer_to_absolute(self, x: int, y: int) -> None:
+        """
+        Move the virtual pointer to an absolute position within the output.
+        """
+
+        assert isinstance(x, int) and isinstance(
+            y, int
+        ), "Coordinates must be integers"
+
+        display_size = await self._get_display_size()
+        assert 0 <= x <= display_size.width, "X coordinate outside of screen"
+        assert 0 <= y <= display_size.height, "Y coordinate outside of screen"
+
+        proportional = (x / display_size.width, y / display_size.height)
+        await self._move_pointer(*proportional)
+        self._pointer_position = PointerPosition(*proportional)
+
     @keyword
     async def walk_pointer_to_absolute(
         self,
         x: int,
         y: int,
-        step_distance: int,
+        step_distance: float,
         delay: float,
     ) -> None:
         """
@@ -92,17 +134,41 @@ class HidBase(ABC):
         maximum `step_distance` at a time, with `delay` seconds in between.
         """
 
-    @abstractmethod
+        assert isinstance(x, int) and isinstance(
+            y, int
+        ), "Coordinates must be integers"
+
+        display_size = await self._get_display_size()
+        assert 0 <= x <= display_size.width, "X coordinate outside of screen"
+        assert 0 <= y <= display_size.height, "Y coordinate outside of screen"
+
+        proportional = (x / display_size.width, y / display_size.height)
+        await self.walk_pointer_to_proportional(
+            *proportional,
+            step_distance,
+            delay,
+        )
+
     @keyword
     async def walk_pointer_to_proportional(
-        self,
-        x: float,
-        y: float,
-        step_distance: float,
-        delay: float,
+        self, x: float, y: float, step_distance: float, delay: float
     ) -> None:
         """
         Walk the virtual pointer to a position proportional to the size
         of the output, maximum `step_distance` at a time,
         with `delay` seconds in between.
         """
+        assert 0 <= x <= 1, "x not in range 0..1"
+        assert 0 <= y <= 1, "y not in range 0..1"
+
+        while self._pointer_position != (x, y):
+            dist_x = x - self._pointer_position.x
+            dist_y = y - self._pointer_position.y
+            step_x = min(abs(dist_x), step_distance) * (dist_x < 0 and -1 or 1)
+            step_y = min(abs(dist_y), step_distance) * (dist_y < 0 and -1 or 1)
+
+            await self.move_pointer_to_proportional(
+                self._pointer_position.x + step_x,
+                self._pointer_position.y + step_y,
+            )
+            await asyncio.sleep(delay)
