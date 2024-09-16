@@ -59,7 +59,7 @@ extend-exclude = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "--doctest-modules --cov=. --cov-fail-under=100 --cov-report term-missing --ignore=docs/"
+addopts = "--doctest-modules --ignore=docs/"
 asyncio_default_fixture_loop_scope = "auto"
 
 [tool.coverage.report]

@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from packaging import version
 from pyfakefs.fake_filesystem_unittest import FakeFilesystem
-from robot.api import TestSuite
+from robot.api import TestSuite as RobotSuite
 
 from yarf import main
 from yarf.main import (
@@ -97,7 +97,7 @@ class TestMain:
                 """)
             )
 
-        test_suite = TestSuite.from_file_system(test_path)
+        test_suite = RobotSuite.from_file_system(test_path)
         robot_settings = get_robot_settings(test_suite)
         assert "skip" in robot_settings
         assert set(robot_settings["skip"]) == {
@@ -118,7 +118,7 @@ class TestMain:
                 """)
             )
 
-        test_suite = TestSuite.from_file_system(test_path)
+        test_suite = RobotSuite.from_file_system(test_path)
         robot_settings = get_robot_settings(test_suite)
         assert "skip" in robot_settings
         assert set(robot_settings["skip"]) == set()
@@ -146,7 +146,7 @@ class TestMain:
                 """)
             )
 
-        test_suite = TestSuite.from_file_system(test_path)
+        test_suite = RobotSuite.from_file_system(test_path)
         with pytest.raises(version.InvalidVersion):
             robot_settings = get_robot_settings(test_suite)
             list(robot_settings["skip"])
@@ -165,7 +165,7 @@ class TestMain:
                 """)
             )
 
-        test_suite = TestSuite.from_file_system(test_path)
+        test_suite = RobotSuite.from_file_system(test_path)
         robot_settings = get_robot_settings(test_suite)
         assert "skip" not in robot_settings
 
