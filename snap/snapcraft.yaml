@@ -14,6 +14,9 @@ parts:
   yarf:
     plugin: python
     source: .
+    build-packages:
+      - pkg-config
+      - libwayland-dev
     build-snaps:
       - yq
     stage-packages:
