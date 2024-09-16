@@ -68,7 +68,8 @@ class VirtualPointer(WaylandClient):
 
     def connected(self) -> None:
         """
-        Registers handlers for the output events and create the virtual pointer object.
+        Registers handlers for the output events and create the virtual pointer
+        object.
         """
         assert self.output_manager is not None, "No XDG output manager"
         assert self.pointer_manager is not None, "No WLR pointer manager"
@@ -123,7 +124,8 @@ class VirtualPointer(WaylandClient):
 
     def move_to_proportional(self, x: float, y: float) -> None:
         """
-        Move pointer to a location proportional to the dimensions of the display.
+        Move pointer to a location proportional to the dimensions of the
+        display.
         """
         self.move_to_absolute(
             int(x * self.output_width), int(y * self.output_height)

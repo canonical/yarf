@@ -79,8 +79,8 @@ class TestHidBase:
     @pytest.mark.asyncio
     async def test_move_pointer_to_proportional_raises(self, stub_hid):
         """
-        Test the function raises an exception if the target position is
-        out of screen.
+        Test the function raises an exception if the target position is out of
+        screen.
         """
         with pytest.raises(AssertionError):
             await stub_hid.move_pointer_to_proportional(1.1, 0)
@@ -91,8 +91,8 @@ class TestHidBase:
     @pytest.mark.asyncio
     async def test_walk_pointer_to_proportional(self, stub_hid, mock_sleep):
         """
-        Test the function moves the pointer by the requested step to the
-        target position given in proportional coordinates.
+        Test the function moves the pointer by the requested step to the target
+        position given in proportional coordinates.
         """
         await stub_hid.move_pointer_to_proportional(0.15, 0.35)
         await stub_hid.walk_pointer_to_proportional(0.5, 0.5, 0.05, 0.2)
@@ -114,8 +114,8 @@ class TestHidBase:
     @pytest.mark.asyncio
     async def test_walk_pointer_to_absolute(self, stub_hid, mock_sleep):
         """
-        Test the function moves the pointer by the requested step to the
-        target position given in absolute coordinates.
+        Test the function moves the pointer by the requested step to the target
+        position given in absolute coordinates.
         """
         await stub_hid.move_pointer_to_proportional(0.15, 0.35)
         await stub_hid.walk_pointer_to_absolute(100, 200, 0.05, 0.2)

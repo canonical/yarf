@@ -31,7 +31,7 @@ class WaylandClient(ABC):
 
     def timestamp(self) -> int:
         """
-        Get a Wayland-compatible current timestamp
+        Get a Wayland-compatible current timestamp.
         """
         return int(time.monotonic() * 1000)
 
@@ -42,13 +42,15 @@ class WaylandClient(ABC):
         """
         Implement binding to global objects here.
 
-        Ref.: https://pywayland.readthedocs.io/en/latest/module/protocol/wayland.html?highlight=wlregistry#wlregistry
+        Ref.:
+        https://pywayland.readthedocs.io/en/latest/module/protocol/wayland.html?highlight=wlregistry#wlregistry
         """
 
     @abstractmethod
     def connected(self) -> None:
         """
-        Called upon successful connection, perform any initial client requests here.
+        Called upon successful connection, perform any initial client requests
+        here.
         """
 
     @abstractmethod
@@ -61,7 +63,8 @@ class WaylandClient(ABC):
         """
         Initiate the connection with the compositor.
 
-        You can also use the object as an async context manager to connect and disconnect as needed.
+        You can also use the object as an async context manager to
+        connect and disconnect as needed.
         """
         try:
             self.display.connect()
@@ -79,7 +82,7 @@ class WaylandClient(ABC):
 
     async def disconnect(self) -> None:
         """
-        Stop the connection to the compositor
+        Stop the connection to the compositor.
         """
         asyncio.get_event_loop().remove_writer(self.display.get_fd())
         self.display.roundtrip()

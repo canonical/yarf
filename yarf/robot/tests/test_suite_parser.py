@@ -20,8 +20,8 @@ class TestSuiteParser:
 
     def test_read_suite(self, fs: FakeFilesystem) -> None:
         """
-        Test whether read_suite read the correct assets' and variants'
-        relative and full path from provided suite path.
+        Test whether read_suite read the correct assets' and variants' relative
+        and full path from provided suite path.
         """
         mock_suite_path = "suite"
         mock_files = [
@@ -62,9 +62,8 @@ class TestSuiteParser:
 
     def test_read_suite_sub_dir(self, fs: FakeFilesystem) -> None:
         """
-        Test whether read_suite read the correct assets' and variants'
-        relative and full path from provided suite path if there is/are
-        subdirectories.
+        Test whether read_suite read the correct assets' and variants' relative
+        and full path from provided suite path if there is/are subdirectories.
         """
         mock_suite_path = "suite"
         mock_files = [
@@ -111,7 +110,8 @@ class TestSuiteParser:
 
     def test_read_suite_no_robot_file(self, fs: FakeFilesystem) -> None:
         """
-        Test whether read_suite raises a ValueError when no robot file is found.
+        Test whether read_suite raises a ValueError when no robot file is
+        found.
         """
         mock_suite_path = "suite"
         mock_files = [
@@ -132,9 +132,8 @@ class TestSuiteParser:
 
     def test_suite_in_temp_folder(self, fs: FakeFilesystem) -> None:
         """
-        Test whether the function suite_in_temp_folder correctly
-        move the suite assets to a temporary folder after the correct
-        assets are selected.
+        Test whether the function suite_in_temp_folder correctly move the suite
+        assets to a temporary folder after the correct assets are selected.
         """
         mock_suite_path = "suite"
         mock_variant = "var1/var2/var3"
@@ -180,8 +179,8 @@ class TestSuiteParser:
 
     def test_select_assets(self, fs: FakeFilesystem) -> None:
         """
-        Test whether the select_assets method correctly get
-        assets according to variant string.
+        Test whether the select_assets method correctly get assets according to
+        variant string.
         """
         mock_suite_path = "suite"
         mock_variant = "var1/var2"
@@ -240,8 +239,8 @@ class TestSuiteParser:
 
     def test_get_variants_precedence_list(self) -> None:
         """
-        Test whether the get_variants_precedence_list method returns
-        the reversed ascending sort by specificity degree.
+        Test whether the get_variants_precedence_list method returns the
+        reversed ascending sort by specificity degree.
         """
         mock_suite_path = "/path/to/suite"
         mock_suite_parser_instance = Mock()

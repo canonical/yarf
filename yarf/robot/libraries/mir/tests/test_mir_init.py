@@ -2,7 +2,9 @@ from yarf.robot.libraries.mir import Mir
 
 
 class TestMir:
-    """Test the Mir class."""
+    """
+    Test the Mir class.
+    """
 
     def test_get_pkg_path(self) -> None:
         """

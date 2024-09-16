@@ -25,7 +25,8 @@ from yarf.robot.libraries.Example import Example
 class TestMain:
     def test_parse_arguments(self) -> None:
         """
-        Test whether the "parse_arguments" function returns the expected Namespace.
+        Test whether the "parse_arguments" function returns the expected
+        Namespace.
         """
         argv = ["--debug", "suite-path"]
         args = parse_arguments(argv)
@@ -56,7 +57,8 @@ class TestMain:
 
     def test_parse_arguments_system_argv(self) -> None:
         """
-        Test whether function picked up system arguments if argv is not provided.
+        Test whether function picked up system arguments if argv is not
+        provided.
         """
 
         with patch.object(
@@ -71,8 +73,8 @@ class TestMain:
 
     def test_parse_arguments_invalid_choice(self) -> None:
         """
-        Test whether the "parse_arguments" function
-        raises SystemExit for invalid choices.
+        Test whether the "parse_arguments" function raises SystemExit for
+        invalid choices.
         """
         argv = ["--platform", "InvalidPlatform", "suite-path"]
         with pytest.raises(SystemExit):
@@ -125,8 +127,8 @@ class TestMain:
 
     def test_get_robot_settings_invalid(self, fs: FakeFilesystem) -> None:
         """
-        Test whether the function raises an error
-        when encountering an invalid yarf tag.
+        Test whether the function raises an error when encountering an invalid
+        yarf tag.
         """
         test_path = "suite-path"
         fs.create_file(f"{test_path}/test.robot")
@@ -175,8 +177,8 @@ class TestMain:
         self, mock_rebot: MagicMock, mock_get_robot_settings: MagicMock
     ) -> None:
         """
-        Test if the function runs the robot suite with
-        the specified variables and output directory.
+        Test if the function runs the robot suite with the specified variables
+        and output directory.
         """
         variables = ["VAR1:value1", "VAR2:value2"]
         outdir = Path(tempfile.gettempdir()) / "yarf-outdir"
@@ -202,8 +204,8 @@ class TestMain:
         self, mock_get_robot_settings: MagicMock, fs: FakeFilesystem
     ) -> None:
         """
-        Test if the function raise exception if test suite
-        did not run successfully.
+        Test if the function raise exception if test suite did not run
+        successfully.
         """
         outdir = "/testoutdir"
         fs.create_dir(outdir)
@@ -232,8 +234,8 @@ class TestMain:
         mock_logger: MagicMock,
     ) -> None:
         """
-        Test if the function goes to interactive console
-        if empty path is supplied
+        Test if the function goes to interactive console if empty path is
+        supplied.
         """
         outdir = Path("/testoutdir")
         rf_debug_log_path = outdir / "rfdebug_history.log"
@@ -259,8 +261,8 @@ class TestMain:
         self, mock_test_suite: MagicMock, fs: FakeFilesystem
     ) -> None:
         """
-        Test whether the function runs a Robot Test Suite
-        with specified path and platform.
+        Test whether the function runs a Robot Test Suite with specified path
+        and platform.
         """
 
         test_path = "suite-path"
@@ -285,8 +287,8 @@ class TestMain:
         self, mock_test_suite: MagicMock, fs: FakeFilesystem
     ) -> None:
         """
-        Test whether the function runs a Robot Test Suite
-        with specified path, platform and output directory.
+        Test whether the function runs a Robot Test Suite with specified path,
+        platform and output directory.
         """
 
         test_path = "suite-path"
@@ -310,8 +312,8 @@ class TestMain:
         self, mock_test_suite_builder: MagicMock
     ) -> None:
         """
-        Test whether the function goes to interactive console
-        if empty path is supplied
+        Test whether the function goes to interactive console if empty path is
+        supplied.
         """
         outdir = Path(f"{tempfile.gettempdir()}/yarf-outdir")
         rf_debug_log_path = outdir / "rfdebug_history.log"
@@ -335,8 +337,8 @@ class TestMain:
         self, mock_path_exists: MagicMock
     ) -> None:
         """
-        Test whether the function raises an error
-        if start_robot command does not exist
+        Test whether the function raises an error if start_robot command does
+        not exist.
         """
 
         mock_path_exists.return_value = False
