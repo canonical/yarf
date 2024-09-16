@@ -14,7 +14,9 @@ class Hid(HidBase):
     """
 
     def __init__(self):
-        """Configure Zapper to use Keyboard and Pointer."""
+        """
+        Configure Zapper to use Keyboard and Pointer.
+        """
 
         super().__init__()
 
@@ -46,6 +48,7 @@ class Hid(HidBase):
     async def keys_combo(self, combo: list[str]):
         """
         Press and release a combination of keys.
+
         :param combo: list of keys to press at the same time.
         """
 
@@ -106,13 +109,17 @@ class Hid(HidBase):
 
     @keyword
     async def release_pointer_buttons(self) -> None:
-        """Release all pointer buttons."""
+        """
+        Release all pointer buttons.
+        """
         self.pressed_buttons.clear()
         with zapper_api() as service:
             service.hid_mouse(0, 0, 0, 0)
 
     async def _get_display_size(self) -> Size:
-        """Return Zapper display resolution"""
+        """
+        Return Zapper display resolution.
+        """
         with zapper_api() as service:
             resolution = service.get_hdmi_resolution()
             return Size(*(int(value) for value in resolution.split("x")))
@@ -123,8 +130,8 @@ class Hid(HidBase):
         y: float,
     ) -> None:
         """
-        Move the virtual pointer to a position proportional to the size
-        of the output.
+        Move the virtual pointer to a position proportional to the size of the
+        output.
         """
         if self._service:
             self._service.hid_pointer(False, x, y)
@@ -141,9 +148,9 @@ class Hid(HidBase):
         delay: float,
     ) -> None:
         """
-        Walk the virtual pointer to a position proportional to the size
-        of the output, maximum `step_distance` at a time,
-        with `delay` seconds in between.
+        Walk the virtual pointer to a position proportional to the size of the
+        output, maximum `step_distance` at a time, with `delay` seconds in
+        between.
         """
         with zapper_api() as svc:
             self._service = svc

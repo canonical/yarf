@@ -4,7 +4,9 @@ from yarf.robot.libraries.mir.Smoke import Smoke
 
 
 class TestMirSmoke:
-    """Test the Smoke class."""
+    """
+    Test the Smoke class.
+    """
 
     def test_print_smoke(self) -> None:
         """

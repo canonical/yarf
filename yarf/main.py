@@ -24,7 +24,8 @@ def parse_arguments(argv: list[str] = None) -> Namespace:
     """
     Add and parse command line arguments.
 
-    :param argv: list of arguments received via command line, defaults to None
+    :param argv: list of arguments received via command line, defaults
+        to None
     :return: the argparse.Namespace got after parsing the input
     """
 
@@ -120,7 +121,8 @@ def run_robot_suite(
     Run a robot test suite in the given suite path.
 
     :param test_suite: an initialized executable TestSuite
-    :param lib_cls: The platform library class that the user has chosen via the option `--platform`
+    :param lib_cls: The platform library class that the user has chosen
+        via the option `--platform`
     :param variables: Variables for the test suite to run
     :param outdir: Path to the output directory
     :return: None
@@ -146,13 +148,15 @@ def run_interactive_console(
     rf_debug_history_log_path: Path,
 ) -> None:
     """
-    Import the platform libraries and resources,
-    and run the interactive console.
+    Import the platform libraries and resources, and run the interactive
+    console.
 
     :param test_suite: an initialized executable TestSuite
-    :param lib_cls: The platform library class that the user has chosen via the option `--platform`
+    :param lib_cls: The platform library class that the user has chosen
+        via the option `--platform`
     :param outdir: Path to the output directory
-    :param rf_debug_history_log_path: Path to the interactive console log file
+    :param rf_debug_history_log_path: Path to the interactive console
+        log file
     :return: None
     """
     platform_library_paths = []
@@ -193,7 +197,8 @@ def main(argv: list[str] = None) -> None:
     """
     Main entry point.
 
-    :param argv: list of arguments received via command line, defaults to None
+    :param argv: list of arguments received via command line, defaults
+        to None
     :return: None
     """
     args = parse_arguments(argv)

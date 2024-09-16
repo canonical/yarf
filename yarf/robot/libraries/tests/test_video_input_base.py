@@ -22,8 +22,7 @@ from yarf.robot.libraries.video_input_base import VideoInputBase
 
 class StubVideoInput(VideoInputBase):
     """
-    Test class with basic implementation for abstract
-    methods.
+    Test class with basic implementation for abstract methods.
     """
 
     async def start_video_input(self):
@@ -85,12 +84,14 @@ def mock_ocr():
 
 class TestVideoInputBase:
     """
-    This class provides tests for the VideoInputBase class
+    This class provides tests for the VideoInputBase class.
     """
 
     @pytest.mark.asyncio
     async def test_match(self, stub_videoinput):
-        """Check the *Match* keyword returns the regions found."""
+        """
+        Check the *Match* keyword returns the regions found.
+        """
 
         stub_videoinput._grab_screenshot.side_effect = [
             RuntimeError,
@@ -117,7 +118,9 @@ class TestVideoInputBase:
 
     @pytest.mark.asyncio
     async def test_match_no_video(self, stub_videoinput, mock_run):
-        """Check that successful matches don't log video"""
+        """
+        Check that successful matches don't log video.
+        """
 
         stub_videoinput._rpa_images.find_template_in_image.return_value = [
             Mock()
@@ -135,7 +138,7 @@ class TestVideoInputBase:
     async def test_match_any(self, stub_videoinput):
         """
         Check the *Match Any* keyword returns the regions found in the first
-        matched template
+        matched template.
         """
 
         mock_regions = [Mock()]
@@ -156,8 +159,8 @@ class TestVideoInputBase:
     @pytest.mark.asyncio
     async def test_match_all(self, stub_videoinput):
         """
-        Check the *Match All* keyword returns the regions found only
-        when every template matches.
+        Check the *Match All* keyword returns the regions found only when every
+        template matches.
         """
 
         mock_regions = [Mock()]
@@ -192,7 +195,9 @@ class TestVideoInputBase:
 
     @pytest.mark.asyncio
     async def test_match_fail(self, stub_videoinput, mock_time):
-        """Check the function returns correctly unless there's no match."""
+        """
+        Check the function returns correctly unless there's no match.
+        """
 
         stub_videoinput._log_failed_match = Mock()
 
@@ -221,7 +226,10 @@ class TestVideoInputBase:
     async def test_match_fail_logs_video(
         self, stub_videoinput, mock_time, mock_run
     ):
-        """Check that a video of all screenshots grabbed is logged on test failure"""
+        """
+        Check that a video of all screenshots grabbed is logged on test
+        failure.
+        """
 
         stub_videoinput._log_failed_match = Mock()
         stub_videoinput._log_video = Mock()
@@ -261,7 +269,10 @@ class TestVideoInputBase:
     async def test_match_fail_logs_ffmpeg_warning(
         self, stub_videoinput, mock_logger, mock_time, mock_run, run_error
     ):
-        """Check that a warning is logged on failure if `ffmpeg` is unavailable or fails"""
+        """
+        Check that a warning is logged on failure if `ffmpeg` is unavailable or
+        fails.
+        """
 
         stub_videoinput._log_failed_match = Mock()
 
@@ -281,7 +292,7 @@ class TestVideoInputBase:
     @pytest.mark.asyncio
     async def test_match_converts_to_rgb(self, mock_to_image, stub_videoinput):
         """
-        Check the Match keyword accepts non-RGB images and converts them
+        Check the Match keyword accepts non-RGB images and converts them.
         """
         mock_to_image.return_value.mode = "L"
         mock_regions = [Mock()]
@@ -304,7 +315,9 @@ class TestVideoInputBase:
 
     @pytest.mark.asyncio
     async def test_read_text_image(self, stub_videoinput, mock_ocr):
-        """Test whether the function runs OCR on the provided image."""
+        """
+        Test whether the function runs OCR on the provided image.
+        """
 
         image = Mock()
 
@@ -314,8 +327,7 @@ class TestVideoInputBase:
     @pytest.mark.asyncio
     async def test_restart_video_input(self, stub_videoinput):
         """
-        Test the restart video function calls the inner
-        relative functions.
+        Test the restart video function calls the inner relative functions.
         """
         stub_videoinput.start_video_input = AsyncMock()
         stub_videoinput.stop_video_input = AsyncMock()
@@ -328,8 +340,8 @@ class TestVideoInputBase:
     @patch("yarf.robot.libraries.video_input_base.Image")
     def test_log_failed_match(self, mock_image, stub_videoinput, mock_logger):
         """
-        Test whether the function converts the images to base64
-        and add them to the HTML Robot log.
+        Test whether the function converts the images to base64 and add them to
+        the HTML Robot log.
         """
 
         image = Mock()

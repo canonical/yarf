@@ -34,8 +34,8 @@ class TestZapperHid:
 
     def test_init(self, mock_service):
         """
-        Test init function attempts to initialize the
-        Zapper HID devices including the pointer.
+        Test init function attempts to initialize the Zapper HID devices
+        including the pointer.
         """
 
         mock_service.hid_set_devices.side_effect = ZapperException
@@ -52,8 +52,8 @@ class TestZapperHid:
     @pytest.mark.asyncio
     async def test_keys_combo(self, zapper_hid, mock_service):
         """
-        Test if the key combination is correctly translated and the
-        action requested.
+        Test if the key combination is correctly translated and the action
+        requested.
         """
         keys = ["LEFT_ALT", "F4"]
 
@@ -69,8 +69,8 @@ class TestZapperHid:
     @pytest.mark.asyncio
     async def test_type_string(self, zapper_hid, mock_service):
         """
-        Test if the string to type is correctly translated and the
-        action requested.
+        Test if the string to type is correctly translated and the action
+        requested.
         """
         string = "hello there."
 

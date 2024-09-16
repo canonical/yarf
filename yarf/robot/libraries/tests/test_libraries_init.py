@@ -9,7 +9,9 @@ from yarf.robot.libraries import (
 
 
 class TestPlatformMeta:
-    """Test the Platform metaclass."""
+    """
+    Test the Platform metaclass.
+    """
 
     def test_new(self):
         """
@@ -25,12 +27,14 @@ class TestPlatformMeta:
 
 
 class TestPlatformBase:
-    """Test the Platform base class."""
+    """
+    Test the Platform base class.
+    """
 
     def test_not_implemented(self):
         """
-        Test whether the abstractmethods are required when inheriting
-        from PlatformBase.
+        Test whether the abstractmethods are required when inheriting from
+        PlatformBase.
         """
 
         class TestModule(PlatformBase):
@@ -41,8 +45,8 @@ class TestPlatformBase:
 
     def test_get_pkg_path(self):
         """
-        Test whether the "get_pkg_path" method is callable when a class inherits
-        from PlatformBase.
+        Test whether the "get_pkg_path" method is callable when a class
+        inherits from PlatformBase.
         """
         test_lib_path = "lib-path"
 
@@ -55,12 +59,14 @@ class TestPlatformBase:
 
 
 class TestInit:
-    """Test the commonly available, module-level functions."""
+    """
+    Test the commonly available, module-level functions.
+    """
 
     def test_import_libraries(self) -> None:
         """
-        PlatformBase should not be included in SUPPORTED_PLATFORMS,
-        Test whether PlatformBase is deleted from SUPPORTED_PLATFORMS.
+        PlatformBase should not be included in SUPPORTED_PLATFORMS, Test
+        whether PlatformBase is deleted from SUPPORTED_PLATFORMS.
         """
 
         class TestModule(PlatformBase):
