@@ -108,6 +108,26 @@ Example_IP=<Example_IP> yarf <path-to-suite>/suite
 
 <u><center>Code Snippet 7: `yarf` command without `--platform` option</center></u>
 
+To run with the Mir platform, you need to run a Mir compositor with additional Wayland protocols. You can install the
+[`mir-test-tools`](https://snapcraft.io/mir-test-tools) snap and use `mir-test-tools.demo-server`, for example:
+
+```
+export WAYLAND_DISPLAY=wayland-99
+export MIR_SERVER_ADD_WAYLAND_EXTENSIONS=zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1
+
+mir-test-tools.demo-server &  # starts the demo Mir compositor
+
+gnome-calculator &  # start the application
+
+yarf --platform Mir <path-to-suite>/suite
+```
+
+<u><center>Code Snippet 8: `yarf` command for Mir</center></u>
+
+You can find out more about Mir at [the Mir documentation site](https://canonical-mir.readthedocs-hosted.com/stable/tutorial/learn-what-mir-can-do/).
+
+______________________________________________________________________
+
 If you do not have a test suite, you can still use YARF to explore and come up with the robot script you need by using the [Interactive console](interactive-console.md).
 
 ### Robot CLI arguments
