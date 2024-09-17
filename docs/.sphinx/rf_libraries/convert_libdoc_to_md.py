@@ -69,7 +69,7 @@ def convert_json_to_markdown(json_file, markdown_file):
 
             md.write("## Keywords\n\n")
 
-            for keyword in data["keywords"]:
+            for i, keyword in enumerate(data["keywords"]):
                 content = []
                 # Write section title
                 # h2 title in contents panel
@@ -118,9 +118,11 @@ def convert_json_to_markdown(json_file, markdown_file):
                         md_table += f"| {name} | {arg_type} | {default} | {kind} | {required} |\n"
 
                     # Write the constructed table to markdown
-                    content.append(md_table + "\n\n")
+                    content.append(md_table)
 
                 md.write("".join(content))
+                if i < len(data["keywords"]) - 1:
+                    md.write("<hr style=\"border:1px solid grey\">\n\n")
 
 
 def generate_libdoc_for_resources(resource_file: Path, output_file: Path):
