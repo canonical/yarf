@@ -70,6 +70,7 @@ asyncio_default_fixture_loop_scope = "auto"
 markers = [
     "output_size",
     "start_suite",
+    "wayland_client",
     "wayland_globals",
 ]
 
