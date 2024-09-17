@@ -1,5 +1,5 @@
 # Exclude doc starter pack (but keep .md, .rst)
-exclude: '^docs/(doc-cheat-sheet.*|(?!.+\.(md|rst)).+)$'
+exclude: '^docs/(doc-cheat-sheet.*|(?!.+\.(md|rst)).+)|hatch_build.py|yarf/lib/wayland/protocols/.*$'
 
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -58,15 +58,42 @@ repos:
   rev: v1.7.5
   hooks:
   - id: docformatter
-    args: [--in-place, --pre-summary-newline, --make-summary-multi-line]
+    args: [
+      --in-place,
+      --pre-summary-newline,
+      --make-summary-multi-line,
+    ]
 
 - repo: https://github.com/econchick/interrogate
   rev: 1.7.0
   hooks:
   - id: interrogate
-    pass_filenames: false
+    exclude: 'tests/.*'
+    args: [
+      --verbose,
+      --fail-under=63.6,
+    ]
 
 - repo: https://github.com/jsh9/pydoclint.git
   rev: 0.5.7
   hooks:
   - id: pydoclint
+    exclude: 'tests/.*'
+    args: [
+      --style=google,
+      --skip-checking-short-docstrings=False,
+      --arg-type-hints-in-docstring=False,
+      --check-return-types=False,
+      --check-yield-types=False,
+      --baseline=pydoclint-baseline.txt,
+      #--generate-baseline=True,
+    ]
+  - id: pydoclint
+    files: 'tests/.*'
+    args: [
+      --style=google,
+      --skip-checking-short-docstrings=True,
+      --arg-type-hints-in-docstring=False,
+      --check-return-types=False,
+      --check-yield-types=False,
+    ]
