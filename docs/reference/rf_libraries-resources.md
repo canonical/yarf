@@ -7,5 +7,5 @@ YARF provides a set of custom Robot _keywords_ for common actions, usually integ
 glob:
 maxdepth: 1
 ---
-robot/resource-*
+rf_libraries/resource-*
 ```

@@ -26,8 +26,8 @@ SUFFIX = {
 }
 
 PACKAGE = {
-    RobotFile.LIBRARY: Path("yarf/robot/libraries"),
-    RobotFile.RESOURCE: Path("yarf/robot/resources"),
+    RobotFile.LIBRARY: Path("yarf/rf_libraries/libraries"),
+    RobotFile.RESOURCE: Path("yarf/rf_libraries/resources"),
 }
 
 
@@ -203,19 +203,19 @@ def main():
     Main entry point for the script. This script generates the Robot Framework
     resource documentation in Markdown format for the YARF project.
     The script first runs the `libdoc` command to generate a JSON file for each
-    `.resource` file under `yarf/robot/resources/`, and
+    `.resource` file under `yarf/rf_libraries/resources/`, and
     then converts the JSON file to a Markdown file as
-    `yarf/docs/reference/robot/resource-<name>.md`.
+    `yarf/docs/reference/rf_libraries/resource-<name>.md`.
     """
 
-    # this script is located in "yarf/docs/.sphinx/robot"
+    # this script is located in "yarf/docs/.sphinx/rf_libraries"
     docs_dir = Path(__file__).parent.parent.parent
     repo_root = docs_dir.parent
 
     for target in RobotFile:
 
         source_dir = repo_root / PACKAGE[target]
-        target_dir = docs_dir / Path("reference/robot")
+        target_dir = docs_dir / Path("reference/rf_libraries")
 
         if not target_dir.exists():
             os.makedirs(target_dir)

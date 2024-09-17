@@ -18,8 +18,8 @@ from yarf.main import (
     run_interactive_console,
     run_robot_suite,
 )
-from yarf.robot.libraries import SUPPORTED_PLATFORMS
-from yarf.robot.libraries.Example import Example
+from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS
+from yarf.rf_libraries.libraries.Example import Example
 
 
 class TestMain:

@@ -65,7 +65,7 @@ sp-pa11y-install:
 sp-install: $(VENVDIR)
 
 sp-libdoc-convert: sp-install
-	. $(VENV); python3 $(SPHINXDIR)/robot/convert_libdoc_to_md.py
+	. $(VENV); python3 $(SPHINXDIR)/rf_libraries/convert_libdoc_to_md.py
 
 sp-run: sp-install sp-libdoc-convert
 	. $(VENV); sphinx-autobuild -b dirhtml "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)

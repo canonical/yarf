@@ -1,4 +1,4 @@
-from yarf.robot.libraries.mir import Mir
+from yarf.rf_libraries.libraries.mir import Mir
 
 
 class TestMir:
@@ -11,4 +11,4 @@ class TestMir:
         Test whether the "get_pkg_path" method returns the expected path.
         """
 
-        assert Mir.get_pkg_path().endswith("/yarf/robot/libraries/mir")
+        assert Mir.get_pkg_path().endswith("/yarf/rf_libraries/libraries/mir")

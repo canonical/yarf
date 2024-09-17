@@ -46,7 +46,7 @@ yarf/main.py
     DOC501: Function `main` has "raise" statements, but the docstring does not have a "Raises" section
     DOC503: Function `main` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['FileNotFoundError'].
 --------------------
-yarf/robot/__init__.py
+yarf/rf_libraries/__init__.py
     DOC101: Function `robot_in_path`: Docstring contains fewer arguments than in function signature.
     DOC103: Function `robot_in_path`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [lib_path: str].
     DOC402: Function `robot_in_path` has "yield" statements, but the docstring does not have a "Yields" section
@@ -54,7 +54,7 @@ yarf/robot/__init__.py
     DOC501: Function `robot_in_path` has "raise" statements, but the docstring does not have a "Raises" section
     DOC503: Function `robot_in_path` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['ValueError'].
 --------------------
-yarf/robot/libraries/__init__.py
+yarf/rf_libraries/libraries/__init__.py
     DOC101: Method `PlatformMeta.__new__`: Docstring contains fewer arguments than in function signature.
     DOC106: Method `PlatformMeta.__new__`: The option `--arg-type-hints-in-signature` is `True` but there are no argument type hints in the signature
     DOC107: Method `PlatformMeta.__new__`: The option `--arg-type-hints-in-signature` is `True` but not all args in the signature have type hints
@@ -65,7 +65,7 @@ yarf/robot/libraries/__init__.py
     DOC501: Method `PlatformBase.get_pkg_path` has "raise" statements, but the docstring does not have a "Raises" section
     DOC503: Method `PlatformBase.get_pkg_path` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['NotImplementedError'].
 --------------------
-yarf/robot/libraries/hid_base.py
+yarf/rf_libraries/libraries/hid_base.py
     DOC601: Class `HidBase`: Class docstring contains fewer class attributes than actual class attributes.  (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
     DOC603: Class `HidBase`: Class docstring attributes are different from actual class attributes. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Attributes in the class definition but not in the docstring: [ROBOT_LIBRARY_SCOPE: ]. (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
     DOC101: Method `HidBase.keys_combo`: Docstring contains fewer arguments than in function signature.
@@ -91,11 +91,11 @@ yarf/robot/libraries/hid_base.py
     DOC101: Method `HidBase.walk_pointer_to_proportional`: Docstring contains fewer arguments than in function signature.
     DOC103: Method `HidBase.walk_pointer_to_proportional`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [delay: float, step_distance: float, x: float, y: float].
 --------------------
-yarf/robot/libraries/mir/Hid.py
+yarf/rf_libraries/libraries/mir/Hid.py
     DOC601: Class `Hid`: Class docstring contains fewer class attributes than actual class attributes.  (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
     DOC603: Class `Hid`: Class docstring attributes are different from actual class attributes. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Attributes in the class definition but not in the docstring: [ROBOT_LISTENER_API_VERSION: ]. (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
 --------------------
-yarf/robot/libraries/video_input_base.py
+yarf/rf_libraries/libraries/video_input_base.py
     DOC601: Class `VideoInputBase`: Class docstring contains fewer class attributes than actual class attributes.  (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
     DOC603: Class `VideoInputBase`: Class docstring attributes are different from actual class attributes. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Attributes in the class definition but not in the docstring: [ROBOT_LIBRARY_SCOPE: , ROBOT_LISTENER_API_VERSION: , TOLERANCE: ]. (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
     DOC301: Class `VideoInputBase`: __init__() should not have a docstring; please combine it with the docstring of the class
@@ -133,7 +133,7 @@ yarf/robot/libraries/video_input_base.py
     DOC101: Method `VideoInputBase._log_failed_match`: Docstring contains fewer arguments than in function signature.
     DOC103: Method `VideoInputBase._log_failed_match`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [screenshot: Image.Image, template: str].
 --------------------
-yarf/robot/libraries/Example/Hid.py
+yarf/rf_libraries/libraries/Example/Hid.py
     DOC301: Class `Hid`: __init__() should not have a docstring; please combine it with the docstring of the class
     DOC101: Method `Hid.keys_combo`: Docstring contains fewer arguments than in function signature.
     DOC103: Method `Hid.keys_combo`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [combo: list[str]].
@@ -152,7 +152,7 @@ yarf/robot/libraries/Example/Hid.py
     DOC101: Method `Hid.walk_pointer_to_proportional`: Docstring contains fewer arguments than in function signature.
     DOC103: Method `Hid.walk_pointer_to_proportional`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [delay: float, step_distance: float, x: float, y: float].
 --------------------
-yarf/robot/libraries/Example/VideoInput.py
+yarf/rf_libraries/libraries/Example/VideoInput.py
     DOC601: Class `Source`: Class docstring contains fewer class attributes than actual class attributes.  (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
     DOC603: Class `Source`: Class docstring attributes are different from actual class attributes. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Attributes in the class definition but not in the docstring: [CAMERA: , HDMI: ]. (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
     DOC201: Method `VideoSource.grab_screenshot` does not have a return section in docstring
@@ -180,7 +180,7 @@ yarf/robot/libraries/Example/VideoInput.py
     DOC501: Method `VideoInput.init` has "raise" statements, but the docstring does not have a "Raises" section
     DOC503: Method `VideoInput.init` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['SystemExit'].
 --------------------
-yarf/robot/libraries/Example/__init__.py
+yarf/rf_libraries/libraries/Example/__init__.py
     DOC601: Class `Example`: Class docstring contains fewer class attributes than actual class attributes.  (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
     DOC603: Class `Example`: Class docstring attributes are different from actual class attributes. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Attributes in the class definition but not in the docstring: [RPYC_PORT: , RPYC_TIMEOUT: ]. (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
     DOC101: Function `Example_api`: Docstring contains fewer arguments than in function signature.
@@ -188,7 +188,7 @@ yarf/robot/libraries/Example/__init__.py
     DOC402: Function `Example_api` has "yield" statements, but the docstring does not have a "Yields" section
     DOC404: Function `Example_api` yield type(s) in docstring not consistent with the return annotation. Return annotation exists, but docstring "yields" section does not exist or has 0 type(s).
 --------------------
-yarf/robot/suite_parser.py
+yarf/rf_libraries/suite_parser.py
     DOC501: Method `SuiteParser.read_suite` has "raise" statements, but the docstring does not have a "Raises" section
     DOC503: Method `SuiteParser.read_suite` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['ValueError'].
     DOC101: Method `SuiteParser.suite_in_temp_folder`: Docstring contains fewer arguments than in function signature.

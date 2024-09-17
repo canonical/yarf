@@ -4,7 +4,7 @@ import os
 from robot.api.deco import keyword, library
 
 from yarf.lib.wayland.virtual_pointer import Button, VirtualPointer
-from yarf.robot.libraries.hid_base import HidBase, Size
+from yarf.rf_libraries.libraries.hid_base import HidBase, Size
 
 
 @library

@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from yarf.robot.libraries.mir.Smoke import Smoke
+from yarf.rf_libraries.libraries.mir.Smoke import Smoke
 
 
 class TestMirSmoke:

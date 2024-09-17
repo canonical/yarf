@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from yarf.robot.libraries import PlatformBase
+from yarf.rf_libraries.libraries import PlatformBase
 
 
 class Mir(PlatformBase):

@@ -20,5 +20,5 @@ YARF extends Robot Framework with custom Python libraries:
 glob:
 maxdepth: 1
 ---
-robot/library-*
+rf_libraries/library-*
 ```

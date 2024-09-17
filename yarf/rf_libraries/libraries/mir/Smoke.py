@@ -1,7 +1,7 @@
 from robot.api import logger
 from robot.api.deco import keyword, library
 
-from yarf.robot.libraries.smoke_base import SmokeBase
+from yarf.rf_libraries.libraries.smoke_base import SmokeBase
 
 
 @library

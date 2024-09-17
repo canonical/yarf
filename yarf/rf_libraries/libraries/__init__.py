@@ -45,7 +45,7 @@ def import_libraries() -> None:
         if submodule.parent.name in not_needed:
             continue
         importlib.import_module(
-            f"yarf.robot.libraries.{submodule.parent.name}"
+            f"yarf.rf_libraries.libraries.{submodule.parent.name}"
         )
 
     del SUPPORTED_PLATFORMS[PlatformBase.__name__]

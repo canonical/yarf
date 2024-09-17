@@ -5,6 +5,6 @@
 glob:
 maxdepth: 1
 ---
-./robot-libraries.md
-./robot-resources.md
+./rf_libraries-libraries.md
+./rf_libraries-resources.md
 ```

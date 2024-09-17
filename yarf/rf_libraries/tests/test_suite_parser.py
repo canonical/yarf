@@ -4,7 +4,7 @@ from unittest.mock import Mock
 import pytest
 from pyfakefs.fake_filesystem_unittest import FakeFilesystem
 
-from yarf.robot.suite_parser import SuiteParser
+from yarf.rf_libraries.suite_parser import SuiteParser
 
 
 class TestSuiteParser:

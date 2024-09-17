@@ -3,13 +3,13 @@ from unittest.mock import ANY, AsyncMock, call, patch, sentinel
 
 import pytest
 
-from yarf.robot.libraries.hid_base import Size
-from yarf.robot.libraries.mir.Hid import Button, Hid
+from yarf.rf_libraries.libraries.hid_base import Size
+from yarf.rf_libraries.libraries.mir.Hid import Button, Hid
 
 
 @pytest.fixture(autouse=True)
 def mock_pointer():
-    with patch("yarf.robot.libraries.mir.Hid.VirtualPointer") as mock:
+    with patch("yarf.rf_libraries.libraries.mir.Hid.VirtualPointer") as mock:
         mock.return_value.attach_mock(mock, "new")
         mock.configure_mock(
             **{
@@ -27,7 +27,7 @@ def mir_hid():
 
 class TestMirHid:
     @patch("os.environ.get")
-    @patch("yarf.robot.libraries.hid_base.HidBase.__init__")
+    @patch("yarf.rf_libraries.libraries.hid_base.HidBase.__init__")
     def test_init(self, mock_base, mock_get, mock_pointer):
         Hid()
         mock_get.assert_called_once_with("WAYLAND_DISPLAY", ANY)

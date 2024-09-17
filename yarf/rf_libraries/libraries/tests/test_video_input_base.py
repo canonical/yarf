@@ -17,7 +17,7 @@ from unittest.mock import (
 import pytest
 from RPA.recognition.templates import ImageNotFoundError
 
-from yarf.robot.libraries.video_input_base import VideoInputBase
+from yarf.rf_libraries.libraries.video_input_base import VideoInputBase
 
 
 class StubVideoInput(VideoInputBase):
@@ -53,13 +53,13 @@ def mock_time():
 
 @pytest.fixture(autouse=True)
 def mock_to_image():
-    with patch("yarf.robot.libraries.video_input_base.to_image") as p:
+    with patch("yarf.rf_libraries.libraries.video_input_base.to_image") as p:
         yield p
 
 
 @pytest.fixture()
 def mock_logger():
-    with patch("yarf.robot.libraries.video_input_base.logger") as p:
+    with patch("yarf.rf_libraries.libraries.video_input_base.logger") as p:
         yield p
 
 
@@ -78,7 +78,7 @@ def mock_tempdir():
 
 @pytest.fixture
 def mock_ocr():
-    with patch("yarf.robot.libraries.video_input_base.ocr") as p:
+    with patch("yarf.rf_libraries.libraries.video_input_base.ocr") as p:
         yield p
 
 
@@ -337,7 +337,7 @@ class TestVideoInputBase:
         stub_videoinput.stop_video_input.assert_called_once()
         stub_videoinput.start_video_input.assert_called_once()
 
-    @patch("yarf.robot.libraries.video_input_base.Image")
+    @patch("yarf.rf_libraries.libraries.video_input_base.Image")
     def test_log_failed_match(self, mock_image, stub_videoinput, mock_logger):
         """
         Test whether the function converts the images to base64 and add them to
@@ -370,7 +370,7 @@ class TestVideoInputBase:
         """
 
         with patch(
-            "yarf.robot.libraries.video_input_base.open",
+            "yarf.rf_libraries.libraries.video_input_base.open",
             mock_open(read_data=b""),
         ) as m:
             stub_videoinput._log_video("videopath")

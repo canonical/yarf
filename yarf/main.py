@@ -12,9 +12,9 @@ from packaging import version
 from robot import rebot
 from robot.api import TestSuite, TestSuiteBuilder
 
-from yarf.robot import robot_in_path
-from yarf.robot.libraries import SUPPORTED_PLATFORMS, PlatformBase
-from yarf.robot.suite_parser import SuiteParser
+from yarf.rf_libraries import robot_in_path
+from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS, PlatformBase
+from yarf.rf_libraries.suite_parser import SuiteParser
 
 _logger = logging.getLogger(__name__)
 YARF_VERSION = version.parse(metadata.version("yarf"))
@@ -170,7 +170,7 @@ def run_interactive_console(
     for resource_path in (
         Path(__file__)
         .resolve()
-        .parent.joinpath("robot/resources")
+        .parent.joinpath("rf_libraries/resources")
         .glob("*.resource")
     ):
         resources.append(str(resource_path))
@@ -227,7 +227,9 @@ def main(argv: list[str] = None) -> None:
         start_console_path = (
             Path(__file__)
             .resolve()
-            .parent.joinpath("robot/interactive_console/start_console.robot")
+            .parent.joinpath(
+                "rf_libraries/interactive_console/start_console.robot"
+            )
         )
         if not start_console_path.exists():
             raise FileNotFoundError(

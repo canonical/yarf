@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, call, patch
 
 import pytest
 
-from yarf.robot.libraries.hid_base import HidBase, Size
+from yarf.rf_libraries.libraries.hid_base import HidBase, Size
 
 
 @pytest.fixture

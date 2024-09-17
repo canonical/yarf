@@ -1,6 +1,6 @@
 import pytest
 
-from yarf.robot.libraries import (
+from yarf.rf_libraries.libraries import (
     SUPPORTED_PLATFORMS,
     PlatformBase,
     PlatformMeta,

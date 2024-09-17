@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from yarf.robot import ROBOT_RESOURCE_PATH, robot_in_path
+from yarf.rf_libraries import ROBOT_RESOURCE_PATH, robot_in_path
 
 
 class TestRobotInit:
