@@ -18,8 +18,8 @@ from yarf.main import (
     run_interactive_console,
     run_robot_suite,
 )
-from yarf.robot.libraries import SUPPORTED_PLATFORMS
-from yarf.robot.libraries.zapper import Zapper
+from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS
+from yarf.rf_libraries.libraries.zapper import Zapper
 
 
 class TestMain:

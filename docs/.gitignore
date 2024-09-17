@@ -12,4 +12,4 @@ _build
 __pycache__
 .idea/
 .vscode/
-reference/robot/*
+reference/rf_libraries/*
