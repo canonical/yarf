@@ -10,11 +10,13 @@ import pytest
 from packaging import version
 from pyfakefs.fake_filesystem_unittest import FakeFilesystem
 from robot.api import TestSuite as RobotSuite
+from robot.errors import Information
 
 from yarf import main
 from yarf.main import (
     get_robot_settings,
     parse_arguments,
+    parse_robot_arguments,
     run_interactive_console,
     run_robot_suite,
 )
@@ -28,32 +30,50 @@ class TestMain:
         Test whether the "parse_arguments" function returns the expected
         Namespace.
         """
-        argv = ["--debug", "suite-path"]
-        args = parse_arguments(argv)
+        argv = ["suite/", "--"]
+        args, _ = parse_arguments(argv)
+        assert args.suite == "suite/"
+
+        argv = ["--debug"]
+        args, _ = parse_arguments(argv)
         assert args.verbosity == "DEBUG"
-        assert args.suite == "suite-path"
 
-        argv = ["--quiet", "suite-path"]
-        args = parse_arguments(argv)
+        argv = ["--quiet"]
+        args, _ = parse_arguments(argv)
         assert args.verbosity == "WARNING"
-        assert args.suite == "suite-path"
 
-        argv = ["--variant", "var1/var2/var3", "suite-path"]
-        args = parse_arguments(argv)
+        argv = ["--variant", "var1/var2/var3"]
+        args, _ = parse_arguments(argv)
         assert args.variant == "var1/var2/var3"
-        assert args.suite == "suite-path"
 
-        argv = ["--outdir", "out/dir", "suite-path"]
-        args = parse_arguments(argv)
+        argv = ["--outdir", "out/dir"]
+        args, _ = parse_arguments(argv)
         assert args.outdir == "out/dir"
-        assert args.suite == "suite-path"
 
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Example"] = Example
-        argv = ["--platform", "Example", "suite-path"]
-        args = parse_arguments(argv)
+        argv = ["--platform", "Example"]
+        args, _ = parse_arguments(argv)
         assert args.platform == "Example"
-        assert args.suite == "suite-path"
+
+        argv = ["--", "--variable", "key:value"]
+        _, extra = parse_arguments(argv)
+        assert extra == {"variable": ["key:value"]}
+
+    @patch("yarf.main.RobotFramework")
+    @patch("builtins.print")
+    def test_parse_robot_arguments_info(self, mock_print, mock_rf):
+        """
+        Test whether the parser catches the Information exception when raised
+        by Robot parser with --help or --version, prints the information and
+        exit w/o errors.
+        """
+
+        info = Information("helper")
+        mock_rf.return_value.parse_arguments.side_effect = info
+        with pytest.raises(SystemExit):
+            parse_robot_arguments(["--help"])
+        mock_print.assert_called_once_with(info)
 
     def test_parse_arguments_system_argv(self) -> None:
         """
@@ -64,12 +84,22 @@ class TestMain:
         with patch.object(
             sys,
             "argv",
-            ["prog", "--debug", "--platform", "Example", "suite-path"],
+            [
+                "prog",
+                "--debug",
+                "--platform",
+                "Example",
+                "suite-path",
+                "--",
+                "--variable",
+                "key:value",
+            ],
         ):
-            args = parse_arguments()
+            args, extra = parse_arguments()
             assert args.verbosity == "DEBUG"
             assert args.platform == "Example"
             assert args.suite == "suite-path"
+            assert extra == {"variable": ["key:value"]}
 
     def test_parse_arguments_invalid_choice(self) -> None:
         """
@@ -87,7 +117,8 @@ class TestMain:
         # test for yarf:min-version-X.Y
         with open(f"{test_path}/test.robot", "w") as f:
             f.write(
-                dedent("""
+                dedent(
+                    """
                 *** Settings ***
                 Documentation       Test
                 Test Tags           robot:stop-on-failure    yarf:min-version-10000000000.0.0
@@ -96,7 +127,8 @@ class TestMain:
                 *** Tasks ***
                 Log Message 1
                     Log To Console    message 1
-                """)
+                """
+                )
             )
 
         test_suite = RobotSuite.from_file_system(test_path)
@@ -108,7 +140,8 @@ class TestMain:
 
         with open(f"{test_path}/test.robot", "w") as f:
             f.write(
-                dedent("""
+                dedent(
+                    """
                 *** Settings ***
                 Documentation       Test
                 Test Tags           robot:stop-on-failure    yarf:min-version-0.0.0
@@ -117,7 +150,8 @@ class TestMain:
                 *** Tasks ***
                 Log Message 1
                     Log To Console    message 1
-                """)
+                """
+                )
             )
 
         test_suite = RobotSuite.from_file_system(test_path)
@@ -136,7 +170,8 @@ class TestMain:
         # test for invalid yarf:min-version-X.Y.Z
         with open(f"{test_path}/test.robot", "w") as f:
             f.write(
-                dedent("""
+                dedent(
+                    """
                 *** Settings ***
                 Documentation       Test
                 Test Tags           robot:stop-on-failure    yarf:min-version-INV.INV.INV
@@ -145,7 +180,8 @@ class TestMain:
                 *** Tasks ***
                 Log Message 1
                     Log To Console    message 1
-                """)
+                """
+                )
             )
 
         test_suite = RobotSuite.from_file_system(test_path)
@@ -155,7 +191,8 @@ class TestMain:
 
         with open(f"{test_path}/test.robot", "w") as f:
             f.write(
-                dedent("""
+                dedent(
+                    """
                 *** Settings ***
                 Documentation       Test
                 Test Tags           robot:stop-on-failure    yarf:min-versi@n-0.0.0
@@ -164,7 +201,8 @@ class TestMain:
                 *** Tasks ***
                 Log Message 1
                     Log To Console    message 1
-                """)
+                """
+                )
             )
 
         test_suite = RobotSuite.from_file_system(test_path)
@@ -181,6 +219,7 @@ class TestMain:
         and output directory.
         """
         variables = ["VAR1:value1", "VAR2:value2"]
+        options = {"variable": ["VAR3:value3"], "extra_arg": "extra_value"}
         outdir = Path(tempfile.gettempdir()) / "yarf-outdir"
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Example"] = Example
@@ -189,11 +228,17 @@ class TestMain:
         mock_test_suite.run.return_value.return_code = 0
         mock_get_robot_settings.return_value = {}
         run_robot_suite(
-            mock_test_suite, SUPPORTED_PLATFORMS["Example"], variables, outdir
+            mock_test_suite,
+            SUPPORTED_PLATFORMS["Example"],
+            variables,
+            outdir,
+            options,
         )
         mock_get_robot_settings.assert_called_once()
         mock_test_suite.run.assert_called_once_with(
-            variable=variables, outputdir=outdir
+            variable=["VAR1:value1", "VAR2:value2", "VAR3:value3"],
+            outputdir=outdir,
+            extra_arg="extra_value",
         )
         mock_rebot.assert_called_once_with(
             f"{outdir}/output.xml", outputdir=outdir
@@ -223,6 +268,7 @@ class TestMain:
                 SUPPORTED_PLATFORMS["Example"],
                 variables,
                 outdir,
+                {},
             )
 
     @mock.patch.dict(os.environ, {"RFDEBUG_HISTORY": "/testoutdir"})
@@ -238,6 +284,7 @@ class TestMain:
         supplied.
         """
         outdir = Path("/testoutdir")
+        cli_options = {"variable": ["VAR3:value3"], "extra_arg": "extra_value"}
         rf_debug_log_path = outdir / "rfdebug_history.log"
         mock_console_suite = Mock()
         mock_console_suite.run.return_value.return_code = 0
@@ -250,6 +297,7 @@ class TestMain:
             SUPPORTED_PLATFORMS["Example"],
             outdir,
             rf_debug_log_path,
+            cli_options,
         )
         mock_rebot.assert_called_once_with(
             f"{outdir}/output.xml", outputdir=outdir
@@ -280,6 +328,7 @@ class TestMain:
             SUPPORTED_PLATFORMS["Example"],
             [],
             Path(tempfile.gettempdir()) / "yarf-outdir",
+            {},
         )
 
     @patch("yarf.main.TestSuite.from_file_system")
@@ -304,7 +353,11 @@ class TestMain:
 
         mock_test_suite.assert_called_once()
         main.run_robot_suite.assert_called_once_with(
-            mock_test_suite(), SUPPORTED_PLATFORMS["Example"], [], Path(outdir)
+            mock_test_suite(),
+            SUPPORTED_PLATFORMS["Example"],
+            [],
+            Path(outdir),
+            {},
         )
 
     @patch("yarf.main.TestSuiteBuilder.build")
@@ -321,8 +374,7 @@ class TestMain:
         SUPPORTED_PLATFORMS["Example"] = Example
 
         main.run_interactive_console = Mock()
-        argv = []
-        main.main(argv)
+        main.main([])
 
         mock_test_suite_builder.assert_called_once()
         main.run_interactive_console.assert_called_once_with(
@@ -330,6 +382,7 @@ class TestMain:
             SUPPORTED_PLATFORMS["Example"],
             outdir,
             rf_debug_log_path,
+            {},
         )
 
     @patch("yarf.main.Path.exists")

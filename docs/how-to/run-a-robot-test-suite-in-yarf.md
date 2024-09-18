@@ -110,6 +110,16 @@ Example_IP=<Example_IP> yarf <path-to-suite>/suite
 
 If you do not have a test suite, you can still use YARF to explore and come up with the robot script you need by using the [Interactive console](interactive-console.md).
 
+### Robot CLI arguments
+
+The Robot Framework CLI provides several additional options, such as the `--variable` argument, which allows you to pass global variables into Robot tests. To ensure compatibility with these features, YARF will pass any option after the `--` separator directly to the Robot Framework parser. The user can view the complete list of supported Robot Framework arguments by running `yarf -- --help`, which will display the Robot Framework argument parser.
+
+```
+yarf <path-to-suite>/suite -- --variable KEY1:VALUE1 --variable KEY2:VALUE2
+```
+
+<u><center>Code Snippet 8: `yarf` command with Robot-specific argument provided</center></u>
+
 ## Debug failing tests
 
 When developing tests, you will often need more feedback than the command line gives you. `yarf` will output
