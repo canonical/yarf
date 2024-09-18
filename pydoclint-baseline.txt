@@ -25,20 +25,11 @@ yarf/lib/wayland/wayland_client.py
     DOC503: Method `WaylandClient.connect` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['e'].
 --------------------
 yarf/main.py
-    DOC101: Function `parse_arguments`: Docstring contains fewer arguments than in function signature.
-    DOC103: Function `parse_arguments`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [argv: list[str]].
-    DOC201: Function `parse_arguments` does not have a return section in docstring
     DOC101: Function `get_robot_settings`: Docstring contains fewer arguments than in function signature.
     DOC103: Function `get_robot_settings`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [test_suite: TestSuite].
     DOC201: Function `get_robot_settings` does not have a return section in docstring
-    DOC101: Function `run_robot_suite`: Docstring contains fewer arguments than in function signature.
-    DOC103: Function `run_robot_suite`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [lib_cls: PlatformBase, outdir: Path, test_suite: TestSuite, variables: list[str]].
     DOC501: Function `run_robot_suite` has "raise" statements, but the docstring does not have a "Raises" section
     DOC503: Function `run_robot_suite` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['Exception'].
-    DOC101: Function `run_interactive_console`: Docstring contains fewer arguments than in function signature.
-    DOC103: Function `run_interactive_console`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [console_suite: TestSuite, lib_cls: PlatformBase, outdir: Path, rf_debug_history_log_path: Path].
-    DOC101: Function `main`: Docstring contains fewer arguments than in function signature.
-    DOC103: Function `main`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [argv: list[str]].
     DOC501: Function `main` has "raise" statements, but the docstring does not have a "Raises" section
     DOC503: Function `main` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['FileNotFoundError'].
 --------------------
