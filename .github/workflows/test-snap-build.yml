@@ -2,8 +2,6 @@ name: Test snap builds without errors
 
 on:
   pull_request:
-    branches:
-      - main
     paths:
       - snap/**
       - pyproject.toml

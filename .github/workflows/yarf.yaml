@@ -2,7 +2,6 @@ name: Unit testing and quality control for YARF codebase
 
 on:
   pull_request:
-    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - 'snap/**'
