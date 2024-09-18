@@ -1,4 +1,4 @@
-name: Unit testing and quality control for YARF codebase
+name: Testing and quality control for YARF codebase
 
 on:
   pull_request:
@@ -15,8 +15,11 @@ jobs:
       run: |
         sudo apt update -qq
         sudo apt install -y \
+          git-lfs \
           libgl1
     - uses: actions/checkout@v4
+      with:
+        lfs: true
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -26,3 +29,44 @@ jobs:
     - name: Run tests
       run: |
         tox
+
+    - name: Install YARF and integration dependencies
+      run: |
+        pip install .
+        sudo snap install mir-test-tools
+        sudo apt-get --yes --no-install-recommends install \
+          ffmpeg \
+          inotify-tools \
+          gnome-calculator
+
+    - name: Run integration tests
+      run: |
+        export WAYLAND_DISPLAY=wayland-99
+
+        # Start Mir on a virtual display (doesn't require graphics hardware)
+        mir-test-tools.demo-server \
+          --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
+          --platform-display-libs mir:virtual \
+          --virtual-output 1280x1024 &
+
+        # Wait for the compositor to start
+        inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-99\$" $XDG_RUNTIME_DIR
+
+        # Avoid GNOME apps waiting for portals
+        dbus-run-session -- gnome-calculator &
+
+        yarf --platform Mir tests/basic_suite
+
+    - if: failure()
+      name: Collect test results
+      uses: actions/upload-artifact@v4
+      with:
+        name: yarf-output
+        path: /tmp/yarf-outdir/*
+        retention-days: 5
+
+    - if: failure() && runner.debug
+      name: Setup upterm session (restart with "Enable debug logging" to activate)
+      uses: canonical/action-tmate@main
+      with:
+        limit-access-to-actor: true
