@@ -179,6 +179,8 @@ def run_robot_suite(
         variables: Variables for the test suite to run
         outdir: Path to the output directory
         cli_options: extra options given by CLI
+    Raises:
+        SystemExit: robot suite failed
     """
 
     robot_settings = get_robot_settings(test_suite)
@@ -197,7 +199,7 @@ def run_robot_suite(
     if result.return_code:
         for error_message in result.errors.messages:
             _logger.error("ROBOT: %s", error_message.message)
-        raise Exception("Robot test suite failed.")
+        raise SystemExit("Robot test suite failed.")
 
 
 def run_interactive_console(
