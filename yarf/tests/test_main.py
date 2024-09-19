@@ -262,7 +262,7 @@ class TestMain:
         mock_test_suite = Mock()
         mock_test_suite.run.return_value.return_code = 1
         mock_test_suite.run.return_value.errors.messages = [Mock()]
-        with patch("yarf.main.robot_in_path"), pytest.raises(Exception):
+        with patch("yarf.main.robot_in_path"), pytest.raises(SystemExit):
             run_robot_suite(
                 mock_test_suite,
                 SUPPORTED_PLATFORMS["Example"],
