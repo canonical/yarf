@@ -36,11 +36,12 @@ class StubVideoInput(VideoInputBase):
 
 
 @pytest.fixture
-def stub_videoinput():
+def stub_videoinput(request):
     vi = StubVideoInput()
     vi._rpa_images = Mock()
     vi._grab_screenshot = AsyncMock(return_value=Mock())
-    vi._start_suite(None, None)
+    if request.node.get_closest_marker("start_suite") is not None:
+        vi._start_suite(sentinel.data, sentinel.result)
     yield vi
 
 
@@ -88,6 +89,7 @@ class TestVideoInputBase:
     """
 
     @pytest.mark.asyncio
+    @pytest.mark.start_suite
     async def test_match(self, stub_videoinput):
         """
         Check the *Match* keyword returns the regions found.
@@ -117,6 +119,7 @@ class TestVideoInputBase:
         stub_videoinput._grab_screenshot.return_value.save.assert_called_once()
 
     @pytest.mark.asyncio
+    @pytest.mark.start_suite
     async def test_match_no_video(self, stub_videoinput, mock_run):
         """
         Check that successful matches don't log video.
@@ -135,6 +138,7 @@ class TestVideoInputBase:
         mock_run.assert_not_called()
 
     @pytest.mark.asyncio
+    @pytest.mark.start_suite
     async def test_match_any(self, stub_videoinput):
         """
         Check the *Match Any* keyword returns the regions found in the first
@@ -157,6 +161,7 @@ class TestVideoInputBase:
         assert await stub_videoinput.match_any(["path1", "path2"]) == expected
 
     @pytest.mark.asyncio
+    @pytest.mark.start_suite
     async def test_match_all(self, stub_videoinput):
         """
         Check the *Match All* keyword returns the regions found only when every
@@ -223,6 +228,7 @@ class TestVideoInputBase:
             await stub_videoinput.match("path", timeout=1)
 
     @pytest.mark.asyncio
+    @pytest.mark.start_suite
     async def test_match_fail_logs_video(
         self, stub_videoinput, mock_time, mock_run
     ):
@@ -258,6 +264,7 @@ class TestVideoInputBase:
         }, "`ffmpeg` wasn't called right"
 
     @pytest.mark.asyncio
+    @pytest.mark.start_suite
     @pytest.mark.parametrize(
         "run_error",
         (
@@ -364,6 +371,7 @@ class TestVideoInputBase:
         with pytest.raises(asyncio.exceptions.TimeoutError):
             await stub_videoinput.match("path", timeout=0.1)
 
+    @pytest.mark.start_suite
     def test_log_video(self, stub_videoinput, mock_logger):
         """
         Test that _log_video() logs the given path as error.

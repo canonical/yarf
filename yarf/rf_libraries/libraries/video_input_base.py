@@ -215,12 +215,12 @@ class VideoInputBase(ABC):
             except RuntimeError:
                 continue
             else:
-                assert self._screenshots_dir
-                self._frame_count += 1
-                screenshot.save(
-                    f"{self._screenshots_dir.name}/{self._frame_count:010d}.png",
-                    compress_level=1,
-                )
+                if self._screenshots_dir is not None:
+                    self._frame_count += 1
+                    screenshot.save(
+                        f"{self._screenshots_dir.name}/{self._frame_count:010d}.png",
+                        compress_level=1,
+                    )
             matches = []
             for path, image in template_images.items():
                 try:
