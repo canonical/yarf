@@ -69,6 +69,7 @@ addopts = "--doctest-modules --ignore=docs/ --ignore=hatch_build.py"
 asyncio_default_fixture_loop_scope = "auto"
 markers = [
     "output_size",
+    "start_suite",
     "wayland_globals",
 ]
 
