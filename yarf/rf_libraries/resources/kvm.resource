@@ -21,14 +21,13 @@ Press Key And Match
     ...                     ${delay}
 
 Press Combo And Match
-    [Arguments]             ${keys-combo}           ${template}             ${tentatives}=1         ${delay}=1
+    [Arguments]             ${keys-combo}           ${template}             ${tentatives}=1         ${timeout}=1
 
     ${match}=               Set Variable            ${FALSE}
     FOR    ${index}    IN RANGE    ${tentatives}
         PlatformHid.Keys Combo                          ${keys-combo}
-        Sleep                   ${delay}
         ${match}=               Run Keyword And Return Status
-        ...                     PlatformVideoInput.Match                        ${template}             0.1
+        ...                     PlatformVideoInput.Match                        ${template}             ${timeout}
         IF    ${match}    BREAK
     END
 
