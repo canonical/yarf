@@ -8,13 +8,12 @@ Library             RobotDebug    repl=${True}
 *** Variables ***
 ${PLATFORM_LIBRARIES}       None
 ${RESOURCES}                None
-${CURDIR}                   ${EXECDIR}
 
 
 *** Test Cases ***
 Log CURDIR Info
-    Log To Console          INFO:The value of CURDIR is: ${CURDIR}
-    Log To Console          INFO:You can change the value of CURDIR by using \$\{CURDIR\}\= <path-you-want>\n
+    Log To Console          INFO: The value of CURDIR is set to the current directory
+    Log To Console          INFO: You can change the value of CURDIR to the path you want.${\n}
 
 Import Platform Libraries
     @{libraries}=           Split String            ${PLATFORM_LIBRARIES}                           ,

@@ -241,6 +241,7 @@ def run_interactive_console(
     variables = [
         f"PLATFORM_LIBRARIES:{','.join(platform_library_paths)}",
         f"RESOURCES:{','.join(resources)}",
+        f"CURDIR:{os.getcwd()}",
     ]
     with contextlib.suppress(KeyError):
         variables.extend(cli_options.pop("variable"))
