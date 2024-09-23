@@ -3,8 +3,10 @@ name: Test snap builds without errors
 on:
   pull_request:
     paths:
+      - .github/workflows/test-snap-build.yml
       - snap/**
       - pyproject.toml
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -15,12 +17,12 @@ jobs:
     name: Build snap on amd64
     runs-on: [self-hosted, linux, jammy, x64, large]
     steps:
-      - name: Build snap on amd64
-        uses: snapcrafters/ci/test-snap-build@main
+    - uses: actions/checkout@v4
+    - uses: canonical/action-build@v1
 
   build-arm:
     name: Build snap on arm64
     runs-on: [self-hosted, linux, jammy, arm64, large]
     steps:
-      - name: Build snap on arm64
-        uses: snapcrafters/ci/test-snap-build@main
+    - uses: actions/checkout@v4
+    - uses: canonical/action-build@v1
