@@ -11,13 +11,13 @@ jobs:
     runs-on: [self-hosted, linux, jammy, x64, large]
     steps:
     - uses: actions/checkout@v4
-    - uses: snapcore/action-build@v1
+    - uses: canonical/action-build@v1
       id: snapcraft
     - uses: actions/upload-artifact@v4
       with:
         name: yarf-amd64
         path: ${{ steps.snapcraft.outputs.snap }}
-    - uses: snapcore/action-publish@v1
+    - uses: canonical/action-publish@v1
       env:
         SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT }}
       with:
@@ -28,13 +28,13 @@ jobs:
     runs-on: [self-hosted, linux, jammy, arm64, large]
     steps:
     - uses: actions/checkout@v4
-    - uses: snapcore/action-build@v1
+    - uses: canonical/action-build@v1
       id: snapcraft
     - uses: actions/upload-artifact@v4
       with:
         name: yarf-arm64
         path: ${{ steps.snapcraft.outputs.snap }}
-    - uses: snapcore/action-publish@v1
+    - uses: canonical/action-publish@v1
       env:
         SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT }}
       with:
