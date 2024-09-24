@@ -215,6 +215,17 @@ Click ${button} Button
     ...    - ${button}: Button to click (LEFT|RIGHT|MIDDLE).
     PlatformHid.Click Pointer Button                ${button}
 
+Click ${button} Button On ${destination}
+    [Documentation]    Move the virtual pointer to the destination and click the button.
+    ...
+    ...    See `Move Pointer to ${destination}` for details.
+    ...
+    ...    Embedded arguments:
+    ...    - ${button}: Button to click (LEFT|RIGHT|MIDDLE).
+    ...    - ${destination}: The template or location to click on.
+    Move Pointer To ${destination}
+    Click ${button} Button
+
 Release Buttons
     [Documentation]    Release all buttons on the virtual pointer.
     PlatformHid.Release Pointer Buttons
