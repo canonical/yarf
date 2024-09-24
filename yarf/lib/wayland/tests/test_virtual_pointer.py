@@ -1,6 +1,6 @@
 import itertools
 import random
-from unittest.mock import ANY, MagicMock, Mock, call, patch, sentinel
+from unittest.mock import ANY, Mock, call, patch, sentinel
 
 import pytest
 
@@ -12,6 +12,7 @@ from yarf.lib.wayland.protocols import ZxdgOutputManagerV1 as output_manager
 from yarf.lib.wayland.virtual_pointer import VirtualPointer
 
 from .fixtures import mock_pwc  # noqa: F401
+from .fixtures import wl_client as virtual_pointer  # noqa: F401
 
 OUTPUT_SIZE = (random.randint(800, 4000), random.randint(800, 4000))
 
@@ -21,46 +22,8 @@ def output_count():
     return random.randint(1, 4)
 
 
-@pytest.fixture
-def virtual_pointer(request, mock_pwc, output_count):  # noqa: F811
-    vp = VirtualPointer(sentinel.display_name)
-
-    wayland_globals = getattr(
-        request.node.get_closest_marker("wayland_globals"),
-        "args",
-        (output_manager, pointer_manager),
-    )
-
-    for iface in wayland_globals:
-        mock_pwc.attach_mock(MagicMock(), iface.name)
-        vp.registry_global(
-            MagicMock(**{"bind.return_value": getattr(mock_pwc, iface.name)}),
-            sentinel.id,
-            iface.name,
-            random.randint(1, 10),
-        )
-
-    # Simulate registering outputs
-    mock_pwc.zxdg_output_manager_v1.get_xdg_output.side_effect = (
-        mock_xdg_outputs
-    ) = tuple(MagicMock() for _n in range(output_count))
-    for n in range(output_count):
-        mock_pwc.attach_mock(Mock(), f"wl_output_{n}")
-        mock_pwc.attach_mock(mock_xdg_outputs[n], f"xdg_output_{n}")
-        vp.registry_global(
-            getattr(mock_pwc, f"wl_output_{n}"),
-            sentinel.id,
-            wl_output.name,
-            random.randint(1, 10),
-        )
-
-    if output_size := request.node.get_closest_marker("output_size"):
-        vp.connected()
-        vp.xdg_output_logical_size(mock_pwc.xdg_output_0, *output_size.args)
-
-    yield vp
-
-
+@pytest.mark.wayland_client.with_args(VirtualPointer)
+@pytest.mark.wayland_globals.with_args(pointer_manager, output_manager)
 class TestVirtualPointer:
     @patch("yarf.lib.wayland.wayland_client.WaylandClient.__init__")
     def test_init(self, mock_super_init):
@@ -71,7 +34,7 @@ class TestVirtualPointer:
         "interface",
         (wl_output, pointer_manager, output_manager),
     )
-    def test_registry_global(self, virtual_pointer, interface):
+    def test_registry_global(self, virtual_pointer, interface):  # noqa: F811
         registry = Mock()
         version = random.randint(1, 10)
         virtual_pointer.registry_global(
@@ -99,7 +62,9 @@ class TestVirtualPointer:
         ),
     )
     def test_connected_raises_on_missing_manager(
-        self, virtual_pointer, missing
+        self,
+        virtual_pointer,  # noqa: F811
+        missing,
     ):
         with pytest.raises(AssertionError, match=missing):
             virtual_pointer.connected()
@@ -152,7 +117,7 @@ class TestVirtualPointer:
             ),
         ),
     )
-    def test_move_to_absolute_asserts_dimensions(self, virtual_pointer):
+    def test_move_to_absolute_asserts_dimensions(self, virtual_pointer):  # noqa: F811
         with pytest.raises(AssertionError, match="must be greater than 0"):
             virtual_pointer.move_to_absolute(0, 0)
 
@@ -174,7 +139,7 @@ class TestVirtualPointer:
         ),
     )
     @pytest.mark.output_size(*OUTPUT_SIZE)
-    def test_move_to_absolute_asserts_range(self, virtual_pointer, x, y):
+    def test_move_to_absolute_asserts_range(self, virtual_pointer, x, y):  # noqa: F811
         with pytest.raises(AssertionError, match="not in range"):
             virtual_pointer.move_to_absolute(x, y)
 
@@ -196,7 +161,7 @@ class TestVirtualPointer:
         )
 
     @pytest.mark.output_size(*OUTPUT_SIZE)
-    def test_move_to_proportional(self, virtual_pointer):
+    def test_move_to_proportional(self, virtual_pointer):  # noqa: F811
         virtual_pointer.move_to_absolute = Mock()
 
         point = (1 / random.randint(1, 100), 1 / random.randint(1, 100))
