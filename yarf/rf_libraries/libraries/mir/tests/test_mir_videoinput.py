@@ -1,4 +1,4 @@
-from unittest.mock import ANY, AsyncMock, Mock, call, patch
+from unittest.mock import ANY, AsyncMock, call, patch
 
 import pytest
 
@@ -71,11 +71,3 @@ class TestMirVideoInput:
         await video_input.stop_video_input()
 
         mock_screencopy().disconnect.assert_awaited_once_with()
-
-    @patch("asyncio.get_event_loop")
-    def test_close(self, mock_loop, video_input):
-        with patch.object(video_input, "stop_video_input", Mock()) as m:
-            video_input._close()
-            mock_loop().run_until_complete.assert_called_once_with(
-                m.return_value
-            )

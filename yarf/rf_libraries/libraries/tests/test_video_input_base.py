@@ -388,3 +388,11 @@ class TestVideoInputBase:
         assert mock_logger.error.call_args.args[0].startswith(
             "<video controls"
         )
+
+    @patch("asyncio.get_event_loop")
+    def test_close(self, mock_loop, stub_videoinput):
+        with patch.object(stub_videoinput, "stop_video_input", Mock()) as m:
+            stub_videoinput._close()
+            mock_loop().run_until_complete.assert_called_once_with(
+                m.return_value
+            )

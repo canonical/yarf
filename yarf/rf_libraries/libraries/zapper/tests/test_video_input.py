@@ -7,42 +7,17 @@ from unittest.mock import MagicMock, call, patch
 import cv2
 import pytest
 
-from yarf.rf_libraries.libraries.zapper.VideoInput import HdmiIn, VideoInput
+from yarf.rf_libraries.libraries.zapper.VideoInput import (
+    HdmiIn,
+    VideoInput,
+    VideoSource,
+)
 
 
 class TestVideoInput:
     """
     This class provides tests for the Zapper-specific VideoInput class.
     """
-
-    @pytest.mark.asyncio
-    @patch("yarf.rf_libraries.libraries.zapper.VideoInput.UsbCam")
-    @patch("yarf.rf_libraries.libraries.zapper.VideoInput.HdmiIn")
-    async def test_init(self, mock_hdmi, mock_cam):
-        """
-        Test whether the init function initialize the requested video source.
-        """
-
-        await VideoInput().init("HDMI")
-        mock_hdmi.assert_called_once()
-        mock_cam.assert_not_called()
-
-        mock_hdmi.reset_mock()
-        mock_cam.reset_mock()
-
-        await VideoInput().init("CAMERA")
-        mock_cam.assert_called_once()
-        mock_hdmi.assert_not_called()
-
-    @pytest.mark.asyncio
-    async def test_init_exit(self):
-        """
-        Test whether the init function exits in case the requested video source
-        doesn't exist.
-        """
-
-        with pytest.raises(SystemExit):
-            await VideoInput().init("UNKNOWN")
 
     @pytest.mark.asyncio
     @patch("yarf.rf_libraries.libraries.zapper.VideoInput.HdmiIn")
@@ -52,7 +27,7 @@ class TestVideoInput:
         function.
         """
         video_input = VideoInput()
-        await video_input.init(source_name="HDMI")
+        video_input._source = mock_hdmi()
         await video_input.start_video_input()
         mock_hdmi.return_value.start_video_input.assert_called_once()
 
@@ -64,7 +39,7 @@ class TestVideoInput:
         function.
         """
         video_input = VideoInput()
-        await video_input.init(source_name="HDMI")
+        video_input._source = mock_hdmi()
         await video_input.stop_video_input()
         mock_hdmi.return_value.stop_video_input.assert_called_once()
 
@@ -76,7 +51,7 @@ class TestVideoInput:
         function.
         """
         video_input = VideoInput()
-        await video_input.init(source_name="HDMI")
+        video_input._source = mock_hdmi()
         video_source = mock_hdmi.return_value
 
         screenshot = await video_input._grab_screenshot()
@@ -162,3 +137,27 @@ class TestUsbCam:
     """
     This class provides tests for the UsbCam class.
     """
+
+
+class TestVideoSource:
+    """
+    This class provides tests for the VideoSource class.
+    """
+
+    @patch(
+        "yarf.rf_libraries.libraries.zapper.VideoInput.zapper_api", MagicMock()
+    )
+    @patch("yarf.rf_libraries.libraries.zapper.VideoInput.UsbCam")
+    def test_init_video_source(self, mock_cam):
+        """
+        Test the function returns the correct video source object depending on
+        the provided name.
+        """
+        source = VideoSource.init_video_source("HDMI")
+        assert isinstance(source, HdmiIn)
+
+        source = VideoSource.init_video_source("CAMERA")
+        assert source == mock_cam.return_value
+
+        with pytest.raises(ValueError):
+            VideoSource.init_video_source("UNKNOWN")

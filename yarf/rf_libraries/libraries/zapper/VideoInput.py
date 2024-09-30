@@ -9,7 +9,8 @@ from enum import Enum
 
 import cv2
 from PIL import Image
-from robot.api.deco import keyword, library
+from robot.api.deco import keyword
+from typing_extensions import Self
 
 from yarf.rf_libraries.libraries.video_input_base import VideoInputBase
 from yarf.rf_libraries.libraries.zapper import zapper_api
@@ -47,20 +48,53 @@ class VideoSource(ABC):
         Stop video input process.
         """
 
+    @staticmethod
+    def init_video_source(name: str) -> Self:
+        """
+        Initialize and return a Zapper video source.
+
+        Arguments:
+           name: source name
+
+        Raises:
+            ValueError: the requested source is not available
+
+        Returns:
+            An object of the video source requested by name
+        """
+
+        try:
+            source = Source[name]
+        except KeyError as exc:
+            raise ValueError(
+                "Available Zapper video sources are: "
+                f"{[source.name for source in Source]}"
+            ) from exc
+
+        if source == Source.HDMI:
+            return HdmiIn()
+        else:
+            return UsbCam()
+
 
 class HdmiIn(VideoSource):
     """
     HDMI-IN as video source.
+
+    Attributes:
+        RESOLUTION: EDID preferred resolution
+        STREAM_QUALITY: ustreamer HTTP stream quality
+        STREAM_FPS: ustreamer HTTP stream FPS
+        USTREAMER_HOST: the host on which ustreamer is running
+        USTREAMER_PORT: ustreamer port used for HDMI
     """
 
     RESOLUTION = "1280x1024"
     STREAM_QUALITY = 100
     STREAM_FPS = 10
 
+    USTREAMER_HOST = os.getenv("ZAPPER_IP", "localhost")
     USTREAMER_PORT = 60010
-    USTREAMER_SNAPSHOT = "http://{}:{}/snapshot".format(
-        os.getenv("ZAPPER_IP", "localhost"), USTREAMER_PORT
-    )
 
     def __init__(self):
         """
@@ -104,9 +138,33 @@ class HdmiIn(VideoSource):
         page, not the real streaming. Hence, we have to create a new
         VideoCapture each time.
         """
-        status, screenshot = cv2.VideoCapture(self.USTREAMER_SNAPSHOT).read()
-        if not status:
-            raise RuntimeError("Cannot grab screenshot.")
+        snapshot = "http://{}:{}/snapshot".format(
+            self.USTREAMER_HOST,
+            self.USTREAMER_PORT,
+        )
+
+        def read_video_capture(url: str):
+            """
+            Read from the VideoCapture or raise an exception.
+
+            Arguments:
+                 url: URL to read the screenshot from
+
+            Returns:
+                 Screenshot read from the URL
+            Raises:
+                 RuntimeError: if it can't read from the provided URL
+            """
+            status, screenshot = cv2.VideoCapture(url).read()
+            if not status:
+                raise RuntimeError("Cannot grab screenshot.")
+            return screenshot
+
+        try:
+            screenshot = read_video_capture(snapshot)
+        except RuntimeError:
+            self.start_video_input()
+            screenshot = read_video_capture(snapshot)
 
         screenshot = cv2.cvtColor(screenshot, cv2.COLOR_BGR2RGB)
         return Image.fromarray(screenshot)
@@ -142,42 +200,38 @@ class UsbCam(VideoSource):
         raise NotImplementedError
 
 
-@library
 class VideoInput(VideoInputBase):
     """
     This class provides access to Zapper video input devices.
+
+    The video source can be specified with the `ZAPPER_VIDEO_SOURCE`
+    environment variable.
     """
 
-    @keyword
-    async def init(self, source_name: str):
-        """
-        Handles platform-specific initialization.
-        """
-        try:
-            source = Source[source_name]
-        except KeyError as exc:
-            raise SystemExit(
-                f"The input source '{source_name}' is not supported."
-            ) from exc
-
-        if source == Source.HDMI:
-            self._source = HdmiIn()
-        else:
-            self._source = UsbCam()
+    def __init__(self):
+        source_name = os.environ.get("ZAPPER_VIDEO_SOURCE", "HDMI")
+        self._source = VideoSource.init_video_source(source_name)
+        super().__init__()
 
     @keyword
     async def start_video_input(self):
         """
-        Start video stream process if needed.
+        Start video input from previously initialized source.
         """
         self._source.start_video_input()
 
     @keyword
     async def stop_video_input(self):
         """
-        Start video stream process if needed.
+        Stop video input.
         """
         self._source.stop_video_input()
 
     async def _grab_screenshot(self) -> Image.Image:
+        """
+        Grab and return a screenshot.
+
+        Returns:
+            The screenshot as PIL Image
+        """
         return self._source.grab_screenshot()
