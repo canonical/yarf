@@ -3,7 +3,6 @@ This module provides the Mir-driven implementation for video interactions and
 assertions.
 """
 
-import asyncio
 import os
 
 from PIL import Image
@@ -46,9 +45,3 @@ class VideoInput(VideoInputBase):
         Disconnect from the display.
         """
         await self._screencopy.disconnect()
-
-    def _close(self):
-        """
-        Listener method called when the library goes out of scope.
-        """
-        asyncio.get_event_loop().run_until_complete(self.stop_video_input())

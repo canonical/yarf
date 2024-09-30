@@ -75,12 +75,6 @@ class VideoInputBase(ABC):
                 self._log_video(video_path)
 
     @keyword
-    def init(self, *args, **kwargs):
-        """
-        Handles platform-specific initialization.
-        """
-
-    @keyword
     async def match(
         self, template: str, timeout: int = 10
     ) -> Awaitable[List[Region]]:
@@ -308,3 +302,9 @@ class VideoInputBase(ABC):
                 f'{base64.b64encode(f.read()).decode()}" />',
                 html=True,
             )
+
+    def _close(self):
+        """
+        Listener method called when the library goes out of scope.
+        """
+        asyncio.get_event_loop().run_until_complete(self.stop_video_input())
