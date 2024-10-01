@@ -86,7 +86,7 @@ repos:
       --check-return-types=False,
       --check-yield-types=False,
       --baseline=pydoclint-baseline.txt,
-      #--generate-baseline=True,
+      # --generate-baseline=True,
     ]
   - id: pydoclint
     files: 'tests/.*'
