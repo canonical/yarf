@@ -134,12 +134,15 @@ def parse_arguments(
     return parse_yarf_arguments(yarf_argv), parse_robot_arguments(robot_argv)
 
 
-def get_robot_settings(test_suite: TestSuite) -> dict[str, Any]:
+def get_yarf_settings(test_suite: TestSuite) -> dict[str, Any]:
     """
     Get yarf settings based on yarf specific tags on each robot task.
 
-    :param test_suite: an initialized executable TestSuite
-    :return: a dictionary of the robot settings along with their values
+    Args:
+        test_suite: an initialized executable TestSuite
+
+    Returns:
+        a dictionary of the robot settings along with their values
     """
     min_version_prefix = "yarf:min-version-"
     robot_settings = {}
@@ -160,6 +163,32 @@ def get_robot_settings(test_suite: TestSuite) -> dict[str, Any]:
         )
 
     return robot_settings
+
+
+def get_robot_reserved_settings(test_suite: TestSuite) -> dict[str, Any]:
+    """
+    Get settings based on robot reserved tags on each robot task which are not
+    yet supported at this point.
+
+    robot:exit-on-failure will be available in robot framework version 7.2
+
+    Args:
+        test_suite: an initialized executable TestSuite
+
+    Returns:
+        A dictionary of the reserved settings along with their values
+    """
+    accepted_tags = {"robot:exit-on-failure", "robot:exit-on-error"}
+    reserved_tags = set()
+    for test in test_suite.all_tests:
+        for tag in test.tags:
+            if tag not in accepted_tags:
+                continue
+
+            reserved_tags.add(tag[len("robot:") :].replace("-", ""))
+
+    robot_reserved_settings = {tag: True for tag in reserved_tags}
+    return robot_reserved_settings
 
 
 def run_robot_suite(
@@ -183,8 +212,9 @@ def run_robot_suite(
         SystemExit: robot suite failed
     """
 
-    robot_settings = get_robot_settings(test_suite)
-    options = cli_options | robot_settings
+    robot_settings = get_yarf_settings(test_suite)
+    robot_reserved_settings = get_robot_reserved_settings(test_suite)
+    options = cli_options | robot_settings | robot_reserved_settings
 
     with contextlib.suppress(KeyError):
         variables.extend(options.pop("variable"))

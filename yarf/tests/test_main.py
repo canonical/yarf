@@ -14,7 +14,8 @@ from robot.errors import Information
 
 from yarf import main
 from yarf.main import (
-    get_robot_settings,
+    get_robot_reserved_settings,
+    get_yarf_settings,
     parse_arguments,
     parse_robot_arguments,
     run_interactive_console,
@@ -110,7 +111,11 @@ class TestMain:
         with pytest.raises(SystemExit):
             parse_arguments(argv)
 
-    def test_get_robot_settings(self, fs: FakeFilesystem) -> None:
+    def test_get_yarf_settings(self, fs: FakeFilesystem) -> None:
+        """
+        Test whether the function get_yarf_settings can recognize specified
+        yarf tags.
+        """
         test_path = "suite-path"
         fs.create_file(f"{test_path}/test.robot")
 
@@ -132,7 +137,7 @@ class TestMain:
             )
 
         test_suite = RobotSuite.from_file_system(test_path)
-        robot_settings = get_robot_settings(test_suite)
+        robot_settings = get_yarf_settings(test_suite)
         assert "skip" in robot_settings
         assert set(robot_settings["skip"]) == {
             "yarf:min-version-10000000000.0.0"
@@ -155,11 +160,11 @@ class TestMain:
             )
 
         test_suite = RobotSuite.from_file_system(test_path)
-        robot_settings = get_robot_settings(test_suite)
+        robot_settings = get_yarf_settings(test_suite)
         assert "skip" in robot_settings
         assert set(robot_settings["skip"]) == set()
 
-    def test_get_robot_settings_invalid(self, fs: FakeFilesystem) -> None:
+    def test_get_yarf_settings_invalid(self, fs: FakeFilesystem) -> None:
         """
         Test whether the function raises an error when encountering an invalid
         yarf tag.
@@ -186,7 +191,7 @@ class TestMain:
 
         test_suite = RobotSuite.from_file_system(test_path)
         with pytest.raises(version.InvalidVersion):
-            robot_settings = get_robot_settings(test_suite)
+            robot_settings = get_yarf_settings(test_suite)
             list(robot_settings["skip"])
 
         with open(f"{test_path}/test.robot", "w") as f:
@@ -206,13 +211,66 @@ class TestMain:
             )
 
         test_suite = RobotSuite.from_file_system(test_path)
-        robot_settings = get_robot_settings(test_suite)
+        robot_settings = get_yarf_settings(test_suite)
         assert "skip" not in robot_settings
 
-    @patch("yarf.main.get_robot_settings")
+    def test_get_robot_reserved_settings(self, fs: FakeFilesystem) -> None:
+        """
+        Test whether the function get_robot_reserved_settings can recognize
+        specified robot tags that are not supported today.
+        """
+        test_path = "suite-path"
+        fs.create_file(f"{test_path}/test.robot")
+
+        # test for robot:exit-on-failure
+        with open(f"{test_path}/test.robot", "w") as f:
+            f.write(
+                dedent(
+                    """
+                *** Settings ***
+                Documentation       Test
+                Test Tags           robot:exit-on-failure
+
+
+                *** Tasks ***
+                Log Message 1
+                    Log To Console    message 1
+                """
+                )
+            )
+
+        test_suite = RobotSuite.from_file_system(test_path)
+        additional_reserved_settings = get_robot_reserved_settings(test_suite)
+        assert additional_reserved_settings["exitonfailure"]
+
+        with open(f"{test_path}/test.robot", "w") as f:
+            f.write(
+                dedent(
+                    """
+                *** Settings ***
+                Documentation       Test
+                Test Tags           robot:exit-on-error
+
+
+                *** Tasks ***
+                Log Message 1
+                    Log To Console    message 1
+                """
+                )
+            )
+
+        test_suite = RobotSuite.from_file_system(test_path)
+        additional_reserved_settings = get_robot_reserved_settings(test_suite)
+        assert additional_reserved_settings["exitonerror"]
+
+    @patch("yarf.main.get_robot_reserved_settings")
+    @patch("yarf.main.get_yarf_settings")
     @patch("yarf.main.rebot")
     def test_run_robot_suite(
-        self, mock_rebot: MagicMock, mock_get_robot_settings: MagicMock
+        self,
+        mock_rebot: MagicMock,
+        mock_get_yarf_settings: MagicMock,
+        mock_get_robot_reserved_settings: MagicMock,
     ) -> None:
         """
         Test if the function runs the robot suite with the specified variables
@@ -226,7 +284,8 @@ class TestMain:
 
         mock_test_suite = Mock()
         mock_test_suite.run.return_value.return_code = 0
-        mock_get_robot_settings.return_value = {}
+        mock_get_yarf_settings.return_value = {}
+        mock_get_robot_reserved_settings.return_value = {}
         run_robot_suite(
             mock_test_suite,
             SUPPORTED_PLATFORMS["Example"],
@@ -234,7 +293,7 @@ class TestMain:
             outdir,
             options,
         )
-        mock_get_robot_settings.assert_called_once()
+        mock_get_yarf_settings.assert_called_once()
         mock_test_suite.run.assert_called_once_with(
             variable=["VAR1:value1", "VAR2:value2", "VAR3:value3"],
             outputdir=outdir,
@@ -244,9 +303,13 @@ class TestMain:
             f"{outdir}/output.xml", outputdir=outdir
         )
 
-    @patch("yarf.main.get_robot_settings")
+    @patch("yarf.main.get_robot_reserved_settings")
+    @patch("yarf.main.get_yarf_settings")
     def test_run_robot_suite_with_errors(
-        self, mock_get_robot_settings: MagicMock, fs: FakeFilesystem
+        self,
+        mock_get_yarf_settings: MagicMock,
+        mock_get_robot_reserved_settings: MagicMock,
+        fs: FakeFilesystem,
     ) -> None:
         """
         Test if the function raise exception if test suite did not run
@@ -258,7 +321,8 @@ class TestMain:
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Example"] = Example
 
-        mock_get_robot_settings.return_value = {}
+        mock_get_yarf_settings.return_value = {}
+        mock_get_robot_reserved_settings.return_value = {}
         mock_test_suite = Mock()
         mock_test_suite.run.return_value.return_code = 1
         mock_test_suite.run.return_value.errors.messages = [Mock()]
