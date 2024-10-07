@@ -1,6 +1,8 @@
 name: Test snap builds without errors
 
 on:
+  merge_group:
+    types: [checks_requested]
   pull_request:
     paths:
       - .github/workflows/test-snap-build.yml

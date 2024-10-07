@@ -1,6 +1,8 @@
 name: Testing and quality control for YARF codebase
 
 on:
+  merge_group:
+    types: [checks_requested]
   pull_request:
     paths-ignore:
       - 'docs/**'
