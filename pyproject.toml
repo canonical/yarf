@@ -32,7 +32,7 @@ dependencies = [
 
 [project.optional-dependencies]
 develop = [
-    "pre-commit",
+    "pre-commit<4.0.0",
     "pyfakefs",
     "pytest",
     "pytest-asyncio",
