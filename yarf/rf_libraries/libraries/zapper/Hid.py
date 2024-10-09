@@ -7,7 +7,7 @@ from yarf.rf_libraries.libraries.hid_base import HidBase, Size
 from yarf.rf_libraries.libraries.zapper import ZapperException, zapper_api
 
 
-@library
+@library(scope="GLOBAL")
 class Hid(HidBase):
     """
     This class provides the Robot interface for HID interactions.
