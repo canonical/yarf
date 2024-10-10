@@ -7,13 +7,14 @@ from unittest import mock
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-from packaging import version
 from pyfakefs.fake_filesystem_unittest import FakeFilesystem
 from robot.api import TestSuite as RobotSuite
 from robot.errors import Information
 
 from yarf import main
 from yarf.main import (
+    YARF_VERSION,
+    compare_version,
     get_robot_reserved_settings,
     get_yarf_settings,
     parse_arguments,
@@ -26,6 +27,48 @@ from yarf.rf_libraries.libraries.Example import Example
 
 
 class TestMain:
+    @pytest.mark.parametrize(
+        "version_tag,expected",
+        [
+            ("yarf:version: > 0.0.0", True),
+            ("yarf:version: > 10000000.0.0", False),
+            ("yarf:version: >= 0.0.0", True),
+            ("yarf:version: >= 10000000.0.0", False),
+            ("yarf:version: < 10000000.0.0", True),
+            ("yarf:version: < 0.0.0", False),
+            ("yarf:version: <= 10000000.0.0", True),
+            ("yarf:version: <= 0.0.0", False),
+            (f"yarf:version: == {YARF_VERSION}", True),
+            ("yarf:version: == 0.0.0", False),
+            ("yarf:version: != 0.0.0", True),
+            (f"yarf:version: != {YARF_VERSION}", False),
+        ],
+    )
+    def test_compare_version(self, version_tag: str, expected: bool) -> None:
+        """
+        Test whether the function "compare_version" returns the expected
+        results when comparing versions.
+        """
+        assert compare_version(version_tag) == expected
+
+    @pytest.mark.parametrize(
+        "version_tag,error_type",
+        [
+            ("yarf:version: >= INV.INV.INV", ValueError),
+            ("yarf:versi@n: >= 0.0.0", ValueError),
+            ("yarf:version: !< 0.0.0", TypeError),
+        ],
+    )
+    def test_compare_version_invalid(
+        self, version_tag: str, error_type: Exception
+    ) -> None:
+        """
+        Test whether the function "compare_version" raises errors when received
+        invalid inputs.
+        """
+        with pytest.raises(error_type):
+            compare_version(version_tag)
+
     def test_parse_arguments(self) -> None:
         """
         Test whether the "parse_arguments" function returns the expected
@@ -126,7 +169,7 @@ class TestMain:
                     """
                 *** Settings ***
                 Documentation       Test
-                Test Tags           robot:stop-on-failure    yarf:min-version-10000000000.0.0
+                Test Tags           robot:stop-on-failure    yarf:version: >= 10000000000.0.0
 
 
                 *** Tasks ***
@@ -140,7 +183,7 @@ class TestMain:
         robot_settings = get_yarf_settings(test_suite)
         assert "skip" in robot_settings
         assert set(robot_settings["skip"]) == {
-            "yarf:min-version-10000000000.0.0"
+            "yarf:version: >= 10000000000.0.0"
         }
 
         with open(f"{test_path}/test.robot", "w") as f:
@@ -149,7 +192,7 @@ class TestMain:
                     """
                 *** Settings ***
                 Documentation       Test
-                Test Tags           robot:stop-on-failure    yarf:min-version-0.0.0
+                Test Tags           robot:stop-on-failure    yarf:version: >= 0.0.0
 
 
                 *** Tasks ***
@@ -172,35 +215,14 @@ class TestMain:
         test_path = "suite-path"
         fs.create_file(f"{test_path}/test.robot")
 
-        # test for invalid yarf:min-version-X.Y.Z
+        # test for invalid yarf:version: <operator> X.Y.Z
         with open(f"{test_path}/test.robot", "w") as f:
             f.write(
                 dedent(
                     """
                 *** Settings ***
                 Documentation       Test
-                Test Tags           robot:stop-on-failure    yarf:min-version-INV.INV.INV
-
-
-                *** Tasks ***
-                Log Message 1
-                    Log To Console    message 1
-                """
-                )
-            )
-
-        test_suite = RobotSuite.from_file_system(test_path)
-        with pytest.raises(version.InvalidVersion):
-            robot_settings = get_yarf_settings(test_suite)
-            list(robot_settings["skip"])
-
-        with open(f"{test_path}/test.robot", "w") as f:
-            f.write(
-                dedent(
-                    """
-                *** Settings ***
-                Documentation       Test
-                Test Tags           robot:stop-on-failure    yarf:min-versi@n-0.0.0
+                Test Tags           robot:stop-on-failure    yarf:versi@n: >= 0.0.0
 
 
                 *** Tasks ***
