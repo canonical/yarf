@@ -1,0 +1,22 @@
+#!/bin/sh
+set -e
+
+if ! snapctl is-connected wayland
+then
+  echo "WARNING: wayland interface not connected! Please run: snap connect ${SNAP_INSTANCE_NAME}:wayland to use the Mir platform"
+fi
+
+real_xdg_runtime_dir=$(dirname "${XDG_RUNTIME_DIR}")
+real_wayland=${real_xdg_runtime_dir}/${WAYLAND_DISPLAY:-wayland-0}
+
+[ -d "${real_xdg_runtime_dir}" ] || echo "WARNING: missing ${real_xdg_runtime_dir}, is a Wayland compositor running?"
+[ -O "${real_wayland}" ] || echo "WARNING: missing ${real_wayland}, is a Wayland compositor running?"
+
+if mkdir -p "$XDG_RUNTIME_DIR" -m 700; then
+  ln -sf "${real_wayland}" "$XDG_RUNTIME_DIR"
+  ln -sf "${real_wayland}.lock" "$XDG_RUNTIME_DIR"
+else
+  echo "WARNING: XDG_RUNTIME_DIR ($XDG_RUNTIME_DIR) missing, the Mir platform will not work"
+fi
+
+exec "$@"

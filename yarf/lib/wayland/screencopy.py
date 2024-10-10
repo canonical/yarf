@@ -2,7 +2,6 @@ import asyncio
 import ctypes
 import mmap
 import os
-import stat
 from typing import Any, NamedTuple, Optional
 
 from PIL import Image
@@ -19,8 +18,7 @@ from .protocols.wlr_screencopy_unstable_v1.zwlr_screencopy_manager_v1 import (
 )
 from .wayland_client import WaylandClient
 
-libc = ctypes.cdll.LoadLibrary(None)  # type: ignore
-shm_counter = 0
+memfd_counter = 0
 
 
 class BufferData(NamedTuple):
@@ -46,27 +44,20 @@ class BufferData(NamedTuple):
         return self.height * self.stride
 
 
-def shm_open() -> int:
+def get_memfd() -> int:
     """
-    Open a unique SHared Memory object to retrieve screenshots.
+    Open a unique Memory FD object to retrieve screenshots.
 
     Returns:
         file descriptor id
     """
-    global shm_counter
-    shm_counter += 1
-    name = f"/yarf-screencopy-{os.getpid()}-{shm_counter}"
-    c_name = name.encode("utf-8")
-    oflag = ctypes.c_int(os.O_RDWR | os.O_CREAT | os.O_EXCL)
-    mode = ctypes.c_ushort(stat.S_IRUSR | stat.S_IWUSR)
-    open_result: int = libc.shm_open(c_name, oflag, mode)
+    global memfd_counter
+    memfd_counter += 1
+    name = f"/yarf-screencopy-{os.getpid()}-{memfd_counter}"
+    open_result: int = os.memfd_create(name, os.MFD_CLOEXEC)
     assert (
         open_result >= 0
-    ), f"Error {open_result} opening SHM file {name}: {os.strerror(ctypes.get_errno())}"
-    unlink_result = libc.shm_unlink(c_name)
-    assert (
-        unlink_result >= 0
-    ), f"Error {unlink_result} unlinking SHM file {name}: {os.strerror(ctypes.get_errno())}"
+    ), f"Error {open_result} creating memfd: {os.strerror(ctypes.get_errno())}"
     return open_result
 
 
@@ -177,11 +168,11 @@ class Screencopy(WaylandClient):
         self._buffer_data = buffer_data
         if self._buffer is None:
             assert self._shm is not None, "SHM not created"
-            fd = shm_open()
+            fd = get_memfd()
             os.ftruncate(fd, buffer_data.size)
             self._shm_data = mmap.mmap(fd, buffer_data.size)
             shm_pool = self._shm.create_pool(fd, buffer_data.size)
-            libc.close(fd)
+            os.close(fd)
             self._buffer = shm_pool.create_buffer(
                 0, width, height, stride, format
             )

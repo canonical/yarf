@@ -10,7 +10,7 @@ from yarf.lib.wayland.protocols import WlShm as wl_shm
 from yarf.lib.wayland.protocols import (
     ZwlrScreencopyManagerV1 as screencopy_manager,
 )
-from yarf.lib.wayland.screencopy import Screencopy, shm_open
+from yarf.lib.wayland.screencopy import Screencopy, get_memfd
 
 from .fixtures import mock_pwc, wl_client  # noqa: F401
 
@@ -46,11 +46,17 @@ def mock_getpid():
 
 
 @pytest.fixture(autouse=True)
-def mock_libc(mock_pwc):  # noqa: F811
-    with patch("yarf.lib.wayland.screencopy.libc") as m:
-        mock_pwc.attach_mock(m, "libc")
-        m.shm_open.return_value = random.randint(0, 10)
-        m.shm_unlink.return_value = random.randint(0, 10)
+def mock_memfd(mock_pwc):  # noqa: F811
+    with patch("os.memfd_create") as m:
+        mock_pwc.attach_mock(m, "memfd_create")
+        m.return_value = random.randint(0, 10)
+        yield m
+
+
+@pytest.fixture(autouse=True)
+def mock_close(mock_pwc):  # noqa: F811
+    with patch("os.close") as m:
+        mock_pwc.attach_mock(m, "close")
         yield m
 
 
@@ -75,8 +81,8 @@ def mock_mmap(mock_pwc):  # noqa: F811
 
 
 @pytest.fixture
-def mock_shm_open():
-    with patch("yarf.lib.wayland.screencopy.shm_open") as m:
+def mock_get_memfd():
+    with patch("yarf.lib.wayland.screencopy.get_memfd") as m:
         yield m
 
 
@@ -133,56 +139,39 @@ def mock_image():
 
 
 class TestShmOpen:
-    def test_shm_open(self, mock_libc):
+    def test_get_memfd(self, mock_memfd):
         """
-        Returns the `libc.shm_open` result and unlinks the opened name.
+        Returns the `memfd_create` result.
         """
-        assert shm_open() == mock_libc.shm_open.return_value
+        assert get_memfd() == mock_memfd.return_value
 
-        assert (
-            mock_libc.shm_unlink.call_args.args[0]
-            == mock_libc.shm_open.call_args.args[0]
-        )
-
-    def test_shm_open_multiple(self, mock_libc):
+    def test_get_memfd_multiple(self, mock_memfd):
         """
         Uses a different name every time.
         """
         open_count = random.randint(1, 10)
         open_results = tuple(random.randint(1, 10) for _n in range(open_count))
-        mock_libc.shm_open.side_effect = tuple(open_results)
-        mock_libc.shm_unlink.side_effect = (
-            random.randint(1, 10) for _n in range(open_count)
-        )
+        mock_memfd.side_effect = tuple(open_results)
 
-        assert open_results == tuple(shm_open() for _n in range(open_count))
+        assert open_results == tuple(get_memfd() for _n in range(open_count))
 
         assert (
-            len(set(c.args[0] for c in mock_libc.shm_open.call_args_list))
+            len(set(c.args[0] for c in mock_memfd.call_args_list))
             == open_count
-        ), "`shm_open` reused the same name multiple times"
+        ), "`mock_memfd` reused the same name multiple times"
 
-        mock_libc.assert_has_calls(
-            chain.from_iterable(
-                (
-                    call.shm_open(ANY, ANY, ANY),
-                    call.shm_unlink(
-                        mock_libc.shm_open.call_args_list[n].args[0]
-                    ),
-                )
-                for n in range(open_count)
-            )
+        mock_memfd.assert_has_calls(
+            chain.from_iterable((call(ANY, ANY),) for n in range(open_count))
         )
 
-    @pytest.mark.parametrize("operation", ("open", "unlink"))
-    def test_shm_open_error(self, mock_getpid, mock_libc, operation):
+    def test_memfd_create_error(self, mock_getpid, mock_memfd):
         """
-        Raises on open/unlink error.
+        Raises on memfd create error.
         """
-        getattr(mock_libc, f"shm_{operation}").return_value = -1
+        mock_memfd.return_value = -1
 
-        with pytest.raises(AssertionError, match=f"{operation}ing SHM file"):
-            shm_open()
+        with pytest.raises(AssertionError, match="creating memfd"):
+            get_memfd()
 
 
 @pytest.mark.wayland_client.with_args(Screencopy)
@@ -239,7 +228,7 @@ class TestScreencopy:
         self,
         mock_pwc,  # noqa: F811
         buffer_props,
-        mock_shm_open,
+        mock_get_memfd,
         screencopy,
     ):
         """
@@ -251,10 +240,10 @@ class TestScreencopy:
 
         mock_pwc.assert_has_calls(
             (
-                call.ftruncate(mock_shm_open(), buffer_props.size),
-                call.mmap(mock_shm_open(), buffer_props.size),
-                call.wl_shm.create_pool(mock_shm_open(), buffer_props.size),
-                call.libc.close(mock_shm_open()),
+                call.ftruncate(mock_get_memfd(), buffer_props.size),
+                call.mmap(mock_get_memfd(), buffer_props.size),
+                call.wl_shm.create_pool(mock_get_memfd(), buffer_props.size),
+                call.close(mock_get_memfd()),
                 call.wl_shm.create_pool().create_buffer(
                     0, *buffer_props, sentinel.format
                 ),
