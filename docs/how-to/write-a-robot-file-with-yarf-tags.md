@@ -7,18 +7,18 @@ For details of how to write a general test data robot file please visit the [Rob
 
 In yarf we will support the following tags in addition to the [official ones](https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html#tagging-test-cases):
 
-1. [YARF minimum version](#yarf-minimum-version): `yarf:min-version-X.Y.Z`, where `X`, `Y` and `Z` are digits and `X.Y.Z` combined together representing the minimum YARF version number required for the test suite.
+1. [YARF version](#yarf-version): `yarf:version: <operator> X.Y.Z`, where `X`, `Y` and `Z` are digits and `X.Y.Z` combined together representing the range of YARF version number required for the task or test suite.
 1. [Exit on failure](#exit-on-failure): `robot:exit-on-failure`, YARF will exit immediately on failure.
 1. [Exit on error](#exit-on-error): `robot:exit-on-error`, YARF will exit immediately on error.
 
-### YARF minimum version
+### YARF version
 
 We can add this tag in the `Test Tags` section under `*** Settings ***` or under individual tasks. For example:
 
 ```text
 *** Settings ***
 Documentation       Example
-Test Tags           robot:stop-on-failure   yarf:min-version-1.0.0
+Test Tags           robot:stop-on-failure   yarf:version: >= 1.0.0
 Library             some_lib.py
 Resource            smoke.resource
 
@@ -27,14 +27,15 @@ Task 1
     Print Library
 
 Task 2
-    [Tags]            yarf:min-version-2.0.0
+    [Tags]            yarf:version: >= 2.0.0
     Log To Console    message 1
 ```
 
-<u><center>Code Snippet 1: An example of a test data robot file using the tag `yarf:min-version-X.Y`</center></u>
+<u><center>Code Snippet 1: An example of a test data robot file using the tag `yarf:version: <operator> X.Y`</center></u>
 
 ```{Note}
-`robot:stop-on-failure` is a [reserved tag](https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html#reserved-tags)
+For this tag, spacing is important.
+`robot:stop-on-failure` is a [reserved tag](https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html#reserved-tags).
 ```
 
 Depends on the version of YARF that we are using, different task(s) will run:
@@ -44,6 +45,15 @@ Depends on the version of YARF that we are using, different task(s) will run:
 | `x` \< 1.0.0        | None                |
 | 1.0.0 ≤ `x` ≤ 2.0.0 | `Task 1`            |
 | `x` > 2.0.0         | `Task 1`, `Task 2`  |
+
+We support the following operators:
+
+1. `<`
+1. `>`
+1. `<=`
+1. `>=`
+1. `==`
+1. `!=`
 
 With this tag, we can control which task will run in the suite.
 

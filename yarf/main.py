@@ -1,10 +1,13 @@
 import contextlib
 import logging
+import operator
 import os
+import re
 import shutil
 import sys
 import tempfile
 from argparse import ArgumentParser, Namespace
+from enum import Enum
 from importlib import metadata
 from pathlib import Path
 from typing import Any, Optional
@@ -21,6 +24,65 @@ from yarf.rf_libraries.suite_parser import SuiteParser
 
 _logger = logging.getLogger(__name__)
 YARF_VERSION = version.parse(metadata.version("yarf"))
+VERSION_TAG_RE = re.compile(
+    r"yarf:version: +(?P<operator>[<>=!]+) +(?P<version>[0-9][0-9.]*)"
+)
+
+
+def add_operators(enumeration: Enum) -> Enum:
+    """
+    Annotate the enumeration with operators.
+
+    Arguments:
+        enumeration: The enumeration we need to add operators to.
+    Returns:
+        Enum: The enumeration with added operators
+    """
+    enumeration._member_map_.update(
+        {
+            ">": operator.gt,
+            "<": operator.lt,
+            ">=": operator.ge,
+            "<=": operator.le,
+            "==": operator.eq,
+            "!=": operator.ne,
+        }
+    )
+    return enumeration
+
+
+@add_operators
+class Operator(Enum):
+    """
+    Supported operators.
+    """
+
+
+def compare_version(yarf_version_tag: str) -> bool:
+    """
+    Compare the current yarf version with the version specified in the yarf
+    version tag.
+
+    Arguments:
+        yarf_version_tag: the yarf version tag in the form of `yarf:version: <operator> <version-x.y.z>`
+
+    Returns:
+        bool: True if the current version satisfies the condition specified in the version tag, False otherwise
+
+    Raises:
+        ValueError: if the yarf version tag is invalid or the operator is not supported
+    """
+    if m := VERSION_TAG_RE.match(yarf_version_tag):
+        try:
+            return Operator[m.group("operator")](
+                YARF_VERSION, version.parse(m.group("version"))
+            )
+
+        except KeyError:
+            raise ValueError(f"Invalid operator: {m.group['operator']}")
+
+    else:
+        raise ValueError(f"Invalid yarf version tag: {yarf_version_tag}")
 
 
 def parse_yarf_arguments(argv: list[str]) -> Namespace:
@@ -144,22 +206,17 @@ def get_yarf_settings(test_suite: TestSuite) -> dict[str, Any]:
     Returns:
         a dictionary of the robot settings along with their values
     """
-    min_version_prefix = "yarf:min-version-"
     robot_settings = {}
-    skip_tags = set()
+    version_tags = set()
     for test in test_suite.all_tests:
         for tag in test.tags:
-            if not tag.startswith("yarf:"):
-                continue
+            if tag.startswith("yarf:version:"):
+                version_tags.add(tag)
 
-            if tag.startswith(min_version_prefix):
-                skip_tags.add(tag)
-
-    if skip_tags:
+    if version_tags:
         robot_settings["skip"] = filter(
-            lambda x: version.parse(x[len(min_version_prefix) :])
-            > YARF_VERSION,
-            skip_tags,
+            lambda tag: not compare_version(tag),
+            version_tags,
         )
 
     return robot_settings
