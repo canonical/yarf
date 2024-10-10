@@ -11,6 +11,10 @@ grade: devel
 confinement: strict
 
 parts:
+  scripts:
+    plugin: dump
+    source: scripts
+
   yarf:
     plugin: python
     source: .
@@ -31,7 +35,10 @@ parts:
 
 apps:
   yarf:
+    command-chain:
+    - bin/wayland-launch
     command: bin/yarf
     plugs:
       - home
       - network
+      - wayland
