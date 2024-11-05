@@ -12,3 +12,5 @@ results
 .vscode/
 *.egg-info/
 package*.json
+out/
+*.snap

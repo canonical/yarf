@@ -45,6 +45,7 @@ yarf = "yarf.main:main"
 
 [tool.hatch.build]
 exclude = [
+  "docs",
   "tests",
 ]
 
