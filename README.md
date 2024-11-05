@@ -22,47 +22,31 @@ and trust in the test results.
 This repository requires the following dependencies
 
 - [Python 3.10](https://www.python.org/downloads/release/python-31014/)
-  - [tox](https://tox.wiki/en/latest/installation.html)
-  - [virtualenv](https://virtualenv.pypa.io/en/latest/installation.html)
+- [uv](https://docs.astral.sh/uv/)
 - [Snapcraft](https://snapcraft.io/docs/installing-snapcraft)
 
 ### Installing for contribution
 
-1. **Create a Python virtual environment**
-
-   To contribute to the repository, we first create a Python virtual environment.
-   To create a virtual environment we need to install the `virtualenv` package:
-
-   ```
-   python3 -m pip install virtualenv
-   ```
-
-   Then we create a virtual environment:
-
-   ```
-   python3 -m virtualenv venv
-   ```
-
-   After that, we enter the virtual environment:
-
-   ```
-   . venv/bin/activate
-   ```
-
-1. **Installing YARF with dependencies**
+1. **Installing YARF with dependencies on a virtual environment**
 
    We can install YARF along with the dependencies specified in
    `pyproject.toml` in the virtual environment using the command:
 
    ```
-   python3 -m pip install -e '.[develop]'
+   uv sync
+   ```
+
+   After that, we enter the virtual environment:
+
+   ```
+   . .venv/bin/activate
    ```
 
    Optionally, enable pre-commit checks, so your contribution will pass all the checks
    we run on the code:
 
    ```
-   pre-commit install
+   uv tool run --from 'pre-commit<4.0.0' pre-commit install
    ```
 
    We can start working on the repository here.
@@ -108,13 +92,12 @@ Please run `yarf --help` to learn more about the usage.
 [tox](https://tox.wiki/) is used to automate quality control tasks in YARF,
 including:
 
-- Linting ([ruff](https://docs.astral.sh/ruff/))
-- Formatting ([black](https://black.readthedocs.io/en/stable/))
+- Linting and formatting ([ruff](https://docs.astral.sh/ruff/))
 - Unit test with coverage ([pytest](https://docs.pytest.org/en/stable/))
 
 To run the above quality control tasks, simply execute the command under
 the repository directory:
 
 ```
-tox
+uv tool run tox
 ```
