@@ -11,15 +11,10 @@ from yarf.lib.wayland.protocols import (
 from yarf.lib.wayland.protocols import ZxdgOutputManagerV1 as output_manager
 from yarf.lib.wayland.virtual_pointer import VirtualPointer
 
-from .fixtures import mock_pwc  # noqa: F401
+from .fixtures import mock_pwc, output_count  # noqa: F401
 from .fixtures import wl_client as virtual_pointer  # noqa: F401
 
 OUTPUT_SIZE = (random.randint(800, 4000), random.randint(800, 4000))
-
-
-@pytest.fixture(scope="class")
-def output_count():
-    return random.randint(1, 4)
 
 
 @pytest.mark.wayland_client.with_args(VirtualPointer)
