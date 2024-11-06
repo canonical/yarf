@@ -1,11 +1,11 @@
 import asyncio
-import ctypes
 import mmap
 import os
 from typing import Any, NamedTuple, Optional
 
 from PIL import Image
 
+from . import get_memfd
 from .protocols import WlOutput, WlShm, ZwlrScreencopyManagerV1
 from .protocols.wayland.wl_buffer import WlBufferProxy
 from .protocols.wayland.wl_output import WlOutputProxy
@@ -17,8 +17,6 @@ from .protocols.wlr_screencopy_unstable_v1.zwlr_screencopy_manager_v1 import (
     ZwlrScreencopyManagerV1Proxy,
 )
 from .wayland_client import WaylandClient
-
-memfd_counter = 0
 
 
 class BufferData(NamedTuple):
@@ -42,23 +40,6 @@ class BufferData(NamedTuple):
             size of the buffer in bytes.
         """
         return self.height * self.stride
-
-
-def get_memfd() -> int:
-    """
-    Open a unique Memory FD object to retrieve screenshots.
-
-    Returns:
-        file descriptor id
-    """
-    global memfd_counter
-    memfd_counter += 1
-    name = f"/yarf-screencopy-{os.getpid()}-{memfd_counter}"
-    open_result: int = os.memfd_create(name, os.MFD_CLOEXEC)
-    assert (
-        open_result >= 0
-    ), f"Error {open_result} creating memfd: {os.strerror(ctypes.get_errno())}"
-    return open_result
 
 
 class Screencopy(WaylandClient):
