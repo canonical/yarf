@@ -1,4 +1,5 @@
 wayland
+virtual_keyboard_unstable_v1
 wlr_screencopy_unstable_v1
 wlr_virtual_pointer_unstable_v1
 xdg_output_unstable_v1
