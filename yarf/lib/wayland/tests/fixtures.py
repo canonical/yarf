@@ -25,6 +25,13 @@ def mock_ftruncate(mock_pwc):  # noqa: F811
 
 
 @pytest.fixture(autouse=True)
+def mock_write(mock_pwc):  # noqa: F811
+    with patch("os.write") as m:
+        mock_pwc.attach_mock(m, "write")
+        yield m
+
+
+@pytest.fixture(autouse=True)
 def mock_close(mock_pwc):  # noqa: F811
     with patch("os.close") as m:
         mock_pwc.attach_mock(m, "close")
