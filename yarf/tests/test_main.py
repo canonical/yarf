@@ -24,6 +24,7 @@ from yarf.main import (
 )
 from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS
 from yarf.rf_libraries.libraries.Example import Example
+from yarf.tests.fixtures import fs  # noqa: F401
 
 
 class TestMain:
@@ -154,7 +155,7 @@ class TestMain:
         with pytest.raises(SystemExit):
             parse_arguments(argv)
 
-    def test_get_yarf_settings(self, fs: FakeFilesystem) -> None:
+    def test_get_yarf_settings(self, fs: FakeFilesystem) -> None:  # noqa: F811
         """
         Test whether the function get_yarf_settings can recognize specified
         yarf tags.
@@ -207,7 +208,7 @@ class TestMain:
         assert "skip" in robot_settings
         assert set(robot_settings["skip"]) == set()
 
-    def test_get_yarf_settings_invalid(self, fs: FakeFilesystem) -> None:
+    def test_get_yarf_settings_invalid(self, fs: FakeFilesystem) -> None:  # noqa: F811
         """
         Test whether the function raises an error when encountering an invalid
         yarf tag.
@@ -236,7 +237,7 @@ class TestMain:
         robot_settings = get_yarf_settings(test_suite)
         assert "skip" not in robot_settings
 
-    def test_get_robot_reserved_settings(self, fs: FakeFilesystem) -> None:
+    def test_get_robot_reserved_settings(self, fs: FakeFilesystem) -> None:  # noqa: F811
         """
         Test whether the function get_robot_reserved_settings can recognize
         specified robot tags that are not supported today.
@@ -331,7 +332,7 @@ class TestMain:
         self,
         mock_get_yarf_settings: MagicMock,
         mock_get_robot_reserved_settings: MagicMock,
-        fs: FakeFilesystem,
+        fs: FakeFilesystem,  # noqa: F811
     ) -> None:
         """
         Test if the function raise exception if test suite did not run
@@ -392,7 +393,9 @@ class TestMain:
 
     @patch("yarf.main.TestSuite.from_file_system")
     def test_main(
-        self, mock_test_suite: MagicMock, fs: FakeFilesystem
+        self,
+        mock_test_suite: MagicMock,
+        fs: FakeFilesystem,  # noqa: F811
     ) -> None:
         """
         Test whether the function runs a Robot Test Suite with specified path
@@ -419,7 +422,9 @@ class TestMain:
 
     @patch("yarf.main.TestSuite.from_file_system")
     def test_main_custom_outdir(
-        self, mock_test_suite: MagicMock, fs: FakeFilesystem
+        self,
+        mock_test_suite: MagicMock,
+        fs: FakeFilesystem,  # noqa: F811
     ) -> None:
         """
         Test whether the function runs a Robot Test Suite with specified path,

@@ -2103,6 +2103,15 @@ wheels = [
 ]
 
 [[package]]
+name = "xkbcommon"
+version = "1.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cffi" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/03/29/fd4be2098b0a963c95d5f9cbd03bcf3f5bf741632a994395f62de6b4ef69/xkbcommon-1.0.1.tar.gz", hash = "sha256:9e9749d6ecba514161662a468ba38689ab6b6e962af42e09fba5eeabcb776c91", size = 79726 }
+
+[[package]]
 name = "xlrd"
 version = "2.0.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2148,6 +2157,7 @@ dependencies = [
     { name = "rpaframework" },
     { name = "rpaframework-recognition" },
     { name = "rpyc" },
+    { name = "xkbcommon" },
 ]
 
 [package.optional-dependencies]
@@ -2178,6 +2188,7 @@ requires-dist = [
     { name = "rpaframework-recognition", specifier = "~=5.2.3" },
     { name = "rpyc", specifier = "~=5.3.1" },
     { name = "tox", marker = "extra == 'develop'" },
+    { name = "xkbcommon", specifier = "<1.1" },
 ]
 
 [[package]]
