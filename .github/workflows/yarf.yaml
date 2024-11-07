@@ -18,7 +18,8 @@ jobs:
         sudo apt update -qq
         sudo apt install -y \
           git-lfs \
-          libgl1
+          libgl1 \
+          libxkbcommon-dev
     - uses: actions/checkout@v4
       with:
         lfs: true
