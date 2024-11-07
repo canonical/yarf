@@ -4,6 +4,7 @@ from typing import Any
 
 from robot.api.deco import keyword, library
 
+from yarf.lib.wayland.virtual_keyboard import VirtualKeyboard
 from yarf.lib.wayland.virtual_pointer import Button, VirtualPointer
 from yarf.rf_libraries.libraries.hid_base import HidBase, Size
 
@@ -25,6 +26,7 @@ class Hid(HidBase):
         self.ROBOT_LIBRARY_LISTENER = self
         display_name = os.environ.get("WAYLAND_DISPLAY", "wayland-0")
         self._virtual_pointer: VirtualPointer = VirtualPointer(display_name)
+        self._virtual_keyboard: VirtualKeyboard = VirtualKeyboard(display_name)
         self._connected: bool = False
         super().__init__()
 
@@ -38,13 +40,24 @@ class Hid(HidBase):
         if not self._connected:
             asyncio.get_event_loop().run_until_complete(self._connect())
 
-    @keyword
-    def keys_combo(self, combo: list[str]):
-        raise NotImplementedError
+    async def _keys_combo(self, combo: list[str]):
+        """
+        Press and release a combination of keys.
+
+        Arguments:
+            combo: the list of keys to press
+        """
+        self._virtual_keyboard.key_combo(combo)
 
     @keyword
-    def type_string(self, string: str):
-        raise NotImplementedError
+    async def type_string(self, string: str):
+        """
+        Type a string.
+
+        Arguments:
+            string: string to type.
+        """
+        self._virtual_keyboard.type(string)
 
     async def _get_display_size(self) -> Size:
         return Size(
@@ -107,6 +120,7 @@ class Hid(HidBase):
         """
         if not self._connected:
             await self._virtual_pointer.connect()
+            await self._virtual_keyboard.connect()
             self._connected = True
 
     async def _disconnect(self):
@@ -116,6 +130,7 @@ class Hid(HidBase):
         if self._connected:
             self._connected = False
             await self._virtual_pointer.disconnect()
+            await self._virtual_keyboard.disconnect()
 
     def _close(self):
         """
