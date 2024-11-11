@@ -332,6 +332,29 @@ class TestVideoInputBase:
         mock_ocr.read.assert_called_once_with(image)
 
     @pytest.mark.asyncio
+    async def test_match_text(self, stub_videoinput, mock_time):
+        mock_time.side_effect = [
+            0,
+            11,
+        ]
+        stub_videoinput.read_text = AsyncMock()
+        stub_videoinput.read_text.return_value = "darmok"
+        with pytest.raises(ValueError):
+            await stub_videoinput.match_text("hello")
+
+    @pytest.mark.asyncio
+    async def test_match_text_succeeds(self, stub_videoinput, mock_time):
+        mock_time.side_effect = [
+            0,
+            1,
+            2,
+        ]
+        stub_videoinput.read_text = AsyncMock()
+        stub_videoinput.read_text.return_value = "hello there!"
+        await stub_videoinput.match_text("hello")
+        stub_videoinput.read_text.assert_called_once()
+
+    @pytest.mark.asyncio
     async def test_restart_video_input(self, stub_videoinput):
         """
         Test the restart video function calls the inner relative functions.
