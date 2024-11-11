@@ -136,13 +136,38 @@ class VideoInputBase(ABC):
         """
         Read the text from the provided image or grab a screenshot to read
         from.
-
-        The region of interest can be limited with the `region` argument.
         """
         if not image:
             image = await self._grab_screenshot()
 
         return ocr.read(image)
+
+    @keyword
+    async def match_text(
+        self,
+        text: str,
+        timeout: int = 10,
+    ):
+        """
+        Wait for specified text to appear on screen.
+
+        Args:
+            text: The text to match on screen
+            timeout: Time to wait for the text to appear
+        Raises:
+            ValueError: If the specified text isn't found in time
+        Returns:
+            Nothing! Returns if the text is successfully found.
+        """
+        start_time = time.time()
+        on_screen_text = None
+        while time.time() - start_time < timeout:
+            on_screen_text = await self.read_text()
+            if text in on_screen_text:
+                return
+        raise ValueError(
+            f"Timed out looking for '{text}' after '{timeout}' seconds. Text read on screen was {on_screen_text}"
+        )
 
     @abstractmethod
     @keyword
