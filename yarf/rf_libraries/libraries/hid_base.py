@@ -4,7 +4,7 @@ This module provides the Robot interface for HID interactions.
 
 import asyncio
 from abc import ABC, abstractmethod
-from typing import NamedTuple
+from typing import NamedTuple, Sequence
 
 from robot.api.deco import keyword
 
@@ -29,14 +29,21 @@ class HidBase(ABC):
     def __init__(self):
         self._pointer_position = PointerPosition(0, 0)
 
-    @abstractmethod
     @keyword
-    async def keys_combo(self, combo: list[str]):
+    async def keys_combo(self, combo: Sequence[str] | str, *keys: str):
         """
         Press and release a combination of keys.
 
-        :param combo: list of keys to press at the same time.
+        Arguments:
+            combo: first key, or a list of keys to press at the same time.
+            *keys: remaining keys to press.
         """
+        assert (
+            type(combo) is str or not keys
+        ), "Pass keys as a list, or as argument list, not both"
+        if type(combo) is str:
+            combo = (combo,) + keys
+        await self._keys_combo(combo)
 
     @abstractmethod
     @keyword

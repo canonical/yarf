@@ -57,7 +57,7 @@ class TestZapperHid:
         """
         keys = ["LEFT_ALT", "F4"]
 
-        await zapper_hid.keys_combo(keys)
+        await zapper_hid._keys_combo(keys)
 
         mock_service.hid_translator.assert_called_once_with(
             "generate_actions_for_raw_combo", keys

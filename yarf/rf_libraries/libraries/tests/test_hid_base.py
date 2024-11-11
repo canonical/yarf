@@ -15,7 +15,7 @@ class StubHid(HidBase):
     async def click_pointer_button(self, *args):
         pass
 
-    async def keys_combo(self, *args):
+    async def _keys_combo(self, *args):
         pass
 
     async def type_string(self, *args):
@@ -42,6 +42,7 @@ def stub_hid():
     ph = StubHid()
     ph._get_display_size = AsyncMock(return_value=Size(1000, 1000))
     ph._move_pointer = AsyncMock()
+    ph._keys_combo = AsyncMock()
     yield ph
 
 
@@ -129,3 +130,23 @@ class TestHidBase:
         )
 
         mock_sleep.assert_has_calls(3 * [call(0.2)])
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "args,expected",
+        (
+            pytest.param((["LEFT_ALT", "F4"],), ["LEFT_ALT", "F4"], id="list"),
+            pytest.param(("LEFT_ALT", "F4"), ["LEFT_ALT", "F4"], id="args"),
+            pytest.param(("F4",), ["F4"], id="arg"),
+            pytest.param((["LEFT_ALT"], "F4"), AssertionError, id="wrong"),
+        ),
+    )
+    async def test_keys_combo(self, args, expected, stub_hid):
+        if type(expected) is type and issubclass(expected, Exception):
+            with pytest.raises(expected):
+                await stub_hid.keys_combo(*args)
+        else:
+            await stub_hid.keys_combo(*args)
+            stub_hid._keys_combo.assert_awaited_once_with(
+                pytest.approx(expected)
+            )

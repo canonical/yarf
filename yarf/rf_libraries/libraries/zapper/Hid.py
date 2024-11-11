@@ -44,12 +44,12 @@ class Hid(HidBase):
             service.reset_hid_state()
             service.hid_pointer(False, 0, 0)
 
-    @keyword
-    async def keys_combo(self, combo: list[str]):
+    async def _keys_combo(self, combo: list[str]):
         """
         Press and release a combination of keys.
 
-        :param combo: list of keys to press at the same time.
+        Arguments:
+            combo: list of keys to press at the same time.
         """
 
         with zapper_api() as service:
