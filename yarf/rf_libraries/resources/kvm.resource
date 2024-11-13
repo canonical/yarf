@@ -12,13 +12,13 @@ Library             VideoInput.py    AS    PlatformVideoInput
 
 *** Keywords ***
 Press Key And Match
-    [Arguments]             ${key}                  ${template}             ${tentatives}=1         ${delay}=1
+    [Arguments]             ${key}                  ${template}             ${tentatives}=1         ${timeout}=1
     ${combo}=               Create List             ${key}
     Press Combo And Match
     ...                     ${combo}
     ...                     ${template}
     ...                     ${tentatives}
-    ...                     ${delay}
+    ...                     ${timeout}
 
 Press Combo And Match
     [Arguments]             ${keys-combo}           ${template}             ${tentatives}=1         ${timeout}=1
