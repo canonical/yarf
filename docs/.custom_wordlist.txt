@@ -7,3 +7,12 @@ organized
 PlatformVideoInput
 Wayland
 Mir
+Qemu
+Backend
+backend
+backends
+Vnc
+SDL
+VM
+localhost
+ValueError
