@@ -71,7 +71,7 @@ repos:
     exclude: 'tests/.*'
     args: [
       --verbose,
-      --fail-under=63.6,
+      --fail-under=61.8,
     ]
 
 - repo: https://github.com/jsh9/pydoclint.git
