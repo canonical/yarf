@@ -1,6 +1,6 @@
 import pytest
 
-from yarf.rf_libraries.libraries.vnc import Vnc, translate
+from yarf.rf_libraries.libraries.vnc import Vnc
 
 
 class TestVnc:
@@ -20,21 +20,3 @@ class TestVnc:
             m.setenv("VNC_HOST", "localhost")
             with pytest.raises(AssertionError):
                 _ = Vnc()
-
-
-class TestHidTranslator:
-    @pytest.mark.parametrize(
-        "test_input,expected",
-        [
-            ("LEFT_ALT", "Alt_L"),
-            ("RIGHT_ALT", "Alt_R"),
-            ("LEFT_CONTROL", "Control_L"),
-            ("RIGHT_CONTROL", "Control_R"),
-            ("ESCAPE", "Escape"),
-            ("F10", "F10"),
-            ("ENTER", "Return"),
-            ("A", "A"),
-        ],
-    )
-    def test_translations(self, test_input, expected) -> None:
-        assert translate(test_input) == expected

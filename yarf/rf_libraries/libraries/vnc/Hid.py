@@ -4,7 +4,7 @@ from asyncvnc import connect
 from robot.api.deco import keyword, library
 
 from yarf.rf_libraries.libraries.hid_base import HidBase, Size
-from yarf.rf_libraries.libraries.vnc import Vnc, translate
+from yarf.rf_libraries.libraries.vnc import Vnc
 
 
 class MouseTranslation(IntEnum):
@@ -45,7 +45,7 @@ class Hid(HidBase):
         """
         async with connect(self.vnc.host, self.vnc.port) as client:
             client.mouse.move(self.curr_x, self.curr_y)
-            client.keyboard.press(*(translate(k) for k in combo))
+            client.keyboard.press(*combo)
 
     @keyword
     async def type_string(self, string: str):
