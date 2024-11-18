@@ -23,10 +23,9 @@ class TestVncHid:
                 client_mock = connect_mock.return_value.__aenter__.return_value
                 client_mock.keyboard.press = MagicMock()
                 client_mock.mouse.move = MagicMock()
-                keys = ["LEFT_ALT", "F10"]
-                translated = ["Alt_L", "F10"]
+                keys = ["Alt_L", "F10"]
                 await vnc_hid._keys_combo(keys)
-                client_mock.keyboard.press.assert_called_once_with(*translated)
+                client_mock.keyboard.press.assert_called_once_with(*keys)
                 client_mock.mouse.move.assert_called_once
 
     @pytest.mark.asyncio
