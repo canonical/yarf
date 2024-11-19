@@ -135,10 +135,10 @@ class TestHidBase:
     @pytest.mark.parametrize(
         "args,expected",
         (
-            pytest.param((["LEFT_ALT", "F4"],), ["LEFT_ALT", "F4"], id="list"),
-            pytest.param(("LEFT_ALT", "F4"), ["LEFT_ALT", "F4"], id="args"),
+            pytest.param((["Alt_L", "F4"],), ["Alt_L", "F4"], id="list"),
+            pytest.param(("Alt_L", "F4"), ["Alt_L", "F4"], id="args"),
             pytest.param(("F4",), ["F4"], id="arg"),
-            pytest.param((["LEFT_ALT"], "F4"), AssertionError, id="wrong"),
+            pytest.param((["Alt_L"], "F4"), AssertionError, id="wrong"),
         ),
     )
     async def test_keys_combo(self, args, expected, stub_hid):
