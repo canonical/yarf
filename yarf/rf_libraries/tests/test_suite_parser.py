@@ -5,6 +5,7 @@ import pytest
 from pyfakefs.fake_filesystem_unittest import FakeFilesystem
 
 from yarf.rf_libraries.suite_parser import SuiteParser
+from yarf.tests.fixtures import fs  # noqa: F401
 
 
 class TestSuiteParser:
@@ -18,7 +19,7 @@ class TestSuiteParser:
         assert mock_suite_parser_instance.suite_path == Path(path_to_suite)
         mock_suite_parser_instance.read_suite.assert_called_once()
 
-    def test_read_suite(self, fs: FakeFilesystem) -> None:
+    def test_read_suite(self, fs: FakeFilesystem) -> None:  # noqa: F811
         """
         Test whether read_suite read the correct assets' and variants' relative
         and full path from provided suite path.
@@ -60,7 +61,7 @@ class TestSuiteParser:
         }
         assert mock_suite_parser_instance.variants == expected_variants
 
-    def test_read_suite_sub_dir(self, fs: FakeFilesystem) -> None:
+    def test_read_suite_sub_dir(self, fs: FakeFilesystem) -> None:  # noqa: F811
         """
         Test whether read_suite read the correct assets' and variants' relative
         and full path from provided suite path if there is/are subdirectories.
@@ -108,7 +109,7 @@ class TestSuiteParser:
         }
         assert mock_suite_parser_instance.variants == expected_variants
 
-    def test_read_suite_no_robot_file(self, fs: FakeFilesystem) -> None:
+    def test_read_suite_no_robot_file(self, fs: FakeFilesystem) -> None:  # noqa: F811
         """
         Test whether read_suite raises a ValueError when no robot file is
         found.
@@ -130,7 +131,7 @@ class TestSuiteParser:
         with pytest.raises(ValueError):
             SuiteParser.read_suite(mock_suite_parser_instance)
 
-    def test_suite_in_temp_folder(self, fs: FakeFilesystem) -> None:
+    def test_suite_in_temp_folder(self, fs: FakeFilesystem) -> None:  # noqa: F811
         """
         Test whether the function suite_in_temp_folder correctly move the suite
         assets to a temporary folder after the correct assets are selected.
@@ -177,7 +178,7 @@ class TestSuiteParser:
             assert temp_directory_path.exists()
             assert set(temp_directory_path.rglob("*")) == expected_file_system
 
-    def test_select_assets(self, fs: FakeFilesystem) -> None:
+    def test_select_assets(self, fs: FakeFilesystem) -> None:  # noqa: F811
         """
         Test whether the select_assets method correctly get assets according to
         variant string.

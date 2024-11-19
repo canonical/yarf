@@ -20,6 +20,19 @@ def mock_pointer():
         yield mock.return_value
 
 
+@pytest.fixture(autouse=True)
+def mock_keyboard():
+    with patch("yarf.rf_libraries.libraries.mir.Hid.VirtualKeyboard") as mock:
+        mock.return_value.attach_mock(mock, "new")
+        mock.configure_mock(
+            **{
+                "return_value.connect": AsyncMock(),
+                "return_value.disconnect": AsyncMock(),
+            }
+        )
+        yield mock.return_value
+
+
 @pytest.fixture
 def mir_hid():
     return Hid()
@@ -46,10 +59,17 @@ class TestMirHid:
         mir_hid._close()
         mock_pointer.disconnect.assert_awaited_once()
 
-    @pytest.mark.parametrize("method", ("keys_combo", "type_string"))
-    def test_unimplemented(self, mir_hid, method):
-        with pytest.raises(NotImplementedError):
-            getattr(mir_hid, method)(sentinel.arg)
+    @pytest.mark.asyncio
+    async def test_type_string(self, mir_hid, mock_keyboard):
+        await mir_hid.type_string(sentinel.arg)
+
+        mock_keyboard.type.assert_called_once_with(sentinel.arg)
+
+    @pytest.mark.asyncio
+    async def test_keys_combo(self, mir_hid, mock_keyboard):
+        await mir_hid.keys_combo(sentinel.arg)
+
+        mock_keyboard.key_combo.assert_called_once_with(sentinel.arg)
 
     @pytest.mark.asyncio
     async def test_get_display_size(self, mir_hid, mock_pointer):

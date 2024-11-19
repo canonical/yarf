@@ -21,6 +21,7 @@ parts:
     build-packages:
       - pkg-config
       - libwayland-dev
+      - libxkbcommon-dev
     build-snaps:
       - yq
     stage-packages:

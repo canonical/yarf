@@ -6,10 +6,36 @@ import pytest
 from yarf.lib.wayland.protocols.wayland import WlOutput as wl_output
 
 
+@pytest.fixture(scope="class")
+def output_count():
+    return random.randint(1, 4)
+
+
 @pytest.fixture(autouse=True)
 def mock_pwc():
     with patch("pywayland.client") as mock:
         yield mock
+
+
+@pytest.fixture(autouse=True)
+def mock_ftruncate(mock_pwc):  # noqa: F811
+    with patch("os.ftruncate") as m:
+        mock_pwc.attach_mock(m, "ftruncate")
+        yield m
+
+
+@pytest.fixture(autouse=True)
+def mock_write(mock_pwc):  # noqa: F811
+    with patch("os.write") as m:
+        mock_pwc.attach_mock(m, "write")
+        yield m
+
+
+@pytest.fixture(autouse=True)
+def mock_close(mock_pwc):  # noqa: F811
+    with patch("os.close") as m:
+        mock_pwc.attach_mock(m, "close")
+        yield m
 
 
 @pytest.fixture
