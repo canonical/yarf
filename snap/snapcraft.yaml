@@ -7,7 +7,7 @@ description: |
   allows developers to build complex test scenarios and
   bootstrap them locally, then work towards automated runs.
 
-grade: devel
+grade: stable
 confinement: strict
 
 parts:
