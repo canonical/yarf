@@ -28,11 +28,15 @@ parts:
       - libice6
       - libgl1
       - libsm6
+      - libxkbcommon0
       - tesseract-ocr
+      - xkb-data
     override-pull: |
       craftctl default
       craftctl set version=$(yq -r .project.version pyproject.toml)
 
+environment:
+  XKB_CONFIG_ROOT: $SNAP/usr/share/X11/xkb
 
 apps:
   yarf:
