@@ -5,10 +5,11 @@ import pytest
 from pyfakefs.fake_filesystem_unittest import FakeFilesystem
 
 from yarf.output_converter import OutputConverter
+from yarf.tests.fixtures import fs  # noqa: F401
 
 
 class TestOutputConverter:
-    def test_init(self, fs: FakeFilesystem) -> None:
+    def test_init(self, fs: FakeFilesystem) -> None:  # noqa: F811
         outdir = Path("/testoutdir")
         fs.create_dir(outdir)
 
@@ -19,7 +20,7 @@ class TestOutputConverter:
         with pytest.raises(ValueError):
             OutputConverter(Path("/nonexistent"))
 
-    def test_convert_to_format(self, fs: FakeFilesystem) -> None:
+    def test_convert_to_format(self, fs: FakeFilesystem) -> None:  # noqa: F811
         outdir = Path("/testoutdir")
         fs.create_dir(outdir)
         output_converter = OutputConverter(outdir)
@@ -28,7 +29,7 @@ class TestOutputConverter:
         output_converter.convert_to_format("hexr")
         output_converter.convert_to_hexr.assert_called_once()
 
-    def test_convert_to_format_unsupported(self, fs: FakeFilesystem) -> None:
+    def test_convert_to_format_unsupported(self, fs: FakeFilesystem) -> None:  # noqa: F811
         outdir = Path("/testoutdir")
         fs.create_dir(outdir)
         output_converter = OutputConverter(outdir)
