@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 from textwrap import dedent
 from unittest import mock
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import ANY, MagicMock, Mock, call, patch
 
 import pytest
 from pyfakefs.fake_filesystem_unittest import FakeFilesystem
@@ -94,6 +94,10 @@ class TestMain:
         argv = ["--outdir", "out/dir"]
         args, _ = parse_arguments(argv)
         assert args.outdir == "out/dir"
+
+        argv = ["--output_format", "format_A"]
+        args, _ = parse_arguments(argv)
+        assert args.output_format == "format_A"
 
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Example"] = Example
@@ -449,6 +453,39 @@ class TestMain:
             [],
             Path(outdir),
             {},
+        )
+
+    @patch("yarf.main.OutputConverter")
+    @patch("yarf.main.TestSuite.from_file_system")
+    def test_main_output_format(
+        self,
+        mock_test_suite: MagicMock,
+        mock_output_converter: MagicMock,
+        fs: FakeFilesystem,  # noqa: F811
+    ) -> None:
+        """
+        Test whether the function runs a Robot Test Suite and convert the
+        output to specified format.
+        """
+
+        test_path = "suite-path"
+        output_format = "hexr"
+        fs.create_file(f"{test_path}/test.robot")
+        # fs.create_dir(outdir)
+        SUPPORTED_PLATFORMS.clear()
+        SUPPORTED_PLATFORMS["Example"] = Example
+
+        main.run_robot_suite = Mock()
+        argv = [test_path, "--output_format", output_format]
+        main.main(argv)
+
+        mock_test_suite.assert_called_once()
+        main.run_robot_suite.assert_called_once()
+        mock_output_converter.assert_has_calls(
+            (
+                call(ANY),
+                call().convert_to_format(output_format),
+            )
         )
 
     @patch("yarf.main.TestSuiteBuilder.build")

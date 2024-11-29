@@ -18,6 +18,7 @@ from robot.api import TestSuite, TestSuiteBuilder
 from robot.errors import Information
 from robot.run import RobotFramework
 
+from yarf.output_converter import OutputConverter
 from yarf.rf_libraries import robot_in_path
 from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS, PlatformBase
 from yarf.rf_libraries.suite_parser import SuiteParser
@@ -133,6 +134,12 @@ def parse_yarf_arguments(argv: list[str]) -> Namespace:
         "--outdir",
         type=str,
         help="Specify output directory.",
+    )
+
+    top_level_parser.add_argument(
+        "--output_format",
+        type=str,
+        help="Specify the output format.",
     )
 
     top_level_parser.add_argument(
@@ -405,6 +412,10 @@ def main(argv: Optional[list[str]] = None) -> None:
             Path(os.environ["RFDEBUG_HISTORY"]),
             cli_options,
         )
+
+    if args.output_format:
+        converter = OutputConverter(outdir)
+        converter.convert_to_format(args.output_format)
 
 
 if __name__ == "__main__":
