@@ -278,7 +278,3 @@ class OutputConverter:
             is_for_statement = False
 
         return res, templates
-
-
-converter = OutputConverter(Path("/home/douglasc/Desktop/yarf-outdir"))
-converter.convert_to_format("hexr")
