@@ -59,7 +59,7 @@ class OutputConverter:
 
         # Get results
         test_results = []
-        for suite in root.findall("suite"):
+        for suite in root.iter("suite"):
             print(f"Child tag: {suite.tag}, Child attributes: {suite.attrib}")
             test_results = self.get_tests_results_from_suite(
                 suite, test_results
@@ -68,6 +68,33 @@ class OutputConverter:
         submission["results"] = test_results
         with open(output_file, "w") as f:
             json.dump(submission, f, indent=4)
+
+    def check_missing_tags(self, yarf_tags: dict[str, str]) -> None:
+        """
+        Check if all required yarf namespace tags are present.
+
+        Arguments:
+            yarf_tags: dictionary containing yarf namespace tags
+
+        Raises:
+            AttributeError: if any required yarf tags are missing
+        """
+        required_tags = [
+            "namespace",
+            "category_id",
+            "type",
+            "certification_status",
+        ]
+        missing_tags_msg = ""
+        for tag_name in required_tags:
+            if tag_name not in yarf_tags:
+                missing_tags_msg += f"yarf:{tag_name}: [value]\n"
+
+        if len(missing_tags_msg) > 0:
+            raise AttributeError(
+                "Expected the following yarf tags to be present:\n"
+                + missing_tags_msg
+            )
 
     def get_tests_results_from_suite(
         self,
@@ -87,31 +114,55 @@ class OutputConverter:
         for test in suite.findall("test"):
             doc_tag = test.find("doc")
             status_tag = test.find("status")
+            yarf_tags = {}
+            for tag in test.findall("tag"):
+                if tag.text.startswith("yarf:"):
+                    tag_info = tag.text.split(":", 2)
+                    yarf_tags[tag_info[1]] = tag_info[2].strip()
 
+            self.check_missing_tags(yarf_tags)
+
+            id = (
+                yarf_tags["namespace"]
+                + "::"
+                + suite.attrib["name"]
+                + "/"
+                + test.attrib["name"]
+            )
+            outcome = status_tag.attrib["status"]
+            comments = ""
+            # if outcome in ["FAIL", "SKIP"]:
+            #     comments = input(f"Test {id} has a {outcome} outcome, please enter a comment if you have any:\n") or ""
+
+            io_log, templates = self.get_io_log_and_templates(test, set())
             test_results.append(
                 {
-                    "id": suite.attrib["name"]
-                    + "/"
-                    + test.attrib["name"],  # TODO: Add namespace
+                    "id": id,
                     "test_description": doc_tag.text if doc_tag else "",
-                    "certification_status": "non-blocker",  # TODO: Add yarf tag
-                    "category_id": "uncategorized",  # TODO: Add yarf tag
-                    "outcome": status_tag.attrib["status"],
-                    "comments": "",  # TODO: Add comments,
-                    "io_log": self.get_io_log(test),
+                    "certification_status": yarf_tags["certification_status"],
+                    "category_id": yarf_tags["category_id"],
+                    "outcome": outcome,
+                    "comments": comments,
+                    "io_log": io_log,
                     "duration": str(
                         parse(status_tag.attrib["endtime"])
                         - parse(status_tag.attrib["starttime"])
                     ),
-                    "type": "",  # TODO: Add test type
-                    "template_id": "",  # TODO: Add yarf tag
+                    "type": yarf_tags["type"],
+                    "template_id": ",".join(templates)
+                    if len(templates) > 0
+                    else None,
                 }
             )
         return test_results
 
     def get_node_info(
-        self, node: Element, keyword_chain: str, iter_count: int
-    ) -> str:
+        self,
+        node: Element,
+        keyword_chain: str,
+        iter_count: int,
+        templates: set[str],
+    ) -> tuple[str, set[str]]:
         """
         Get information from the given XML node.
 
@@ -119,9 +170,10 @@ class OutputConverter:
             node: XML node
             keyword_chain: keyword chain
             iter_count: iteration count
+            templates: set of templates encountered
 
         Returns:
-            string containing information from the given XML node
+            current information and updated set of templates encountered
         """
         curr = ""
         if node.tag == "kw":
@@ -136,6 +188,11 @@ class OutputConverter:
 
             curr += f"Keyword: {keyword_chain}\n"
 
+            if "sourcename" in node.attrib:
+                template = node.attrib["sourcename"]
+                curr += f"Template: {template}\n"
+                templates.add(template)
+
         elif node.tag == "msg":
             timestamp = node.attrib["timestamp"]
             msg_level = node.attrib["level"]
@@ -149,26 +206,28 @@ class OutputConverter:
             )
             curr += f"{type}: {condition}\n"
 
-        return curr
+        return curr, templates
 
-    def get_io_log(
+    def get_io_log_and_templates(
         self,
         node: Element,
+        templates: set[str],
         res: str = "",
         keyword_chain: str = "",
         iter_count: int = 0,
-    ) -> str:
+    ) -> tuple[str, set[str]]:
         """
         Get IO log for a given node.
 
         Arguments:
             node: XML node
+            templates: set of templates encountered
             res: accumulated result
             keyword_chain: keyword chain
             iter_count: iteration count
 
         Returns:
-            accumulated result with IO log information
+            accumulated result with IO log information and templates encountered
         """
         is_keyword = False
         is_if_statement = False
@@ -177,9 +236,11 @@ class OutputConverter:
         if node.tag == "kw":
             tag_info = "=" * CONSOLE_COLUMN_SIZE
             is_keyword = True
+
         elif node.tag == "if":
             tag_info = ">> IF STATEMENT "
             is_if_statement = True
+
         elif node.tag == "for":
             tag_info = ">> FOR LOOP "
             is_for_statement = True
@@ -189,25 +250,35 @@ class OutputConverter:
                 tag_info + ">" * (CONSOLE_COLUMN_SIZE - len(tag_info)) + "\n"
             )
 
-        curr = self.get_node_info(node, keyword_chain, iter_count)
+        curr, templates = self.get_node_info(
+            node, keyword_chain, iter_count, templates
+        )
         if len(curr) > 0:
             res += curr
 
         for child in node:
             if child.tag == "iter":
                 iter_count += 1
-            res = self.get_io_log(child, res, keyword_chain, iter_count)
+            res, templates = self.get_io_log_and_templates(
+                child, templates, res, keyword_chain, iter_count
+            )
 
         if is_keyword:
             res += "\n"
             is_keyword = False
+
         elif is_if_statement:
             end_if = "<< END IF "
             res += end_if + "<" * (CONSOLE_COLUMN_SIZE - len(end_if)) + "\n"
             is_if_statement = False
+
         elif is_for_statement:
             end_for = "<< END FOR "
             res += end_for + "<" * (CONSOLE_COLUMN_SIZE - len(end_for)) + "\n"
             is_for_statement = False
 
-        return res
+        return res, templates
+
+
+converter = OutputConverter(Path("/home/douglasc/Desktop/yarf-outdir"))
+converter.convert_to_format("hexr")
