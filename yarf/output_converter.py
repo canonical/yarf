@@ -1,6 +1,7 @@
 import json
 import os
 import xml.etree.ElementTree as ET
+from importlib import metadata
 from pathlib import Path
 from typing import Any
 from xml.etree.ElementTree import Element
@@ -36,38 +37,59 @@ class OutputConverter:
         if output_format not in self.supported_formats:
             raise ValueError(f"Unsupported output format: {output_format}")
 
-        # Convert output to the specified format and save to file
-        if output_format == "hexr":
-            self.convert_to_hexr()
-
-    def convert_to_hexr(self) -> None:
-        """
-        Convert the XML output file from Robot Framework to the result section
-        in submission schema.
-        """
-        output_file = self.outdir / "submission_to_hexr.json"
-        tree = ET.parse(self.outdir / "output.xml")
-        root = tree.getroot()
         submission = {}
         submission["version"] = 1
 
         # Get origin
-        submission["origin"] = {}
+        submission["origin"] = {
+            "name": "YARF",
+            "version": metadata.version("yarf"),
+            "packaging": {},
+        }
 
         # Get session data
-        submission["session_data"] = {}
+        submission["session_data"] = {
+            "title": "title",
+            "description": "Optional field",
+            "test_plan_id": "com.canonical.yarf::yarf-tillamook-auto-test-25.04-auto",
+            "execution_id": "Optional field",
+        }
 
-        # Get results
+        # Convert output to the specified format and save to file
+        if output_format == "hexr":
+            submission["results"] = self.convert_to_hexr_results()
+        else:
+            raise ValueError(f"Unsupported output format: {output_format}")
+
+        output_file = self.outdir / "submission_to_hexr.json"
+        with open(output_file, "w") as f:
+            json.dump(submission, f, indent=4)
+
+    def convert_to_hexr_results(self) -> list[dict[str, str]]:
+        """
+        Convert the XML output file from Robot Framework to the result section
+        in submission schema.
+
+        Returns:
+            List of dictionaries containing test results
+
+        Raises:
+            ValueError: if no test plan found in the output file
+        """
+        tree = ET.parse(self.outdir / "output.xml")
+        root = tree.getroot()
+        test_plan = root.find("suite")
+        if test_plan is None:
+            raise ValueError("No test plan found in the output file")
+
         test_results = []
-        for suite in root.iter("suite"):
+        for suite in test_plan.findall("suite"):
             print(f"Child tag: {suite.tag}, Child attributes: {suite.attrib}")
             test_results = self.get_tests_results_from_suite(
                 suite, test_results
             )
 
-        submission["results"] = test_results
-        with open(output_file, "w") as f:
-            json.dump(submission, f, indent=4)
+        return test_results
 
     def check_missing_tags(self, yarf_tags: dict[str, str]) -> None:
         """
@@ -149,6 +171,7 @@ class OutputConverter:
                         - parse(status_tag.attrib["starttime"])
                     ),
                     "type": yarf_tags["type"],
+                    # templates in Robot Framework is by keyword, not by test case, so we join all keyword templates used under a test together
                     "template_id": ",".join(templates)
                     if len(templates) > 0
                     else None,
@@ -278,3 +301,7 @@ class OutputConverter:
             is_for_statement = False
 
         return res, templates
+
+
+converter = OutputConverter(Path("/home/douglasc/Desktop/yarf-outdir"))
+converter.convert_to_format("hexr")
