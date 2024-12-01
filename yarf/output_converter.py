@@ -72,18 +72,12 @@ class OutputConverter:
 
         Returns:
             List of dictionaries containing test results
-
-        Raises:
-            ValueError: if no test plan found in the output file
         """
         tree = ET.parse(self.outdir / "output.xml")
-        root = tree.getroot()
-        test_plan = root.find("suite")
-        if test_plan is None:
-            raise ValueError("No test plan found in the output file")
+        test_plan = tree.getroot()
 
         test_results = []
-        for suite in test_plan.findall("suite"):
+        for suite in test_plan.iter("suite"):
             print(f"Child tag: {suite.tag}, Child attributes: {suite.attrib}")
             test_results = self.get_tests_results_from_suite(
                 suite, test_results
@@ -301,7 +295,3 @@ class OutputConverter:
             is_for_statement = False
 
         return res, templates
-
-
-converter = OutputConverter(Path("/home/douglasc/Desktop/yarf-outdir"))
-converter.convert_to_format("hexr")
