@@ -22,7 +22,7 @@ def get_converted_output(format: str, outdir: Path) -> dict[str, int | object]:
         ValueError: if the output format is not supported
     """
     try:
-        output_format_module = OUTPUT_FORMATS[format]
+        output_format_module: OutputConverterBase = OUTPUT_FORMATS[format]()
         return output_format_module.get_output(outdir)
     except KeyError:
         raise ValueError(f"Unsupported output format: {format}")
@@ -76,3 +76,5 @@ for module in Path(module_path).glob("*.py"):
     importlib.import_module(f"yarf.output.{module.stem}")
 
 del OUTPUT_FORMATS[OutputConverterBase.__name__]
+
+# get_converted_output("HEXR", "")
