@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 from textwrap import dedent
 from unittest import mock
-from unittest.mock import ANY, MagicMock, Mock, call, patch
+from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pytest
 from pyfakefs.fake_filesystem_unittest import FakeFilesystem
@@ -95,9 +95,9 @@ class TestMain:
         args, _ = parse_arguments(argv)
         assert args.outdir == "out/dir"
 
-        argv = ["--output_format", "format_A"]
+        argv = ["--output-format", "HEXR"]
         args, _ = parse_arguments(argv)
-        assert args.output_format == "format_A"
+        assert args.output_format == "HEXR"
 
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Example"] = Example
@@ -129,7 +129,8 @@ class TestMain:
         Test whether function picked up system arguments if argv is not
         provided.
         """
-
+        SUPPORTED_PLATFORMS.clear()
+        SUPPORTED_PLATFORMS["Example"] = Example
         with patch.object(
             sys,
             "argv",
@@ -455,12 +456,16 @@ class TestMain:
             {},
         )
 
-    @patch("yarf.main.OutputConverter")
+    @patch("yarf.main.json.dump")
+    @patch("yarf.main.open")
+    @patch("yarf.main.get_converted_output")
     @patch("yarf.main.TestSuite.from_file_system")
     def test_main_output_format(
         self,
         mock_test_suite: MagicMock,
-        mock_output_converter: MagicMock,
+        mock_get_converted_output: MagicMock,
+        mock_open: MagicMock,
+        mock_dump: MagicMock,
         fs: FakeFilesystem,  # noqa: F811
     ) -> None:
         """
@@ -469,23 +474,25 @@ class TestMain:
         """
 
         test_path = "suite-path"
-        output_format = "hexr"
+        output_format = "HEXR"
         fs.create_file(f"{test_path}/test.robot")
-        # fs.create_dir(outdir)
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Example"] = Example
 
         main.run_robot_suite = Mock()
-        argv = [test_path, "--output_format", output_format]
+        argv = [test_path, "--output-format", output_format]
         main.main(argv)
 
         mock_test_suite.assert_called_once()
         main.run_robot_suite.assert_called_once()
-        mock_output_converter.assert_has_calls(
-            (
-                call(ANY),
-                call().convert_to_format(output_format),
-            )
+        mock_get_converted_output.assert_called_once_with(output_format, ANY)
+        mock_open.assert_called_once_with(
+            Path("/tmp/yarf-outdir/submission_to_hexr.json"), "w"
+        )
+        mock_dump.assert_called_once_with(
+            mock_get_converted_output.return_value,
+            mock_open.return_value.__enter__(),
+            indent=4,
         )
 
     @patch("yarf.main.TestSuiteBuilder.build")

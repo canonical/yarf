@@ -1,4 +1,5 @@
 import contextlib
+import json
 import logging
 import operator
 import os
@@ -18,7 +19,7 @@ from robot.api import TestSuite, TestSuiteBuilder
 from robot.errors import Information
 from robot.run import RobotFramework
 
-from yarf.output_converter import OutputConverter
+from yarf.output import OUTPUT_FORMATS, get_converted_output
 from yarf.rf_libraries import robot_in_path
 from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS, PlatformBase
 from yarf.rf_libraries.suite_parser import SuiteParser
@@ -139,6 +140,7 @@ def parse_yarf_arguments(argv: list[str]) -> Namespace:
     top_level_parser.add_argument(
         "--output-format",
         type=str,
+        choices=OUTPUT_FORMATS.keys(),
         help="Specify the output format.",
     )
 
@@ -414,8 +416,9 @@ def main(argv: Optional[list[str]] = None) -> None:
         )
 
     if args.output_format:
-        converter = OutputConverter(outdir)
-        converter.convert_to_format(args.output_format)
+        formatted_output = get_converted_output(args.output_format, outdir)
+        with open(outdir / "submission_to_hexr.json", "w") as f:
+            json.dump(formatted_output, f, indent=4)
 
 
 if __name__ == "__main__":

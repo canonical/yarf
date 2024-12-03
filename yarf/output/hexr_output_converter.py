@@ -1,4 +1,3 @@
-import json
 import os
 import xml.etree.ElementTree as ET
 from importlib import metadata
@@ -8,6 +7,8 @@ from xml.etree.ElementTree import Element
 
 from dateutil.parser import parse
 
+from yarf.output import OutputConverterBase
+
 try:
     CONSOLE_COLUMN_SIZE, _ = os.get_terminal_size()
 except OSError:
@@ -15,65 +16,54 @@ except OSError:
     CONSOLE_COLUMN_SIZE = 80
 
 
-class OutputConverter:
-    supported_formats = set(["hexr"])
-
-    def __init__(self, outdir: Path) -> None:
-        if not outdir.exists():
-            raise ValueError("Output directory does not exist")
-
-        self.outdir = outdir
-
-    def convert_to_format(self, output_format: str) -> None:
+class HEXR(OutputConverterBase):
+    def get_output(self, outdir: Path) -> dict[str, Any]:
         """
         Convert the output to specified output format.
 
         Arguments:
-            output_format: output format to process
+            outdir: Path to the output directory
 
-        Raises:
-            ValueError: if the output format is not supported
+        Returns:
+            Dictionary containing the converted output in HEXR format
         """
-        if output_format not in self.supported_formats:
-            raise ValueError(f"Unsupported output format: {output_format}")
-
         submission = {}
         submission["version"] = 1
+        submission["origin"] = self.get_origin()
+        submission["session_data"] = self.get_session_data()
+        submission["results"] = self.get_hexr_results(outdir)
 
-        # Get origin
-        submission["origin"] = {
+        return submission
+
+    def get_origin(self) -> dict[str, Any]:
+        origin = {
             "name": "YARF",
             "version": metadata.version("yarf"),
             "packaging": {},
         }
+        return origin
 
-        # Get session data
-        submission["session_data"] = {
+    def get_session_data(self) -> dict[str, Any]:
+        session_data = {
             "title": "title",
             "description": "Optional field",
             "test_plan_id": "com.canonical.yarf::yarf-tillamook-auto-test-25.04-auto",
             "execution_id": "Optional field",
         }
+        return session_data
 
-        # Convert output to the specified format and save to file
-        if output_format == "hexr":
-            submission["results"] = self.convert_to_hexr_results()
-        else:
-            raise ValueError(f"Unsupported output format: {output_format}")
-
-        output_file = self.outdir / "submission_to_hexr.json"
-        with open(output_file, "w") as f:
-            json.dump(submission, f, indent=4)
-
-    def convert_to_hexr_results(self) -> list[dict[str, str]]:
+    def get_hexr_results(self, outdir: Path) -> list[dict[str, str]]:
         """
         Convert the XML output file from Robot Framework to the result section
         in submission schema.
 
+        Arguments:
+            outdir: Path to the output directory
+
         Returns:
             List of dictionaries containing test results
         """
-        tree = ET.parse(self.outdir / "output.xml")
+        tree = ET.parse(outdir / "output.xml")
         test_plan = tree.getroot()
 
         test_results = []
@@ -146,9 +136,9 @@ class OutputConverter:
                 + test.attrib["name"]
             )
             outcome = status_tag.attrib["status"]
-            comments = ""
-            # if outcome in ["FAIL", "SKIP"]:
-            #     comments = input(f"Test {id} has a {outcome} outcome, please enter a comment if you have any:\n") or ""
+            comments = (
+                ""  # no comments for now since we haven't support interactive
+            )
 
             io_log, templates = self.get_io_log_and_templates(test, set())
             test_results.append(
