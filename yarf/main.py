@@ -137,7 +137,7 @@ def parse_yarf_arguments(argv: list[str]) -> Namespace:
     )
 
     top_level_parser.add_argument(
-        "--output_format",
+        "--output-format",
         type=str,
         help="Specify the output format.",
     )
