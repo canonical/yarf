@@ -18,6 +18,15 @@ except OSError:
 
 
 class HEXR(OutputConverterBase):
+    """
+    Output converter for HEXR format.
+
+    Attributes:
+        submission_schema_version: The HEXR submission schema version
+    """
+
+    submission_schema_version = 1
+
     def get_output(self, outdir: Path) -> dict[str, Any]:
         """
         Convert the output to specified output format.
@@ -29,7 +38,7 @@ class HEXR(OutputConverterBase):
             Dictionary containing the converted output in HEXR format
         """
         submission = {}
-        submission["version"] = 1
+        submission["version"] = self.submission_schema_version
         submission["origin"] = self.get_origin()
         submission["session_data"] = self.get_session_data()
         submission["results"] = self.get_hexr_results(outdir)
