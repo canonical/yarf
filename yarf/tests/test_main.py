@@ -95,9 +95,9 @@ class TestMain:
         args, _ = parse_arguments(argv)
         assert args.outdir == "out/dir"
 
-        argv = ["--output-format", "HEXR"]
+        argv = ["--output-format", "TestSubmissionSchema"]
         args, _ = parse_arguments(argv)
-        assert args.output_format == "HEXR"
+        assert args.output_format == "TestSubmissionSchema"
 
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Example"] = Example
@@ -474,7 +474,7 @@ class TestMain:
         """
 
         test_path = "suite-path"
-        output_format = "HEXR"
+        output_format = "TestSubmissionSchema"
         fs.create_file(f"{test_path}/test.robot")
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Example"] = Example

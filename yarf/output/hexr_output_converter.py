@@ -17,12 +17,12 @@ except OSError:
     CONSOLE_COLUMN_SIZE = 80
 
 
-class HEXR(OutputConverterBase):
+class TestSubmissionSchema(OutputConverterBase):
     """
-    Output converter for HEXR format.
+    Output converter for Test Submission Schema format.
 
     Attributes:
-        submission_schema_version: The HEXR submission schema version
+        submission_schema_version: The Test Submission Schema submission schema version
     """
 
     submission_schema_version = 1
@@ -35,7 +35,7 @@ class HEXR(OutputConverterBase):
             outdir: Path to the output directory
 
         Returns:
-            Dictionary containing the converted output in HEXR format
+            Dictionary containing the converted output in Test Submission Schema format
         """
         submission = {}
         submission["version"] = self.submission_schema_version
@@ -311,7 +311,3 @@ class HEXR(OutputConverterBase):
             is_for_statement = False
 
         return res, templates
-
-
-c = HEXR()
-c.get_origin()
