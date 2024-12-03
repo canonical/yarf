@@ -1,5 +1,6 @@
 import os
 import xml.etree.ElementTree as ET
+from datetime import date
 from importlib import metadata
 from pathlib import Path
 from typing import Any
@@ -36,11 +37,27 @@ class HEXR(OutputConverterBase):
         return submission
 
     def get_origin(self) -> dict[str, Any]:
-        origin = {
-            "name": "YARF",
-            "version": metadata.version("yarf"),
-            "packaging": {},
-        }
+        origin = {}
+        origin["name"] = "YARF"
+        if "SNAP" in os.environ:
+            current_yarf_info = self.get_yarf_snap_info()
+            origin["version"] = current_yarf_info["version"]
+            origin["packaging"] = {
+                "type": "snap",
+                "name": current_yarf_info["name"],
+                "version": current_yarf_info["version"],
+                "revision": current_yarf_info["revision"],
+                "date": current_yarf_info["date"],
+            }
+        else:
+            origin["version"] = metadata.version("yarf")
+            origin["packaging"] = {
+                "type": "source",
+                "name": "yarf",
+                "version": metadata.version("yarf"),
+                "revision": "No revision",
+                "date": str(date.today()),
+            }
         return origin
 
     def get_session_data(self) -> dict[str, Any]:
@@ -285,3 +302,7 @@ class HEXR(OutputConverterBase):
             is_for_statement = False
 
         return res, templates
+
+
+c = HEXR()
+c.get_origin()
