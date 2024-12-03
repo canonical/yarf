@@ -35,7 +35,6 @@ class Hid(HidBase):
         self.curr_x = 0
         self.curr_y = 0
 
-    @keyword
     async def _keys_combo(self, combo: list[str]):
         """
         Press and release a combination of keys at the same time.
