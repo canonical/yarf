@@ -23,12 +23,11 @@ def output_converter_lifecycle(func):
                 )
 
             suite = kwargs["suite"]
-            output_format = kwargs["output_format"]
             outdir = kwargs["outdir"]
 
             converter.check_suite(suite)
             result = func(*args, **kwargs)
-            formatted_output = converter.get_output(output_format, outdir)
+            formatted_output = converter.get_output(outdir)
             with open(outdir / "submission_to_hexr.json", "w") as f:
                 json.dump(formatted_output, f, indent=4)
 

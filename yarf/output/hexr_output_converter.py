@@ -186,7 +186,8 @@ class TestSubmissionSchema(OutputConverterBase):
         for suite in self.test_plan.iter("suite"):
             if len(suite.findall("test")) == 0:
                 continue
-            print(f"Child tag: {suite.tag}, Child attributes: {suite.attrib}")
+
+            print("Processing suite: {}...".format(suite.attrib["name"]))
             test_results = self.get_tests_results_from_suite(
                 suite, test_results
             )
