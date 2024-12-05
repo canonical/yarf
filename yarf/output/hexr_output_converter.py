@@ -118,7 +118,7 @@ class TestSubmissionSchema(OutputConverterBase):
         submission["version"] = self.submission_schema_version
         submission["origin"] = self.get_origin()
         submission["session_data"] = self.get_session_data()
-        submission["results"] = self.get_hexr_results(outdir)
+        submission["results"] = self.get_hexr_results()
 
         return submission
 
@@ -184,6 +184,8 @@ class TestSubmissionSchema(OutputConverterBase):
         """
         test_results = []
         for suite in self.test_plan.iter("suite"):
+            if len(suite.findall("test")) == 0:
+                continue
             print(f"Child tag: {suite.tag}, Child attributes: {suite.attrib}")
             test_results = self.get_tests_results_from_suite(
                 suite, test_results
@@ -329,7 +331,7 @@ class TestSubmissionSchema(OutputConverterBase):
             )
             curr += f"{type}: {condition}\n"
 
-        return curr, templates
+        return curr, templates, keyword_chain
 
     def get_io_log_and_templates(
         self,
@@ -373,7 +375,7 @@ class TestSubmissionSchema(OutputConverterBase):
                 tag_info + ">" * (CONSOLE_COLUMN_SIZE - len(tag_info)) + "\n"
             )
 
-        curr, templates = self.get_node_info(
+        curr, templates, keyword_chain = self.get_node_info(
             node, keyword_chain, iter_count, templates
         )
         if len(curr) > 0:
@@ -401,3 +403,7 @@ class TestSubmissionSchema(OutputConverterBase):
             is_for_statement = False
 
         return res, templates
+
+
+c = TestSubmissionSchema()
+c.get_output(Path("/home/douglasc/Downloads/outdir"))
