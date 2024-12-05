@@ -258,7 +258,7 @@ class TestSubmissionSchema(OutputConverterBase):
                 ""  # no comments for now since we haven't support interactive
             )
 
-            io_log, templates = self.get_io_log_and_templates(test, set())
+            io_log, templates = self.get_io_log_and_templates(test, set(), [])
             test_results.append(
                 {
                     "id": id,
@@ -267,7 +267,7 @@ class TestSubmissionSchema(OutputConverterBase):
                     "category_id": yarf_tags["category_id"],
                     "outcome": outcome,
                     "comments": comments,
-                    "io_log": io_log,
+                    "io_log": "".join(io_log),
                     "duration": str(
                         parse(status_tag.attrib["endtime"])
                         - parse(status_tag.attrib["starttime"])
@@ -336,7 +336,7 @@ class TestSubmissionSchema(OutputConverterBase):
         self,
         node: Element,
         templates: set[str],
-        res: str = "",
+        res: list[str] = [],
         keyword_chain: str = "",
         iter_count: int = 0,
     ) -> tuple[str, set[str]]:
@@ -370,7 +370,7 @@ class TestSubmissionSchema(OutputConverterBase):
             is_for_statement = True
 
         if tag_info:
-            res += (
+            res.append(
                 tag_info + ">" * (CONSOLE_COLUMN_SIZE - len(tag_info)) + "\n"
             )
 
@@ -378,7 +378,7 @@ class TestSubmissionSchema(OutputConverterBase):
             node, keyword_chain, iter_count, templates
         )
         if len(curr) > 0:
-            res += "".join(curr)
+            res.extend(curr)
 
         for child in node:
             if child.tag == "iter":
@@ -388,17 +388,21 @@ class TestSubmissionSchema(OutputConverterBase):
             )
 
         if is_keyword:
-            res += "\n"
+            res.append("\n")
             is_keyword = False
 
         elif is_if_statement:
             end_if = "<< END IF "
-            res += end_if + "<" * (CONSOLE_COLUMN_SIZE - len(end_if)) + "\n"
+            res.append(
+                end_if + "<" * (CONSOLE_COLUMN_SIZE - len(end_if)) + "\n"
+            )
             is_if_statement = False
 
         elif is_for_statement:
             end_for = "<< END FOR "
-            res += end_for + "<" * (CONSOLE_COLUMN_SIZE - len(end_for)) + "\n"
+            res.append(
+                end_for + "<" * (CONSOLE_COLUMN_SIZE - len(end_for)) + "\n"
+            )
             is_for_statement = False
 
         return res, templates
