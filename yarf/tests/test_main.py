@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 from textwrap import dedent
 from unittest import mock
-from unittest.mock import ANY, MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from pyfakefs.fake_filesystem_unittest import FakeFilesystem
@@ -418,11 +418,12 @@ class TestMain:
 
         mock_test_suite.assert_called_once()
         main.run_robot_suite.assert_called_once_with(
-            mock_test_suite(),
-            SUPPORTED_PLATFORMS["Example"],
-            [],
-            Path(tempfile.gettempdir()) / "yarf-outdir",
-            {},
+            suite=mock_test_suite(),
+            lib_cls=SUPPORTED_PLATFORMS["Example"],
+            variables=[],
+            outdir=Path(tempfile.gettempdir()) / "yarf-outdir",
+            cli_options={},
+            output_format=None,
         )
 
     @patch("yarf.main.TestSuite.from_file_system")
@@ -449,50 +450,12 @@ class TestMain:
 
         mock_test_suite.assert_called_once()
         main.run_robot_suite.assert_called_once_with(
-            mock_test_suite(),
-            SUPPORTED_PLATFORMS["Example"],
-            [],
-            Path(outdir),
-            {},
-        )
-
-    @patch("yarf.main.json.dump")
-    @patch("yarf.main.open")
-    @patch("yarf.main.get_converted_output")
-    @patch("yarf.main.TestSuite.from_file_system")
-    def test_main_output_format(
-        self,
-        mock_test_suite: MagicMock,
-        mock_get_converted_output: MagicMock,
-        mock_open: MagicMock,
-        mock_dump: MagicMock,
-        fs: FakeFilesystem,  # noqa: F811
-    ) -> None:
-        """
-        Test whether the function runs a Robot Test Suite and convert the
-        output to specified format.
-        """
-
-        test_path = "suite-path"
-        output_format = "TestSubmissionSchema"
-        fs.create_file(f"{test_path}/test.robot")
-        SUPPORTED_PLATFORMS.clear()
-        SUPPORTED_PLATFORMS["Example"] = Example
-
-        main.run_robot_suite = Mock()
-        argv = [test_path, "--output-format", output_format]
-        main.main(argv)
-
-        mock_test_suite.assert_called_once()
-        main.run_robot_suite.assert_called_once()
-        mock_get_converted_output.assert_called_once_with(output_format, ANY)
-        mock_open.assert_called_once_with(
-            Path("/tmp/yarf-outdir/submission_to_hexr.json"), "w"
-        )
-        mock_dump.assert_called_once_with(
-            mock_get_converted_output.return_value,
-            mock_open.return_value.__enter__(),
-            indent=4,
+            suite=mock_test_suite(),
+            lib_cls=SUPPORTED_PLATFORMS["Example"],
+            variables=[],
+            outdir=Path(outdir),
+            cli_options={},
+            output_format=None,
         )
 
     @patch("yarf.main.TestSuiteBuilder.build")
@@ -513,11 +476,11 @@ class TestMain:
 
         mock_test_suite_builder.assert_called_once()
         main.run_interactive_console.assert_called_once_with(
-            mock_test_suite_builder(),
-            SUPPORTED_PLATFORMS["Example"],
-            outdir,
-            rf_debug_log_path,
-            {},
+            suite=mock_test_suite_builder(),
+            lib_cls=SUPPORTED_PLATFORMS["Example"],
+            outdir=outdir,
+            rf_debug_history_log_path=rf_debug_log_path,
+            cli_options={},
         )
 
     @patch("yarf.main.Path.exists")

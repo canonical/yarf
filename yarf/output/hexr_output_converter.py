@@ -1,4 +1,5 @@
 import os
+import re
 import xml.etree.ElementTree as ET
 from datetime import date
 from importlib import metadata
@@ -7,6 +8,7 @@ from typing import Any
 from xml.etree.ElementTree import Element
 
 from dateutil.parser import parse
+from robot.api import TestSuite
 
 from yarf.output import OutputConverterBase
 
@@ -26,6 +28,78 @@ class TestSubmissionSchema(OutputConverterBase):
     """
 
     submission_schema_version = 1
+
+    def check_suite(self, suite: TestSuite) -> None:
+        """
+        Check the test suite to see if it has all the required information for
+        the TestSubmissionSchema output format.
+
+        Arguments:
+            suite: an initialized executable TestSuite
+
+        Raises:
+            ValueError: when any metadata or tag is missing / in the wrong format
+        """
+        # Check of all required metadata exists
+        missing_metadata = {"title", "test_plan_id"}
+        test_plan_id_regex = (
+            r"^[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+::[a-zA-Z0-9_]+$"
+        )
+        for data in suite.metadata:
+            if data.lower() == "title" or (
+                data.lower() == "test_plan_id"
+                and re.fullmatch(test_plan_id_regex, suite.metadata[data])
+            ):
+                missing_metadata.remove(data.lower())
+
+        if len(missing_metadata) > 0:
+            raise ValueError(
+                f"Missing/wrong pattern for required metadata: {', '.join(missing_metadata)}"
+            )
+
+        # Check if all required tags exists
+        tags_err_msg = []
+        category_id_regex = (
+            r"^[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+::[A-Za-z0-9_\-]+$"
+        )
+        for s in suite.suites:
+            for test in s.tests:
+                missing_tags = {
+                    "certification_status",
+                    "type",
+                    "namespace",
+                    "category_id",
+                }
+                for tag in test.tags:
+                    if not tag.startswith("yarf:"):
+                        continue
+
+                    _, tag_name, tag_value = tag.split(":", 2)
+                    if tag_name in missing_tags:
+                        missing_tags.remove(tag_name)
+
+                    if (
+                        tag_name == "certification_status"
+                        and tag_value.strip() not in ["blocker", "non-blocker"]
+                    ):
+                        tags_err_msg.append(
+                            f"[{test.parent.name}/{test.name}] Invalid certification_status expression: {tag_value}"
+                        )
+
+                    elif tag_name == "category_id" and not re.fullmatch(
+                        category_id_regex, tag_value.strip()
+                    ):
+                        tags_err_msg.append(
+                            f"[{test.parent.name}/{test.name}] Invalid category_id expression: {tag_value}"
+                        )
+
+                if len(missing_tags) > 0:
+                    tags_err_msg.append(
+                        f"[{test.parent.name}/{test.name}] Missing tags: {', '.join(missing_tags)}"
+                    )
+
+        if len(tags_err_msg) > 0:
+            raise ValueError("\n".join(tags_err_msg))
 
     def get_output(self, outdir: Path) -> dict[str, Any]:
         """
@@ -165,8 +239,8 @@ class TestSubmissionSchema(OutputConverterBase):
             yarf_tags = {}
             for tag in test.findall("tag"):
                 if tag.text.startswith("yarf:"):
-                    tag_info = tag.text.split(":", 2)
-                    yarf_tags[tag_info[1]] = tag_info[2].strip()
+                    _, tag_name, tag_value = tag.text.split(":", 2)
+                    yarf_tags[tag_name] = tag_value.strip()
 
             self.check_missing_tags(yarf_tags)
 
@@ -327,7 +401,3 @@ class TestSubmissionSchema(OutputConverterBase):
             is_for_statement = False
 
         return res, templates
-
-
-c = TestSubmissionSchema()
-c.get_output(Path("/home/douglasc/Downloads/outdir"))

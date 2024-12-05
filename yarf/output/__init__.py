@@ -1,32 +1,42 @@
 import abc
 import importlib
+import json
 import subprocess
 from pathlib import Path
 from typing import Any
 
+from robot.api import TestSuite
+
 OUTPUT_FORMATS: dict[str, "OutputConverterBase"] = {}
 
 
-def get_converted_output(format: str, outdir: Path) -> dict[str, int | object]:
-    """
-    Get converted output or raise error if not format is not supported.
+def output_converter_lifecycle(func):
+    def wrapper(*args, **kwargs):
+        if "output_format" in kwargs and kwargs["output_format"]:
+            try:
+                converter: OutputConverterBase = OUTPUT_FORMATS[
+                    kwargs["output_format"]
+                ]()
+            except KeyError:
+                raise ValueError(
+                    f"Unsupported output format: {kwargs['output_format']}"
+                )
 
-    Arguments:
-        format: output format to process
-        outdir: output directory for storing the converted output
+            suite = kwargs["suite"]
+            output_format = kwargs["output_format"]
+            outdir = kwargs["outdir"]
 
-    Returns:
-        Converted output in the specified format. If the output format is not supported,
-        it raises a ValueError.
+            converter.check_suite(suite)
+            result = func(*args, **kwargs)
+            formatted_output = converter.get_output(output_format, outdir)
+            with open(outdir / "submission_to_hexr.json", "w") as f:
+                json.dump(formatted_output, f, indent=4)
 
-    Raises:
-        ValueError: if the output format is not supported
-    """
-    try:
-        output_format_module: OutputConverterBase = OUTPUT_FORMATS[format]()
-        return output_format_module.get_output(outdir)
-    except KeyError:
-        raise ValueError(f"Unsupported output format: {format}")
+            return result
+        else:
+            return func(*args, **kwargs)
+
+    return wrapper
 
 
 class OutputConverterMeta(abc.ABCMeta):
@@ -60,7 +70,17 @@ class OutputConverterBase(abc.ABC, metaclass=OutputConverterMeta):
     """
 
     @abc.abstractmethod
-    def get_output(self, outdir: Path, *args, **kwargs):
+    def check_suite(self, suite: TestSuite) -> None:
+        """
+        This method should implement the procedure to check if the test suite
+        has all the required information for the output format.
+
+        Arguments:
+            suite: an initialized executable TestSuite
+        """
+
+    @abc.abstractmethod
+    def get_output(self, outdir: Path, *args, **kwargs) -> Any:
         """
         This method should implement the procedure to get the desired output
         format.
@@ -69,10 +89,13 @@ class OutputConverterBase(abc.ABC, metaclass=OutputConverterMeta):
             outdir: Path to the output directory
             *args: additional arguments
             **kwargs: additional keyword arguments
+
+        Returns:
+            Anything that is appropriate to the specific output format
         """
 
     @staticmethod
-    def get_yarf_snap_info():
+    def get_yarf_snap_info() -> dict[str, str]:
         try:
             # Run `snap info` command
             result = subprocess.run(
