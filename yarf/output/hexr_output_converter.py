@@ -187,7 +187,6 @@ class TestSubmissionSchema(OutputConverterBase):
             if len(suite.findall("test")) == 0:
                 continue
 
-            print("Processing suite: {}...".format(suite.attrib["name"]))
             test_results = self.get_tests_results_from_suite(
                 suite, test_results
             )

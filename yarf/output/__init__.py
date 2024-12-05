@@ -1,6 +1,7 @@
 import abc
 import importlib
 import json
+import logging
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -9,11 +10,14 @@ from robot.api import TestSuite
 
 OUTPUT_FORMATS: dict[str, "OutputConverterBase"] = {}
 
+_logger = logging.getLogger(__name__)
+
 
 def output_converter_lifecycle(func):
     def wrapper(*args, **kwargs):
         if "output_format" in kwargs and kwargs["output_format"]:
             try:
+                output_format = kwargs["output_format"]
                 converter: OutputConverterBase = OUTPUT_FORMATS[
                     kwargs["output_format"]
                 ]()
@@ -28,9 +32,12 @@ def output_converter_lifecycle(func):
             converter.check_suite(suite)
             result = func(*args, **kwargs)
             formatted_output = converter.get_output(outdir)
-            with open(outdir / "submission_to_hexr.json", "w") as f:
+            with open(outdir / "submission.json", "w") as f:
                 json.dump(formatted_output, f, indent=4)
 
+            _logger.info(
+                f"Output for {output_format} exported to {outdir}/submission.json."
+            )
             return result
         else:
             return func(*args, **kwargs)
