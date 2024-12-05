@@ -37,6 +37,9 @@ class TestSubmissionSchema(OutputConverterBase):
         Returns:
             Dictionary containing the converted output in Test Submission Schema format
         """
+        tree = ET.parse(outdir / "output.xml")
+        self.test_plan = tree.getroot()
+
         submission = {}
         submission["version"] = self.submission_schema_version
         submission["origin"] = self.get_origin()
@@ -46,6 +49,12 @@ class TestSubmissionSchema(OutputConverterBase):
         return submission
 
     def get_origin(self) -> dict[str, Any]:
+        """
+        This function returns the origin of the test submission.
+
+        Returns:
+            Dictionary containing the origin of the test submission
+        """
         origin = {}
         origin["name"] = "YARF"
         if "SNAP" in os.environ:
@@ -67,33 +76,40 @@ class TestSubmissionSchema(OutputConverterBase):
                 "revision": "No revision",
                 "date": str(date.today()),
             }
+
         return origin
 
     def get_session_data(self) -> dict[str, Any]:
-        session_data = {
-            "title": "title",
-            "description": "Optional field",
-            "test_plan_id": "com.canonical.yarf::yarf-tillamook-auto-test-25.04-auto",
-            "execution_id": "Optional field",
-        }
+        """
+        This function assembles and returns the session data of the test plan.
+
+        Returns:
+            Dictionary containing session data
+        """
+        session_data = {}
+        for meta in self.test_plan.iter("meta"):
+            meta_name = meta.attrib["name"].lower()
+            if meta_name == "title":
+                session_data["title"] = meta.text
+            elif meta_name == "description":
+                session_data["description"] = meta.text
+            elif meta_name == "test_plan_id":
+                session_data["test_plan_id"] = meta.text
+            elif meta_name == "execution_id":
+                session_data["execution_id"] = meta.text
+
         return session_data
 
-    def get_hexr_results(self, outdir: Path) -> list[dict[str, str]]:
+    def get_hexr_results(self) -> list[dict[str, str]]:
         """
         Convert the XML output file from Robot Framework to the result section
         in submission schema.
 
-        Arguments:
-            outdir: Path to the output directory
-
         Returns:
             List of dictionaries containing test results
         """
-        tree = ET.parse(outdir / "output.xml")
-        test_plan = tree.getroot()
-
         test_results = []
-        for suite in test_plan.iter("suite"):
+        for suite in self.test_plan.iter("suite"):
             print(f"Child tag: {suite.tag}, Child attributes: {suite.attrib}")
             test_results = self.get_tests_results_from_suite(
                 suite, test_results
@@ -311,3 +327,7 @@ class TestSubmissionSchema(OutputConverterBase):
             is_for_statement = False
 
         return res, templates
+
+
+c = TestSubmissionSchema()
+c.get_output(Path("/home/douglasc/Downloads/outdir"))
