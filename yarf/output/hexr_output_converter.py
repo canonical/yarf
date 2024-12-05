@@ -212,7 +212,7 @@ class TestSubmissionSchema(OutputConverterBase):
         missing_tags_msg = ""
         for tag_name in required_tags:
             if tag_name not in yarf_tags:
-                missing_tags_msg += f"yarf:{tag_name}: [value]\n"
+                missing_tags_msg += f"yarf:{tag_name}: <value>\n"
 
         if len(missing_tags_msg) > 0:
             raise AttributeError(
@@ -406,7 +406,3 @@ class TestSubmissionSchema(OutputConverterBase):
             is_for_statement = False
 
         return res, templates
-
-
-c = TestSubmissionSchema()
-c.get_output(Path("/home/douglasc/Downloads/outdir"))
