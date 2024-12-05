@@ -287,7 +287,7 @@ class TestSubmissionSchema(OutputConverterBase):
         keyword_chain: str,
         iter_count: int,
         templates: set[str],
-    ) -> tuple[str, set[str]]:
+    ) -> tuple[list[str], set[str], str]:
         """
         Get information from the given XML node.
 
@@ -300,7 +300,7 @@ class TestSubmissionSchema(OutputConverterBase):
         Returns:
             current information and updated set of templates encountered
         """
-        curr = ""
+        curr = []
         if node.tag == "kw":
             keyword_name = node.attrib["name"]
             if len(keyword_chain) > 0:
@@ -309,27 +309,26 @@ class TestSubmissionSchema(OutputConverterBase):
                 keyword_chain = keyword_name
 
             if iter_count > 0:
-                curr += f">> Iteration {iter_count}:\n"
+                curr.append(f">> Iteration {iter_count}:\n")
 
-            curr += f"Keyword: {keyword_chain}\n"
+            curr.append(f"Keyword: {keyword_chain}\n")
 
             if "sourcename" in node.attrib:
                 template = node.attrib["sourcename"]
-                curr += f"Template: {template}\n"
+                curr.append(f"Template: {template}\n")
                 templates.add(template)
 
         elif node.tag == "msg":
             timestamp = node.attrib["timestamp"]
             msg_level = node.attrib["level"]
-            curr += f"[{timestamp} - {msg_level}] "
-            curr += node.text.strip() + "\n"
+            curr.append(f"[{timestamp} - {msg_level}] {node.text.strip()}\n")
 
         elif node.tag == "branch":
             type = node.attrib["type"]
             condition = (
                 node.attrib["condition"] if "condition" in node.attrib else ""
             )
-            curr += f"{type}: {condition}\n"
+            curr.append(f"{type}: {condition}\n")
 
         return curr, templates, keyword_chain
 
@@ -379,7 +378,7 @@ class TestSubmissionSchema(OutputConverterBase):
             node, keyword_chain, iter_count, templates
         )
         if len(curr) > 0:
-            res += curr
+            res += "".join(curr)
 
         for child in node:
             if child.tag == "iter":
