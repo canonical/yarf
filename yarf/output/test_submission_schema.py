@@ -131,8 +131,7 @@ class TestSubmissionSchema(OutputConverterBase):
         """
         origin = {}
         origin["name"] = "YARF"
-        if "SNAP" in os.environ:
-            current_yarf_info = self.get_yarf_snap_info()
+        if current_yarf_info := self.get_yarf_snap_info() is not None:
             origin["version"] = current_yarf_info["version"]
             origin["packaging"] = {
                 "type": "snap",

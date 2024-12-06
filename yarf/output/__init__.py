@@ -2,6 +2,7 @@ import abc
 import importlib
 import json
 import logging
+import os
 import subprocess
 from pathlib import Path
 from typing import Any, Callable
@@ -135,7 +136,7 @@ class OutputConverterBase(abc.ABC, metaclass=OutputConverterMeta):
         """
 
     @staticmethod
-    def get_yarf_snap_info() -> dict[str, str]:
+    def get_yarf_snap_info() -> dict[str, str] | None:
         """
         Get the YARF snap infomation including version, revision, channel and
         date.
@@ -147,6 +148,9 @@ class OutputConverterBase(abc.ABC, metaclass=OutputConverterMeta):
         Returns:
             The YARF snap information in a dict
         """
+        if "SNAP" not in os.environ:
+            return None
+
         try:
             # Run `snap info` command
             result = subprocess.run(

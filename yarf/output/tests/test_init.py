@@ -1,3 +1,4 @@
+import os
 import subprocess
 from pathlib import Path
 from textwrap import dedent
@@ -92,7 +93,8 @@ class TestOutputConverterBase:
             "date": "2024-12-03",
             "name": "yarf",
         }
-        result = OutputConverterBase.get_yarf_snap_info()
+        with patch.dict(os.environ, {"SNAP": str(sentinel.snap_env)}):
+            result = OutputConverterBase.get_yarf_snap_info()
         assert expected_result == result
 
     @patch("yarf.output.subprocess.run")
@@ -111,7 +113,10 @@ class TestOutputConverterBase:
             output="Error: Could not find snap 'yarf'.",
         )
 
-        with pytest.raises(RuntimeError):
+        with (
+            patch.dict(os.environ, {"SNAP": str(sentinel.snap_env)}),
+            pytest.raises(RuntimeError),
+        ):
             OutputConverterBase.get_yarf_snap_info()
 
     @patch("yarf.output.subprocess.run")
@@ -149,8 +154,20 @@ class TestOutputConverterBase:
             """
         )
 
-        with pytest.raises(ValueError):
+        with (
+            patch.dict(os.environ, {"SNAP": str(sentinel.snap_env)}),
+            pytest.raises(ValueError),
+        ):
             OutputConverterBase.get_yarf_snap_info()
+
+    def test_get_yarf_snap_info_no_snap(self) -> None:
+        """
+        Test whether the function get_yarf_snap_info returns None when the
+        environment variable SNAP is not set.
+        """
+        with patch.dict(os.environ, {}, clear=True):
+            res = OutputConverterBase.get_yarf_snap_info()
+        assert res is None
 
     @pytest.mark.parametrize(
         "func,input,expected_result",
