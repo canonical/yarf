@@ -29,7 +29,7 @@ def output_converter(func: Callable) -> Callable:
 
     def wrapper(*args: Any, **kwargs: dict[Any, Any]) -> Any:
         """
-        The function that wraps the targetrobot suite executing function
+        The function that wraps the target robot suite executing function
         around. Prior to the target function calling, this function will select
         the specified output format class and check the suite against the
         requirements of the specified format.
