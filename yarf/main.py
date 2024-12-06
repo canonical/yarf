@@ -18,7 +18,7 @@ from robot.api import TestSuite, TestSuiteBuilder
 from robot.errors import Information
 from robot.run import RobotFramework
 
-from yarf.output import OUTPUT_FORMATS, output_converter_lifecycle
+from yarf.output import OUTPUT_FORMATS, output_converter
 from yarf.rf_libraries import robot_in_path
 from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS, PlatformBase
 from yarf.rf_libraries.suite_parser import SuiteParser
@@ -256,7 +256,7 @@ def get_robot_reserved_settings(test_suite: TestSuite) -> dict[str, Any]:
     return robot_reserved_settings
 
 
-@output_converter_lifecycle
+@output_converter
 def run_robot_suite(
     suite: TestSuite,
     lib_cls: PlatformBase,

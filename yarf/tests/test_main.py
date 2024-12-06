@@ -22,6 +22,8 @@ from yarf.main import (
     run_interactive_console,
     run_robot_suite,
 )
+from yarf.output import OUTPUT_FORMATS
+from yarf.output.test_submission_schema import TestSubmissionSchema
 from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS
 from yarf.rf_libraries.libraries.Example import Example
 from yarf.tests.fixtures import fs  # noqa: F401
@@ -95,6 +97,8 @@ class TestMain:
         args, _ = parse_arguments(argv)
         assert args.outdir == "out/dir"
 
+        OUTPUT_FORMATS.clear()
+        OUTPUT_FORMATS["TestSubmissionSchema"] = TestSubmissionSchema
         argv = ["--output-format", "TestSubmissionSchema"]
         args, _ = parse_arguments(argv)
         assert args.output_format == "TestSubmissionSchema"
