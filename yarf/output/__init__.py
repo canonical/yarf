@@ -71,7 +71,7 @@ def output_converter(func: Callable) -> Callable:
             json.dump(formatted_output, f, indent=4)
 
         _logger.info(
-            f"Output for {output_format} exported to {outdir}/submission.json."
+            f"Output for '{output_format}' exported to {outdir}/submission.json."
         )
 
         return result
