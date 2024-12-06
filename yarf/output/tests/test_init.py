@@ -115,7 +115,7 @@ class TestOutputConverterBase:
             OutputConverterBase.get_yarf_snap_info()
 
     @patch("yarf.output.subprocess.run")
-    def test_get_yarf_snap_info__value_error(
+    def test_get_yarf_snap_info_value_error(
         self,
         mock_subprocess_run: MagicMock,
     ) -> None:
@@ -223,7 +223,9 @@ class TestInit:
                     output_format=sentinel.output_format,
                 ),
                 call.OutputConverterBase().get_output(outdir),
-                call.open(outdir / "submission.json", "w"),
+                call.open(
+                    outdir / f"{sentinel.output_format}_output.json", "w"
+                ),
                 call.open().__enter__(),
                 call.dump(ANY, ANY, indent=4),
                 call.open().__exit__(None, None, None),

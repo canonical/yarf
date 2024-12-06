@@ -147,7 +147,7 @@ class TestSubmissionSchema(OutputConverterBase):
                 "type": "source",
                 "name": "yarf",
                 "version": metadata.version("yarf"),
-                "revision": "No revision",
+                "revision": None,
                 "date": str(date.today()),
             }
 

@@ -67,11 +67,11 @@ def output_converter(func: Callable) -> Callable:
         result = func(*args, **kwargs)
         formatted_output = converter.get_output(outdir)
 
-        with open(outdir / "submission.json", "w") as f:
+        with open(outdir / f"{output_format}_output.json", "w") as f:
             json.dump(formatted_output, f, indent=4)
 
         _logger.info(
-            f"Output for '{output_format}' exported to {outdir}/submission.json."
+            f"Output for '{output_format}' exported to {outdir}/{output_format}_output.json."
         )
 
         return result

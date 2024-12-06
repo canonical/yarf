@@ -391,9 +391,7 @@ def main(argv: Optional[list[str]] = None) -> None:
                 variables=variables,
                 outdir=outdir,
                 cli_options=cli_options,
-                output_format=args.output_format
-                if args.output_format
-                else None,
+                output_format=args.output_format,
             )
 
         _logger.info(f"Results exported to: {outdir}")
