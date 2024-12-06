@@ -114,11 +114,12 @@ class TestSubmissionSchema(OutputConverterBase):
         tree = ET.parse(outdir / "output.xml")
         self.test_plan = tree.getroot()
 
-        submission = {}
-        submission["version"] = self.submission_schema_version
-        submission["origin"] = self.get_origin()
-        submission["session_data"] = self.get_session_data()
-        submission["results"] = self.get_hexr_results()
+        submission = {
+            "version": self.submission_schema_version,
+            "origin": self.get_origin(),
+            "session_data": self.get_session_data(),
+            "results": self.get_results(),
+        }
 
         return submission
 
@@ -131,7 +132,7 @@ class TestSubmissionSchema(OutputConverterBase):
         """
         origin = {}
         origin["name"] = "YARF"
-        if current_yarf_info := self.get_yarf_snap_info() is not None:
+        if (current_yarf_info := self.get_yarf_snap_info()) is not None:
             origin["version"] = current_yarf_info["version"]
             origin["packaging"] = {
                 "type": "snap",
@@ -173,7 +174,7 @@ class TestSubmissionSchema(OutputConverterBase):
 
         return session_data
 
-    def get_hexr_results(self) -> list[dict[str, str]]:
+    def get_results(self) -> list[dict[str, str]]:
         """
         Convert the XML output file from Robot Framework to the result section
         in submission schema.
@@ -191,33 +192,6 @@ class TestSubmissionSchema(OutputConverterBase):
             )
 
         return test_results
-
-    def check_missing_tags(self, yarf_tags: dict[str, str]) -> None:
-        """
-        Check if all required yarf namespace tags are present.
-
-        Arguments:
-            yarf_tags: dictionary containing yarf namespace tags
-
-        Raises:
-            AttributeError: if any required yarf tags are missing
-        """
-        required_tags = [
-            "namespace",
-            "category_id",
-            "type",
-            "certification_status",
-        ]
-        missing_tags_msg = ""
-        for tag_name in required_tags:
-            if tag_name not in yarf_tags:
-                missing_tags_msg += f"yarf:{tag_name}: <value>\n"
-
-        if len(missing_tags_msg) > 0:
-            raise AttributeError(
-                "Expected the following yarf tags to be present:\n"
-                + missing_tags_msg
-            )
 
     def get_tests_results_from_suite(
         self,
@@ -242,8 +216,6 @@ class TestSubmissionSchema(OutputConverterBase):
                 if tag.text.startswith("yarf:"):
                     _, tag_name, tag_value = tag.text.split(":", 2)
                     yarf_tags[tag_name] = tag_value.strip()
-
-            self.check_missing_tags(yarf_tags)
 
             id = (
                 yarf_tags["namespace"]
