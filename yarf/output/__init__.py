@@ -49,11 +49,10 @@ def output_converter(func: Callable) -> Callable:
         Raises:
             ValueError: If the output format is not supported.
         """
-        if not ("output_format" in kwargs and kwargs["output_format"]):
+        if (output_format := kwargs.get("output_format", None)) is None:
             return func(*args, **kwargs)
 
         try:
-            output_format = kwargs["output_format"]
             converter: OutputConverterBase = OUTPUT_FORMATS[output_format]()
 
         except KeyError:
@@ -64,7 +63,7 @@ def output_converter(func: Callable) -> Callable:
         suite = kwargs["suite"]
         outdir = kwargs["outdir"]
 
-        converter.check_suite(suite)
+        converter.check_test_plan(suite)
         result = func(*args, **kwargs)
         formatted_output = converter.get_output(outdir)
 
@@ -111,7 +110,7 @@ class OutputConverterBase(abc.ABC, metaclass=OutputConverterMeta):
     """
 
     @abc.abstractmethod
-    def check_suite(self, suite: TestSuite) -> None:
+    def check_test_plan(self, suite: TestSuite) -> None:
         """
         This method should implement the procedure to check if the test suite
         has all the required information for the output format.

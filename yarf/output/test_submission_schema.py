@@ -29,13 +29,13 @@ class TestSubmissionSchema(OutputConverterBase):
 
     submission_schema_version = 1
 
-    def check_suite(self, suite: TestSuite) -> None:
+    def check_test_plan(self, test_plan: TestSuite) -> None:
         """
         Check the test suite to see if it has all the required information for
         the TestSubmissionSchema output format.
 
         Arguments:
-            suite: an initialized executable TestSuite
+            test_plan: an initialized executable TestSuite
 
         Raises:
             ValueError: when any metadata or tag is missing / in the wrong format
@@ -45,10 +45,10 @@ class TestSubmissionSchema(OutputConverterBase):
         test_plan_id_regex = (
             r"^[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+::[a-zA-Z0-9_]+$"
         )
-        for data in suite.metadata:
+        for data in test_plan.metadata:
             if data.lower() == "title" or (
                 data.lower() == "test_plan_id"
-                and re.fullmatch(test_plan_id_regex, suite.metadata[data])
+                and re.fullmatch(test_plan_id_regex, test_plan.metadata[data])
             ):
                 missing_metadata.remove(data.lower())
 
@@ -62,7 +62,7 @@ class TestSubmissionSchema(OutputConverterBase):
         category_id_regex = (
             r"^[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+::[A-Za-z0-9_\-]+$"
         )
-        for s in suite.suites:
+        for s in test_plan.suites:
             for test in s.tests:
                 missing_tags = {
                     "certification_status",
@@ -292,7 +292,8 @@ class TestSubmissionSchema(OutputConverterBase):
         elif node.tag == "msg":
             timestamp = node.attrib["timestamp"]
             msg_level = node.attrib["level"]
-            curr.append(f"[{timestamp} - {msg_level}] {node.text.strip()}\n")
+            msg_text = node.text.strip() if node.text else ""
+            curr.append(f"[{timestamp} - {msg_level}] {msg_text}\n")
 
         elif node.tag == "branch":
             type = node.attrib["type"]

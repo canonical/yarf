@@ -172,7 +172,7 @@ class TestOutputConverterBase:
     @pytest.mark.parametrize(
         "func,input,expected_result",
         [
-            ("check_suite", sentinel.suite, True),
+            ("check_test_plan", sentinel.suite, True),
             ("get_output", sentinel.path, sentinel.path),
         ],
     )
@@ -184,7 +184,7 @@ class TestOutputConverterBase:
         """
 
         class TestModule(OutputConverterBase):
-            def check_suite(self, suite: TestSuite):
+            def check_test_plan(self, suite: TestSuite):
                 return suite is not None
 
             def get_output(self, outdir: Path) -> Any:
@@ -233,7 +233,7 @@ class TestInit:
         mock_process.assert_has_calls(
             [
                 call.OutputConverterBase(),
-                call.OutputConverterBase().check_suite(sentinel.suite),
+                call.OutputConverterBase().check_test_plan(sentinel.suite),
                 call.mock_function(
                     suite=sentinel.suite,
                     outdir=outdir,
@@ -290,7 +290,7 @@ class TestInit:
         decorated_mock_function(sentinel.arg1, sentinel.arg2)
 
         mock_output_converter.assert_not_called()
-        mock_output_converter.check_suite.assert_not_called()
+        mock_output_converter.check_test_plan.assert_not_called()
         mock_output_converter.get_output.assert_not_called()
         mock_function.assert_called_with(sentinel.arg1, sentinel.arg2)
 
@@ -301,7 +301,7 @@ class TestInit:
         """
 
         class TestModule(OutputConverterBase):
-            def check_suite(self, suite: TestSuite) -> bool:
+            def check_test_plan(self, suite: TestSuite) -> bool:
                 pass
 
             def get_output(self, outdir: Path) -> Any:
