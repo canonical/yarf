@@ -52,18 +52,18 @@ class TestSubmissionSchema(OutputConverterBase):
             ):
                 missing_metadata.remove(data.lower())
 
-        if len(missing_metadata) > 0:
-            raise ValueError(
-                f"Missing/wrong pattern for required metadata: {', '.join(missing_metadata)}"
-            )
-
         # Check if all required tags exists
-        tags_err_msg = []
+        test_err_msg = []
         category_id_regex = (
             r"^[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+::[A-Za-z0-9_\-]+$"
         )
         for s in test_plan.suites:
             for test in s.tests:
+                if len(test.doc) > 80:
+                    test_err_msg.append(
+                        f"[{test.parent.name}/{test.name}] Test case description is too long: {test.doc}"
+                    )
+
                 missing_tags = {
                     "certification_status",
                     "type",
@@ -82,24 +82,31 @@ class TestSubmissionSchema(OutputConverterBase):
                         tag_name == "certification_status"
                         and tag_value.strip() not in ["blocker", "non-blocker"]
                     ):
-                        tags_err_msg.append(
+                        test_err_msg.append(
                             f"[{test.parent.name}/{test.name}] Invalid certification_status expression: {tag_value}"
                         )
 
                     elif tag_name == "category_id" and not re.fullmatch(
                         category_id_regex, tag_value.strip()
                     ):
-                        tags_err_msg.append(
+                        test_err_msg.append(
                             f"[{test.parent.name}/{test.name}] Invalid category_id expression: {tag_value}"
                         )
 
                 if len(missing_tags) > 0:
-                    tags_err_msg.append(
+                    test_err_msg.append(
                         f"[{test.parent.name}/{test.name}] Missing tags: {', '.join(missing_tags)}"
                     )
 
-        if len(tags_err_msg) > 0:
-            raise ValueError("\n".join(tags_err_msg))
+        err_msg = ""
+        if len(missing_metadata) > 0:
+            err_msg = f"Missing/wrong pattern for required metadata: {', '.join(missing_metadata)}\n"
+
+        if len(test_err_msg) > 0:
+            err_msg += "\n".join(test_err_msg)
+
+        if len(err_msg) > 0:
+            raise ValueError(err_msg)
 
     def get_output(self, outdir: Path) -> dict[str, Any]:
         """
@@ -307,13 +314,13 @@ class TestSubmissionSchema(OutputConverterBase):
     def get_io_log_and_templates(
         self,
         node: Element,
-        templates: set[str],
+        templates: set[str] = set(),
         res: list[str] = [],
         keyword_chain: str = "",
         iter_count: int = 0,
-    ) -> tuple[str, set[str]]:
+    ) -> tuple[list[str], set[str]]:
         """
-        Get IO log for a given node.
+        DFS Preorder get IO log for a given node.
 
         Arguments:
             node: XML node

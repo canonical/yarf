@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, Mock, patch, sentinel
 from xml.etree.ElementTree import Element
 
 import pytest
+from robot.api import TestSuite
 
 from yarf.output.test_submission_schema import TestSubmissionSchema
 
@@ -15,6 +16,221 @@ class TestTestSubmissionSchema:
     """
     Tests for class TestSubmissionSchema.
     """
+
+    def test_check_test_plan(self) -> None:
+        """
+        Test whether the function check_test_plan passes a correct test plan.
+        """
+        init_suite = dedent(
+            """
+            *** Settings ***
+            Metadata            title               Test Title
+            Metadata            test_plan_id        com.canonical.test::plan1
+            Metadata            execution_id        com.canonical.execution::exe1
+            Metadata            description         This is a test description
+            """
+        )
+        test_suite = dedent(
+            """
+            *** Settings ***
+            Resource        kvm.resource
+            Library         Hid.py    AS    PlatformHid
+            Test Tags       yarf:namespace: com.canonical.yarf
+
+            *** Test Cases ***
+            Task1
+                [Tags]                  yarf:certification_status: non-blocker        yarf:type: typeA        yarf:category_id: com.canonical.category::categoryA
+                Match                   ${CURDIR}/test1.png
+
+            Task2
+                [Tags]                  yarf:certification_status: non-blocker        yarf:type: typeB        yarf:category_id: com.canonical.category::categoryB
+                Click LEFT Button on ${CURDIR}/test2.png
+
+            Task3
+                [Tags]                  yarf:certification_status: non-blocker        yarf:type: typeC        yarf:category_id: com.canonical.category::categoryC
+                PlatformHid.Type String     1234567890
+            """
+        )
+
+        test_plan = TestSuite.from_string(f"{init_suite}\n{test_suite}")
+        converter = TestSubmissionSchema()
+        converter.check_test_plan(test_plan)
+
+    @pytest.mark.parametrize(
+        "mock_init,mock_suite",
+        [
+            # test_plan_id missing
+            (
+                dedent(
+                    """
+                    *** Settings ***
+                    Metadata            title               Test Title
+                    Metadata            description         This is a test description
+
+                    """
+                ),
+                dedent(
+                    """
+                    *** Settings ***
+                    Resource        kvm.resource
+                    Library         Hid.py    AS    PlatformHid
+                    Test Tags       yarf:namespace: com.canonical.yarf
+
+                    *** Test Cases ***
+                    Task1
+                        [Tags]                  yarf:certification_status: non-blocker        yarf:type: typeA        yarf:category_id: com.canonical.category::categoryA
+                        Match                   ${CURDIR}/test1.png
+                    """
+                ),
+            ),
+            # Documentation too long
+            (
+                dedent(
+                    """
+                    *** Settings ***
+                    Metadata            title               Test Title
+                    Metadata            test_plan_id        com.canonical.test::plan1
+                    Metadata            execution_id        com.canonical.execution::exe1
+                    Metadata            description         This is a test description
+
+                    """
+                ),
+                dedent(
+                    f"""
+                    *** Settings ***
+                    Resource        kvm.resource
+                    Library         Hid.py    AS    PlatformHid
+                    Test Tags       yarf:namespace: com.canonical.yarf
+
+                    *** Test Cases ***
+                    Task1
+                        [Documentation]         {"T" * 100}
+                        [Tags]                  yarf:certification_status: non-blocker        yarf:type: typeA        yarf:category_id: com.canonical.category::categoryA
+                        Match                   test1.png
+                    """
+                ),
+            ),
+            # Undefined certification status
+            (
+                dedent(
+                    """
+                    *** Settings ***
+                    Metadata            title               Test Title
+                    Metadata            test_plan_id        com.canonical.test::plan1
+                    Metadata            execution_id        com.canonical.execution::exe1
+                    Metadata            description         This is a test description
+
+                    """
+                ),
+                dedent(
+                    """
+                    *** Settings ***
+                    Resource        kvm.resource
+                    Library         Hid.py    AS    PlatformHid
+                    Test Tags       yarf:namespace: com.canonical.yarf
+
+                    *** Test Cases ***
+                    Task1
+                        [Tags]                  yarf:certification_status: undefined        yarf:type: typeA        yarf:category_id: com.canonical.category::categoryA
+                        Match                   test1.png
+                    """
+                ),
+            ),
+            # Invalid category ID
+            (
+                dedent(
+                    """
+                    *** Settings ***
+                    Metadata            title               Test Title
+                    Metadata            test_plan_id        com.canonical.test::plan1
+                    Metadata            execution_id        com.canonical.execution::exe1
+                    Metadata            description         This is a test description
+
+                    """
+                ),
+                dedent(
+                    """
+                    *** Settings ***
+                    Resource        kvm.resource
+                    Library         Hid.py    AS    PlatformHid
+                    Test Tags       yarf:namespace: com.canonical.yarf
+
+                    *** Test Cases ***
+                    Task1
+                        [Tags]                  yarf:certification_status: blocker        yarf:type: typeA        yarf:category_id: !@#$%^::categoryA
+                        Match                   test1.png
+                    """
+                ),
+            ),
+            # namespace missing
+            (
+                dedent(
+                    """
+                    *** Settings ***
+                    Metadata            title               Test Title
+                    Metadata            test_plan_id        com.canonical.test::plan1
+                    Metadata            execution_id        com.canonical.execution::exe1
+                    Metadata            description         This is a test description
+
+                    """
+                ),
+                dedent(
+                    """
+                    *** Settings ***
+                    Resource        kvm.resource
+                    Library         Hid.py    AS    PlatformHid
+
+                    *** Test Cases ***
+                    Task1
+                        [Tags]                  yarf:certification_status: blocker        yarf:type: typeA        yarf:category_id: com.canonical.category::categoryA
+                        Match                   test1.png
+                    """
+                ),
+            ),
+            # type missing
+            (
+                dedent(
+                    """
+                    *** Settings ***
+                    Metadata            title               Test Title
+                    Metadata            test_plan_id        com.canonical.test::plan1
+                    Metadata            execution_id        com.canonical.execution::exe1
+                    Metadata            description         This is a test description
+
+                    """
+                ),
+                dedent(
+                    """
+                    *** Settings ***
+                    Resource        kvm.resource
+                    Library         Hid.py    AS    PlatformHid
+                    Test Tags       yarf:namespace: com.canonical.yarf
+
+                    *** Test Cases ***
+                    Task1
+                        [Tags]                  yarf:certification_status: blocker        yarf:category_id: com.canonical.category::categoryA
+                        Match                   test1.png
+                    """
+                ),
+            ),
+        ],
+    )
+    def test_check_test_plan_missing_metadata(
+        self,
+        mock_init: str,
+        mock_suite: str,
+    ) -> None:
+        """
+        Test whether the function check_test_plan raises a ValueError when the
+        relevant data does not fulfill the requirement.
+        """
+        test_plan = TestSuite.from_string(mock_init)
+        test_suite = TestSuite.from_string(mock_suite)
+        test_suite.name = "Test Suite"
+        test_plan.suites = [test_suite]
+        converter = TestSubmissionSchema()
+        with pytest.raises(ValueError):
+            converter.check_test_plan(test_plan)
 
     @patch("yarf.output.test_submission_schema.ET")
     def test_get_output(self, mock_ET: MagicMock) -> None:
@@ -398,5 +614,168 @@ class TestTestSubmissionSchema:
         assert templates == expected_templates
         assert keyword_chain == expected_keyword_chain
 
-    def test_io_log_and_templates(self) -> None:
-        pass
+    @pytest.mark.parametrize(
+        "mock_node,expected_io_log,expected_templates",
+        [
+            # IF clause
+            (
+                dedent(
+                    """
+                    <if>
+                        <branch type="IF" condition="${{isinstance($destination, str)}}">
+                            <kw name="TaskA" library="LibA">
+                                <var>varA</var>
+                                <arg>argA</arg>
+                                <doc>DocA.</doc>
+                                <msg timestamp="20241205 20:58:33.558" level="FAIL">
+                                    Fail message A
+                                </msg>
+                                <status status="FAIL" starttime="20241205 20:58:33.556" endtime="20241205 20:58:33.558"/>
+                            </kw>
+                            <kw name="TaskB" library="LibA" sourcename="TemplateB">
+                                <var>varB</var>
+                                <doc>DocB</doc>
+                                <status status="NOT RUN" starttime="20241205 20:58:33.559" endtime="20241205 20:58:33.559"/>
+                            </kw>
+                            <status status="FAIL" starttime="20241205 20:58:33.548" endtime="20241205 20:58:33.559"/>
+                        </branch>
+                            <branch type="ELSE">
+                            <kw name="TaskC" library="LibC">
+                                <var>varC</var>
+                                <arg>argC</arg>
+                                <doc>DocC</doc>
+                                <status status="NOT RUN" starttime="20241205 20:58:33.560" endtime="20241205 20:58:33.560"/>
+                            </kw>
+                            <status status="NOT RUN" starttime="20241205 20:58:33.559" endtime="20241205 20:58:33.560"/>
+                            </branch>
+                        <status status="FAIL" starttime="20241205 20:58:33.548" endtime="20241205 20:58:33.560"/>
+                    </if>
+                    """
+                ),
+                [
+                    ">> IF STATEMENT >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n",
+                    "IF: ${{isinstance($destination, str)}}\n",
+                    "================================================================================\n",
+                    "Keyword: TaskA\n",
+                    "[20241205 20:58:33.558 - FAIL] Fail message A\n",
+                    "\n",
+                    "================================================================================\n",
+                    "Keyword: TaskB\n",
+                    "Template: TemplateB\n",
+                    "\n",
+                    "ELSE: \n",
+                    "================================================================================\n",
+                    "Keyword: TaskC\n",
+                    "\n",
+                    "<< END IF <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n",
+                ],
+                {"TemplateB"},
+            ),
+            # For loop
+            (
+                dedent(
+                    """
+                    <for flavor="IN">
+                        <var>${item}</var>
+                         <value>@{list}</value>
+                        <iter>
+                            <var name="${item}">item1</var>
+                            <kw name="TaskA" library="LibA">
+                                <arg>${item}</arg>
+                                <doc>DocA</doc>
+                                <status status="PASS" starttime="20241128 14:04:08.024" endtime="20241128 14:04:08.154"/>
+                            </kw>
+                            <status status="PASS" starttime="20241128 14:04:08.024" endtime="20241128 14:04:08.154"/>
+                        </iter>
+                        <iter>
+                            <var name="${item}">item2</var>
+                            <kw name="TaskA" library="LibA">
+                                <arg>${item}</arg>
+                                <doc>DocA</doc>
+                                <status status="PASS" starttime="20241128 14:04:08.154" endtime="20241128 14:04:08.158"/>
+                            </kw>
+                            <status status="PASS" starttime="20241128 14:04:08.154" endtime="20241128 14:04:08.158"/>
+                        </iter>
+                        <status status="PASS" starttime="20241128 14:04:08.024" endtime="20241128 14:04:08.158"/>
+                    </for>
+                    """
+                ),
+                [
+                    ">> FOR LOOP >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n",
+                    "================================================================================\n",
+                    ">> Iteration 1:\n",
+                    "Keyword: TaskA\n",
+                    "\n",
+                    "================================================================================\n",
+                    ">> Iteration 2:\n",
+                    "Keyword: TaskA\n",
+                    "\n",
+                    "<< END FOR <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n",
+                ],
+                set(),
+            ),
+            # Recursive keywords
+            (
+                dedent(
+                    """
+                    <kw name="KeywordA" library="LibA" sourcename="TemplateA">
+                        <doc>DocA.</doc>
+                        <kw name="KeywordB" library="LibB" sourcename="TemplateB">
+                            <doc>DocB.</doc>
+                            <kw name="KeywordC" library="LibC">
+                                <var>varC</var>
+                                <arg>argC</arg>
+                                <doc>DocC.</doc>
+                                <msg timestamp="20241128 14:05:15.543" level="INFO">
+                                    Finished in in 0.07 seconds
+                                </msg>
+                                <msg timestamp="20241128 14:05:15.544" level="INFO">
+                                    ${result} = ["A", "B", "C"]
+                                </msg>
+                                <status status="PASS" starttime="20241128 14:05:15.451" endtime="20241128 14:05:15.544"/>
+                            </kw>
+                            <status status="PASS" starttime="20241128 14:05:15.451" endtime="20241128 14:05:15.544"/>
+                        </kw>
+                        <status status="PASS" starttime="20241128 14:05:15.451" endtime="20241128 14:05:15.544"/>
+                    </kw>
+                    """
+                ),
+                [
+                    "================================================================================\n",
+                    "Keyword: KeywordA\n",
+                    "Template: TemplateA\n",
+                    "================================================================================\n",
+                    "Keyword: KeywordA -> KeywordB\n",
+                    "Template: TemplateB\n",
+                    "================================================================================\n",
+                    "Keyword: KeywordA -> KeywordB -> KeywordC\n",
+                    "[20241128 14:05:15.543 - INFO] Finished in in 0.07 seconds\n",
+                    '[20241128 14:05:15.544 - INFO] ${result} = ["A", "B", "C"]\n',
+                    "\n",
+                    "\n",
+                    "\n",
+                ],
+                {"TemplateA", "TemplateB"},
+            ),
+        ],
+    )
+    def test_get_io_log_and_templates(
+        self,
+        mock_node: str,
+        expected_io_log: list[str],
+        expected_templates: set[str],
+    ) -> None:
+        """
+        Test whether the function get_io_log_and_templates returns the expected
+        io_log and template.
+        """
+        converter = TestSubmissionSchema()
+        io_log, templates = converter.get_io_log_and_templates(
+            ET.fromstring(mock_node),
+            set(),
+            [],
+            "",
+            0,
+        )
+        assert io_log == expected_io_log
+        assert templates == expected_templates
