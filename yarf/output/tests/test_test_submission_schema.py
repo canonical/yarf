@@ -3,7 +3,7 @@ from datetime import date
 from importlib import metadata
 from pathlib import Path
 from textwrap import dedent
-from unittest.mock import MagicMock, Mock, patch, sentinel
+from unittest.mock import ANY, MagicMock, Mock, patch, sentinel
 from xml.etree.ElementTree import Element
 
 import pytest
@@ -248,6 +248,7 @@ class TestTestSubmissionSchema:
             "origin": "origin",
             "session_data": "session_data",
             "results": "results",
+            "category_map": ANY,
         }
 
         output = converter.get_output(Path(str(sentinel.outdir)))
@@ -260,6 +261,7 @@ class TestTestSubmissionSchema:
         converter.get_session_data.assert_called_once()
         converter.get_results.assert_called_once()
         assert output == expected_output
+        assert type(output["category_map"]) is dict
 
     def test_get_origin_has_snap(self) -> None:
         """

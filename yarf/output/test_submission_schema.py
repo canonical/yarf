@@ -25,9 +25,13 @@ class TestSubmissionSchema(OutputConverterBase):
 
     Attributes:
         submission_schema_version: The Test Submission Schema submission schema version
+        category_map: A dictionary mapping category_id to category name
     """
 
     submission_schema_version = 1
+    category_map: dict[str, str] = {
+        # Add category_id: category name pair here
+    }
 
     def check_test_plan(self, test_plan: TestSuite) -> None:
         """
@@ -126,6 +130,7 @@ class TestSubmissionSchema(OutputConverterBase):
             "origin": self.get_origin(),
             "session_data": self.get_session_data(),
             "results": self.get_results(),
+            "category_map": self.category_map,
         }
 
         return submission
