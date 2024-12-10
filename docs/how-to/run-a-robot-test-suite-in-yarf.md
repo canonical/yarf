@@ -124,7 +124,7 @@ yarf --platform Mir <path-to-suite>/suite
 
 <u><center>Code Snippet 8: `yarf` command for Mir</center></u>
 
-You can find out more about Mir at [the Mir documentation site](https://canonical-mir.readthedocs-hosted.com/stable/tutorial/learn-what-mir-can-do/).
+You can find out more about Mir at [the Mir documentation site](https://canonical-mir.readthedocs-hosted.com/stable/tutorial/getting-started-with-mir/).
 
 ______________________________________________________________________
 

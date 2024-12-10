@@ -10,5 +10,5 @@ Run a robot test suite in YARF <./run-a-robot-test-suite-in-yarf.md>
 Write a Robot File with YARF Tags <./write-a-robot-file-with-yarf-tags.md>
 Interactive console <./interactive-console.md>
 Using The Vnc Backend <./using-the-vnc-backend.md>
-Organizing a test plan for a specific output format <./organizing-a-test-plan-for-a-specific-output-format.md>
+Organising a test plan for a specific output format <./organising-a-test-plan-for-a-specific-output-format.md>
 ```

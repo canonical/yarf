@@ -1,4 +1,4 @@
-# Organizing a test plan for a specific output format
+# Organising a test plan for a specific output format
 
 ```{note}
 This guides assumes the reader has the knowledge of how to write tags and metadata in Robot Framework.
