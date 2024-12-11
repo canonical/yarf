@@ -24,10 +24,12 @@ class TestSubmissionSchema(OutputConverterBase):
     Output converter for Test Submission Schema format.
 
     Attributes:
+        yarf_namespace: The namespace for YARF, defaults to "com.canonical.yarf"
         submission_schema_version: The Test Submission Schema submission schema version
         category_map: A dictionary mapping category_id to category name
     """
 
+    yarf_namespace = "com.canonical.yarf"
     submission_schema_version = 1
     category_map: dict[str, str] = {
         # Add category_id: category name pair here
@@ -56,6 +58,12 @@ class TestSubmissionSchema(OutputConverterBase):
             ):
                 missing_metadata.remove(data.lower())
 
+        # Add default for namespace if missing
+        if test_plan.metadata.get("namespace", None) is None:
+            test_plan.metadata["namespace"] = self.yarf_namespace
+        else:
+            self.yarf_namespace = test_plan.metadata["namespace"]
+
         # Check if all required tags exists
         test_err_msg = []
         category_id_regex = (
@@ -71,7 +79,6 @@ class TestSubmissionSchema(OutputConverterBase):
                 missing_tags = {
                     "certification_status",
                     "type",
-                    "namespace",
                     "category_id",
                 }
                 for tag in test.tags:
@@ -230,7 +237,7 @@ class TestSubmissionSchema(OutputConverterBase):
                     yarf_tags[tag_name] = tag_value.strip()
 
             id = (
-                yarf_tags["namespace"]
+                self.yarf_namespace
                 + "::"
                 + suite.attrib["name"]
                 + "/"

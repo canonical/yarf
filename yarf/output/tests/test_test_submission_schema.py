@@ -35,7 +35,7 @@ class TestTestSubmissionSchema:
             *** Settings ***
             Resource        kvm.resource
             Library         Hid.py    AS    PlatformHid
-            Test Tags       yarf:namespace: com.canonical.yarf
+
 
             *** Test Cases ***
             Task1
@@ -55,6 +55,8 @@ class TestTestSubmissionSchema:
         test_plan = TestSuite.from_string(f"{init_suite}\n{test_suite}")
         converter = TestSubmissionSchema()
         converter.check_test_plan(test_plan)
+        # default value for namespace
+        assert test_plan.metadata.get("namespace") == "com.canonical.yarf"
 
     @pytest.mark.parametrize(
         "mock_init,mock_suite",
@@ -66,7 +68,7 @@ class TestTestSubmissionSchema:
                     *** Settings ***
                     Metadata            title               Test Title
                     Metadata            description         This is a test description
-
+                    Metadata            namespace           com.canonical.yarf
                     """
                 ),
                 dedent(
@@ -74,7 +76,7 @@ class TestTestSubmissionSchema:
                     *** Settings ***
                     Resource        kvm.resource
                     Library         Hid.py    AS    PlatformHid
-                    Test Tags       yarf:namespace: com.canonical.yarf
+
 
                     *** Test Cases ***
                     Task1
@@ -92,7 +94,7 @@ class TestTestSubmissionSchema:
                     Metadata            test_plan_id        com.canonical.test::plan1
                     Metadata            execution_id        com.canonical.execution::exe1
                     Metadata            description         This is a test description
-
+                    Metadata            namespace           com.canonical.yarf
                     """
                 ),
                 dedent(
@@ -100,7 +102,7 @@ class TestTestSubmissionSchema:
                     *** Settings ***
                     Resource        kvm.resource
                     Library         Hid.py    AS    PlatformHid
-                    Test Tags       yarf:namespace: com.canonical.yarf
+
 
                     *** Test Cases ***
                     Task1
@@ -119,7 +121,7 @@ class TestTestSubmissionSchema:
                     Metadata            test_plan_id        com.canonical.test::plan1
                     Metadata            execution_id        com.canonical.execution::exe1
                     Metadata            description         This is a test description
-
+                    Metadata            namespace           com.canonical.yarf
                     """
                 ),
                 dedent(
@@ -127,7 +129,7 @@ class TestTestSubmissionSchema:
                     *** Settings ***
                     Resource        kvm.resource
                     Library         Hid.py    AS    PlatformHid
-                    Test Tags       yarf:namespace: com.canonical.yarf
+
 
                     *** Test Cases ***
                     Task1
@@ -145,7 +147,7 @@ class TestTestSubmissionSchema:
                     Metadata            test_plan_id        com.canonical.test::plan1
                     Metadata            execution_id        com.canonical.execution::exe1
                     Metadata            description         This is a test description
-
+                    Metadata            namespace           com.canonical.yarf
                     """
                 ),
                 dedent(
@@ -153,36 +155,11 @@ class TestTestSubmissionSchema:
                     *** Settings ***
                     Resource        kvm.resource
                     Library         Hid.py    AS    PlatformHid
-                    Test Tags       yarf:namespace: com.canonical.yarf
+
 
                     *** Test Cases ***
                     Task1
                         [Tags]                  yarf:certification_status: blocker        yarf:type: typeA        yarf:category_id: !@#$%^::categoryA
-                        Match                   test1.png
-                    """
-                ),
-            ),
-            # namespace missing
-            (
-                dedent(
-                    """
-                    *** Settings ***
-                    Metadata            title               Test Title
-                    Metadata            test_plan_id        com.canonical.test::plan1
-                    Metadata            execution_id        com.canonical.execution::exe1
-                    Metadata            description         This is a test description
-
-                    """
-                ),
-                dedent(
-                    """
-                    *** Settings ***
-                    Resource        kvm.resource
-                    Library         Hid.py    AS    PlatformHid
-
-                    *** Test Cases ***
-                    Task1
-                        [Tags]                  yarf:certification_status: blocker        yarf:type: typeA        yarf:category_id: com.canonical.category::categoryA
                         Match                   test1.png
                     """
                 ),
@@ -196,7 +173,7 @@ class TestTestSubmissionSchema:
                     Metadata            test_plan_id        com.canonical.test::plan1
                     Metadata            execution_id        com.canonical.execution::exe1
                     Metadata            description         This is a test description
-
+                    Metadata            namespace           com.canonical.yarf
                     """
                 ),
                 dedent(
@@ -204,7 +181,7 @@ class TestTestSubmissionSchema:
                     *** Settings ***
                     Resource        kvm.resource
                     Library         Hid.py    AS    PlatformHid
-                    Test Tags       yarf:namespace: com.canonical.yarf
+
 
                     *** Test Cases ***
                     Task1
@@ -401,7 +378,6 @@ class TestTestSubmissionSchema:
                     </kw>
                     <tag>yarf:category_id: com.canonical.category::categoryA</tag>
                     <tag>yarf:certification_status: non-blocker</tag>
-                    <tag>yarf:namespace: com.canonical.yarf</tag>
                     <tag>yarf:type: typeA</tag>
                     <status status="PASS" starttime="20241205 20:58:33.523" endtime="20241205 20:58:33.540">
                     </status>
@@ -417,7 +393,6 @@ class TestTestSubmissionSchema:
                     </kw>
                     <tag>yarf:category_id: com.canonical.category::categoryB</tag>
                     <tag>yarf:certification_status: non-blocker</tag>
-                    <tag>yarf:namespace: com.canonical.yarf</tag>
                     <tag>yarf:type: typeB</tag>
                     <status status="FAIL" starttime="20241205 20:59:33.523" endtime="20241205 20:59:33.540">
                         Full Error Message

@@ -13,6 +13,7 @@ YARF can convert the output to supported output formats, including:
 To prepare a test plan for the test submission schema, we need to provide the following metadata and tags:
 Metadata:
 
+1. `namespace`: The namespace of YARF, defaults to `com.canonical.yarf` if it is not provided.
 1. `title`: Title of the test plan.
 1. `test_plan_id`: ID of the test plan.
 1. `description`: Optional, description of the test plan.
@@ -48,6 +49,7 @@ In the `__init__.robot`, we will have the following:
 
 ```text
 *** Settings ***
+Metadata        namespace           com.canonical.yarf
 Metadata        title               The title of the test plan
 Metadata        description         A brief description of the test plan
 Metadata        test_plan_id        com.canonical.test::plan_A
