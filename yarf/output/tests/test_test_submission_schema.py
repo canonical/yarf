@@ -17,46 +17,96 @@ class TestTestSubmissionSchema:
     Tests for class TestSubmissionSchema.
     """
 
-    def test_check_test_plan(self) -> None:
+    @pytest.mark.parametrize(
+        "mock_init_suite,mock_test_suite,expected_namespace",
+        [
+            (
+                dedent(
+                    """
+                    *** Settings ***
+                    Metadata            title               Test Title
+                    Metadata            test_plan_id        com.canonical.test::plan1
+                    Metadata            execution_id        com.canonical.execution::exe1
+                    Metadata            description         This is a test description
+                    """
+                ),
+                dedent(
+                    """
+                    *** Settings ***
+                    Resource        kvm.resource
+                    Library         Hid.py    AS    PlatformHid
+
+
+                    *** Test Cases ***
+                    Task1
+                        [Tags]                  yarf:certification_status: non-blocker        yarf:type: typeA        yarf:category_id: com.canonical.category::categoryA
+                        Match                   ${CURDIR}/test1.png
+
+                    Task2
+                        [Tags]                  yarf:certification_status: non-blocker        yarf:type: typeB        yarf:category_id: com.canonical.category::categoryB
+                        Click LEFT Button on ${CURDIR}/test2.png
+
+                    Task3
+                        [Tags]                  yarf:certification_status: non-blocker        yarf:type: typeC        yarf:category_id: com.canonical.category::categoryC
+                        PlatformHid.Type String     1234567890
+                    """
+                ),
+                "com.canonical.yarf",
+            ),
+            (
+                dedent(
+                    """
+                    *** Settings ***
+                    Metadata            title               Test Title
+                    Metadata            test_plan_id        com.canonical.test::plan1
+                    Metadata            execution_id        com.canonical.execution::exe1
+                    Metadata            description         This is a test description
+                    Metadata            namespace           com.sample.space
+                    """
+                ),
+                dedent(
+                    """
+                    *** Settings ***
+                    Resource        kvm.resource
+                    Library         Hid.py    AS    PlatformHid
+
+
+                    *** Test Cases ***
+                    Task1
+                        [Tags]                  yarf:certification_status: non-blocker        yarf:type: typeA        yarf:category_id: com.canonical.category::categoryA
+                        Match                   ${CURDIR}/test1.png
+
+                    Task2
+                        [Tags]                  yarf:certification_status: non-blocker        yarf:type: typeB        yarf:category_id: com.canonical.category::categoryB
+                        Click LEFT Button on ${CURDIR}/test2.png
+
+                    Task3
+                        [Tags]                  yarf:certification_status: non-blocker        yarf:type: typeC        yarf:category_id: com.canonical.category::categoryC
+                        PlatformHid.Type String     1234567890
+                    """
+                ),
+                "com.sample.space",
+            ),
+        ],
+    )
+    def test_check_test_plan(
+        self,
+        mock_init_suite: str,
+        mock_test_suite: str,
+        expected_namespace: str,
+    ) -> None:
         """
-        Test whether the function check_test_plan passes a correct test plan.
+        Test whether the function check_test_plan passes a correct test plan
+        and get the correct namespace.
         """
-        init_suite = dedent(
-            """
-            *** Settings ***
-            Metadata            title               Test Title
-            Metadata            test_plan_id        com.canonical.test::plan1
-            Metadata            execution_id        com.canonical.execution::exe1
-            Metadata            description         This is a test description
-            """
+        test_plan = TestSuite.from_string(
+            f"{mock_init_suite}\n{mock_test_suite}"
         )
-        test_suite = dedent(
-            """
-            *** Settings ***
-            Resource        kvm.resource
-            Library         Hid.py    AS    PlatformHid
-
-
-            *** Test Cases ***
-            Task1
-                [Tags]                  yarf:certification_status: non-blocker        yarf:type: typeA        yarf:category_id: com.canonical.category::categoryA
-                Match                   ${CURDIR}/test1.png
-
-            Task2
-                [Tags]                  yarf:certification_status: non-blocker        yarf:type: typeB        yarf:category_id: com.canonical.category::categoryB
-                Click LEFT Button on ${CURDIR}/test2.png
-
-            Task3
-                [Tags]                  yarf:certification_status: non-blocker        yarf:type: typeC        yarf:category_id: com.canonical.category::categoryC
-                PlatformHid.Type String     1234567890
-            """
-        )
-
-        test_plan = TestSuite.from_string(f"{init_suite}\n{test_suite}")
         converter = TestSubmissionSchema()
         converter.check_test_plan(test_plan)
         # default value for namespace
-        assert test_plan.metadata.get("namespace") == "com.canonical.yarf"
+        assert test_plan.metadata.get("namespace") == expected_namespace
+        assert converter.yarf_namespace == expected_namespace
 
     @pytest.mark.parametrize(
         "mock_init,mock_suite",
