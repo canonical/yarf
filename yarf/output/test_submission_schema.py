@@ -244,31 +244,29 @@ class TestSubmissionSchema(OutputConverterBase):
                 + test.attrib["name"]
             )
             outcome = status_tag.attrib["status"]
-            comments = (
-                ""  # no comments for now since we haven't support interactive
-            )
 
-            io_log, templates = self.get_io_log_and_templates(test, set(), [])
-            test_results.append(
-                {
-                    "id": id,
-                    "test_description": doc_tag.text if doc_tag else "",
-                    "certification_status": yarf_tags["certification_status"],
-                    "category_id": yarf_tags["category_id"],
-                    "outcome": outcome,
-                    "comments": comments,
-                    "io_log": "".join(io_log),
-                    "duration": str(
-                        parse(status_tag.attrib["endtime"])
-                        - parse(status_tag.attrib["starttime"])
-                    ),
-                    "type": yarf_tags["type"],
-                    # templates in Robot Framework is by keyword, not by test case, so we join all keyword templates used under a test together
-                    "template_id": ",".join(templates)
-                    if len(templates) > 0
-                    else None,
-                }
-            )
+            io_log = self.get_io_log(test, [])
+            result = {
+                "id": id,
+                "test_description": doc_tag.text if doc_tag else "",
+                "certification_status": yarf_tags["certification_status"],
+                "category_id": yarf_tags["category_id"],
+                "outcome": outcome,
+                "comments": "",
+                "io_log": "".join(io_log),
+                "duration": str(
+                    (
+                        parse(status_tag.attrib["endtime"]).timestamp()
+                        - parse(status_tag.attrib["starttime"]).timestamp()
+                    )
+                ),
+                "type": yarf_tags["type"],
+            }
+
+            if yarf_tags.get("test_group_id", None) is not None:
+                result["test_group_id"] = yarf_tags.get("test_group_id", None)
+
+            test_results.append(result)
         return test_results
 
     def get_node_info(
@@ -276,7 +274,6 @@ class TestSubmissionSchema(OutputConverterBase):
         node: Element,
         keyword_chain: str,
         iter_count: int,
-        templates: set[str],
     ) -> tuple[list[str], set[str], str]:
         """
         Get information from the given XML node.
@@ -285,10 +282,9 @@ class TestSubmissionSchema(OutputConverterBase):
             node: XML node
             keyword_chain: keyword chain
             iter_count: iteration count
-            templates: set of templates encountered
 
         Returns:
-            current information and updated set of templates encountered
+            current information
         """
         curr = []
         if node.tag == "kw":
@@ -303,11 +299,6 @@ class TestSubmissionSchema(OutputConverterBase):
 
             curr.append(f"Keyword: {keyword_chain}\n")
 
-            if "sourcename" in node.attrib:
-                template = node.attrib["sourcename"]
-                curr.append(f"Template: {template}\n")
-                templates.add(template)
-
         elif node.tag == "msg":
             timestamp = node.attrib["timestamp"]
             msg_level = node.attrib["level"]
@@ -321,12 +312,11 @@ class TestSubmissionSchema(OutputConverterBase):
             )
             curr.append(f"{type}: {condition}\n")
 
-        return curr, templates, keyword_chain
+        return curr, keyword_chain
 
-    def get_io_log_and_templates(
+    def get_io_log(
         self,
         node: Element,
-        templates: set[str] = set(),
         res: list[str] = [],
         keyword_chain: str = "",
         iter_count: int = 0,
@@ -336,13 +326,12 @@ class TestSubmissionSchema(OutputConverterBase):
 
         Arguments:
             node: XML node
-            templates: set of templates encountered
             res: accumulated result
             keyword_chain: keyword chain
             iter_count: iteration count
 
         Returns:
-            accumulated result with IO log information and templates encountered
+            accumulated result with IO log information
         """
         is_keyword = False
         is_if_statement = False
@@ -365,8 +354,8 @@ class TestSubmissionSchema(OutputConverterBase):
                 tag_info + ">" * (CONSOLE_COLUMN_SIZE - len(tag_info)) + "\n"
             )
 
-        curr, templates, keyword_chain = self.get_node_info(
-            node, keyword_chain, iter_count, templates
+        curr, keyword_chain = self.get_node_info(
+            node, keyword_chain, iter_count
         )
         if len(curr) > 0:
             res.extend(curr)
@@ -374,9 +363,7 @@ class TestSubmissionSchema(OutputConverterBase):
         for child in node:
             if child.tag == "iter":
                 iter_count += 1
-            res, templates = self.get_io_log_and_templates(
-                child, templates, res, keyword_chain, iter_count
-            )
+            res = self.get_io_log(child, res, keyword_chain, iter_count)
 
         if is_keyword:
             res.append("\n")
@@ -396,4 +383,4 @@ class TestSubmissionSchema(OutputConverterBase):
             )
             is_for_statement = False
 
-        return res, templates
+        return res

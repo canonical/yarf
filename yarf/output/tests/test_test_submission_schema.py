@@ -429,6 +429,7 @@ class TestTestSubmissionSchema:
                     <tag>yarf:category_id: com.canonical.category::categoryA</tag>
                     <tag>yarf:certification_status: non-blocker</tag>
                     <tag>yarf:type: typeA</tag>
+                    <tag>yarf:test_group_id: com.canonical.group::testGroupA</tag>
                     <status status="PASS" starttime="20241205 20:58:33.523" endtime="20241205 20:58:33.540">
                     </status>
                 </test>
@@ -461,9 +462,9 @@ class TestTestSubmissionSchema:
                 "outcome": "PASS",
                 "comments": "",
                 "io_log": "io_logA",
-                "duration": "0:00:00.017000",
+                "duration": "0.01699995994567871",
                 "type": "typeA",
-                "template_id": "TemplateA",
+                "test_group_id": "com.canonical.group::testGroupA",
             },
             {
                 "id": "com.canonical.yarf::TestA/TaskB",
@@ -473,17 +474,16 @@ class TestTestSubmissionSchema:
                 "outcome": "FAIL",
                 "comments": "",
                 "io_log": "io_logB",
-                "duration": "0:00:00.017000",
+                "duration": "0.01699995994567871",
                 "type": "typeB",
-                "template_id": None,
             },
         ]
 
         converter = TestSubmissionSchema()
-        converter.get_io_log_and_templates = Mock(
+        converter.get_io_log = Mock(
             side_effect=[
-                ("io_logA", ["TemplateA"]),
-                ("io_logB", []),
+                "io_logA",
+                "io_logB",
             ]
         )
         result = converter.get_tests_results_from_suite(
@@ -492,7 +492,7 @@ class TestTestSubmissionSchema:
         assert result == expected_result
 
     @pytest.mark.parametrize(
-        "mock_node_string,mock_key_chain,mock_iter_count,mock_templates,expected_curr,expected_templates,expected_keyword_chain",
+        "mock_node_string,mock_key_chain,mock_iter_count,expected_curr,expected_keyword_chain",
         [
             # Case keyword with sourcename (template name)
             (
@@ -503,9 +503,7 @@ class TestTestSubmissionSchema:
                 ),
                 "",
                 0,
-                set(),
-                ["Keyword: KeywordA\n", "Template: TemplateKeywordA\n"],
-                {"TemplateKeywordA"},
+                ["Keyword: KeywordA\n"],
                 "KeywordA",
             ),
             # Case keyword with sourcename and has a preceeding keyword
@@ -517,11 +515,9 @@ class TestTestSubmissionSchema:
                 ),
                 "PrevKeyword",
                 0,
-                set(),
                 [
                     "Keyword: PrevKeyword -> KeywordB\n",
                 ],
-                set(),
                 "PrevKeyword -> KeywordB",
             ),
             # Case keyword with sourcename and is in iteration 1
@@ -533,12 +529,10 @@ class TestTestSubmissionSchema:
                 ),
                 "",
                 1,
-                set(),
                 [
                     ">> Iteration 1:\n",
                     "Keyword: KeywordC\n",
                 ],
-                set(),
                 "KeywordC",
             ),
             # Case keyword without sourcename
@@ -550,9 +544,7 @@ class TestTestSubmissionSchema:
                 ),
                 "",
                 0,
-                set(),
                 ["Keyword: KeywordD\n"],
-                set(),
                 "KeywordD",
             ),
             # Case message with text
@@ -566,11 +558,9 @@ class TestTestSubmissionSchema:
                 ),
                 "",
                 0,
-                set(),
                 [
                     "[20241205 20:58:33.537 - FAIL] ConnectionRefusedError: [Errno 111] Connect call failed ('127.0.0.1', 5900)\n"
                 ],
-                set(),
                 "",
             ),
             # Case message without text
@@ -582,9 +572,7 @@ class TestTestSubmissionSchema:
                 ),
                 "",
                 0,
-                set(),
                 ["[20241205 20:58:33.537 - PASS] \n"],
-                set(),
                 "",
             ),
             # Case branch type IF
@@ -596,9 +584,7 @@ class TestTestSubmissionSchema:
                 ),
                 "",
                 0,
-                set(),
                 ["IF: ${{isinstance($destination, str)}}\n"],
-                set(),
                 "",
             ),
             # Case branch type ELSE
@@ -610,9 +596,7 @@ class TestTestSubmissionSchema:
                 ),
                 "",
                 0,
-                set(),
                 ["ELSE: \n"],
-                set(),
                 "",
             ),
         ],
@@ -622,27 +606,23 @@ class TestTestSubmissionSchema:
         mock_node_string: str,
         mock_key_chain: str,
         mock_iter_count: int,
-        mock_templates: set[str],
         expected_curr: list[str],
-        expected_templates: set[str],
         expected_keyword_chain: str,
     ) -> None:
         """
         Test whether the function get_node_info returns the expected output.
         """
         converter = TestSubmissionSchema()
-        curr, templates, keyword_chain = converter.get_node_info(
+        curr, keyword_chain = converter.get_node_info(
             ET.fromstring(mock_node_string),
             mock_key_chain,
             mock_iter_count,
-            mock_templates,
         )
         assert curr == expected_curr
-        assert templates == expected_templates
         assert keyword_chain == expected_keyword_chain
 
     @pytest.mark.parametrize(
-        "mock_node,expected_io_log,expected_templates",
+        "mock_node,expected_io_log",
         [
             # IF clause
             (
@@ -688,7 +668,6 @@ class TestTestSubmissionSchema:
                     "\n",
                     "================================================================================\n",
                     "Keyword: TaskB\n",
-                    "Template: TemplateB\n",
                     "\n",
                     "ELSE: \n",
                     "================================================================================\n",
@@ -696,7 +675,6 @@ class TestTestSubmissionSchema:
                     "\n",
                     "<< END IF <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n",
                 ],
-                {"TemplateB"},
             ),
             # For loop
             (
@@ -739,7 +717,6 @@ class TestTestSubmissionSchema:
                     "\n",
                     "<< END FOR <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n",
                 ],
-                set(),
             ),
             # Recursive keywords
             (
@@ -770,10 +747,8 @@ class TestTestSubmissionSchema:
                 [
                     "================================================================================\n",
                     "Keyword: KeywordA\n",
-                    "Template: TemplateA\n",
                     "================================================================================\n",
                     "Keyword: KeywordA -> KeywordB\n",
-                    "Template: TemplateB\n",
                     "================================================================================\n",
                     "Keyword: KeywordA -> KeywordB -> KeywordC\n",
                     "[20241128 14:05:15.543 - INFO] Finished in in 0.07 seconds\n",
@@ -782,27 +757,23 @@ class TestTestSubmissionSchema:
                     "\n",
                     "\n",
                 ],
-                {"TemplateA", "TemplateB"},
             ),
         ],
     )
-    def test_get_io_log_and_templates(
+    def test_get_io_log(
         self,
         mock_node: str,
         expected_io_log: list[str],
-        expected_templates: set[str],
     ) -> None:
         """
-        Test whether the function get_io_log_and_templates returns the expected
-        io_log and template.
+        Test whether the function get_io_log returns the expected io_log and
+        template.
         """
         converter = TestSubmissionSchema()
-        io_log, templates = converter.get_io_log_and_templates(
+        io_log = converter.get_io_log(
             ET.fromstring(mock_node),
-            set(),
             [],
             "",
             0,
         )
         assert io_log == expected_io_log
-        assert templates == expected_templates
