@@ -1,4 +1,5 @@
 import logging
+import os
 import shutil
 import tempfile
 from contextlib import contextmanager, suppress
@@ -22,17 +23,26 @@ class SuiteParser:
         Get all assets and robot files from the suite top level directory.
         """
         has_robot_ext = False
-        for path in (p for p in self.suite_path.rglob("*") if not p.is_dir()):
-            relative_path = path.relative_to(self.suite_path)
-            if relative_path.parts[0] == SuiteParser.VARIANTS_DIR:
-                self.variants[Path().joinpath(*relative_path.parts[1:])] = path
-            else:
-                if SuiteParser.VARIANTS_DIR in relative_path.parts:
-                    _logger.warning(
-                        f"'{SuiteParser.VARIANTS_DIR}' is a special dirname, avoid using it in asset paths."
-                    )
-                has_robot_ext |= path.suffix == ".robot"
-                self.assets[relative_path] = path
+        # This should be replaced by either:
+        # Path.rglob("*", recurse_symlinks=True)
+        # or
+        # Path.walk(follow_symlinks=True)
+        # after upgrading yarf to a more modern python version
+        for root, _, files in os.walk(self.suite_path, followlinks=True):
+            for fl in files:
+                path = Path(f"{root}/{fl}")
+                relative_path = path.relative_to(self.suite_path)
+                if relative_path.parts[0] == SuiteParser.VARIANTS_DIR:
+                    self.variants[
+                        Path().joinpath(*relative_path.parts[1:])
+                    ] = path
+                else:
+                    if SuiteParser.VARIANTS_DIR in relative_path.parts:
+                        _logger.warning(
+                            f"'{SuiteParser.VARIANTS_DIR}' is a special dirname, avoid using it in asset paths."
+                        )
+                    has_robot_ext |= path.suffix == ".robot"
+                    self.assets[relative_path] = path
 
         if not has_robot_ext:
             msg = "Expected at least one <name>.robot file."

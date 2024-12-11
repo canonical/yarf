@@ -109,6 +109,40 @@ class TestSuiteParser:
         }
         assert mock_suite_parser_instance.variants == expected_variants
 
+    def test_read_suite_symlinks(self, fs: FakeFilesystem) -> None:  # noqa:F811
+        """
+        Test whether read_suite works with symlinked directories.
+        """
+        mock_suite_path = "suite"
+        mock_files = [
+            "test.robot",
+            "asset1.png",
+            "asset2.jpg",
+            "subdir/asset3.jpeg",
+            "../symlink-dir/asset4.jpeg",
+        ]
+        for m_file in mock_files:
+            fs.create_file(f"{mock_suite_path}/{m_file}")
+        fs.create_symlink(
+            f"{mock_suite_path}/subdir/symlink-dir/asset4.jpeg",
+            f"{mock_suite_path}/../symlink-dir/asset4.jpeg",
+        )
+        mock_suite_parser_instance = Mock()
+        SuiteParser.__init__(mock_suite_parser_instance, mock_suite_path)
+        SuiteParser.read_suite(mock_suite_parser_instance)
+        expected_assets = {
+            Path("test.robot"): Path(f"{mock_suite_path}/test.robot"),
+            Path("asset1.png"): Path(f"{mock_suite_path}/asset1.png"),
+            Path("asset2.jpg"): Path(f"{mock_suite_path}/asset2.jpg"),
+            Path("subdir/asset3.jpeg"): Path(
+                f"{mock_suite_path}/subdir/asset3.jpeg"
+            ),
+            Path("subdir/symlink-dir/asset4.jpeg"): Path(
+                "suite/subdir/symlink-dir/asset4.jpeg"
+            ),
+        }
+        assert mock_suite_parser_instance.assets == expected_assets
+
     def test_read_suite_no_robot_file(self, fs: FakeFilesystem) -> None:  # noqa: F811
         """
         Test whether read_suite raises a ValueError when no robot file is
