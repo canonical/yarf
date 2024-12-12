@@ -3,7 +3,9 @@ import importlib
 import json
 import logging
 import os
+import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 from typing import Any, Callable
 
@@ -12,6 +14,44 @@ from robot.api import TestSuite
 OUTPUT_FORMATS: dict[str, "OutputConverterBase"] = {}
 
 _logger = logging.getLogger(__name__)
+
+
+def get_outdir_path(outdir: str = None) -> Path:
+    """
+    Get corresponding output directory base on outdir and the environment.
+
+    Arguments:
+        outdir: Output directory provided by the user
+
+    Returns:
+        Path: The output directory based on the provided `outdir` and the environment
+    """
+    if outdir is not None:
+        yarf_outdir = Path(outdir)
+        # Delete selected files if exists
+        for file in [
+            "output.xml",
+            "report.html",
+            "log.html",
+            "rfdebug_history.log",
+        ]:
+            (yarf_outdir / file).unlink(missing_ok=True)
+
+        return yarf_outdir
+
+    yarf_outdir = (
+        Path(
+            os.environ.get("SNAP_USER_COMMON")
+            if "SNAP" in os.environ
+            else tempfile.gettempdir()
+        )
+        / "yarf-outdir"
+    )
+    if yarf_outdir.exists():
+        _logger.info(f"Removing existing output directory: {yarf_outdir}")
+        shutil.rmtree(yarf_outdir)
+
+    return yarf_outdir
 
 
 def output_converter(func: Callable) -> Callable:

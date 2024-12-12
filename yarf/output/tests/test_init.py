@@ -6,15 +6,18 @@ from typing import Any
 from unittest.mock import ANY, MagicMock, Mock, call, patch, sentinel
 
 import pytest
+from pyfakefs.fake_filesystem import FakeFilesystem
 from robot.api import TestSuite
 
 from yarf.output import (
     OUTPUT_FORMATS,
     OutputConverterBase,
     OutputConverterMeta,
+    get_outdir_path,
     import_supported_formats,
     output_converter,
 )
+from yarf.tests.fixtures import fs  # noqa: F401
 
 
 class TestOutputConverterMeta:
@@ -199,6 +202,74 @@ class TestInit:
     """
     Test the commonly available, module-level functions.
     """
+
+    def test_get_outdir_path_with_outdir(self, fs: FakeFilesystem) -> None:  # noqa: F811
+        """
+        Test whether get_outdir_path correctly constructs a path object with
+        given outdir and delete relevant files only.
+        """
+        outdir = "test-outdir"
+        fs.create_dir(outdir)
+        targeted_files = [
+            "output.xml",
+            "report.html",
+            "log.html",
+            "rfdebug_history.log",
+        ]
+        for file in targeted_files:
+            fs.create_file(f"{outdir}/{file}")
+        fs.create_file(f"{outdir}/test.txt")
+
+        result = get_outdir_path(outdir)
+        assert result == Path(outdir)
+        for file in targeted_files:
+            assert not fs.exists(Path(outdir) / file)
+        assert fs.exists(Path(outdir) / "test.txt")
+
+    @patch("yarf.output.shutil.rmtree")
+    def test_get_outdir_path_in_snap(
+        self,
+        mock_rmtree: MagicMock,
+        fs: FakeFilesystem,  # noqa: F811
+    ) -> None:
+        """
+        Test whether get_outdir_path returns SNAP_USER_COMMON when it is in the
+        SNAP environment and delete the output directory if exists.
+        """
+        outdir = "test"
+        fs.create_dir(f"{outdir}/yarf-outdir")
+
+        with patch.dict(
+            os.environ,
+            {
+                "SNAP": str(sentinel.snap_env),
+                "SNAP_USER_COMMON": outdir,
+            },
+        ):
+            result = get_outdir_path(None)
+        assert result == Path(outdir) / "yarf-outdir"
+        mock_rmtree.assert_called_once_with(Path(outdir) / "yarf-outdir")
+
+    @patch("yarf.output.tempfile.gettempdir")
+    @patch("yarf.output.shutil.rmtree")
+    def test_get_outdir_path_in_source(
+        self,
+        mock_rmtree: MagicMock,
+        mock_gettempdir: MagicMock,
+        fs: FakeFilesystem,  # noqa: F811
+    ) -> None:
+        """
+        Test whether get_outdir_path returns SNAP_USER_COMMON when it is in the
+        SNAP environment and delete the output directory if exists.
+        """
+        outdir = "test"
+        mock_gettempdir.return_value = outdir
+        fs.create_dir(f"{outdir}/yarf-outdir")
+
+        with patch.dict(os.environ, {}, clear=True):
+            result = get_outdir_path(None)
+        assert result == Path(outdir) / "yarf-outdir"
+        mock_rmtree.assert_called_once_with(Path(outdir) / "yarf-outdir")
 
     @patch("yarf.output.json.dump")
     @patch("yarf.output.open")

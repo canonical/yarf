@@ -410,13 +410,14 @@ class TestMain:
         Test whether the function runs a Robot Test Suite with specified path
         and platform.
         """
-
+        outdir = Path(tempfile.gettempdir()) / "yarf-outdir"
         test_path = "suite-path"
         fs.create_file(f"{test_path}/test.robot")
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Example"] = Example
 
         main.run_robot_suite = Mock()
+        main.get_outdir_path = Mock(return_value=outdir)
         argv = [test_path]
         main.main(argv)
 
@@ -425,7 +426,7 @@ class TestMain:
             suite=mock_test_suite(),
             lib_cls=SUPPORTED_PLATFORMS["Example"],
             variables=[],
-            outdir=Path(tempfile.gettempdir()) / "yarf-outdir",
+            outdir=outdir,
             cli_options={},
             output_format=None,
         )
@@ -449,6 +450,7 @@ class TestMain:
         SUPPORTED_PLATFORMS["Example"] = Example
 
         main.run_robot_suite = Mock()
+        main.get_outdir_path = Mock(return_value=Path(outdir))
         argv = [test_path, "--outdir", outdir]
         main.main(argv)
 
@@ -476,6 +478,7 @@ class TestMain:
         SUPPORTED_PLATFORMS["Example"] = Example
 
         main.run_interactive_console = Mock()
+        main.get_outdir_path = Mock(return_value=outdir)
         main.main([])
 
         mock_test_suite_builder.assert_called_once()
