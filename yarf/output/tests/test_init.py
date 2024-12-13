@@ -204,10 +204,10 @@ class TestInit:
     """
 
     @pytest.mark.parametrize(
-        "mock_outdir,mock_arg_ouitdir,mock_envars,mock_clear,expected_path",
+        "mock_outdir,mock_arg_ouitdir,mock_envars,mock_clear",
         [
             # User defined outdir
-            ("user_outdir", "user_outdir", {}, False, "user_outdir"),
+            ("user_outdir", "user_outdir", {}, False),
             # In snap
             (
                 "/test-outdir/yarf-outdir",
@@ -217,10 +217,9 @@ class TestInit:
                     "SNAP_USER_COMMON": "/test-outdir",
                 },
                 False,
-                "/test-outdir/yarf-outdir",
             ),
             # In source
-            ("/tmp/yarf-outdir", None, {}, True, "/tmp/yarf-outdir"),
+            ("/tmp/yarf-outdir", None, {}, True),
         ],
     )
     def test_get_outdir_path_with_outdir(
@@ -229,7 +228,6 @@ class TestInit:
         mock_arg_ouitdir: str,
         mock_envars: dict[str, str],
         mock_clear: bool,
-        expected_path: str,
         fs: FakeFilesystem,  # noqa: F811
     ) -> None:
         """
@@ -251,10 +249,10 @@ class TestInit:
         with patch.dict(os.environ, mock_envars, clear=mock_clear):
             result = get_outdir_path(mock_arg_ouitdir)
 
-        assert result == Path(expected_path)
+        assert result == Path(mock_outdir)
         for file in targeted_files:
-            assert not fs.exists(Path(expected_path) / file)
-        assert fs.exists(Path(expected_path) / "test.txt")
+            assert not fs.exists(Path(mock_outdir) / file)
+        assert fs.exists(Path(mock_outdir) / "test.txt")
 
     @patch("yarf.output.json.dump")
     @patch("yarf.output.open")
