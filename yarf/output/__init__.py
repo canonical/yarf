@@ -3,7 +3,6 @@ import importlib
 import json
 import logging
 import os
-import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -28,28 +27,25 @@ def get_outdir_path(outdir: str = None) -> Path:
     """
     if outdir is not None:
         yarf_outdir = Path(outdir)
-        # Delete selected files if exists
-        for file in [
-            "output.xml",
-            "report.html",
-            "log.html",
-            "rfdebug_history.log",
-        ]:
-            (yarf_outdir / file).unlink(missing_ok=True)
 
-        return yarf_outdir
-
-    yarf_outdir = (
-        Path(
-            os.environ.get("SNAP_USER_COMMON")
-            if "SNAP" in os.environ
-            else tempfile.gettempdir()
+    else:
+        yarf_outdir = (
+            Path(
+                os.environ.get("SNAP_USER_COMMON")
+                if "SNAP" in os.environ
+                else tempfile.gettempdir()
+            )
+            / "yarf-outdir"
         )
-        / "yarf-outdir"
-    )
-    if yarf_outdir.exists():
-        _logger.info(f"Removing existing output directory: {yarf_outdir}")
-        shutil.rmtree(yarf_outdir)
+
+    # Delete selected files if exists
+    for file in [
+        "output.xml",
+        "report.html",
+        "log.html",
+        "rfdebug_history.log",
+    ]:
+        (yarf_outdir / file).unlink(missing_ok=True)
 
     return yarf_outdir
 
