@@ -14,3 +14,4 @@ results
 package*.json
 out/
 *.snap
+squashfs-root
