@@ -48,8 +48,6 @@ We need to identify the platform that we would like to run to use YARF. The choi
 - Example: A hardware test fixture enabling advanced system testing. For details please visit [here](https://canonical-Example.readthedocs-hosted.com/en/latest/)
 - Mir: A display server that is suitable for local development and continuous integration. For details please visit [here](https://canonical-mir.readthedocs-hosted.com/stable/)
 
-The support for QEMU and GNOME are on the roadmap and will be added in the future, so stay tuned :).
-
 ## Provide the correct variant
 
 A robot task can be executed on different machines and therefore we have variant assets to cater different scenarios. For this, we provide an optional argument `--variant` for the user to specify the variant they are interested to test with and automatically run the test suite with relevant assets in the `variants` directory. The variant is specified by a variant string with the format:
@@ -124,7 +122,7 @@ yarf --platform Mir <path-to-suite>/suite
 
 <u><center>Code Snippet 8: `yarf` command for Mir</center></u>
 
-You can find out more about Mir at [the Mir documentation site](https://canonical-mir.readthedocs-hosted.com/stable/tutorial/learn-what-mir-can-do/).
+You can find out more about Mir at [the Mir documentation site](https://canonical-mir.readthedocs-hosted.com/stable/tutorial/getting-started-with-mir/).
 
 ______________________________________________________________________
 

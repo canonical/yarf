@@ -18,6 +18,7 @@ from robot.api import TestSuite, TestSuiteBuilder
 from robot.errors import Information
 from robot.run import RobotFramework
 
+from yarf.output import OUTPUT_FORMATS, output_converter
 from yarf.rf_libraries import robot_in_path
 from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS, PlatformBase
 from yarf.rf_libraries.suite_parser import SuiteParser
@@ -136,6 +137,13 @@ def parse_yarf_arguments(argv: list[str]) -> Namespace:
     )
 
     top_level_parser.add_argument(
+        "--output-format",
+        type=str,
+        choices=OUTPUT_FORMATS.keys(),
+        help="Specify the output format.",
+    )
+
+    top_level_parser.add_argument(
         "suite",
         type=str,
         default=None,
@@ -248,49 +256,47 @@ def get_robot_reserved_settings(test_suite: TestSuite) -> dict[str, Any]:
     return robot_reserved_settings
 
 
+@output_converter
 def run_robot_suite(
-    test_suite: TestSuite,
+    suite: TestSuite,
     lib_cls: PlatformBase,
     variables: list[str],
     outdir: Path,
     cli_options: dict[str, Any],
+    **kwargs,
 ) -> None:
     """
     Run a robot test suite in the given suite path.
 
     Args:
-        test_suite: an initialized executable TestSuite
+        suite: an initialized executable TestSuite
         lib_cls: The platform library class that the user has chosen
             via the option `--platform`
         variables: Variables for the test suite to run
         outdir: Path to the output directory
         cli_options: extra options given by CLI
-    Raises:
-        SystemExit: robot suite failed
+        **kwargs: additional keyword arguments
     """
 
-    robot_settings = get_yarf_settings(test_suite)
-    robot_reserved_settings = get_robot_reserved_settings(test_suite)
+    robot_settings = get_yarf_settings(suite)
+    robot_reserved_settings = get_robot_reserved_settings(suite)
     options = cli_options | robot_settings | robot_reserved_settings
 
     with contextlib.suppress(KeyError):
         variables.extend(options.pop("variable"))
 
     with robot_in_path(lib_cls.get_pkg_path()):
-        result = test_suite.run(
-            variable=variables, outputdir=outdir, **options
-        )
+        result = suite.run(variable=variables, outputdir=outdir, **options)
 
     # Generate HTML report.html and log.html using rebot().
     rebot(f"{outdir}/output.xml", outputdir=outdir)
     if result.return_code:
         for error_message in result.errors.messages:
             _logger.error("ROBOT: %s", error_message.message)
-        raise SystemExit("Robot test suite failed.")
 
 
 def run_interactive_console(
-    console_suite: TestSuite,
+    suite: TestSuite,
     lib_cls: PlatformBase,
     outdir: Path,
     rf_debug_history_log_path: Path,
@@ -301,7 +307,7 @@ def run_interactive_console(
     console.
 
     Args:
-        console_suite: an initialized executable TestSuite
+        suite: an initialized executable TestSuite
         lib_cls: The platform library class that the user has chosen
             via the option `--platform`
         outdir: Path to the output directory
@@ -334,7 +340,7 @@ def run_interactive_console(
         variables.extend(cli_options.pop("variable"))
 
     with robot_in_path(lib_cls.get_pkg_path()):
-        console_suite.run(
+        suite.run(
             variable=variables,
             outputdir=outdir,
             console="none",
@@ -377,7 +383,12 @@ def main(argv: Optional[list[str]] = None) -> None:
             test_suite = TestSuite.from_file_system(temp_folder_path)
             test_suite.name = suite_parser.suite_path.absolute().name
             run_robot_suite(
-                test_suite, lib_cls, variables, outdir, cli_options
+                suite=test_suite,
+                lib_cls=lib_cls,
+                variables=variables,
+                outdir=outdir,
+                cli_options=cli_options,
+                output_format=args.output_format,
             )
 
         _logger.info(f"Results exported to: {outdir}")
@@ -399,11 +410,11 @@ def main(argv: Optional[list[str]] = None) -> None:
         console_suite = TestSuiteBuilder().build(start_console_path)
         console_suite.name = f"{lib_cls.__name__} Interactive Console"
         run_interactive_console(
-            console_suite,
-            lib_cls,
-            outdir,
-            Path(os.environ["RFDEBUG_HISTORY"]),
-            cli_options,
+            suite=console_suite,
+            lib_cls=lib_cls,
+            outdir=outdir,
+            rf_debug_history_log_path=Path(os.environ["RFDEBUG_HISTORY"]),
+            cli_options=cli_options,
         )
 
 

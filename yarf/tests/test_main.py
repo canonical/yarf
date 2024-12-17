@@ -22,6 +22,8 @@ from yarf.main import (
     run_interactive_console,
     run_robot_suite,
 )
+from yarf.output import OUTPUT_FORMATS
+from yarf.output.test_submission_schema import TestSubmissionSchema
 from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS
 from yarf.rf_libraries.libraries.Example import Example
 from yarf.tests.fixtures import fs  # noqa: F401
@@ -95,6 +97,12 @@ class TestMain:
         args, _ = parse_arguments(argv)
         assert args.outdir == "out/dir"
 
+        OUTPUT_FORMATS.clear()
+        OUTPUT_FORMATS["TestSubmissionSchema"] = TestSubmissionSchema
+        argv = ["--output-format", "TestSubmissionSchema"]
+        args, _ = parse_arguments(argv)
+        assert args.output_format == "TestSubmissionSchema"
+
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Example"] = Example
         argv = ["--platform", "Example"]
@@ -125,7 +133,8 @@ class TestMain:
         Test whether function picked up system arguments if argv is not
         provided.
         """
-
+        SUPPORTED_PLATFORMS.clear()
+        SUPPORTED_PLATFORMS["Example"] = Example
         with patch.object(
             sys,
             "argv",
@@ -328,8 +337,10 @@ class TestMain:
 
     @patch("yarf.main.get_robot_reserved_settings")
     @patch("yarf.main.get_yarf_settings")
+    @patch("yarf.main._logger")
     def test_run_robot_suite_with_errors(
         self,
+        mock_logger: MagicMock,
         mock_get_yarf_settings: MagicMock,
         mock_get_robot_reserved_settings: MagicMock,
         fs: FakeFilesystem,  # noqa: F811
@@ -349,7 +360,7 @@ class TestMain:
         mock_test_suite = Mock()
         mock_test_suite.run.return_value.return_code = 1
         mock_test_suite.run.return_value.errors.messages = [Mock()]
-        with patch("yarf.main.robot_in_path"), pytest.raises(SystemExit):
+        with patch("yarf.main.robot_in_path"):
             run_robot_suite(
                 mock_test_suite,
                 SUPPORTED_PLATFORMS["Example"],
@@ -357,6 +368,7 @@ class TestMain:
                 outdir,
                 {},
             )
+        mock_logger.error.assert_called()
 
     @mock.patch.dict(os.environ, {"RFDEBUG_HISTORY": "/testoutdir"})
     @patch("yarf.main._logger")
@@ -413,11 +425,12 @@ class TestMain:
 
         mock_test_suite.assert_called_once()
         main.run_robot_suite.assert_called_once_with(
-            mock_test_suite(),
-            SUPPORTED_PLATFORMS["Example"],
-            [],
-            Path(tempfile.gettempdir()) / "yarf-outdir",
-            {},
+            suite=mock_test_suite(),
+            lib_cls=SUPPORTED_PLATFORMS["Example"],
+            variables=[],
+            outdir=Path(tempfile.gettempdir()) / "yarf-outdir",
+            cli_options={},
+            output_format=None,
         )
 
     @patch("yarf.main.TestSuite.from_file_system")
@@ -444,11 +457,12 @@ class TestMain:
 
         mock_test_suite.assert_called_once()
         main.run_robot_suite.assert_called_once_with(
-            mock_test_suite(),
-            SUPPORTED_PLATFORMS["Example"],
-            [],
-            Path(outdir),
-            {},
+            suite=mock_test_suite(),
+            lib_cls=SUPPORTED_PLATFORMS["Example"],
+            variables=[],
+            outdir=Path(outdir),
+            cli_options={},
+            output_format=None,
         )
 
     @patch("yarf.main.TestSuiteBuilder.build")
@@ -469,11 +483,11 @@ class TestMain:
 
         mock_test_suite_builder.assert_called_once()
         main.run_interactive_console.assert_called_once_with(
-            mock_test_suite_builder(),
-            SUPPORTED_PLATFORMS["Example"],
-            outdir,
-            rf_debug_log_path,
-            {},
+            suite=mock_test_suite_builder(),
+            lib_cls=SUPPORTED_PLATFORMS["Example"],
+            outdir=outdir,
+            rf_debug_history_log_path=rf_debug_log_path,
+            cli_options={},
         )
 
     @patch("yarf.main.Path.exists")
