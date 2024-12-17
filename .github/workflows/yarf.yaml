@@ -20,7 +20,8 @@ jobs:
           git-lfs \
           libgl1 \
           libxkbcommon-dev \
-          jq
+          jq \
+          clang
     - uses: actions/checkout@v4
       with:
         lfs: true
