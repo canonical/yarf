@@ -21,6 +21,12 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: canonical/action-build@v1
+    - uses: actions/upload-artifact@v4
+      with:
+        name: amd64-snap
+        path: "*.snap"
+        if-no-files-found: error
+        retention-days: 5
 
   build-arm:
     name: Build snap on arm64
@@ -28,3 +34,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: canonical/action-build@v1
+    - uses: actions/upload-artifact@v4
+      with:
+        name: arm64-snap
+        path: "*.snap"
+        if-no-files-found: error
+        retention-days: 5

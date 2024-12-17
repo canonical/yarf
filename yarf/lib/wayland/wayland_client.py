@@ -31,9 +31,12 @@ class WaylandClient(ABC):
 
     def timestamp(self) -> int:
         """
-        Get a Wayland-compatible current timestamp.
+        Get a Wayland-compatible client-local timestamp.
+
+        It's "casted" to a 32-bit to fit in uint32_t without losing the
+        millisecond precision.
         """
-        return int(time.monotonic() * 1000)
+        return int(time.monotonic() * 1000) & 0xFFFFFFFF
 
     @abstractmethod
     def registry_global(

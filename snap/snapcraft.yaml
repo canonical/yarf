@@ -25,19 +25,31 @@ parts:
     build-snaps:
       - yq
     stage-packages:
+      - ffmpeg
+      - libpulse0
+      - libblas3
+      - liblapack3
       - libice6
       - libgl1
       - libsm6
+      - libxkbcommon0
       - tesseract-ocr
+      - xkb-data
     override-pull: |
       craftctl default
       craftctl set version=$(yq -r .project.version pyproject.toml)
+    organize:
+      usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/pulseaudio/*: usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
+      usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/blas/*: usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
+      usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/lapack/*: usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
 
+environment:
+  XKB_CONFIG_ROOT: $SNAP/usr/share/X11/xkb
 
 apps:
   yarf:
     command-chain:
-    - bin/wayland-launch
+      - bin/wayland-launch
     command: bin/yarf
     plugs:
       - home

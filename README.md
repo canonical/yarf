@@ -29,6 +29,12 @@ This repository requires the following dependencies
 
 1. **Installing YARF with dependencies on a virtual environment**
 
+   First, install a couple of deb package dependencies:
+
+   ```
+   sudo apt install -y clang libxkbcommon-dev
+   ```
+
    We can install YARF along with the dependencies specified in
    `pyproject.toml` in the virtual environment using the command:
 

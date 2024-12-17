@@ -19,7 +19,8 @@ jobs:
         sudo apt install -y \
           git-lfs \
           libgl1 \
-          libxkbcommon-dev
+          libxkbcommon-dev \
+          jq
     - uses: actions/checkout@v4
       with:
         lfs: true
@@ -27,8 +28,8 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: "3.10"
-    - name: Install uv
-      run: pip install uv
+    - name: Install uv and json schema
+      run: pip install uv check-jsonschema
     - name: Run tests
       run: |
         uv tool run tox
@@ -57,7 +58,13 @@ jobs:
         # Avoid GNOME apps waiting for portals
         dbus-run-session -- gnome-calculator &
 
-        uv run yarf --platform Mir tests/basic_suite
+        uv run yarf --platform Mir --output-format TestSubmissionSchema tests/basic_suite
+
+    - name: Download test submission schema and validate
+      run: |
+        version=$(jq -r '.version' /tmp/yarf-outdir/TestSubmissionSchema_output.json)
+        check-jsonschema --schemafile https://raw.githubusercontent.com/canonical/test-submission-schema/refs/heads/main/test_submission_schema/schemas/v${version}.json /tmp/yarf-outdir/TestSubmissionSchema_output.json
+
 
     - if: failure()
       name: Collect test results

@@ -1,24 +1,18 @@
 # Write a Robot File with YARF Tags
 
 This guide will show how to write a robot file with yarf tags.
-For details of how to write a general test data robot file please visit the [Robot Framework official documentation](https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html#test-data-sections)
+For details of how to write a general test robot file please visit the [Robot Framework official documentation](https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html#test-data-sections)
 
-## YARF Tags
+## Adding a YARF tag to a robot file
 
-In yarf we will support the following tags in addition to the [official ones](https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html#tagging-test-cases):
+There are two ways to add a YARF tag to a robot file:
 
-1. [YARF version](#yarf-version): `yarf:version: <operator> X.Y.Z`, where `X`, `Y` and `Z` are digits and `X.Y.Z` combined together representing the range of YARF version number required for the task or test suite.
-1. [Exit on failure](#exit-on-failure): `robot:exit-on-failure`, YARF will exit immediately on failure.
-1. [Exit on error](#exit-on-error): `robot:exit-on-error`, YARF will exit immediately on error.
-
-### YARF version
-
-We can add this tag in the `Test Tags` section under `*** Settings ***` or under individual tasks. For example:
+1. Add the tag to the `Settings` section of the robot file, in this case, the tag will be applied to each of the tasks under the robot file. For example:
 
 ```text
 *** Settings ***
 Documentation       Example
-Test Tags           robot:stop-on-failure   yarf:version: >= 1.0.0
+Test Tags           yarf:yarf_tagA: valueA
 Library             some_lib.py
 Resource            smoke.resource
 
@@ -27,74 +21,29 @@ Task 1
     Print Library
 
 Task 2
-    [Tags]            yarf:version: >= 2.0.0
     Log To Console    message 1
 ```
 
-<u><center>Code Snippet 1: An example of a test data robot file using the tag `yarf:version: <operator> X.Y`</center></u>
+<u><center>Code Snippet 1: An example of a test robot file using a YARF tag under the Settings section</center></u>
 
-```{Note}
-For this tag, spacing is important.
-`robot:stop-on-failure` is a [reserved tag](https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html#reserved-tags).
-```
-
-Depends on the version of YARF that we are using, different task(s) will run:
-
-| YARF Version `x`    | Tasks that will run |
-| ------------------- | ------------------- |
-| `x` \< 1.0.0        | None                |
-| 1.0.0 ≤ `x` ≤ 2.0.0 | `Task 1`            |
-| `x` > 2.0.0         | `Task 1`, `Task 2`  |
-
-We support the following operators:
-
-1. `<`
-1. `>`
-1. `<=`
-1. `>=`
-1. `==`
-1. `!=`
-
-With this tag, we can control which task will run in the suite.
-
-### Exit on failure
-
-We can add this tag `robot:exit-on-failure` in the `Test Tags` section under `*** Settings ***`. For example:
+1. Add the tag to individual tasks in the robot file, in this case the tag will be applied to the corresponding tasks only. For example:
 
 ```text
 *** Settings ***
 Documentation       Example
-Test Tags           robot:exit-on-failure
 Library             some_lib.py
 Resource            smoke.resource
 
 *** Tasks ***
 Task 1
-    Fail
+    [Tags]            yarf:yarf_tagB: >= valueB
+    Print Library
 
 Task 2
-    Log To Console    This will not be executed.
+    [Tags]            yarf:yarf_tagC: valueC
+    Log To Console    message 1
 ```
 
-With this, YARF will exit immediately on failure when it hits a failure in a task.
+<u><center>Code Snippet 1: An example of a test robot file using the tag `yarf:version: <operator> X.Y`</center></u>
 
-### Exit on error
-
-We can add this tag `robot:exit-on-error` in the `Test Tags` section under `*** Settings ***`. For example:
-
-```text
-*** Settings ***
-Documentation       Example
-Test Tags           robot:exit-on-error
-Library             some_lib.py
-Resource            smoke.resource
-
-*** Tasks ***
-Task 1
-    Fatal Error
-
-Task 2
-    Log To Console    This will not be executed.
-```
-
-With this, YARF will exit immediately on failure when it hits an error in a task.
+For details of the tags we supported in YARF, please visit [here](../reference/yarf-tags.md).

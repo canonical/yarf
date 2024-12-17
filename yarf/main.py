@@ -275,8 +275,6 @@ def run_robot_suite(
         outdir: Path to the output directory
         cli_options: extra options given by CLI
         **kwargs: additional keyword arguments
-    Raises:
-        SystemExit: robot suite failed
     """
 
     robot_settings = get_yarf_settings(suite)
@@ -294,7 +292,6 @@ def run_robot_suite(
     if result.return_code:
         for error_message in result.errors.messages:
             _logger.error("ROBOT: %s", error_message.message)
-        raise SystemExit("Robot test suite failed.")
 
 
 def run_interactive_console(

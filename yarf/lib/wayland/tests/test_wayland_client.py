@@ -35,7 +35,10 @@ class TestWaylandClient:
     @patch("time.monotonic")
     def test_timestamp(self, mock_monotonic, stub_wc):
         mock_monotonic.return_value = random.randint(0, 10**10)
-        assert stub_wc.timestamp() == mock_monotonic.return_value * 1000
+        assert (
+            stub_wc.timestamp()
+            == (mock_monotonic.return_value * 1000) & 0xFFFFFFFF
+        )
 
     @pytest.mark.asyncio
     async def test_connect(self, stub_wc):

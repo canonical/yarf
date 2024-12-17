@@ -1,7 +1,6 @@
 import os
 import re
 import xml.etree.ElementTree as ET
-from datetime import date
 from importlib import metadata
 from pathlib import Path
 from typing import Any
@@ -22,6 +21,7 @@ except OSError:
 class TestSubmissionSchema(OutputConverterBase):
     """
     Output converter for Test Submission Schema format.
+    https://github.com/canonical/test-submission-schema
 
     Attributes:
         yarf_namespace: The namespace for YARF, defaults to "com.canonical.yarf"
@@ -78,7 +78,6 @@ class TestSubmissionSchema(OutputConverterBase):
 
                 missing_tags = {
                     "certification_status",
-                    "type",
                     "category_id",
                 }
                 for tag in test.tags:
@@ -164,10 +163,7 @@ class TestSubmissionSchema(OutputConverterBase):
             origin["version"] = metadata.version("yarf")
             origin["packaging"] = {
                 "type": "source",
-                "name": "yarf",
                 "version": metadata.version("yarf"),
-                "revision": None,
-                "date": str(date.today()),
             }
 
         return origin
@@ -243,7 +239,13 @@ class TestSubmissionSchema(OutputConverterBase):
                 + "/"
                 + test.attrib["name"]
             )
-            outcome = status_tag.attrib["status"]
+            result = status_tag.attrib["status"]
+            if result == "PASS":
+                outcome = "passed"
+            elif result == "FAIL":
+                outcome = "failed"
+            elif result == "SKIP" or result == "NOT RUN":
+                outcome = "skipped"
 
             io_log = self.get_io_log(test, [])
             result = {
@@ -254,13 +256,12 @@ class TestSubmissionSchema(OutputConverterBase):
                 "outcome": outcome,
                 "comments": "",
                 "io_log": "".join(io_log),
-                "duration": str(
+                "duration": float(
                     (
                         parse(status_tag.attrib["endtime"]).timestamp()
                         - parse(status_tag.attrib["starttime"]).timestamp()
                     )
                 ),
-                "type": yarf_tags["type"],
             }
 
             if yarf_tags.get("test_group_id", None) is not None:

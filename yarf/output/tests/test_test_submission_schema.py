@@ -1,5 +1,4 @@
 import xml.etree.ElementTree as ET
-from datetime import date
 from importlib import metadata
 from pathlib import Path
 from textwrap import dedent
@@ -39,15 +38,15 @@ class TestTestSubmissionSchema:
 
                     *** Test Cases ***
                     Task1
-                        [Tags]                  yarf:certification_status: non-blocker        yarf:type: typeA        yarf:category_id: com.canonical.category::categoryA
+                        [Tags]                  yarf:certification_status: non-blocker        yarf:category_id: com.canonical.category::categoryA
                         Match                   ${CURDIR}/test1.png
 
                     Task2
-                        [Tags]                  yarf:certification_status: non-blocker        yarf:type: typeB        yarf:category_id: com.canonical.category::categoryB
+                        [Tags]                  yarf:certification_status: non-blocker        yarf:category_id: com.canonical.category::categoryB
                         Click LEFT Button on ${CURDIR}/test2.png
 
                     Task3
-                        [Tags]                  yarf:certification_status: non-blocker        yarf:type: typeC        yarf:category_id: com.canonical.category::categoryC
+                        [Tags]                  yarf:certification_status: non-blocker        yarf:category_id: com.canonical.category::categoryC
                         PlatformHid.Type String     1234567890
                     """
                 ),
@@ -73,15 +72,15 @@ class TestTestSubmissionSchema:
 
                     *** Test Cases ***
                     Task1
-                        [Tags]                  yarf:certification_status: non-blocker        yarf:type: typeA        yarf:category_id: com.canonical.category::categoryA
+                        [Tags]                  yarf:certification_status: non-blocker        yarf:category_id: com.canonical.category::categoryA
                         Match                   ${CURDIR}/test1.png
 
                     Task2
-                        [Tags]                  yarf:certification_status: non-blocker        yarf:type: typeB        yarf:category_id: com.canonical.category::categoryB
+                        [Tags]                  yarf:certification_status: non-blocker        yarf:category_id: com.canonical.category::categoryB
                         Click LEFT Button on ${CURDIR}/test2.png
 
                     Task3
-                        [Tags]                  yarf:certification_status: non-blocker        yarf:type: typeC        yarf:category_id: com.canonical.category::categoryC
+                        [Tags]                  yarf:certification_status: non-blocker        yarf:category_id: com.canonical.category::categoryC
                         PlatformHid.Type String     1234567890
                     """
                 ),
@@ -130,7 +129,7 @@ class TestTestSubmissionSchema:
 
                     *** Test Cases ***
                     Task1
-                        [Tags]                  yarf:certification_status: non-blocker        yarf:type: typeA        yarf:category_id: com.canonical.category::categoryA
+                        [Tags]                  yarf:certification_status: non-blocker        yarf:category_id: com.canonical.category::categoryA
                         Match                   ${CURDIR}/test1.png
                     """
                 ),
@@ -157,7 +156,7 @@ class TestTestSubmissionSchema:
                     *** Test Cases ***
                     Task1
                         [Documentation]         {"T" * 100}
-                        [Tags]                  yarf:certification_status: non-blocker        yarf:type: typeA        yarf:category_id: com.canonical.category::categoryA
+                        [Tags]                  yarf:certification_status: non-blocker        yarf:category_id: com.canonical.category::categoryA
                         Match                   test1.png
                     """
                 ),
@@ -183,7 +182,7 @@ class TestTestSubmissionSchema:
 
                     *** Test Cases ***
                     Task1
-                        [Tags]                  yarf:certification_status: undefined        yarf:type: typeA        yarf:category_id: com.canonical.category::categoryA
+                        [Tags]                  yarf:certification_status: undefined        yarf:category_id: com.canonical.category::categoryA
                         Match                   test1.png
                     """
                 ),
@@ -209,12 +208,12 @@ class TestTestSubmissionSchema:
 
                     *** Test Cases ***
                     Task1
-                        [Tags]                  yarf:certification_status: blocker        yarf:type: typeA        yarf:category_id: !@#$%^::categoryA
+                        [Tags]                  yarf:certification_status: blocker        yarf:category_id: !@#$%^::categoryA
                         Match                   test1.png
                     """
                 ),
             ),
-            # type missing
+            # Missing category ID
             (
                 dedent(
                     """
@@ -235,7 +234,7 @@ class TestTestSubmissionSchema:
 
                     *** Test Cases ***
                     Task1
-                        [Tags]                  yarf:certification_status: blocker        yarf:category_id: com.canonical.category::categoryA
+                        [Tags]                  yarf:certification_status: blocker
                         Match                   test1.png
                     """
                 ),
@@ -333,10 +332,7 @@ class TestTestSubmissionSchema:
             "version": metadata.version("yarf"),
             "packaging": {
                 "type": "source",
-                "name": "yarf",
                 "version": metadata.version("yarf"),
-                "revision": None,
-                "date": str(date.today()),
             },
         }
 
@@ -428,7 +424,6 @@ class TestTestSubmissionSchema:
                     </kw>
                     <tag>yarf:category_id: com.canonical.category::categoryA</tag>
                     <tag>yarf:certification_status: non-blocker</tag>
-                    <tag>yarf:type: typeA</tag>
                     <tag>yarf:test_group_id: com.canonical.group::testGroupA</tag>
                     <status status="PASS" starttime="20241205 20:58:33.523" endtime="20241205 20:58:33.540">
                     </status>
@@ -444,9 +439,21 @@ class TestTestSubmissionSchema:
                     </kw>
                     <tag>yarf:category_id: com.canonical.category::categoryB</tag>
                     <tag>yarf:certification_status: non-blocker</tag>
-                    <tag>yarf:type: typeB</tag>
                     <status status="FAIL" starttime="20241205 20:59:33.523" endtime="20241205 20:59:33.540">
                         Full Error Message
+                    </status>
+                </test>
+                <test id="s1-s1-t2" name="TaskC" line="12">
+                    <kw name="KeywordC" library="LibC">
+                        <arg>/tmp/tmpv7ethbc6/testC.png</arg>
+                        <doc>This is task C.</doc>
+                        <msg timestamp="20241205 21:00:33.537" level="NOT RUN">
+                        </msg>
+                        <status status="NOT RUN" starttime="20241205 21:00:33.524" endtime="20241205 21:00:33.539"/>
+                    </kw>
+                    <tag>yarf:category_id: com.canonical.category::categoryC</tag>
+                    <tag>yarf:certification_status: non-blocker</tag>
+                    <status status="NOT RUN" starttime="20241205 21:00:33.523" endtime="20241205 21:00:33.540">
                     </status>
                 </test>
             </suite>
@@ -459,11 +466,10 @@ class TestTestSubmissionSchema:
                 "test_description": "",
                 "certification_status": "non-blocker",
                 "category_id": "com.canonical.category::categoryA",
-                "outcome": "PASS",
+                "outcome": "passed",
                 "comments": "",
                 "io_log": "io_logA",
-                "duration": "0.01699995994567871",
-                "type": "typeA",
+                "duration": 0.01699995994567871,
                 "test_group_id": "com.canonical.group::testGroupA",
             },
             {
@@ -471,11 +477,20 @@ class TestTestSubmissionSchema:
                 "test_description": "",
                 "certification_status": "non-blocker",
                 "category_id": "com.canonical.category::categoryB",
-                "outcome": "FAIL",
+                "outcome": "failed",
                 "comments": "",
                 "io_log": "io_logB",
-                "duration": "0.01699995994567871",
-                "type": "typeB",
+                "duration": 0.01699995994567871,
+            },
+            {
+                "id": "com.canonical.yarf::TestA/TaskC",
+                "test_description": "",
+                "certification_status": "non-blocker",
+                "category_id": "com.canonical.category::categoryC",
+                "outcome": "skipped",
+                "comments": "",
+                "io_log": "io_logC",
+                "duration": 0.01699995994567871,
             },
         ]
 
@@ -484,6 +499,7 @@ class TestTestSubmissionSchema:
             side_effect=[
                 "io_logA",
                 "io_logB",
+                "io_logC",
             ]
         )
         result = converter.get_tests_results_from_suite(

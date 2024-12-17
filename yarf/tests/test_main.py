@@ -337,8 +337,10 @@ class TestMain:
 
     @patch("yarf.main.get_robot_reserved_settings")
     @patch("yarf.main.get_yarf_settings")
+    @patch("yarf.main._logger")
     def test_run_robot_suite_with_errors(
         self,
+        mock_logger: MagicMock,
         mock_get_yarf_settings: MagicMock,
         mock_get_robot_reserved_settings: MagicMock,
         fs: FakeFilesystem,  # noqa: F811
@@ -358,7 +360,7 @@ class TestMain:
         mock_test_suite = Mock()
         mock_test_suite.run.return_value.return_code = 1
         mock_test_suite.run.return_value.errors.messages = [Mock()]
-        with patch("yarf.main.robot_in_path"), pytest.raises(SystemExit):
+        with patch("yarf.main.robot_in_path"):
             run_robot_suite(
                 mock_test_suite,
                 SUPPORTED_PLATFORMS["Example"],
@@ -366,6 +368,7 @@ class TestMain:
                 outdir,
                 {},
             )
+        mock_logger.error.assert_called()
 
     @mock.patch.dict(os.environ, {"RFDEBUG_HISTORY": "/testoutdir"})
     @patch("yarf.main._logger")
@@ -426,7 +429,7 @@ class TestMain:
             suite=mock_test_suite(),
             lib_cls=SUPPORTED_PLATFORMS["Example"],
             variables=[],
-            outdir=outdir,
+            outdir=Path(tempfile.gettempdir()) / "yarf-outdir",
             cli_options={},
             output_format=None,
         )

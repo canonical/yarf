@@ -12,7 +12,8 @@ Library             VideoInput.py    AS    PlatformVideoInput
 
 *** Keywords ***
 Press Key And Match
-    [Arguments]             ${key}                  ${template}             ${tentatives}=1         ${timeout}=1
+    [Documentation]    If the provided template is not already matching, press a key until it does.
+    [Arguments]             ${key}                  ${template}             ${tentatives}=1         ${timeout}=2
     ${combo}=               Create List             ${key}
     Press Combo And Match
     ...                     ${combo}
@@ -21,9 +22,16 @@ Press Key And Match
     ...                     ${timeout}
 
 Press Combo And Match
-    [Arguments]             ${keys-combo}           ${template}             ${tentatives}=1         ${timeout}=1
+    [Documentation]    If the provided template is not already matching, press a key combination until it does.
+    [Arguments]             ${keys-combo}           ${template}             ${tentatives}=1         ${timeout}=2
 
-    ${match}=               Set Variable            ${FALSE}
+    ${match}=               Run Keyword And Return Status
+    ...                     PlatformVideoInput.Match                        ${template}             ${timeout}
+    IF    ${match}
+        Log                     Template is already matching.                   html=true               console=true
+        RETURN
+    END
+
     FOR    ${index}    IN RANGE    ${tentatives}
         PlatformHid.Keys Combo                          ${keys-combo}
         ${match}=               Run Keyword And Return Status
