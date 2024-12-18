@@ -8,6 +8,8 @@ Pick one of the following:
 - Breaking: Your change breaks backward compatibility
 
 Signed commits are required.
+
+The default merge method of this repository is Squash and Merge, please add a comment if Merge Commit is preferred.
 -->
 
 ## Description
@@ -45,14 +47,3 @@ Please make sure that...
 - Please provide a list of what tests were run and on what platform/configuration.
 - Remember to check the test coverage of your PR as described in CONTRIBUTING.md
 -->
-
-## Merge Method
-
-<!--
-This repository accepts the following merge methods:
-1. Squash and Merge (default): Combine all commits from the head branch into a single commit in the base branch.
-2. Merge commits: Add all commits from the head branch to the base branch with a merge commit.
-Please specify below the merge method of choice.
--->
-
-Squash and Merge
