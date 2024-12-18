@@ -21,7 +21,7 @@ and trust in the test results.
 
 This repository requires the following dependencies
 
-- [Python 3.10](https://www.python.org/downloads/release/python-31014/)
+- [Python 3.12](https://www.python.org/downloads/release/python-3125/)
 - [uv](https://docs.astral.sh/uv/)
 - [Snapcraft](https://snapcraft.io/docs/installing-snapcraft)
 
@@ -40,6 +40,7 @@ This repository requires the following dependencies
 
    ```
    uv sync
+   uv pip install .[develop]
    ```
 
    After that, we enter the virtual environment:

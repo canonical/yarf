@@ -1,5 +1,5 @@
 name: yarf
-base: core22
+base: core24
 adopt-info: yarf
 summary: Yet Another Robot Framework
 description: |
