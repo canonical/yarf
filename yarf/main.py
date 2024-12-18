@@ -3,7 +3,6 @@ import logging
 import operator
 import os
 import re
-import shutil
 import sys
 import tempfile
 from argparse import ArgumentParser, Namespace
@@ -18,7 +17,7 @@ from robot.api import TestSuite, TestSuiteBuilder
 from robot.errors import Information
 from robot.run import RobotFramework
 
-from yarf.output import OUTPUT_FORMATS, output_converter
+from yarf.output import OUTPUT_FORMATS, get_outdir_path, output_converter
 from yarf.rf_libraries import robot_in_path
 from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS, PlatformBase
 from yarf.rf_libraries.suite_parser import SuiteParser
@@ -367,12 +366,7 @@ def main(argv: Optional[list[str]] = None) -> None:
 
     lib_cls = SUPPORTED_PLATFORMS.get(args.platform)
     logging.basicConfig(level=args.verbosity)
-    outdir = Path(
-        args.outdir if args.outdir else f"{tempfile.gettempdir()}/yarf-outdir"
-    )
-    if outdir.exists():
-        _logger.warning(f"Removing existing output directory: {outdir}")
-        shutil.rmtree(outdir)
+    outdir = get_outdir_path(args.outdir)
 
     if args.suite:
         variables = []

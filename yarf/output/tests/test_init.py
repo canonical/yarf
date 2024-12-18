@@ -6,15 +6,18 @@ from typing import Any
 from unittest.mock import ANY, MagicMock, Mock, call, patch, sentinel
 
 import pytest
+from pyfakefs.fake_filesystem import FakeFilesystem
 from robot.api import TestSuite
 
 from yarf.output import (
     OUTPUT_FORMATS,
     OutputConverterBase,
     OutputConverterMeta,
+    get_outdir_path,
     import_supported_formats,
     output_converter,
 )
+from yarf.tests.fixtures import fs  # noqa: F401
 
 
 class TestOutputConverterMeta:
@@ -199,6 +202,57 @@ class TestInit:
     """
     Test the commonly available, module-level functions.
     """
+
+    @pytest.mark.parametrize(
+        "mock_outdir,mock_arg_ouitdir,mock_envars,mock_clear",
+        [
+            # User defined outdir
+            ("user_outdir", "user_outdir", {}, False),
+            # In snap
+            (
+                "/test-outdir/yarf-outdir",
+                None,
+                {
+                    "SNAP": str(sentinel.snap_env),
+                    "SNAP_USER_COMMON": "/test-outdir",
+                },
+                False,
+            ),
+            # In source
+            ("/tmp/yarf-outdir", None, {}, True),
+        ],
+    )
+    def test_get_outdir_path_with_outdir(
+        self,
+        mock_outdir: str,
+        mock_arg_ouitdir: str,
+        mock_envars: dict[str, str],
+        mock_clear: bool,
+        fs: FakeFilesystem,  # noqa: F811
+    ) -> None:
+        """
+        Test whether get_outdir_path correctly constructs a path object with
+        given outdir and delete relevant files only.
+        """
+        outdir = mock_outdir
+        fs.create_dir(outdir)
+        targeted_files = [
+            "output.xml",
+            "report.html",
+            "log.html",
+            "rfdebug_history.log",
+        ]
+        for file in targeted_files:
+            fs.create_file(f"{outdir}/{file}")
+        fs.create_file(f"{outdir}/test.txt")
+
+        with patch.dict(os.environ, mock_envars, clear=mock_clear):
+            result = get_outdir_path(mock_arg_ouitdir)
+
+        assert result == Path(mock_outdir)
+        for file in targeted_files:
+            assert not fs.exists(Path(mock_outdir) / file)
+        assert fs.exists(Path(mock_outdir) / "test.txt")
 
     @patch("yarf.output.json.dump")
     @patch("yarf.output.open")
