@@ -32,7 +32,7 @@ This repository requires the following dependencies
    First, install a couple of deb package dependencies:
 
    ```
-   sudo apt install -y clang libxkbcommon-dev
+   sudo apt install -y clang libxkbcommon-dev tesseract-ocr
    ```
 
    We can install YARF along with the dependencies specified in
