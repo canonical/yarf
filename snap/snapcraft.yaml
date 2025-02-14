@@ -38,6 +38,14 @@ parts:
     override-pull: |
       craftctl default
       craftctl set version=$(yq -r .project.version pyproject.toml)
+    override-stage: |
+      TESSDATA_DIR=$(find "$CRAFT_PART_INSTALL/usr/share/tesseract-ocr" -type d -name tessdata)
+      TESSVER_DIR=$(dirname "$TESSDATA_DIR")
+      mv "$TESSDATA_DIR" $(dirname "$TESSVER_DIR")
+      rm -r "$TESSVER_DIR"
+
+      craftctl default
+
     organize:
       usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/pulseaudio/*: usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
       usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/blas/*: usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
@@ -56,4 +64,4 @@ apps:
       - network
       - wayland
     environment:
-      TESSDATA_PREFIX: "$SNAP/usr/share/tesseract-ocr/5/tessdata"
+      TESSDATA_PREFIX: "$SNAP/usr/share/tesseract-ocr/tessdata"
