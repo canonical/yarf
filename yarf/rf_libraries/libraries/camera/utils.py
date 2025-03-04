@@ -1,5 +1,9 @@
+"""
+Module for utility functions related to camera operations.
+"""
+
 from dataclasses import dataclass
-from typing import List
+from typing import Iterator, List
 
 from RPA.core.geometry import Region
 
@@ -20,6 +24,22 @@ class Quad:
     top_right: List[float]
     bottom_right: List[float]
     bottom_left: List[float]
+
+    def __iter__(self) -> Iterator[List[float]]:
+        """
+        Create an iterator for the quadrilateral region.
+
+        Returns:
+            Iterator for the quadrilateral region.
+        """
+        return iter(
+            [
+                self.top_left,
+                self.top_right,
+                self.bottom_right,
+                self.bottom_left,
+            ]
+        )
 
 
 def quad_to_region(quad: Quad) -> Region:
