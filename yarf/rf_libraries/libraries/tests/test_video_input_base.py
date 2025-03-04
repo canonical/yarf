@@ -4,6 +4,7 @@ This module provides tests for the Video Input base module.
 
 import asyncio
 import subprocess
+import types
 from unittest.mock import (
     ANY,
     AsyncMock,
@@ -15,8 +16,10 @@ from unittest.mock import (
 )
 
 import pytest
+from RPA.core.geometry import Region
 from RPA.recognition.templates import ImageNotFoundError
 
+from yarf.rf_libraries.libraries.camera.rapidocr import RapidOCRReader
 from yarf.rf_libraries.libraries.video_input_base import VideoInputBase
 
 
@@ -74,12 +77,6 @@ def mock_run():
 def mock_tempdir():
     with patch("tempfile.TemporaryDirectory") as p:
         p.return_value.name = sentinel.tempdir
-        yield p
-
-
-@pytest.fixture
-def mock_ocr():
-    with patch("yarf.rf_libraries.libraries.video_input_base.ocr") as p:
         yield p
 
 
@@ -309,27 +306,93 @@ class TestVideoInputBase:
         await stub_videoinput.match("path")
         mock_to_image.return_value.convert.assert_called_with("RGB")
 
+    def test_set_ocr_method(self, stub_videoinput):
+        """
+        Test the OCR method can be set.
+        """
+        stub_videoinput.set_ocr_method("tesseract")
+        print(stub_videoinput.ocr)
+        assert isinstance(stub_videoinput.ocr, types.ModuleType)
+
+        stub_videoinput.set_ocr_method("rapidocr")
+        assert isinstance(stub_videoinput.ocr, RapidOCRReader)
+
+        with pytest.raises(ValueError):
+            stub_videoinput.set_ocr_method("unknown")
+
     @pytest.mark.asyncio
-    async def test_read_text(self, stub_videoinput, mock_ocr):
+    async def test_read_text(self, stub_videoinput):
         """
         Test whether the function grabs a new screenshot and runs OCR on it.
         """
+        stub_videoinput.ocr.read = Mock()
         await stub_videoinput.read_text()
 
-        mock_ocr.read.assert_called_once_with(
+        stub_videoinput.ocr.read.assert_called_once_with(
             stub_videoinput._grab_screenshot.return_value
         )
 
     @pytest.mark.asyncio
-    async def test_read_text_image(self, stub_videoinput, mock_ocr):
+    async def test_read_text_image(self, stub_videoinput):
         """
         Test whether the function runs OCR on the provided image.
         """
 
         image = Mock()
+        stub_videoinput.ocr.read = Mock()
 
         await stub_videoinput.read_text(image)
-        mock_ocr.read.assert_called_once_with(image)
+        stub_videoinput.ocr.read.assert_called_once_with(image)
+
+    @pytest.mark.asyncio
+    async def test_find_text(self, stub_videoinput):
+        """
+        Test whether the function grabs a new screenshot and runs OCR on it.
+        """
+        stub_videoinput.ocr.find = Mock()
+        await stub_videoinput.find_text("text")
+
+        stub_videoinput.ocr.find.assert_called_once_with(
+            stub_videoinput._grab_screenshot.return_value, "text", region=None
+        )
+
+    @pytest.mark.asyncio
+    async def test_find_text_in_region(self, stub_videoinput):
+        """
+        Test whether the function grabs a new screenshot and runs OCR on it.
+        """
+        stub_videoinput.ocr.find = Mock()
+        await stub_videoinput.find_text("text", region=Region(0, 0, 1, 1))
+
+        stub_videoinput.ocr.find.assert_called_once_with(
+            stub_videoinput._grab_screenshot.return_value,
+            "text",
+            region=Region(0, 0, 1, 1),
+        )
+
+    @pytest.mark.asyncio
+    async def test_get_text_position(self, stub_videoinput, mock_time):
+        mock_time.side_effect = [0, 11]
+        stub_videoinput.find_text = AsyncMock()
+        stub_videoinput.find_text.return_value = [
+            {"text": "Hello", "region": Region(0, 0, 1, 1), "confidence": 0.9},
+        ]
+        with pytest.raises(ValueError):
+            await stub_videoinput.get_text_position("Hello")
+
+    @pytest.mark.asyncio
+    async def test_get_text_position_succeeds(
+        self, stub_videoinput, mock_time
+    ):
+        mock_time.side_effect = [0, 1, 2]
+        stub_videoinput.find_text = AsyncMock()
+        stub_videoinput.find_text.return_value = [
+            {"text": "Hello", "region": Region(0, 0, 1, 1), "confidence": 0.9},
+            {"text": "Hell", "region": Region(1, 1, 2, 2), "confidence": 0.8},
+        ]
+        assert await stub_videoinput.get_text_position("Hello") == Region(
+            0, 0, 1, 1
+        )
 
     @pytest.mark.asyncio
     async def test_match_text(self, stub_videoinput, mock_time):
