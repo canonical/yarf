@@ -31,6 +31,8 @@ dependencies = [
     "rpaframework-recognition~=5.2.3",
     "rpyc~=5.3.1",
     "xkbcommon<1.1",
+    "rapidocr-onnxruntime>=1.4.4",
+    "rapidfuzz>=3.12.1",
 ]
 
 [project.optional-dependencies]
