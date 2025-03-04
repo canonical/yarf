@@ -1,3 +1,8 @@
+"""
+Methods for reading text from images using RapidOCR following the structure of
+RPA.recognition OCR libraries.
+"""
+
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Union
@@ -29,8 +34,16 @@ class OCRMatch:
 
 
 class RapidOCRReader:
-    DEFAULT_CONFIDENCE = 0.7
-    DEFAULT_COINCIDENCE = 80.0
+    """
+    Class implementing OCR reading using RapidOCR following RPA.recognition.
+
+    Attributes:
+        DEFAULT_CONFIDENCE: Default confidence for text detection.
+        DEFAULT_COINCIDENCE: Default coincidence for text similarities.
+    """
+
+    DEFAULT_CONFIDENCE: float = 0.7
+    DEFAULT_COINCIDENCE: float = 80.0
 
     def __init__(self):
         self.reader = RapidOCR()
@@ -127,9 +140,6 @@ class RapidOCRReader:
                 if partial
                 else rapidfuzz.fuzz.ratio(ocr_match.text, match_text)
             )
-            print(ocr_match.text)
-            print(ratio)
-            print(ocr_match.confidence)
             if ratio >= coincidence and ocr_match.confidence >= confidence:
                 matches.append(
                     {
