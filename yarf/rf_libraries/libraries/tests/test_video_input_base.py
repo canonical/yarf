@@ -19,7 +19,7 @@ import pytest
 from RPA.core.geometry import Region
 from RPA.recognition.templates import ImageNotFoundError
 
-from yarf.rf_libraries.libraries.camera.rapidocr import RapidOCRReader
+from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
 from yarf.rf_libraries.libraries.video_input_base import VideoInputBase
 
 

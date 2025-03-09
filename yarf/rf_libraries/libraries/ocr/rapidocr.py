@@ -5,7 +5,6 @@ RPA.recognition OCR libraries.
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Union
 
 import numpy as np
 import rapidfuzz
@@ -14,11 +13,11 @@ from rapidocr_onnxruntime import RapidOCR
 from RPA.core.geometry import Region
 from RPA.recognition.utils import to_image
 
-from yarf.rf_libraries.libraries.camera.utils import Quad, quad_to_region
+from yarf.rf_libraries.libraries.geometry.quad import Quad
 
 
 @dataclass
-class OCRMatch:
+class OCRResult:
     """
     Container for OCR match data following rapidocr structure.
 
@@ -31,6 +30,10 @@ class OCRMatch:
     position: Quad
     text: str
     confidence: float
+
+    def __post_init__(self):
+        if isinstance(self.position, list):
+            self.position = Quad(self.position)
 
 
 class RapidOCRReader:
@@ -48,7 +51,7 @@ class RapidOCRReader:
     def __init__(self):
         self.reader = RapidOCR()
 
-    def read(self, image: Union[Image.Image, Path]) -> str:
+    def read(self, image: Image.Image | Path) -> str:
         """
         Scan image for text and return it as one string.
 
@@ -64,13 +67,13 @@ class RapidOCRReader:
 
     def find(
         self,
-        image: Union[Image.Image, Path],
+        image: Image.Image | Path,
         text: str,
         confidence: float = DEFAULT_CONFIDENCE,
         coincidence: float = DEFAULT_COINCIDENCE,
-        region: Optional[Region] = None,
+        region: Region | None = None,
         partial: bool = True,
-    ):
+    ) -> list[dict]:
         """
         Scan image for text and return a list of regions that contain it (or
         something close to it).
@@ -101,6 +104,8 @@ class RapidOCRReader:
         if not result:
             return []
 
+        result = [OCRResult(*item) for item in result]
+
         matches = self.get_matches(
             result, text, confidence, coincidence, partial
         )
@@ -113,17 +118,17 @@ class RapidOCRReader:
 
     def get_matches(
         self,
-        items: List[OCRMatch],
+        result: list[OCRResult],
         match_text: str,
         confidence: float,
         coincidence: float,
         partial: bool,
-    ) -> List[OCRMatch]:
+    ) -> list[dict]:
         """
         Get matches from OCR results based on similarity and confidence.
 
         Args:
-            items: List of OCR matches.
+            result: List with the OCR results.
             match_text: Text to match.
             confidence: Minimum confidence for text detection.
             coincidence: Minimum coincidence for text similarities.
@@ -133,18 +138,17 @@ class RapidOCRReader:
             List of OCR matches containing the text.
         """
         matches = []
-        for item in items:
-            ocr_match = OCRMatch(item[0], item[1], item[2])
+        for item in result:
             ratio = (
-                rapidfuzz.fuzz.partial_ratio(ocr_match.text, match_text)
+                rapidfuzz.fuzz.partial_ratio(item.text, match_text)
                 if partial
-                else rapidfuzz.fuzz.ratio(ocr_match.text, match_text)
+                else rapidfuzz.fuzz.ratio(item.text, match_text)
             )
-            if ratio >= coincidence and ocr_match.confidence >= confidence:
+            if ratio >= coincidence and item.confidence >= confidence:
                 matches.append(
                     {
-                        "text": ocr_match.text,
-                        "region": quad_to_region(ocr_match.position),
+                        "text": item.text,
+                        "region": item.position.to_region(),
                         "confidence": ratio,  # Using the ratio like tesseract
                     }
                 )

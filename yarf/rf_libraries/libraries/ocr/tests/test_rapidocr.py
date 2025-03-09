@@ -3,18 +3,19 @@ from unittest.mock import MagicMock, patch
 import pytest
 from RPA.core.geometry import Region
 
-from yarf.rf_libraries.libraries.camera.rapidocr import RapidOCRReader
+from yarf.rf_libraries.libraries.geometry.quad import Quad
+from yarf.rf_libraries.libraries.ocr.rapidocr import OCRResult, RapidOCRReader
 
 
 @pytest.fixture(autouse=True)
 def mock_to_image():
-    with patch("yarf.rf_libraries.libraries.camera.rapidocr.to_image") as p:
+    with patch("yarf.rf_libraries.libraries.ocr.rapidocr.to_image") as p:
         yield p
 
 
 @pytest.fixture(autouse=True)
 def mock_reader():
-    with patch("yarf.rf_libraries.libraries.camera.rapidocr.RapidOCR") as p:
+    with patch("yarf.rf_libraries.libraries.ocr.rapidocr.RapidOCR") as p:
         yield p
 
 
@@ -39,7 +40,10 @@ class TestRapidOCR:
         assert result == ""
 
     def test_find(self, mock_reader):
-        mock_reader.reader.return_value = ("result", None)
+        mock_reader.reader.return_value = (
+            [[[[0, 0], [0, 0], [0, 0], [0, 0]], "Hello", 0.9]],
+            None,
+        )
         mock_reader.get_matches.return_value = [
             {"text": "Hello", "region": Region(0, 0, 1, 1), "confidence": 100}
         ]
@@ -67,7 +71,10 @@ class TestRapidOCR:
 
     def test_find_in_region(self, mock_to_image, mock_reader):
         mock_to_image.return_value = MagicMock()
-        mock_reader.reader.return_value = ("result", None)
+        mock_reader.reader.return_value = (
+            [[[[0, 0], [1, 0], [1, 1], [0, 1]], "Hello World", 0.9]],
+            None,
+        )
         mock_reader.get_matches.return_value = [
             {"text": "Hello", "region": Region(0, 0, 1, 1), "confidence": 100}
         ]
@@ -85,7 +92,9 @@ class TestRapidOCR:
 
     def test_get_matches(self, mock_reader):
         items = [
-            [[[0, 0], [1, 0], [1, 1], [0, 1]], "Hello World", 0.9],
+            OCRResult(
+                Quad([[0, 0], [1, 0], [1, 1], [0, 1]]), "Hello World", 0.9
+            ),
         ]
         result = RapidOCRReader.get_matches(
             mock_reader, items, "Hello World", 0.8, 80, False
@@ -101,7 +110,7 @@ class TestRapidOCR:
 
     def test_get_matches_partial(self, mock_reader):
         items = [
-            [[[0, 0], [1, 0], [1, 1], [0, 1]], "Hello World", 0.9],
+            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Hello World", 0.9),
         ]
         result = RapidOCRReader.get_matches(
             mock_reader, items, "Hello", 0.8, 80, True
@@ -117,7 +126,7 @@ class TestRapidOCR:
 
     def test_get_matches_no_matches(self, mock_reader):
         items = [
-            [[[0, 0], [1, 0], [1, 1], [0, 1]], "Hello World", 0.9],
+            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Hello World", 0.9),
         ]
         result = RapidOCRReader.get_matches(
             mock_reader, items, "Hello", 0.8, 90, False

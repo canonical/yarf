@@ -20,10 +20,7 @@ from RPA.Images import Images, Region, to_image
 from RPA.recognition import ocr as tesseract
 from RPA.recognition.templates import ImageNotFoundError
 
-from yarf.rf_libraries.libraries.camera.rapidocr import (
-    OCRMatch,
-    RapidOCRReader,
-)
+from yarf.rf_libraries.libraries.ocr.rapidocr import OCRResult, RapidOCRReader
 
 
 class VideoInputBase(ABC):
@@ -174,7 +171,7 @@ class VideoInputBase(ABC):
         text: str,
         region: Region = None,
         image: Optional[Image.Image] = None,
-    ) -> Awaitable[List[OCRMatch]]:
+    ) -> Awaitable[List[OCRResult]]:
         """
         Find the specified text in the provided image or grab a screenshot to
         search from.
