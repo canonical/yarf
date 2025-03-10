@@ -323,7 +323,7 @@ class TestVideoInputBase:
     @pytest.mark.asyncio
     async def test_read_text(self, stub_videoinput):
         """
-        Test whether the function grabs a new screenshot and runs OCR on it.
+        Test if the function grabs a new screenshot and reads the text.
         """
         stub_videoinput.ocr.read = Mock()
         await stub_videoinput.read_text()
@@ -335,7 +335,7 @@ class TestVideoInputBase:
     @pytest.mark.asyncio
     async def test_read_text_image(self, stub_videoinput):
         """
-        Test whether the function runs OCR on the provided image.
+        Test if the function reads the text from an image.
         """
 
         image = Mock()
@@ -347,7 +347,8 @@ class TestVideoInputBase:
     @pytest.mark.asyncio
     async def test_find_text(self, stub_videoinput):
         """
-        Test whether the function grabs a new screenshot and runs OCR on it.
+        Test if the function grabs a new screenshot and finds the text
+        position.
         """
         stub_videoinput.ocr.find = Mock()
         await stub_videoinput.find_text("text")
@@ -357,9 +358,22 @@ class TestVideoInputBase:
         )
 
     @pytest.mark.asyncio
-    async def test_find_text_in_region(self, stub_videoinput):
+    async def test_find_text_in_image(self, stub_videoinput):
         """
-        Test whether the function grabs a new screenshot and runs OCR on it.
+        Test if the function finds the text position in an image.
+        """
+        image = Mock()
+        stub_videoinput.ocr.find = Mock()
+        await stub_videoinput.find_text("text", image=image)
+
+        stub_videoinput.ocr.find.assert_called_once_with(
+            image, "text", region=None
+        )
+
+    @pytest.mark.asyncio
+    async def test_match_text_in_region(self, stub_videoinput):
+        """
+        Test if the function finds the text in a region.
         """
         stub_videoinput.ocr.find = Mock()
         await stub_videoinput.find_text("text", region=Region(0, 0, 1, 1))
@@ -371,51 +385,34 @@ class TestVideoInputBase:
         )
 
     @pytest.mark.asyncio
-    async def test_get_text_position(self, stub_videoinput, mock_time):
-        mock_time.side_effect = [0, 11]
-        stub_videoinput.find_text = AsyncMock()
-        stub_videoinput.find_text.return_value = [
-            {"text": "Hello", "region": Region(0, 0, 1, 1), "confidence": 0.9},
-        ]
-        with pytest.raises(ValueError):
-            await stub_videoinput.get_text_position("Hello")
-
-    @pytest.mark.asyncio
-    async def test_get_text_position_succeeds(
-        self, stub_videoinput, mock_time
-    ):
+    async def test_match_text_succeeds(self, stub_videoinput, mock_time):
+        """
+        Test the function returns the matches of the text found.
+        """
         mock_time.side_effect = [0, 1, 2]
         stub_videoinput.find_text = AsyncMock()
-        stub_videoinput.find_text.return_value = [
+        result = [
             {"text": "Hello", "region": Region(0, 0, 1, 1), "confidence": 0.9},
             {"text": "Hell", "region": Region(1, 1, 2, 2), "confidence": 0.8},
         ]
-        assert await stub_videoinput.get_text_position("Hello") == Region(
-            0, 0, 1, 1
-        )
+        stub_videoinput.find_text.return_value = result
+        assert await stub_videoinput.match_text("Hello") == result
 
     @pytest.mark.asyncio
-    async def test_match_text(self, stub_videoinput, mock_time):
-        mock_time.side_effect = [
-            0,
-            11,
-        ]
+    async def test_match_text_fails(self, stub_videoinput, mock_time):
+        """
+        Test the function raises an error if the text is not found.
+        """
+        mock_time.side_effect = [0, 1, 2, 11]
+        stub_videoinput.find_text = AsyncMock()
+        stub_videoinput.find_text.return_value = []
         stub_videoinput.read_text = AsyncMock()
-        stub_videoinput.read_text.return_value = "darmok"
-        with pytest.raises(ValueError):
+        stub_videoinput.read_text.return_value = "wrong\ntext"
+        with pytest.raises(ValueError) as e:
             await stub_videoinput.match_text("hello")
 
-    @pytest.mark.asyncio
-    async def test_match_text_succeeds(self, stub_videoinput, mock_time):
-        mock_time.side_effect = [
-            0,
-            1,
-            2,
-        ]
-        stub_videoinput.read_text = AsyncMock()
-        stub_videoinput.read_text.return_value = "hello there!"
-        await stub_videoinput.match_text("hello")
-        stub_videoinput.read_text.assert_called_once()
+        assert "Timed out looking for 'hello'" in str(e.value)
+        assert "Text read on screen was:\nwrong\ntext" in str(e.value)
 
     @pytest.mark.asyncio
     async def test_restart_video_input(self, stub_videoinput):

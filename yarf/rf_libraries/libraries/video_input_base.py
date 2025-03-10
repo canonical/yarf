@@ -77,6 +77,7 @@ class VideoInputBase(ABC):
             else:
                 self._log_video(video_path)
 
+    @keyword
     def set_ocr_method(self, method: str) -> None:
         """
         Set the OCR method to use.
@@ -192,33 +193,6 @@ class VideoInputBase(ABC):
     async def match_text(
         self,
         text: str,
-        timeout: int = 10,
-    ):
-        """
-        Wait for specified text to appear on screen.
-
-        Args:
-            text: The text to match on screen
-            timeout: Time to wait for the text to appear
-        Raises:
-            ValueError: If the specified text isn't found in time
-        Returns:
-            Nothing! Returns if the text is successfully found.
-        """
-        start_time = time.time()
-        on_screen_text = None
-        while time.time() - start_time < timeout:
-            on_screen_text = await self.read_text()
-            if text in on_screen_text:
-                return
-        raise ValueError(
-            f"Timed out looking for '{text}' after '{timeout}' seconds. Text read on screen was {on_screen_text}"
-        )
-
-    @keyword
-    async def get_text_position(
-        self,
-        text: str,
         region: Region = None,
         timeout: int = 10,
     ) -> Awaitable[Region]:
@@ -231,17 +205,26 @@ class VideoInputBase(ABC):
             region: The region to search for the text
             timeout: Time to wait for the text to appear
         Returns:
-            The center position of the best match
+            The list of match results where the text was found
         Raises:
             ValueError: If the specified text isn't found in time
         """
         start_time = time.time()
         while time.time() - start_time < timeout:
-            text_positions = await self.find_text(text, region=region)
+            image = await self._grab_screenshot()
+            # Save the cropped image for debugging
+            cropped_image = image.crop(region.as_tuple()) if region else image
+
+            text_positions = await self.find_text(
+                text, image=image, region=region
+            )
             if text_positions:
-                return text_positions[0]["region"]
+                return text_positions
+
+        read_text = await self.read_text(cropped_image)
         raise ValueError(
             f"Timed out looking for '{text}' after '{timeout}' seconds. "
+            f"Text read on screen was:\n{read_text}"
         )
 
     @abstractmethod
