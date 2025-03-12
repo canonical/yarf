@@ -1,5 +1,5 @@
 """
-Module for utility functions related to camera operations.
+Module for geometry related classes and functions.
 """
 
 from dataclasses import dataclass

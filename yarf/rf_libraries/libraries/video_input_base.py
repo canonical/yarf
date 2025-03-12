@@ -183,7 +183,8 @@ class VideoInputBase(ABC):
             image: image to search from
 
         Returns:
-            list of matches
+            The list of matched text regions where the text was found. Each
+            match is a dictionary with "text", "region", and "confidence".
         """
         if not image:
             image = await self._grab_screenshot()
@@ -205,7 +206,8 @@ class VideoInputBase(ABC):
             region: The region to search for the text
             timeout: Time to wait for the text to appear
         Returns:
-            The list of match results where the text was found
+            The list of matched text regions where the text was found. Each
+            match is a dictionary with "text", "region", and "confidence".
         Raises:
             ValueError: If the specified text isn't found in time
         """
@@ -215,11 +217,11 @@ class VideoInputBase(ABC):
             # Save the cropped image for debugging
             cropped_image = image.crop(region.as_tuple()) if region else image
 
-            text_positions = await self.find_text(
+            text_matches = await self.find_text(
                 text, image=image, region=region
             )
-            if text_positions:
-                return text_positions
+            if text_matches:
+                return text_matches
 
         read_text = await self.read_text(cropped_image)
         raise ValueError(
