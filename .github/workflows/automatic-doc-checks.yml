@@ -1,11 +1,10 @@
 name: Main Documentation Checks
 
 on:
-  merge_group:
-    types: [checks_requested]
   pull_request:
     paths:
-      - 'docs/**'
+      - docs/**
+      - yarf/**
   workflow_dispatch:
 
 concurrency:
@@ -14,6 +13,54 @@ concurrency:
 
 jobs:
   documentation-checks:
-    uses: canonical/documentation-workflows/.github/workflows/documentation-checks.yaml@main
-    with:
-      working-directory: 'docs'
+    runs-on: [self-hosted-linux-amd64-jammy-large]
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt update -qq
+          sudo apt install -y \
+            git-lfs \
+            libgl1 \
+            libxkbcommon-dev \
+            jq \
+            clang
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: '0'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+
+      - name: Spell Check
+        id: spellcheck-step
+        if: success() || failure()
+        uses: canonical/documentation-workflows/spellcheck@main
+        with:
+          working-directory: 'docs/'
+          install-target: 'install'
+          spelling-target: 'spelling'
+          makefile: 'use-default'
+
+      - name: Inclusive Language Check
+        id: woke-step
+        if: success() || failure()
+        uses: canonical/documentation-workflows/inclusive-language@main
+        with:
+          working-directory: 'docs/'
+          install-target: 'install'
+          woke-target: 'woke'
+          makefile: 'use-default'
+
+      - name: Link Check
+        id: linkcheck-step
+        if: success() || failure()
+        uses: canonical/documentation-workflows/linkcheck@main
+        with:
+          working-directory: 'docs/'
+          install-target: 'install'
+          woke-target: 'linkcheck'
+          makefile: 'use-default'

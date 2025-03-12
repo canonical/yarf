@@ -170,9 +170,7 @@ custom_extensions = [
 # sphinx-notfound-page, sphinx-reredirects, sphinx-tabs, sphinxcontrib-jquery,
 # sphinxext-opengraph
 custom_required_modules = [
-    "robotframework",
-    "rpaframework",
-    "rpaframework-recognition",
+    ".."  # yarf itself
 ]
 
 # Add files or directories that should be excluded from processing.

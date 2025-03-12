@@ -8,8 +8,10 @@ version: 2
 # Set the version of Python and other tools you might need
 build:
   os: ubuntu-22.04
+  apt_packages:
+    - libxkbcommon-dev
   tools:
-    python: "3.11"
+    python: "3.12"
   jobs:
     post_checkout:
       - cd docs && python3 .sphinx/build_requirements.py
@@ -43,4 +45,4 @@ formats:
 # Optionally declare the Python requirements required to build your docs
 python:
    install:
-   - requirements: docs/.sphinx/requirements.txt
+     - requirements: docs/.readthedocs-requirements.txt
