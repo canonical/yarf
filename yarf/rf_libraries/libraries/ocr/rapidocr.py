@@ -39,6 +39,7 @@ class OCRResult:
 class RapidOCRReader:
     """
     Class implementing OCR reading using RapidOCR following RPA.recognition.
+    This class is a singleton to avoid loading the model multiple times.
 
     Attributes:
         DEFAULT_CONFIDENCE: Default confidence for text detection.
@@ -47,6 +48,13 @@ class RapidOCRReader:
 
     DEFAULT_CONFIDENCE: float = 0.7
     DEFAULT_COINCIDENCE: float = 80.0
+
+    def __new__(cls):
+        if not hasattr(cls, "instance"):
+            print("Creating RapidOCR instance")
+            cls.instance = super(RapidOCRReader, cls).__new__(cls)
+        print("Returning RapidOCR instance")
+        return cls.instance
 
     def __init__(self):
         self.reader = RapidOCR()
