@@ -175,7 +175,8 @@ class VideoInputBase(ABC):
     ) -> Awaitable[List[OCRResult]]:
         """
         Find the specified text in the provided image or grab a screenshot to
-        search from.
+        search from. The region can be specified directly in the robot file
+        using `RPA.geometry.to_region`
 
         Args:
             text: text to search for
@@ -199,7 +200,8 @@ class VideoInputBase(ABC):
     ) -> Awaitable[Region]:
         """
         Wait for specified text to appear on screen and get the position of the
-        best match.
+        best match. The region can be specified directly in the robot file
+        using `RPA.geometry.to_region`
 
         Args:
             text: The text to match on screen
