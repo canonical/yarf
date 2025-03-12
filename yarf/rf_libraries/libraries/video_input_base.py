@@ -17,8 +17,10 @@ from PIL import Image
 from robot.api import logger
 from robot.api.deco import keyword
 from RPA.Images import Images, Region, to_image
-from RPA.recognition import ocr
+from RPA.recognition import ocr as tesseract
 from RPA.recognition.templates import ImageNotFoundError
+
+from yarf.rf_libraries.libraries.ocr.rapidocr import OCRResult, RapidOCRReader
 
 
 class VideoInputBase(ABC):
@@ -39,6 +41,7 @@ class VideoInputBase(ABC):
         self.ROBOT_LIBRARY_LISTENER = self
         self._frame_count: int = 0
         self._screenshots_dir: Optional[tempfile.TemporaryDirectory] = None
+        self.ocr = tesseract
 
     def _start_suite(self, data, result) -> None:
         self._frame_count = 0
@@ -73,6 +76,24 @@ class VideoInputBase(ABC):
                 logger.warn(ex)
             else:
                 self._log_video(video_path)
+
+    @keyword
+    def set_ocr_method(self, method: str) -> None:
+        """
+        Set the OCR method to use.
+
+        Args:
+            method: OCR method to use. Either "rapidocr" or "tesseract".
+
+        Raises:
+            ValueError: If the specified method is not supported.
+        """
+        if method == "rapidocr":
+            self.ocr = RapidOCRReader()
+        elif method == "tesseract":
+            self.ocr = tesseract
+        else:
+            raise ValueError(f"Unknown OCR method: {method}")
 
     @keyword
     async def match(
@@ -136,37 +157,78 @@ class VideoInputBase(ABC):
         """
         Read the text from the provided image or grab a screenshot to read
         from.
+
+        :param image: image to read text from
+        :return: text read from the image
         """
         if not image:
             image = await self._grab_screenshot()
 
-        return ocr.read(image)
+        return self.ocr.read(image)
+
+    @keyword
+    async def find_text(
+        self,
+        text: str,
+        region: Region = None,
+        image: Optional[Image.Image] = None,
+    ) -> Awaitable[List[OCRResult]]:
+        """
+        Find the specified text in the provided image or grab a screenshot to
+        search from. The region can be specified directly in the robot file
+        using `RPA.geometry.to_region`
+
+        Args:
+            text: text to search for
+            region: region to search for the text
+            image: image to search from
+
+        Returns:
+            The list of matched text regions where the text was found. Each
+            match is a dictionary with "text", "region", and "confidence".
+        """
+        if not image:
+            image = await self._grab_screenshot()
+        return self.ocr.find(image, text, region=region)
 
     @keyword
     async def match_text(
         self,
         text: str,
+        region: Region = None,
         timeout: int = 10,
-    ):
+    ) -> Awaitable[Region]:
         """
-        Wait for specified text to appear on screen.
+        Wait for specified text to appear on screen and get the position of the
+        best match. The region can be specified directly in the robot file
+        using `RPA.geometry.to_region`
 
         Args:
             text: The text to match on screen
+            region: The region to search for the text
             timeout: Time to wait for the text to appear
+        Returns:
+            The list of matched text regions where the text was found. Each
+            match is a dictionary with "text", "region", and "confidence".
         Raises:
             ValueError: If the specified text isn't found in time
-        Returns:
-            Nothing! Returns if the text is successfully found.
         """
         start_time = time.time()
-        on_screen_text = None
         while time.time() - start_time < timeout:
-            on_screen_text = await self.read_text()
-            if text in on_screen_text:
-                return
+            image = await self._grab_screenshot()
+            # Save the cropped image for debugging
+            cropped_image = image.crop(region.as_tuple()) if region else image
+
+            text_matches = await self.find_text(
+                text, image=image, region=region
+            )
+            if text_matches:
+                return text_matches
+
+        read_text = await self.read_text(cropped_image)
         raise ValueError(
-            f"Timed out looking for '{text}' after '{timeout}' seconds. Text read on screen was {on_screen_text}"
+            f"Timed out looking for '{text}' after '{timeout}' seconds. "
+            f"Text read on screen was:\n{read_text}"
         )
 
     @abstractmethod
