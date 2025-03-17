@@ -10,14 +10,14 @@ jobs:
   build_and_publish_amd64:
     runs-on: [self-hosted, linux, jammy, x64, large]
     steps:
-    - uses: actions/checkout@v4
-    - uses: canonical/action-build@v1
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+    - uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
       id: snapcraft
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
       with:
         name: yarf-amd64
         path: ${{ steps.snapcraft.outputs.snap }}
-    - uses: canonical/action-publish@v1
+    - uses: canonical/action-publish@214b86e5ca036ead1668c79afb81e550e6c54d40
       env:
         SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT }}
       with:
@@ -27,14 +27,14 @@ jobs:
   build_and_publish_arm64:
     runs-on: [self-hosted, linux, jammy, arm64, large]
     steps:
-    - uses: actions/checkout@v4
-    - uses: canonical/action-build@v1
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+    - uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
       id: snapcraft
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
       with:
         name: yarf-arm64
         path: ${{ steps.snapcraft.outputs.snap }}
-    - uses: canonical/action-publish@v1
+    - uses: canonical/action-publish@214b86e5ca036ead1668c79afb81e550e6c54d40
       env:
         SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT }}
       with:
