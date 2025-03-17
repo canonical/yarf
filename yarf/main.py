@@ -218,7 +218,7 @@ def get_yarf_settings(test_suite: TestSuite) -> dict[str, Any]:
     version_tags = set()
     for test in test_suite.all_tests:
         for tag in test.tags:
-            if tag.startswith("{LABEL_PREFIX}version:"):
+            if tag.startswith(f"{LABEL_PREFIX}version:"):
                 version_tags.add(tag)
 
     if version_tags:
