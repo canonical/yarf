@@ -9,6 +9,7 @@ from xml.etree.ElementTree import Element
 from dateutil.parser import parse
 from robot.api import TestSuite
 
+from yarf import LABEL_PREFIX
 from yarf.output import OutputConverterBase
 
 try:
@@ -81,7 +82,7 @@ class TestSubmissionSchema(OutputConverterBase):
                     "category_id",
                 }
                 for tag in test.tags:
-                    if not tag.startswith("yarf:"):
+                    if not tag.startswith(LABEL_PREFIX):
                         continue
 
                     _, tag_name, tag_value = tag.split(":", 2)
@@ -228,7 +229,7 @@ class TestSubmissionSchema(OutputConverterBase):
             status_tag = test.find("status")
             yarf_tags = {}
             for tag in test.findall("tag"):
-                if tag.text.startswith("yarf:"):
+                if tag.text.startswith(LABEL_PREFIX):
                     _, tag_name, tag_value = tag.text.split(":", 2)
                     yarf_tags[tag_name] = tag_value.strip()
 

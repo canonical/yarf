@@ -17,6 +17,7 @@ from robot.api import TestSuite, TestSuiteBuilder
 from robot.errors import Information
 from robot.run import RobotFramework
 
+from yarf import LABEL_PREFIX
 from yarf.output import OUTPUT_FORMATS, get_outdir_path, output_converter
 from yarf.rf_libraries import robot_in_path
 from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS, PlatformBase
@@ -25,7 +26,7 @@ from yarf.rf_libraries.suite_parser import SuiteParser
 _logger = logging.getLogger(__name__)
 YARF_VERSION = version.parse(metadata.version("yarf"))
 VERSION_TAG_RE = re.compile(
-    r"yarf:version: +(?P<operator>[<>=!]+) +(?P<version>[0-9][0-9.]*)"
+    rf"{LABEL_PREFIX}version: +(?P<operator>[<>=!]+) +(?P<version>[0-9][0-9.]*)"
 )
 
 
@@ -217,7 +218,7 @@ def get_yarf_settings(test_suite: TestSuite) -> dict[str, Any]:
     version_tags = set()
     for test in test_suite.all_tests:
         for tag in test.tags:
-            if tag.startswith("yarf:version:"):
+            if tag.startswith("{LABEL_PREFIX}version:"):
                 version_tags.add(tag)
 
     if version_tags:
