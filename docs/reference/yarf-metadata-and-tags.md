@@ -1,4 +1,4 @@
-# YARF  Metadata and Tags
+# YARF Metadata and Tags
 
 In yarf we support the following metadata and tags in addition to the [official ones](https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html#tagging-test-cases).
 
@@ -50,7 +50,7 @@ Depends on the version of YARF that we are using, different task(s) will run:
 
 | YARF Version `x`    | Tasks that will run |
 | ------------------- | ------------------- |
-| `x` \< 1.0.0        | None                |
+| `x` < 1.0.0         | None                |
 | 1.0.0 ≤ `x` ≤ 2.0.0 | `Task 1`            |
 | `x` > 2.0.0         | `Task 1`, `Task 2`  |
 

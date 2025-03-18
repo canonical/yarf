@@ -38,9 +38,9 @@ class HidBase(ABC):
             combo: first key, or a list of keys to press at the same time.
             *keys: remaining keys to press.
         """
-        assert (
-            type(combo) is str or not keys
-        ), "Pass keys as a list, or as argument list, not both"
+        assert type(combo) is str or not keys, (
+            "Pass keys as a list, or as argument list, not both"
+        )
         if type(combo) is str:
             combo = (combo,) + keys
         await self._keys_combo(combo)
@@ -119,9 +119,9 @@ class HidBase(ABC):
         Move the virtual pointer to an absolute position within the output.
         """
 
-        assert isinstance(x, int) and isinstance(
-            y, int
-        ), "Coordinates must be integers"
+        assert isinstance(x, int) and isinstance(y, int), (
+            "Coordinates must be integers"
+        )
 
         display_size = await self._get_display_size()
         assert 0 <= x <= display_size.width, "X coordinate outside of screen"
@@ -144,9 +144,9 @@ class HidBase(ABC):
         maximum `step_distance` at a time, with `delay` seconds in between.
         """
 
-        assert isinstance(x, int) and isinstance(
-            y, int
-        ), "Coordinates must be integers"
+        assert isinstance(x, int) and isinstance(y, int), (
+            "Coordinates must be integers"
+        )
 
         display_size = await self._get_display_size()
         assert 0 <= x <= display_size.width, "X coordinate outside of screen"

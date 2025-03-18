@@ -188,9 +188,9 @@ class Screencopy(WaylandClient):
         Request the next frame.
         """
         self._frame_is_ready = False
-        assert (
-            self._screencopy_manager is not None
-        ), f"{ZwlrScreencopyManagerV1.name} not supported"
+        assert self._screencopy_manager is not None, (
+            f"{ZwlrScreencopyManagerV1.name} not supported"
+        )
         assert self.display is not None, "No display"
         if self._frame is not None:
             self._frame.destroy()

@@ -15,9 +15,9 @@ class Vnc(PlatformBase):
         self.host = os.getenv("VNC_HOST", "localhost")
         self.port = os.getenv("VNC_PORT", "0")
         assert self.port.isnumeric()
-        assert int(self.port) == float(
-            self.port
-        ), f"Invalid port number: {self.port}"
+        assert int(self.port) == float(self.port), (
+            f"Invalid port number: {self.port}"
+        )
         self.port = 5900 + int(self.port)
 
     @staticmethod

@@ -121,9 +121,9 @@ class VirtualKeyboard(WaylandClient):
         """
         Creates the virtual keyboard object.
         """
-        assert (
-            self.keyboard_manager is not None
-        ), "virtual-keyboard extension unavailable"
+        assert self.keyboard_manager is not None, (
+            "virtual-keyboard extension unavailable"
+        )
         self.display.roundtrip()
         self.keyboard = self.keyboard_manager.create_virtual_keyboard(
             self.wl_seats[0]

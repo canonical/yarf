@@ -1,16 +1,40 @@
+yarf/lib/wayland/__init__.py
+    DOC501: Function `get_memfd` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Function `get_memfd` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['AssertionError (implicitly from the `assert` statement)'].
+--------------------
+yarf/lib/wayland/screencopy.py
+    DOC501: Method `Screencopy._frame_buffer` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Method `Screencopy._frame_buffer` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['AssertionError (implicitly from the `assert` statement)'].
+    DOC501: Method `Screencopy._copy_frame` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Method `Screencopy._copy_frame` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['AssertionError (implicitly from the `assert` statement)'].
+    DOC501: Method `Screencopy.grab_screenshot` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Method `Screencopy.grab_screenshot` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['AssertionError (implicitly from the `assert` statement)'].
+--------------------
+yarf/lib/wayland/virtual_keyboard.py
+    DOC501: Method `VirtualKeyboard.connected` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Method `VirtualKeyboard.connected` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['AssertionError (implicitly from the `assert` statement)'].
+    DOC503: Method `VirtualKeyboard.type` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: ['Exception', 'ValueError']. Raised exceptions in the body: ['AssertionError (implicitly from the `assert` statement)', 'Exception', 'ValueError'].
+    DOC503: Method `VirtualKeyboard.key_combo` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: ['ValueError']. Raised exceptions in the body: ['AssertionError (implicitly from the `assert` statement)', 'ValueError'].
+--------------------
 yarf/lib/wayland/virtual_pointer.py
     DOC101: Method `VirtualPointer.registry_global`: Docstring contains fewer arguments than in function signature.
     DOC107: Method `VirtualPointer.registry_global`: The option `--arg-type-hints-in-signature` is `True` but not all args in the signature have type hints
     DOC103: Method `VirtualPointer.registry_global`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [id_num: int, iface_name: str, registry: , version: int].
+    DOC501: Method `VirtualPointer.connected` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Method `VirtualPointer.connected` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['AssertionError (implicitly from the `assert` statement)'].
     DOC101: Method `VirtualPointer.xdg_output_logical_size`: Docstring contains fewer arguments than in function signature.
     DOC107: Method `VirtualPointer.xdg_output_logical_size`: The option `--arg-type-hints-in-signature` is `True` but not all args in the signature have type hints
     DOC103: Method `VirtualPointer.xdg_output_logical_size`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [height: int, width: int, xdg_output: ].
     DOC101: Method `VirtualPointer.move_to_absolute`: Docstring contains fewer arguments than in function signature.
     DOC103: Method `VirtualPointer.move_to_absolute`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [x: int, y: int].
+    DOC501: Method `VirtualPointer.move_to_absolute` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Method `VirtualPointer.move_to_absolute` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['AssertionError (implicitly from the `assert` statement)'].
     DOC101: Method `VirtualPointer.move_to_proportional`: Docstring contains fewer arguments than in function signature.
     DOC103: Method `VirtualPointer.move_to_proportional`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [x: float, y: float].
     DOC101: Method `VirtualPointer.button`: Docstring contains fewer arguments than in function signature.
     DOC103: Method `VirtualPointer.button`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [button: Button, state: bool].
+    DOC501: Method `VirtualPointer.button` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Method `VirtualPointer.button` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['AssertionError (implicitly from the `assert` statement)'].
 --------------------
 yarf/lib/wayland/wayland_client.py
     DOC301: Class `WaylandClient`: __init__() should not have a docstring; please combine it with the docstring of the class
@@ -21,19 +45,19 @@ yarf/lib/wayland/wayland_client.py
     DOC107: Method `WaylandClient.registry_global`: The option `--arg-type-hints-in-signature` is `True` but not all args in the signature have type hints
     DOC103: Method `WaylandClient.registry_global`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [id_num: int, iface_name: str, registry: , version: int].
     DOC201: Method `WaylandClient.connect` does not have a return section in docstring
-    DOC501: Method `WaylandClient.connect` has "raise" statements, but the docstring does not have a "Raises" section
-    DOC503: Method `WaylandClient.connect` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['e'].
+    DOC501: Method `WaylandClient.connect` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Method `WaylandClient.connect` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['Exception'].
 --------------------
 yarf/main.py
-    DOC501: Function `main` has "raise" statements, but the docstring does not have a "Raises" section
-    DOC503: Function `main` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['FileNotFoundError'].
+    DOC501: Function `main` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Function `main` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['FileNotFoundError'].
 --------------------
 yarf/rf_libraries/__init__.py
     DOC101: Function `robot_in_path`: Docstring contains fewer arguments than in function signature.
     DOC103: Function `robot_in_path`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [lib_path: str].
     DOC402: Function `robot_in_path` has "yield" statements, but the docstring does not have a "Yields" section
-    DOC501: Function `robot_in_path` has "raise" statements, but the docstring does not have a "Raises" section
-    DOC503: Function `robot_in_path` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['ValueError'].
+    DOC501: Function `robot_in_path` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Function `robot_in_path` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['ValueError'].
 --------------------
 yarf/rf_libraries/libraries/__init__.py
     DOC101: Method `PlatformMeta.__new__`: Docstring contains fewer arguments than in function signature.
@@ -42,12 +66,14 @@ yarf/rf_libraries/libraries/__init__.py
     DOC103: Method `PlatformMeta.__new__`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [**kwargs: , bases: , name: , namespace: ].
     DOC201: Method `PlatformMeta.__new__` does not have a return section in docstring
     DOC201: Method `PlatformBase.get_pkg_path` does not have a return section in docstring
-    DOC501: Method `PlatformBase.get_pkg_path` has "raise" statements, but the docstring does not have a "Raises" section
-    DOC503: Method `PlatformBase.get_pkg_path` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['NotImplementedError'].
+    DOC501: Method `PlatformBase.get_pkg_path` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Method `PlatformBase.get_pkg_path` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['NotImplementedError'].
 --------------------
 yarf/rf_libraries/libraries/hid_base.py
     DOC601: Class `HidBase`: Class docstring contains fewer class attributes than actual class attributes.  (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
     DOC603: Class `HidBase`: Class docstring attributes are different from actual class attributes. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Attributes in the class definition but not in the docstring: [ROBOT_LIBRARY_SCOPE: ]. (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
+    DOC501: Method `HidBase.keys_combo` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Method `HidBase.keys_combo` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['AssertionError (implicitly from the `assert` statement)'].
     DOC101: Method `HidBase.type_string`: Docstring contains fewer arguments than in function signature.
     DOC103: Method `HidBase.type_string`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [string: str].
     DOC101: Method `HidBase.press_pointer_button`: Docstring contains fewer arguments than in function signature.
@@ -61,12 +87,20 @@ yarf/rf_libraries/libraries/hid_base.py
     DOC103: Method `HidBase._move_pointer`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [x: float, y: float].
     DOC101: Method `HidBase.move_pointer_to_proportional`: Docstring contains fewer arguments than in function signature.
     DOC103: Method `HidBase.move_pointer_to_proportional`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [x: float, y: float].
+    DOC501: Method `HidBase.move_pointer_to_proportional` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Method `HidBase.move_pointer_to_proportional` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['AssertionError (implicitly from the `assert` statement)'].
     DOC101: Method `HidBase.move_pointer_to_absolute`: Docstring contains fewer arguments than in function signature.
     DOC103: Method `HidBase.move_pointer_to_absolute`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [x: int, y: int].
+    DOC501: Method `HidBase.move_pointer_to_absolute` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Method `HidBase.move_pointer_to_absolute` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['AssertionError (implicitly from the `assert` statement)'].
     DOC101: Method `HidBase.walk_pointer_to_absolute`: Docstring contains fewer arguments than in function signature.
     DOC103: Method `HidBase.walk_pointer_to_absolute`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [delay: float, step_distance: float, x: int, y: int].
+    DOC501: Method `HidBase.walk_pointer_to_absolute` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Method `HidBase.walk_pointer_to_absolute` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['AssertionError (implicitly from the `assert` statement)'].
     DOC101: Method `HidBase.walk_pointer_to_proportional`: Docstring contains fewer arguments than in function signature.
     DOC103: Method `HidBase.walk_pointer_to_proportional`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [delay: float, step_distance: float, x: float, y: float].
+    DOC501: Method `HidBase.walk_pointer_to_proportional` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Method `HidBase.walk_pointer_to_proportional` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['AssertionError (implicitly from the `assert` statement)'].
 --------------------
 yarf/rf_libraries/libraries/mir/Hid.py
     DOC601: Class `Hid`: Class docstring contains fewer class attributes than actual class attributes.  (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
@@ -92,13 +126,21 @@ yarf/rf_libraries/libraries/video_input_base.py
     DOC101: Method `VideoInputBase._do_match`: Docstring contains fewer arguments than in function signature.
     DOC103: Method `VideoInputBase._do_match`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [accept_any: bool, templates: Sequence[str], timeout: int].
     DOC201: Method `VideoInputBase._do_match` does not have a return section in docstring
-    DOC501: Method `VideoInputBase._do_match` has "raise" statements, but the docstring does not have a "Raises" section
-    DOC503: Method `VideoInputBase._do_match` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['ImageNotFoundError'].
+    DOC501: Method `VideoInputBase._do_match` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Method `VideoInputBase._do_match` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['ImageNotFoundError'].
     DOC101: Method `VideoInputBase._to_base64`: Docstring contains fewer arguments than in function signature.
     DOC103: Method `VideoInputBase._to_base64`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [image: Image.Image].
     DOC201: Method `VideoInputBase._to_base64` does not have a return section in docstring
     DOC101: Method `VideoInputBase._log_failed_match`: Docstring contains fewer arguments than in function signature.
     DOC103: Method `VideoInputBase._log_failed_match`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [screenshot: Image.Image, template: str].
+--------------------
+yarf/rf_libraries/libraries/vnc/Hid.py
+    DOC501: Method `Hid._move_pointer` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Method `Hid._move_pointer` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['AssertionError (implicitly from the `assert` statement)'].
+--------------------
+yarf/rf_libraries/libraries/vnc/__init__.py
+    DOC501: Method `Vnc.__init__` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Method `Vnc.__init__` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['AssertionError (implicitly from the `assert` statement)'].
 --------------------
 yarf/rf_libraries/libraries/Example/Hid.py
     DOC301: Class `Hid`: __init__() should not have a docstring; please combine it with the docstring of the class
@@ -122,15 +164,15 @@ yarf/rf_libraries/libraries/Example/VideoInput.py
     DOC201: Method `VideoSource.grab_screenshot` does not have a return section in docstring
     DOC201: Method `HdmiIn.grab_screenshot` does not have a return section in docstring
     DOC301: Class `UsbCam`: __init__() should not have a docstring; please combine it with the docstring of the class
-    DOC501: Method `UsbCam.__init__` has "raise" statements, but the docstring does not have a "Raises" section
-    DOC503: Method `UsbCam.__init__` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['NotImplementedError'].
-    DOC501: Method `UsbCam.start_video_input` has "raise" statements, but the docstring does not have a "Raises" section
-    DOC503: Method `UsbCam.start_video_input` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['NotImplementedError'].
-    DOC501: Method `UsbCam.stop_video_input` has "raise" statements, but the docstring does not have a "Raises" section
-    DOC503: Method `UsbCam.stop_video_input` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['NotImplementedError'].
+    DOC501: Method `UsbCam.__init__` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Method `UsbCam.__init__` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['NotImplementedError'].
+    DOC501: Method `UsbCam.start_video_input` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Method `UsbCam.start_video_input` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['NotImplementedError'].
+    DOC501: Method `UsbCam.stop_video_input` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Method `UsbCam.stop_video_input` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['NotImplementedError'].
     DOC201: Method `UsbCam.grab_screenshot` does not have a return section in docstring
-    DOC501: Method `UsbCam.grab_screenshot` has "raise" statements, but the docstring does not have a "Raises" section
-    DOC503: Method `UsbCam.grab_screenshot` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['NotImplementedError'].
+    DOC501: Method `UsbCam.grab_screenshot` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Method `UsbCam.grab_screenshot` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['NotImplementedError'].
 --------------------
 yarf/rf_libraries/libraries/Example/__init__.py
     DOC601: Class `Example`: Class docstring contains fewer class attributes than actual class attributes.  (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
@@ -140,8 +182,8 @@ yarf/rf_libraries/libraries/Example/__init__.py
     DOC402: Function `Example_api` has "yield" statements, but the docstring does not have a "Yields" section
 --------------------
 yarf/rf_libraries/suite_parser.py
-    DOC501: Method `SuiteParser.read_suite` has "raise" statements, but the docstring does not have a "Raises" section
-    DOC503: Method `SuiteParser.read_suite` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['ValueError'].
+    DOC501: Method `SuiteParser.read_suite` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Method `SuiteParser.read_suite` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['ValueError'].
     DOC101: Method `SuiteParser.suite_in_temp_folder`: Docstring contains fewer arguments than in function signature.
     DOC103: Method `SuiteParser.suite_in_temp_folder`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [variant: str].
     DOC402: Method `SuiteParser.suite_in_temp_folder` has "yield" statements, but the docstring does not have a "Yields" section
