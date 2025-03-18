@@ -6,16 +6,16 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 from robot.api import TestSuite
 
-OUTPUT_FORMATS: dict[str, "OutputConverterBase"] = {}
+OUTPUT_FORMATS: dict[str, "type[OutputConverterBase]"] = {}
 
 _logger = logging.getLogger(__name__)
 
 
-def get_outdir_path(outdir: str = None) -> Path:
+def get_outdir_path(outdir: Optional[str] = None) -> Path:
     """
     Get corresponding output directory base on outdir and the environment.
 
@@ -31,7 +31,7 @@ def get_outdir_path(outdir: str = None) -> Path:
     else:
         yarf_outdir = (
             Path(
-                os.environ.get("SNAP_USER_COMMON")
+                os.environ["SNAP_USER_COMMON"]
                 if "SNAP" in os.environ
                 else tempfile.gettempdir()
             )
@@ -64,7 +64,7 @@ def output_converter(func: Callable) -> Callable:
         and formatting before running the test suite.
     """
 
-    def wrapper(*args: Any, **kwargs: dict[Any, Any]) -> Any:
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         """
         The function that wraps the target robot suite executing function
         around. Prior to the target function calling, this function will select
@@ -85,7 +85,7 @@ def output_converter(func: Callable) -> Callable:
         Raises:
             ValueError: If the output format is not supported.
         """
-        if (output_format := kwargs.get("output_format", None)) is None:
+        if (output_format := kwargs.get("output_format")) is None:
             return func(*args, **kwargs)
 
         try:

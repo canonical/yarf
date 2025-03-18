@@ -1,4 +1,5 @@
 from enum import IntEnum
+from typing import Sequence
 
 from asyncvnc import connect
 from robot.api.deco import keyword, library
@@ -18,16 +19,7 @@ class Hid(HidBase):
     """
     Provides robot interface for HID interactions with a VM with a running VNC
     server.
-
-    Attributes:
-        vnc (Vnc): vnc data class
-        curr_x (int): mouse cursor x position (absolute)
-        curr_y (int): mouse cursor y position (absolute)
     """
-
-    vnc = None
-    curr_x = None
-    curr_y = None
 
     def __init__(self):
         super().__init__()
@@ -35,7 +27,7 @@ class Hid(HidBase):
         self.curr_x = 0
         self.curr_y = 0
 
-    async def _keys_combo(self, combo: list[str]):
+    async def _keys_combo(self, combo: Sequence[str]):
         """
         Press and release a combination of keys at the same time.
 

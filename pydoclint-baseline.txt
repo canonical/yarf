@@ -52,6 +52,10 @@ yarf/main.py
     DOC501: Function `main` has raise/assert statements, but the docstring does not have a "Raises" section
     DOC503: Function `main` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['FileNotFoundError'].
 --------------------
+yarf/output/test_submission_schema.py
+    DOC501: Method `TestSubmissionSchema.get_tests_results_from_suite` has raise/assert statements, but the docstring does not have a "Raises" section
+    DOC503: Method `TestSubmissionSchema.get_tests_results_from_suite` exceptions in the "Raises" section in the docstring do not match those in the function body. Raised exceptions in the docstring: []. Raised exceptions in the body: ['AssertionError (implicitly from the `assert` statement)'].
+--------------------
 yarf/rf_libraries/__init__.py
     DOC101: Function `robot_in_path`: Docstring contains fewer arguments than in function signature.
     DOC103: Function `robot_in_path`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [lib_path: str].
@@ -82,6 +86,9 @@ yarf/rf_libraries/libraries/hid_base.py
     DOC103: Method `HidBase.release_pointer_button`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [button: str].
     DOC101: Method `HidBase.click_pointer_button`: Docstring contains fewer arguments than in function signature.
     DOC103: Method `HidBase.click_pointer_button`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [button: str].
+    DOC101: Method `HidBase._keys_combo`: Docstring contains fewer arguments than in function signature.
+    DOC103: Method `HidBase._keys_combo`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [combo: Sequence[str]].
+    DOC201: Method `HidBase._keys_combo` does not have a return section in docstring
     DOC201: Method `HidBase._get_display_size` does not have a return section in docstring
     DOC101: Method `HidBase._move_pointer`: Docstring contains fewer arguments than in function signature.
     DOC103: Method `HidBase._move_pointer`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [x: float, y: float].

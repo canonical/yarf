@@ -13,7 +13,7 @@ import time
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from io import BytesIO
-from typing import Awaitable, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
 from PIL import Image
 from robot.api import logger
@@ -27,7 +27,7 @@ from RPA.recognition.templates import ImageNotFoundError
 from yarf import LABEL_PREFIX
 from yarf.rf_libraries.libraries.ocr.rapidocr import OCRResult, RapidOCRReader
 
-DISPLAY_PATTERN = "((?P<id>[\w-]+)\:)?(?P<resolution>\d+x\d+)(\s+|$)"
+DISPLAY_PATTERN = r"((?P<id>[\w-]+)\:)?(?P<resolution>\d+x\d+)(\s+|$)"
 DISPLAY_RE = re.compile(rf"{DISPLAY_PATTERN}")
 DISPLAYS_RE = re.compile(rf"^({DISPLAY_PATTERN})+$")
 
@@ -105,9 +105,7 @@ class VideoInputBase(ABC):
             raise ValueError(f"Unknown OCR method: {method}")
 
     @keyword
-    async def match(
-        self, template: str, timeout: int = 10
-    ) -> Awaitable[List[Region]]:
+    async def match(self, template: str, timeout: int = 10) -> List[Region]:
         """
         Grab screenshots and compare until there's a match with the provided
         template or timeout.
@@ -123,7 +121,7 @@ class VideoInputBase(ABC):
     @keyword
     async def match_all(
         self, templates: Sequence[str], timeout: int = 10
-    ) -> Awaitable[List[Region]]:
+    ) -> List[Region]:
         """
         Grab screenshots and compare with the provided templates until a frame
         is found which matches all templates simultaneously or timeout.
@@ -142,7 +140,7 @@ class VideoInputBase(ABC):
     @keyword
     async def match_any(
         self, templates: Sequence[str], timeout: int = 10
-    ) -> Awaitable[List[Region]]:
+    ) -> List[Region]:
         """
         Grab screenshots and compare with the provided templates until there's
         at least one match or timeout.
@@ -162,7 +160,7 @@ class VideoInputBase(ABC):
     async def read_text(
         self,
         image: Optional[Image.Image] = None,
-    ) -> Awaitable[str]:
+    ) -> str:
         """
         Read the text from the provided image or grab a screenshot to read
         from.
@@ -181,7 +179,7 @@ class VideoInputBase(ABC):
         text: str,
         region: Region = None,
         image: Optional[Image.Image] = None,
-    ) -> Awaitable[List[OCRResult]]:
+    ) -> List[OCRResult]:
         """
         Find the specified text in the provided image or grab a screenshot to
         search from. The region can be specified directly in the robot file
@@ -206,7 +204,7 @@ class VideoInputBase(ABC):
         text: str,
         timeout: int = 10,
         region: Region | tuple[int] | None = None,
-    ) -> Awaitable[Region]:
+    ) -> Region:
         """
         Wait for specified text to appear on screen and get the position of the
         best match. The region can be specified directly in the robot file
@@ -271,7 +269,7 @@ class VideoInputBase(ABC):
 
     async def _do_match(
         self, templates: Sequence[str], accept_any: bool, timeout: int = 10
-    ) -> Awaitable[List[Region]]:
+    ) -> List[Region]:
         """
         Platform-specific implementation of :meth:`match_all` and
         :meth:`match_any`.
@@ -407,18 +405,18 @@ class VideoInputBase(ABC):
         asyncio.get_event_loop().run_until_complete(self.stop_video_input())
 
     @staticmethod
-    def get_displays() -> dict[str, str]:
+    def get_displays() -> OrderedDict[str | int, str]:
         """
         This functions parse the displays metadata and returns a dictionary of
         display names and their respective resolutions.
 
         Returns:
-            Dictionary of display names and their respective resolutions
+            Dictionary of display indices or names and their respective resolutions
 
         Raises:
             ValueError: if the displays metadata is not in the expected format
         """
-        displays = OrderedDict()
+        displays: OrderedDict[str | int, str] = OrderedDict()
         if (
             display_res := BuiltIn().get_variable_value("${displays}")
         ) is None:
@@ -428,7 +426,7 @@ class VideoInputBase(ABC):
             for idx, m in enumerate(DISPLAY_RE.finditer(display_res)):
                 pair = m.groupdict()
                 id = pair.get("id")
-                displays[id or idx] = pair.get("resolution")
+                displays[id or idx] = pair["resolution"]
 
         else:
             raise ValueError(

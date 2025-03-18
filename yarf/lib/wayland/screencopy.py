@@ -158,6 +158,9 @@ class Screencopy(WaylandClient):
                 0, width, height, stride, format
             )
             shm_pool.destroy()
+        assert self._frame is not None, (
+            "Frame not copied before buffer submitted"
+        )
         self._frame.copy(self._buffer)
         self.display.flush()
 
@@ -201,7 +204,7 @@ class Screencopy(WaylandClient):
         frame.dispatcher["ready"] = self._frame_ready
         self.display.roundtrip()
 
-    async def grab_screenshot(self) -> Image:
+    async def grab_screenshot(self) -> Image.Image:
         """
         Returns:
             The PIL.Image of the next frame
@@ -214,6 +217,7 @@ class Screencopy(WaylandClient):
         assert self._shm_data is not None, "No SHM data available"
         self._shm_data.seek(0)
         data = self._shm_data.read()
+        assert self._buffer_data is not None, "Buffer not initialized"
         size = (self._buffer_data.width, self._buffer_data.height)
         assert all(dim > 0 for dim in size), "Not enough image data"
         stride = self._buffer_data.stride

@@ -1,6 +1,6 @@
 import asyncio
 import os
-from typing import Any
+from typing import Any, Sequence
 
 from robot.api.deco import keyword, library
 
@@ -40,7 +40,7 @@ class Hid(HidBase):
         if not self._connected:
             asyncio.get_event_loop().run_until_complete(self._connect())
 
-    async def _keys_combo(self, combo: list[str]):
+    async def _keys_combo(self, combo: Sequence[str]):
         """
         Press and release a combination of keys.
 

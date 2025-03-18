@@ -89,7 +89,13 @@ class HidBase(ABC):
         """
 
     @abstractmethod
-    async def _get_display_size() -> Size:
+    async def _keys_combo(self, combo: Sequence[str]) -> Size:
+        """
+        Return the size of the screen in platform coordinates.
+        """
+
+    @abstractmethod
+    async def _get_display_size(self) -> Size:
         """
         Return the size of the screen in platform coordinates.
         """

@@ -2,7 +2,7 @@ import abc
 import importlib
 import pathlib
 
-SUPPORTED_PLATFORMS = {}
+SUPPORTED_PLATFORMS: dict[str, type] = {}
 
 
 class PlatformMeta(abc.ABCMeta):

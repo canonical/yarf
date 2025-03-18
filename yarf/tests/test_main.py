@@ -55,21 +55,19 @@ class TestMain:
         assert compare_version(version_tag) == expected
 
     @pytest.mark.parametrize(
-        "version_tag,error_type",
+        "version_tag",
         [
-            ("yarf:version: >= INV.INV.INV", ValueError),
-            ("yarf:versi@n: >= 0.0.0", ValueError),
-            ("yarf:version: !< 0.0.0", TypeError),
+            ("yarf:version: >= INV.INV.INV"),
+            ("yarf:versi@n: >= 0.0.0"),
+            ("yarf:version: !< 0.0.0"),
         ],
     )
-    def test_compare_version_invalid(
-        self, version_tag: str, error_type: Exception
-    ) -> None:
+    def test_compare_version_invalid(self, version_tag: str) -> None:
         """
         Test whether the function "compare_version" raises errors when received
         invalid inputs.
         """
-        with pytest.raises(error_type):
+        with pytest.raises(ValueError):
             compare_version(version_tag)
 
     def test_parse_arguments(self) -> None:
