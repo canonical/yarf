@@ -48,8 +48,6 @@ yarf/rf_libraries/libraries/__init__.py
 yarf/rf_libraries/libraries/hid_base.py
     DOC601: Class `HidBase`: Class docstring contains fewer class attributes than actual class attributes.  (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
     DOC603: Class `HidBase`: Class docstring attributes are different from actual class attributes. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Attributes in the class definition but not in the docstring: [ROBOT_LIBRARY_SCOPE: ]. (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
-    DOC101: Method `HidBase.keys_combo`: Docstring contains fewer arguments than in function signature.
-    DOC103: Method `HidBase.keys_combo`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [combo: list[str]].
     DOC101: Method `HidBase.type_string`: Docstring contains fewer arguments than in function signature.
     DOC103: Method `HidBase.type_string`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [string: str].
     DOC101: Method `HidBase.press_pointer_button`: Docstring contains fewer arguments than in function signature.
@@ -78,9 +76,6 @@ yarf/rf_libraries/libraries/video_input_base.py
     DOC601: Class `VideoInputBase`: Class docstring contains fewer class attributes than actual class attributes.  (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
     DOC603: Class `VideoInputBase`: Class docstring attributes are different from actual class attributes. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Attributes in the class definition but not in the docstring: [ROBOT_LIBRARY_SCOPE: , ROBOT_LISTENER_API_VERSION: , TOLERANCE: ]. (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
     DOC301: Class `VideoInputBase`: __init__() should not have a docstring; please combine it with the docstring of the class
-    DOC101: Method `VideoInputBase.init`: Docstring contains fewer arguments than in function signature.
-    DOC106: Method `VideoInputBase.init`: The option `--arg-type-hints-in-signature` is `True` but there are no argument type hints in the signature
-    DOC103: Method `VideoInputBase.init`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [**kwargs: , *args: ].
     DOC101: Method `VideoInputBase.match`: Docstring contains fewer arguments than in function signature.
     DOC103: Method `VideoInputBase.match`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [template: str, timeout: int].
     DOC201: Method `VideoInputBase.match` does not have a return section in docstring
@@ -107,8 +102,6 @@ yarf/rf_libraries/libraries/video_input_base.py
 --------------------
 yarf/rf_libraries/libraries/Example/Hid.py
     DOC301: Class `Hid`: __init__() should not have a docstring; please combine it with the docstring of the class
-    DOC101: Method `Hid.keys_combo`: Docstring contains fewer arguments than in function signature.
-    DOC103: Method `Hid.keys_combo`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [combo: list[str]].
     DOC101: Method `Hid.type_string`: Docstring contains fewer arguments than in function signature.
     DOC103: Method `Hid.type_string`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [string: str].
     DOC101: Method `Hid.press_pointer_button`: Docstring contains fewer arguments than in function signature.
@@ -127,12 +120,7 @@ yarf/rf_libraries/libraries/Example/VideoInput.py
     DOC601: Class `Source`: Class docstring contains fewer class attributes than actual class attributes.  (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
     DOC603: Class `Source`: Class docstring attributes are different from actual class attributes. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Attributes in the class definition but not in the docstring: [CAMERA: , HDMI: ]. (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
     DOC201: Method `VideoSource.grab_screenshot` does not have a return section in docstring
-    DOC601: Class `HdmiIn`: Class docstring contains fewer class attributes than actual class attributes.  (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
-    DOC603: Class `HdmiIn`: Class docstring attributes are different from actual class attributes. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Attributes in the class definition but not in the docstring: [RESOLUTION: , STREAM_FPS: , STREAM_QUALITY: , USTREAMER_PORT: , USTREAMER_SNAPSHOT: ]. (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
-    DOC301: Class `HdmiIn`: __init__() should not have a docstring; please combine it with the docstring of the class
     DOC201: Method `HdmiIn.grab_screenshot` does not have a return section in docstring
-    DOC501: Method `HdmiIn.grab_screenshot` has "raise" statements, but the docstring does not have a "Raises" section
-    DOC503: Method `HdmiIn.grab_screenshot` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['RuntimeError'].
     DOC301: Class `UsbCam`: __init__() should not have a docstring; please combine it with the docstring of the class
     DOC501: Method `UsbCam.__init__` has "raise" statements, but the docstring does not have a "Raises" section
     DOC503: Method `UsbCam.__init__` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['NotImplementedError'].
@@ -143,10 +131,6 @@ yarf/rf_libraries/libraries/Example/VideoInput.py
     DOC201: Method `UsbCam.grab_screenshot` does not have a return section in docstring
     DOC501: Method `UsbCam.grab_screenshot` has "raise" statements, but the docstring does not have a "Raises" section
     DOC503: Method `UsbCam.grab_screenshot` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['NotImplementedError'].
-    DOC101: Method `VideoInput.init`: Docstring contains fewer arguments than in function signature.
-    DOC103: Method `VideoInput.init`: Docstring arguments are different from function arguments. (Or could be other formatting issues: https://jsh9.github.io/pydoclint/violation_codes.html#notes-on-doc103 ). Arguments in the function signature but not in the docstring: [source_name: str].
-    DOC501: Method `VideoInput.init` has "raise" statements, but the docstring does not have a "Raises" section
-    DOC503: Method `VideoInput.init` exceptions in the "Raises" section in the docstring do not match those in the function body Raises values in the docstring: []. Raised exceptions in the body: ['SystemExit'].
 --------------------
 yarf/rf_libraries/libraries/Example/__init__.py
     DOC601: Class `Example`: Class docstring contains fewer class attributes than actual class attributes.  (Please read https://jsh9.github.io/pydoclint/checking_class_attributes.html on how to correctly document class attributes.)
