@@ -6,22 +6,30 @@ assertion.
 import asyncio
 import base64
 import os
+import re
 import subprocess
 import tempfile
 import time
 from abc import ABC, abstractmethod
+from collections import OrderedDict
 from io import BytesIO
 from typing import Awaitable, List, Optional, Sequence
 
 from PIL import Image
 from robot.api import logger
 from robot.api.deco import keyword
+from robot.libraries.BuiltIn import BuiltIn
 from RPA.core.geometry import to_region
 from RPA.Images import Images, Region, to_image
 from RPA.recognition import ocr as tesseract
 from RPA.recognition.templates import ImageNotFoundError
 
+from yarf import LABEL_PREFIX
 from yarf.rf_libraries.libraries.ocr.rapidocr import OCRResult, RapidOCRReader
+
+DISPLAY_PATTERN = "((?P<id>[\w-]+)\:)?(?P<resolution>\d+x\d+)(\s+|$)"
+DISPLAY_RE = re.compile(rf"{DISPLAY_PATTERN}")
+DISPLAYS_RE = re.compile(rf"^({DISPLAY_PATTERN})+$")
 
 
 class VideoInputBase(ABC):
@@ -397,3 +405,34 @@ class VideoInputBase(ABC):
         Listener method called when the library goes out of scope.
         """
         asyncio.get_event_loop().run_until_complete(self.stop_video_input())
+
+    @staticmethod
+    def get_displays() -> dict[str, str]:
+        """
+        This functions parse the displays metadata and returns a dictionary of
+        display names and their respective resolutions.
+
+        Returns:
+            Dictionary of display names and their respective resolutions
+
+        Raises:
+            ValueError: if the displays metadata is not in the expected format
+        """
+        displays = OrderedDict()
+        if (
+            display_res := BuiltIn().get_variable_value("${displays}")
+        ) is None:
+            return displays
+
+        if DISPLAYS_RE.match(display_res):
+            for idx, m in enumerate(DISPLAY_RE.finditer(display_res)):
+                pair = m.groupdict()
+                id = pair.get("id")
+                displays[id or idx] = pair.get("resolution")
+
+        else:
+            raise ValueError(
+                f"Invalid {LABEL_PREFIX}displays provided: {display_res}"
+            )
+
+        return displays

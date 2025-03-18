@@ -295,6 +295,7 @@ class TestMain:
         additional_reserved_settings = get_robot_reserved_settings(test_suite)
         assert additional_reserved_settings["exitonerror"]
 
+    @patch("yarf.main.MetadataListener")
     @patch("yarf.main.get_robot_reserved_settings")
     @patch("yarf.main.get_yarf_settings")
     @patch("yarf.main.rebot")
@@ -303,6 +304,7 @@ class TestMain:
         mock_rebot: MagicMock,
         mock_get_yarf_settings: MagicMock,
         mock_get_robot_reserved_settings: MagicMock,
+        mock_metadata_listener: MagicMock,
     ) -> None:
         """
         Test if the function runs the robot suite with the specified variables
@@ -330,6 +332,7 @@ class TestMain:
         mock_test_suite.run.assert_called_once_with(
             variable=["VAR1:value1", "VAR2:value2", "VAR3:value3"],
             outputdir=outdir,
+            listener=mock_metadata_listener(),
             extra_arg="extra_value",
         )
         mock_rebot.assert_called_once_with(

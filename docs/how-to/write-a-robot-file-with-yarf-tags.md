@@ -1,7 +1,38 @@
 # Write a Robot File with YARF Tags
 
-This guide will show how to write a robot file with yarf tags.
+This guide will show how to write a robot file with yarf metadata and tags.
 For details of how to write a general test robot file please visit the [Robot Framework official documentation](https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html#test-data-sections)
+
+For details of the metadata and tags we supported in YARF, please visit [here](../reference/yarf-metadata-and-tags.md).
+
+## Adding YARF metadata to a robot suite
+
+To add YARF metadata to a robot suite, we will create a `__init__.robot` file under the suite directory:
+
+```{code-block} bash
+suite
+├── __init__.robot
+├── test.robot
+├── a1.png
+├── sub
+│   └── a2.png
+└── variants
+    └── var
+        ├── a1.png
+        └── sub
+            └── a2.png
+```
+
+<u><center>Code Snippet: An example of a test suite file structure with an `__init__.robot` file</center></u>
+
+In the `__init__.robot` file, we will then specify the metadata under the `*** Settings ***` section. For example:
+
+```{code-block} text
+*** Settings ***
+Metadata       metadata_nameA       metadata_valueA
+```
+
+<u><center>Code Snippet: An example of an `__init__.robot` file with a Metadata specified</center></u>
 
 ## Adding a YARF tag to a robot file
 
@@ -45,5 +76,3 @@ Task 2
 ```
 
 <u><center>Code Snippet: An example of a test robot file using the tag `yarf:version: <operator> X.Y`</center></u>
-
-For details of the tags we supported in YARF, please visit [here](../reference/yarf-tags.md).

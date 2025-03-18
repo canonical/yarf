@@ -21,6 +21,7 @@ from yarf import LABEL_PREFIX
 from yarf.output import OUTPUT_FORMATS, get_outdir_path, output_converter
 from yarf.rf_libraries import robot_in_path
 from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS, PlatformBase
+from yarf.rf_libraries.libraries.metadata_listener import MetadataListener
 from yarf.rf_libraries.suite_parser import SuiteParser
 
 _logger = logging.getLogger(__name__)
@@ -288,7 +289,12 @@ def run_robot_suite(
         variables.extend(options.pop("variable"))
 
     with robot_in_path(lib_cls.get_pkg_path()):
-        result = suite.run(variable=variables, outputdir=outdir, **options)
+        result = suite.run(
+            variable=variables,
+            outputdir=outdir,
+            listener=MetadataListener(),
+            **options,
+        )
 
     # Generate HTML report.html and log.html using rebot().
     rebot(f"{outdir}/output.xml", outputdir=outdir)

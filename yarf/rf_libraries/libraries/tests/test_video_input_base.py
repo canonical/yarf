@@ -479,3 +479,77 @@ class TestVideoInputBase:
             mock_loop().run_until_complete.assert_called_once_with(
                 m.return_value
             )
+
+    @pytest.mark.parametrize(
+        "displays,expected",
+        [
+            (
+                "Screen1:1920x1080",
+                {"Screen1": "1920x1080"},
+            ),
+            (
+                "Screen1:1920x1080 Screen2:1280x1080 Screen3:800x600",
+                {
+                    "Screen1": "1920x1080",
+                    "Screen2": "1280x1080",
+                    "Screen3": "800x600",
+                },
+            ),
+            (
+                "1920x1080 1280x1080 800x600",
+                {
+                    0: "1920x1080",
+                    1: "1280x1080",
+                    2: "800x600",
+                },
+            ),
+            (
+                "Screen1:1920x1080 1280x1080 Screen3:800x600",
+                {
+                    "Screen1": "1920x1080",
+                    1: "1280x1080",
+                    "Screen3": "800x600",
+                },
+            ),
+            (
+                None,
+                {},
+            ),
+        ],
+    )
+    def test_get_displays(
+        self, displays: dict[str, str], expected: dict[str, str]
+    ) -> None:
+        """
+        Test if the function returns the correct display resolution object
+        depending on the environment variable DISPLAY_RESOLUTIONS.
+        """
+
+        with patch(
+            "yarf.rf_libraries.libraries.video_input_base.BuiltIn.get_variable_value"
+        ) as mock_get_variable_value:
+            mock_get_variable_value.return_value = displays
+            display_resolutions = VideoInputBase.get_displays()
+
+        assert display_resolutions == expected
+
+    @pytest.mark.parametrize(
+        "display",
+        [
+            "Screen1!1920x1080",
+            "Screen1:1920z1080",
+        ],
+    )
+    def test_get_displays_value_error(self, display: str) -> None:
+        """
+        Test if the function raises a ValueError when the display resolutions
+        contain invalid entries.
+        """
+
+        with patch(
+            "yarf.rf_libraries.libraries.video_input_base.BuiltIn.get_variable_value"
+        ) as mock_get_variable_value:
+            mock_get_variable_value.return_value = display
+
+            with pytest.raises(ValueError):
+                VideoInputBase.get_displays()

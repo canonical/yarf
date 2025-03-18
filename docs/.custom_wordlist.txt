@@ -21,3 +21,4 @@ HEXR
 Ocr
 rapidocr
 tesseract
+Awaitable
