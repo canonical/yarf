@@ -318,13 +318,14 @@ class TestMain:
         mock_test_suite.run.return_value.return_code = 0
         mock_get_yarf_settings.return_value = {}
         mock_get_robot_reserved_settings.return_value = {}
-        run_robot_suite(
+        rc = run_robot_suite(
             mock_test_suite,
             SUPPORTED_PLATFORMS["Example"],
             variables,
             outdir,
             options,
         )
+        assert rc == 0
         mock_get_yarf_settings.assert_called_once()
         mock_test_suite.run.assert_called_once_with(
             variable=["VAR1:value1", "VAR2:value2", "VAR3:value3"],
@@ -361,13 +362,14 @@ class TestMain:
         mock_test_suite.run.return_value.return_code = 1
         mock_test_suite.run.return_value.errors.messages = [Mock()]
         with patch("yarf.main.robot_in_path"):
-            run_robot_suite(
+            rc = run_robot_suite(
                 mock_test_suite,
                 SUPPORTED_PLATFORMS["Example"],
                 variables,
                 outdir,
                 {},
             )
+            assert rc == 1
         mock_logger.error.assert_called()
 
     @mock.patch.dict(os.environ, {"RFDEBUG_HISTORY": "/testoutdir"})
@@ -420,10 +422,12 @@ class TestMain:
         SUPPORTED_PLATFORMS["Example"] = Example
 
         main.run_robot_suite = Mock()
+        main.run_robot_suite.return_value = 0
         main.get_outdir_path = Mock(return_value=outdir)
         argv = [test_path]
-        main.main(argv)
-
+        with pytest.raises(SystemExit) as cm:
+            main.main(argv)
+        assert cm.value.code == 0
         mock_test_suite.assert_called_once()
         main.run_robot_suite.assert_called_once_with(
             suite=mock_test_suite(),
@@ -453,9 +457,12 @@ class TestMain:
         SUPPORTED_PLATFORMS["Example"] = Example
 
         main.run_robot_suite = Mock()
+        main.run_robot_suite.return_value = 0
         main.get_outdir_path = Mock(return_value=Path(outdir))
         argv = [test_path, "--outdir", outdir]
-        main.main(argv)
+        with pytest.raises(SystemExit) as cm:
+            main.main(argv)
+        assert cm.value.code == 0
 
         mock_test_suite.assert_called_once()
         main.run_robot_suite.assert_called_once_with(

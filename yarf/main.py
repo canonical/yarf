@@ -264,7 +264,7 @@ def run_robot_suite(
     outdir: Path,
     cli_options: dict[str, Any],
     **kwargs,
-) -> None:
+) -> int:
     """
     Run a robot test suite in the given suite path.
 
@@ -276,6 +276,8 @@ def run_robot_suite(
         outdir: Path to the output directory
         cli_options: extra options given by CLI
         **kwargs: additional keyword arguments
+    Returns:
+        int: The exit code of the test
     """
 
     robot_settings = get_yarf_settings(suite)
@@ -290,9 +292,11 @@ def run_robot_suite(
 
     # Generate HTML report.html and log.html using rebot().
     rebot(f"{outdir}/output.xml", outputdir=outdir)
-    if result.return_code:
+    # The return_code from suite.run is in range(0, 250), shouldn't just check for (0, 1)
+    if result.return_code != 0:
         for error_message in result.errors.messages:
             _logger.error("ROBOT: %s", error_message.message)
+    return result.return_code
 
 
 def run_interactive_console(
@@ -377,7 +381,7 @@ def main(argv: Optional[list[str]] = None) -> None:
         ) as temp_folder_path:
             test_suite = TestSuite.from_file_system(temp_folder_path)
             test_suite.name = suite_parser.suite_path.absolute().name
-            run_robot_suite(
+            ec = run_robot_suite(
                 suite=test_suite,
                 lib_cls=lib_cls,
                 variables=variables,
@@ -387,6 +391,7 @@ def main(argv: Optional[list[str]] = None) -> None:
             )
 
         _logger.info(f"Results exported to: {outdir}")
+        sys.exit(ec)
 
     else:
         start_console_path = (
