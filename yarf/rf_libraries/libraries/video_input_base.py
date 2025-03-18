@@ -16,6 +16,7 @@ from typing import Awaitable, List, Optional, Sequence
 from PIL import Image
 from robot.api import logger
 from robot.api.deco import keyword
+from RPA.core.geometry import to_region
 from RPA.Images import Images, Region, to_image
 from RPA.recognition import ocr as tesseract
 from RPA.recognition.templates import ImageNotFoundError
@@ -176,7 +177,7 @@ class VideoInputBase(ABC):
         """
         Find the specified text in the provided image or grab a screenshot to
         search from. The region can be specified directly in the robot file
-        using `RPA.geometry.to_region`
+        using `RPA.core.geometry.to_region`
 
         Args:
             text: text to search for
@@ -195,24 +196,25 @@ class VideoInputBase(ABC):
     async def match_text(
         self,
         text: str,
-        region: Region = None,
         timeout: int = 10,
+        region: Region | tuple[int] | None = None,
     ) -> Awaitable[Region]:
         """
         Wait for specified text to appear on screen and get the position of the
         best match. The region can be specified directly in the robot file
-        using `RPA.geometry.to_region`
+        using `RPA.core.geometry.to_region`
 
         Args:
             text: The text to match on screen
-            region: The region to search for the text
             timeout: Time to wait for the text to appear
+            region: The region to search for the text
         Returns:
             The list of matched text regions where the text was found. Each
             match is a dictionary with "text", "region", and "confidence".
         Raises:
             ValueError: If the specified text isn't found in time
         """
+        region = to_region(region)
         start_time = time.time()
         while time.time() - start_time < timeout:
             image = await self._grab_screenshot()
