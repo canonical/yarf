@@ -9,7 +9,7 @@ There are two ways to add a YARF tag to a robot file:
 
 1. Add the tag to the `Settings` section of the robot file, in this case, the tag will be applied to each of the tasks under the robot file. For example:
 
-```text
+```{code-block} text
 *** Settings ***
 Documentation       Example
 Test Tags           yarf:yarf_tagA: valueA
@@ -24,11 +24,11 @@ Task 2
     Log To Console    message 1
 ```
 
-<u><center>Code Snippet 1: An example of a test robot file using a YARF tag under the Settings section</center></u>
+<u><center>Code Snippet: An example of a test robot file using a YARF tag under the Settings section</center></u>
 
 1. Add the tag to individual tasks in the robot file, in this case the tag will be applied to the corresponding tasks only. For example:
 
-```text
+```{code-block} text
 *** Settings ***
 Documentation       Example
 Library             some_lib.py
@@ -44,6 +44,6 @@ Task 2
     Log To Console    message 1
 ```
 
-<u><center>Code Snippet 1: An example of a test robot file using the tag `yarf:version: <operator> X.Y`</center></u>
+<u><center>Code Snippet: An example of a test robot file using the tag `yarf:version: <operator> X.Y`</center></u>
 
 For details of the tags we supported in YARF, please visit [here](../reference/yarf-tags.md).

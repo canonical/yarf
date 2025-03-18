@@ -29,7 +29,7 @@ Please visit the YARF Tags documentation in the Reference section for the detail
 
 To add the metadata of for a test plan, we need to write an `__init__.robot` file under the test plan. For example:
 
-```text
+```{code-block} bash
 test_plan_X
 ├── __init__.robot
 ├── suite1.robot
@@ -43,11 +43,11 @@ test_plan_X
             └── a2.png
 ```
 
-<u><center>Code Snippet 1: An example of a test plan with an `__init__.robot` file</center></u>
+<u><center>Code Snippet: An example of a test plan with an `__init__.robot` file</center></u>
 
 In the `__init__.robot`, we will have the following:
 
-```text
+```{code-block} text
 *** Settings ***
 Metadata        namespace           com.canonical.yarf
 Metadata        title               The title of the test plan
@@ -56,6 +56,6 @@ Metadata        test_plan_id        com.canonical.test::plan_A
 Metadata        execution_id        EXE_ID
 ```
 
-<u><center>Code Snippet 2: An example of `__init__.robot` that contains the metadata</center></u>
+<u><center>Code Snippet: An example of `__init__.robot` that contains the metadata</center></u>
 
 In YARF, we will extract these information, convert and export the output under the `outdir`.

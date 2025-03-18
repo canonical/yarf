@@ -15,3 +15,4 @@ package*.json
 out/
 *.snap
 squashfs-root
+output.xml

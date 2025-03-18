@@ -11,15 +11,15 @@ In this document, we will walk through how to use the interactive console in YAR
 
 We can enter the interactive console by supplying an empty suite path. For example, in terms of Example, we can use:
 
-```shell
+```{code-block} bash
 Example_IP=<ip> yarf
 ```
 
-<u><center>Code Snippet 1: Example's `yarf` command that enters interactive console</center></u>
+<u><center>Code Snippet: Example's `yarf` command that enters interactive console</center></u>
 
 After we enter the command, we should see something similar to the following:
 
-```text
+```{code-block} bash
 WARNING:yarf.main:Removing existing output directory: /tmp/yarf-outdir
 INFO:The value of CURDIR is: /path/to/current/directory
 INFO:You can change the value of CURDIR by using ${CURDIR}= <path-you-want>
@@ -35,7 +35,7 @@ Type "help" for more information.
 >
 ```
 
-<u><center>Code Snippet 2: `yarf`'s interactive console</center></u>
+<u><center>Code Snippet: `yarf`'s interactive console</center></u>
 
 With this, we can start using the interactive console.
 
@@ -43,7 +43,7 @@ With this, we can start using the interactive console.
 
 In the interactive console, we can see information about the built-in and YARF specific libraries along with their corresponding keywords by using the commands `libs` and `keywords` respectively:
 
-```text
+```{code-block} text
 > libs
 < Imported libraries:
    BuiltIn 6.1.1
@@ -98,11 +98,11 @@ In the interactive console, we can see information about the built-in and YARF s
 >
 ```
 
-<u><center>Code Snippet 3: Truncated result of using the commands `libs` and `keywords` respectively</center></u>
+<u><center>Code Snippet: Truncated result of using the commands `libs` and `keywords` respectively</center></u>
 
 We can then study the information given and try out the supported keywords. For example:
 
-```text
+```{code-block} text
 > Walk Pointer To foo.png
 INFO:root:Scanned image in 0.07 seconds
 < (595, 568)
@@ -111,7 +111,7 @@ INFO:root:Scanned image in 0.07 seconds
 INFO:root:Scanned image in 0.06 seconds
 ```
 
-<u><center>Snippet 4: An example of using a keyword `Walk Pointer To`</center></u>
+<u><center>Snippet: An example of using a keyword `Walk Pointer To`</center></u>
 
 We can use the interactive console as if we are scripting a `.robot` file. For more information about the supported commands, please use the `help` command inside the interactive console.
 

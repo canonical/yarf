@@ -6,7 +6,7 @@ In yarf we support the following tags in addition to the [official ones](https:/
 
 We can add this tag in the `Test Tags` section under `*** Settings ***` or under individual tasks. For example:
 
-```text
+```{code-block} text
 *** Settings ***
 Documentation       Example
 Test Tags           robot:stop-on-failure   yarf:version: >= 1.0.0
@@ -22,7 +22,7 @@ Task 2
     Log To Console    message 1
 ```
 
-<u><center>Code Snippet 1: An example of a test robot file using the tag `yarf:version: <operator> X.Y`</center></u>
+<u><center>Code Snippet: An example of a test robot file using the tag `yarf:version: <operator> X.Y`</center></u>
 
 ```{Note}
 For this tag, spacing is important.
@@ -52,7 +52,7 @@ With this tag, we can control which task will run in the suite with respect to Y
 
 This tag specifies the category of a test case in the form of `yarf:category_id: <category_namespace>::<category>`. We can add this tag in the `Test Tags` section under `*** Settings ***` so that we can apply the tag for all tasks under the file, or we can add the tag under individual tasks. For example:
 
-```text
+```{code-block} text
 *** Settings ***
 Documentation       Example
 Test Tags           yarf:category_id: com.canonical.category::Category-A
@@ -67,9 +67,9 @@ Task 2
     Log To Console    message 1
 ```
 
-<u><center>Code Snippet 2: An example of a test robot file using the tag `yarf:category_id: full_id` under the `Settings` section</center></u>
+<u><center>Code Snippet: An example of a test robot file using the tag `yarf:category_id: full_id` under the `Settings` section</center></u>
 
-```text
+```{code-block} text
 *** Settings ***
 Documentation       Example
 Library             some_lib.py
@@ -85,13 +85,13 @@ Task 2
     Log To Console    message 1
 ```
 
-<u><center>Code Snippet 3: An example of a test robot file using the tag `yarf:category_id: full_id` under individual tasks</center></u>
+<u><center>Code Snippet: An example of a test robot file using the tag `yarf:category_id: full_id` under individual tasks</center></u>
 
 ## Certification Status
 
 This tag specifies the certification status of a test case in the form of `yarf:certification_status: <value>`, where `<value>` can either be `blocker` or `non-blocker`. We can add this tag under each test case. For example:
 
-```text
+```{code-block} text
 *** Settings ***
 Documentation       Example
 Library             some_lib.py
@@ -107,13 +107,13 @@ Task 2
     Log To Console    message 1
 ```
 
-<u><center>Code Snippet 4: An example of a test robot file using the tag `yarf:certification_status: <value>` under individual tasks</center></u>
+<u><center>Code Snippet: An example of a test robot file using the tag `yarf:certification_status: <value>` under individual tasks</center></u>
 
 ## Test Group ID
 
 This tag specifies the scenario group of a test case in the form of `yarf:test_group_id: <test_group_namespace>::<group>`. We can add this tag in the `Test Tags` section under `*** Settings ***` so that we can apply the tag for all tasks under the file, or we can add the tag under individual tasks. For example:
 
-```text
+```{code-block} text
 *** Settings ***
 Documentation       Example
 Test Tags           yarf:test_group_id: com.canonical.test-group::provisioning
@@ -128,9 +128,9 @@ Task 2 for Provisioning
     Log To Console    message 1
 ```
 
-<u><center>Code Snippet 5: An example of a test robot file using the tag `yarf:test_group_id: <test_group_namespace>::<group>` under the `Settings` section</center></u>
+<u><center>Code Snippet: An example of a test robot file using the tag `yarf:test_group_id: <test_group_namespace>::<group>` under the `Settings` section</center></u>
 
-```text
+```{code-block} text
 *** Settings ***
 Documentation       Example
 Library             some_lib.py
@@ -146,13 +146,13 @@ Task 2
     Log To Console    message 1
 ```
 
-<u><center>Code Snippet 6: An example of a test robot file using the tag `yarf:test_group_id: <test_group_namespace>::<group>` under individual tasks</center></u>
+<u><center>Code Snippet: An example of a test robot file using the tag `yarf:test_group_id: <test_group_namespace>::<group>` under individual tasks</center></u>
 
 ## Exit on failure
 
 We can add this tag `robot:exit-on-failure` in the `Test Tags` section under `*** Settings ***`. With this, YARF will exit immediately on failure when it hits a failure in a task. For example:
 
-```text
+```{code-block} text
 *** Settings ***
 Documentation       Example
 Test Tags           robot:exit-on-failure
@@ -167,13 +167,13 @@ Task 2
     Log To Console    This will not be executed.
 ```
 
-<u><center>Code Snippet 7: An example of a test robot file using the tag `robot:exit-on-failure` under the `Settings` section</center></u>
+<u><center>Code Snippet: An example of a test robot file using the tag `robot:exit-on-failure` under the `Settings` section</center></u>
 
 ### Exit on error
 
 We can add this tag `robot:exit-on-error` in the `Test Tags` section under `*** Settings ***`. With this, YARF will exit immediately on failure when it hits an error in a task. For example:
 
-```text
+```{code-block} text
 *** Settings ***
 Documentation       Example
 Test Tags           robot:exit-on-error
@@ -188,4 +188,4 @@ Task 2
     Log To Console    This will not be executed.
 ```
 
-<u><center>Code Snippet 8: An example of a test robot file using the tag `robot:exit-on-error` under the `Settings` section</center></u>
+<u><center>Code Snippet: An example of a test robot file using the tag `robot:exit-on-error` under the `Settings` section</center></u>
