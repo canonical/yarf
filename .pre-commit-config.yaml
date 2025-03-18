@@ -24,10 +24,26 @@ repos:
   hooks:
   - id: isort
 
-#- repo: https://github.com/pre-commit/mirrors-mypy
-#  rev: v1.11.1
-#  hooks:
-#  - id: mypy
+# To run `mypy` meaningfully, we need all dependencies,
+# and run it on all files.
+#
+# Ref.: https://github.com/python/mypy/issues/13916
+- repo: https://github.com/pre-commit/mirrors-mypy
+  rev: v1.15.0
+  hooks:
+  - id: mypy
+    language: system
+    pass_filenames: false
+    args:
+    - --check-untyped-defs
+    - --ignore-missing-imports  # Ref.: https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-library-stubs-or-py-typed-marker
+    - --exclude
+    - tests/.*
+    - --exclude
+    - docs/.*
+    - --exclude
+    - hatch_build.py
+    - .
 
 - repo: https://github.com/MarketSquare/robotframework-tidy
   rev: 4.16.0
