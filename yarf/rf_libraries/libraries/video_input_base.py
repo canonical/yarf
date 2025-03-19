@@ -11,7 +11,6 @@ import subprocess
 import tempfile
 import time
 from abc import ABC, abstractmethod
-from collections import OrderedDict
 from io import BytesIO
 from typing import List, Optional, Sequence
 
@@ -405,7 +404,7 @@ class VideoInputBase(ABC):
         asyncio.get_event_loop().run_until_complete(self.stop_video_input())
 
     @staticmethod
-    def get_displays() -> OrderedDict[str | int, str]:
+    def get_displays() -> list[tuple[Optional[str], str]]:
         """
         This functions parse the displays metadata and returns a dictionary of
         display names and their respective resolutions.
@@ -416,17 +415,17 @@ class VideoInputBase(ABC):
         Raises:
             ValueError: if the displays metadata is not in the expected format
         """
-        displays: OrderedDict[str | int, str] = OrderedDict()
+        displays: list[tuple[Optional[str], str]] = []
         if (
             display_res := BuiltIn().get_variable_value("${displays}")
         ) is None:
             return displays
 
         if DISPLAYS_RE.match(display_res):
-            for idx, m in enumerate(DISPLAY_RE.finditer(display_res)):
+            for m in DISPLAY_RE.finditer(display_res):
                 pair = m.groupdict()
                 id = pair.get("id")
-                displays[id or idx] = pair["resolution"]
+                displays.append((id or None, pair["resolution"]))
 
         else:
             raise ValueError(
