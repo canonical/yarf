@@ -10,7 +10,7 @@ from typing import Any, Callable, Optional
 
 from robot.api import TestSuite
 
-OUTPUT_FORMATS: dict[str, "type[OutputConverterBase]"] = {}
+OUTPUT_FORMATS: dict[str, "OutputConverterMeta"] = {}
 
 _logger = logging.getLogger(__name__)
 
