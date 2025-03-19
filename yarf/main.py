@@ -31,33 +31,17 @@ VERSION_TAG_RE = re.compile(
 )
 
 
-def add_operators(enumeration: type[Enum]) -> type[Enum]:
-    """
-    Annotate the enumeration with operators.
-
-    Arguments:
-        enumeration: The enumeration we need to add operators to.
-    Returns:
-        Enum: The enumeration with added operators
-    """
-    enumeration._member_map_.update(
-        {
-            ">": operator.gt,
-            "<": operator.lt,
-            ">=": operator.ge,
-            "<=": operator.le,
-            "==": operator.eq,
-            "!=": operator.ne,
-        }
-    )
-    return enumeration
-
-
-@add_operators
-class Operator(Enum):
-    """
-    Supported operators.
-    """
+Operator = Enum(
+    "Operator",
+    [
+        (">", operator.gt),
+        ("<", operator.lt),
+        (">=", operator.ge),
+        ("<=", operator.le),
+        ("==", operator.eq),
+        ("!=", operator.ne),
+    ],
+)
 
 
 def compare_version(yarf_version_tag: str) -> bool:
@@ -76,7 +60,7 @@ def compare_version(yarf_version_tag: str) -> bool:
     """
     if m := VERSION_TAG_RE.match(yarf_version_tag):
         try:
-            return Operator[m.group("operator")](
+            return Operator[m.group("operator")].value(
                 YARF_VERSION, version.parse(m.group("version"))
             )
 
