@@ -7,5 +7,6 @@ class Mir(PlatformBase):
     def __init__(self) -> None:
         pass
 
+    @staticmethod
     def get_pkg_path() -> str:
         return str(Path(__file__).parent)

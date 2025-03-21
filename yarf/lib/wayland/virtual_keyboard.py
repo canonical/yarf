@@ -133,6 +133,7 @@ class VirtualKeyboard(WaylandClient):
         keymap_len = os.write(
             keymap_fd, self._keymap.xkb_keymap.get_as_bytes()
         )
+        assert self.keyboard is not None, "failed to create keyboard"
         self.keyboard.keymap(
             WlKeyboard.keymap_format.xkb_v1, keymap_fd, keymap_len
         )

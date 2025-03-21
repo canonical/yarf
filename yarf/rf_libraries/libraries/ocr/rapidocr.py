@@ -100,15 +100,15 @@ class RapidOCRReader:
         Raises:
             ValueError: Empty search string.
         """
-        image = to_image(image)
+        image_obj = to_image(image)
         if region is not None:
-            image = image.crop(region.as_tuple())
+            image_obj = image_obj.crop(region.as_tuple())
 
         text = text.strip()
         if not text:
             raise ValueError("Empty search string")
 
-        result, _ = self.reader(np.array(image))
+        result, _ = self.reader(np.array(image_obj))
         if not result:
             return []
 

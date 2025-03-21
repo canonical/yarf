@@ -14,8 +14,8 @@ class SuiteParser:
 
     def __init__(self, suite_path: str) -> None:
         self.suite_path = Path(suite_path)
-        self.assets = dict()
-        self.variants = dict()
+        self.assets: dict[Path, Path] = dict()
+        self.variants: dict[Path, Path] = dict()
         self.read_suite()
 
     def read_suite(self) -> None:

@@ -149,7 +149,7 @@ class TestSubmissionSchema(OutputConverterBase):
         Returns:
             Dictionary containing the origin of the test submission
         """
-        origin = {}
+        origin: dict[str, str | dict[str, str]] = {}
         origin["name"] = "YARF"
         if (current_yarf_info := self.get_yarf_snap_info()) is not None:
             origin["version"] = current_yarf_info["version"]
@@ -198,7 +198,7 @@ class TestSubmissionSchema(OutputConverterBase):
         Returns:
             List of dictionaries containing test results
         """
-        test_results = []
+        test_results: list[dict[str, Any]] = []
         for suite in self.test_plan.iter("suite"):
             if len(suite.findall("test")) == 0:
                 continue
@@ -229,6 +229,7 @@ class TestSubmissionSchema(OutputConverterBase):
             status_tag = test.find("status")
             yarf_tags = {}
             for tag in test.findall("tag"):
+                assert tag.text is not None, "Tag does not have text"
                 if tag.text.startswith(LABEL_PREFIX):
                     _, tag_name, tag_value = tag.text.split(":", 2)
                     yarf_tags[tag_name] = tag_value.strip()
@@ -240,12 +241,13 @@ class TestSubmissionSchema(OutputConverterBase):
                 + "/"
                 + test.attrib["name"]
             )
-            result = status_tag.attrib["status"]
-            if result == "PASS":
+            assert status_tag is not None, "Status tag not found"
+            status = status_tag.attrib["status"]
+            if status == "PASS":
                 outcome = "passed"
-            elif result == "FAIL":
+            elif status == "FAIL":
                 outcome = "failed"
-            elif result == "SKIP" or result == "NOT RUN":
+            elif status == "SKIP" or status == "NOT RUN":
                 outcome = "skipped"
 
             io_log = self.get_io_log(test, [])
@@ -276,7 +278,7 @@ class TestSubmissionSchema(OutputConverterBase):
         node: Element,
         keyword_chain: str,
         iter_count: int,
-    ) -> tuple[list[str], set[str], str]:
+    ) -> tuple[list[str], str]:
         """
         Get information from the given XML node.
 
@@ -322,7 +324,7 @@ class TestSubmissionSchema(OutputConverterBase):
         res: list[str] = [],
         keyword_chain: str = "",
         iter_count: int = 0,
-    ) -> tuple[list[str], set[str]]:
+    ) -> list[str]:
         """
         DFS Preorder get IO log for a given node.
 

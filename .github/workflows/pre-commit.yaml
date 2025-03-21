@@ -20,7 +20,11 @@ jobs:
       with:
         python-version: "3.12"
     - run: |
-        python -m pip install 'pre-commit<4.0.0'
+        sudo apt-get update --quiet
+        sudo apt-get install --yes \
+          libxkbcommon-dev \
+          libwayland-dev
+        python -m pip install --editable .[develop]
     - uses: pre-commit/action@v3.0.1
     - uses: pre-commit-ci/lite-action@v1.1.0
       if: always()

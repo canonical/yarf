@@ -37,12 +37,14 @@ dependencies = [
 
 [project.optional-dependencies]
 develop = [
+    "mypy",
     "pre-commit<4.0.0",
     "pyfakefs",
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
     "tox",
+    "types-python-dateutil",
 ]
 
 [project.scripts]

@@ -9,7 +9,7 @@ from argparse import ArgumentParser, Namespace
 from enum import Enum
 from importlib import metadata
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, Sequence
 
 from packaging import version
 from robot import rebot
@@ -31,33 +31,17 @@ VERSION_TAG_RE = re.compile(
 )
 
 
-def add_operators(enumeration: Enum) -> Enum:
-    """
-    Annotate the enumeration with operators.
-
-    Arguments:
-        enumeration: The enumeration we need to add operators to.
-    Returns:
-        Enum: The enumeration with added operators
-    """
-    enumeration._member_map_.update(
-        {
-            ">": operator.gt,
-            "<": operator.lt,
-            ">=": operator.ge,
-            "<=": operator.le,
-            "==": operator.eq,
-            "!=": operator.ne,
-        }
-    )
-    return enumeration
-
-
-@add_operators
-class Operator(Enum):
-    """
-    Supported operators.
-    """
+Operator = Enum(
+    "Operator",
+    [
+        (">", operator.gt),
+        ("<", operator.lt),
+        (">=", operator.ge),
+        ("<=", operator.le),
+        ("==", operator.eq),
+        ("!=", operator.ne),
+    ],
+)
 
 
 def compare_version(yarf_version_tag: str) -> bool:
@@ -76,12 +60,12 @@ def compare_version(yarf_version_tag: str) -> bool:
     """
     if m := VERSION_TAG_RE.match(yarf_version_tag):
         try:
-            return Operator[m.group("operator")](
+            return Operator[m.group("operator")].value(
                 YARF_VERSION, version.parse(m.group("version"))
             )
 
         except KeyError:
-            raise ValueError(f"Invalid operator: {m.group['operator']}")
+            raise ValueError(f"Invalid operator: {m.group('operator')}")
 
     else:
         raise ValueError(f"Invalid yarf version tag: {yarf_version_tag}")
@@ -307,7 +291,7 @@ def run_robot_suite(
 
 def run_interactive_console(
     suite: TestSuite,
-    lib_cls: PlatformBase,
+    lib_cls: type[PlatformBase],
     outdir: Path,
     rf_debug_history_log_path: Path,
     cli_options: dict[str, Any],
@@ -375,12 +359,12 @@ def main(argv: Optional[list[str]] = None) -> None:
 
     args, cli_options = parse_arguments(argv)
 
-    lib_cls = SUPPORTED_PLATFORMS.get(args.platform)
+    lib_cls = SUPPORTED_PLATFORMS[args.platform]
     logging.basicConfig(level=args.verbosity)
     outdir = get_outdir_path(args.outdir)
 
     if args.suite:
-        variables = []
+        variables: Sequence[str] = []
         suite_parser = SuiteParser(args.suite)
         with suite_parser.suite_in_temp_folder(
             args.variant

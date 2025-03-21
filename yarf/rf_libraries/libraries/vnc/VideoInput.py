@@ -10,12 +10,7 @@ from yarf.rf_libraries.libraries.vnc import Vnc
 class VideoInput(VideoInputBase):
     """
     This class provides access to screenshotting via vnc.
-
-    Attributes:
-        vnc (Vnc): vnc data class
     """
-
-    vnc = None
 
     def __init__(self):
         super().__init__()
