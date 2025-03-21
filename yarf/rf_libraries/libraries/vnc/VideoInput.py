@@ -12,7 +12,7 @@ class VideoInput(VideoInputBase):
     This class provides access to screenshotting via vnc.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.vnc = Vnc()
 

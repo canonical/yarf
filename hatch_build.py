@@ -21,7 +21,7 @@ def generate_protocol(name: str, imports: Dict[str, str]) -> Dict[str, str]:
 
 
 class CustomBuildHook(BuildHookInterface):
-    def initialize(self, version, build_data):
+    def initialize(self, version, build_data) -> None:
         core_imports = generate_protocol("wayland", {})
         generate_protocol("virtual-keyboard-unstable-v1", core_imports)
         generate_protocol("wlr-screencopy-unstable-v1", core_imports)

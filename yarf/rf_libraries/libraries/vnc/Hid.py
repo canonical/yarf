@@ -21,13 +21,13 @@ class Hid(HidBase):
     server.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.vnc = Vnc()
         self.curr_x = 0
         self.curr_y = 0
 
-    async def _keys_combo(self, combo: Sequence[str]):
+    async def _keys_combo(self, combo: Sequence[str]) -> None:
         """
         Press and release a combination of keys at the same time.
 
@@ -39,7 +39,7 @@ class Hid(HidBase):
             client.keyboard.press(*combo)
 
     @keyword
-    async def type_string(self, string: str):
+    async def type_string(self, string: str) -> None:
         """
         Type a string.
 
@@ -123,6 +123,9 @@ class Hid(HidBase):
         Args:
             x: X co-ordinate to move pointer to
             y: Y co-ordinate to move pointer to
+
+        Raises:
+            AssertionError: if coordinates are out of range
         """
         assert 0 <= x <= 1
         assert 0 <= y <= 1

@@ -223,6 +223,9 @@ class TestSubmissionSchema(OutputConverterBase):
 
         Returns:
             list of test results
+
+        Raises:
+            AssertionError: when tag does not have text
         """
         for test in suite.findall("test"):
             doc_tag = test.find("doc")

@@ -120,7 +120,9 @@ class OutputConverterMeta(abc.ABCMeta):
     Metaclass for creating Output Format classes.
     """
 
-    def __new__(mcs, name: Any, bases: Any, namespace: Any, **kwargs):
+    def __new__(
+        mcs, name: Any, bases: Any, namespace: Any, **kwargs
+    ) -> "OutputConverterMeta":
         """
         Create a module class and register it in OUTPUT_FORMATS.
 
@@ -241,7 +243,7 @@ class OutputConverterBase(abc.ABC, metaclass=OutputConverterMeta):
         )
 
 
-def import_supported_formats():
+def import_supported_formats() -> None:
     module_path = Path(__file__).resolve().parent
     for module in Path(module_path).glob("*.py"):
         importlib.import_module(f"yarf.output.{module.stem}")

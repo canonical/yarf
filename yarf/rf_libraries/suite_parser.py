@@ -4,12 +4,22 @@ import shutil
 import tempfile
 from contextlib import contextmanager, suppress
 from pathlib import Path
-from typing import Final
+from typing import Any, Final, Generator
 
 _logger = logging.getLogger(__name__)
 
 
 class SuiteParser:
+    """
+    Class to parse robot files in a suite directory.
+
+    Attributes:
+        VARIANTS_DIR: The directory containing the variants
+
+    Args:
+        suite_path: The path to the suite directory
+    """
+
     VARIANTS_DIR: Final = "variants"
 
     def __init__(self, suite_path: str) -> None:
@@ -21,6 +31,9 @@ class SuiteParser:
     def read_suite(self) -> None:
         """
         Get all assets and robot files from the suite top level directory.
+
+        Raises:
+            ValueError: if no robot files are found in the suite directory.
         """
         has_robot_ext = False
         # This should be replaced by either:
@@ -50,7 +63,7 @@ class SuiteParser:
             raise ValueError(msg)
 
     @contextmanager
-    def suite_in_temp_folder(self, variant: str):
+    def suite_in_temp_folder(self, variant: str) -> Generator[Path, Any, None]:
         """
         A context manager that creates a temporary directory that contains the
         suite robot file(s) and asset(s), and exposes a path to the temporary
@@ -58,6 +71,12 @@ class SuiteParser:
 
         The temporary directory will be automatically destroyed when the
         program exits the scope under this context manager.
+
+        Args:
+            variant: The name of the variant to select the assets for.
+
+        Yields:
+            Path: The path to the temporary directory containing the suite assets.
         """
         actual_assets = self.select_assets(variant)
         with tempfile.TemporaryDirectory() as temp_directory_path:
@@ -76,6 +95,12 @@ class SuiteParser:
     def select_assets(self, variant: str) -> dict[Path, Path]:
         """
         Get all assets needed according to the precedence list.
+
+        Args:
+            variant: The name of the variant to select the assets for.
+
+        Returns:
+            The selected assets.
         """
         actual_assets = dict()
         variants_precedence_list = self.get_variants_precedence_list(variant)
@@ -105,6 +130,12 @@ class SuiteParser:
         """
         Form a list of paths according to the variant string and the reversed
         ascending sort them by specificity degree.
+
+        Args:
+            variant_str: The variant string.
+
+        Returns:
+            The list of paths sorted by specificity degree.
         """
         if variant_str == "" or variant_str is None:
             return []

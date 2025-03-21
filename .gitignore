@@ -1,8 +1,4 @@
 # docs build files
-/*env*/
-__pycache__
-coverage_html_report
-results
 .DS_Store
 .pytest_cache
 .ruff_cache
@@ -11,8 +7,12 @@ results
 .idea/
 .vscode/
 *.egg-info/
-package*.json
-out/
 *.snap
-squashfs-root
+/*env*/
+__pycache__
+coverage_html_report
+out/
 output.xml
+package*.json
+results
+squashfs-root

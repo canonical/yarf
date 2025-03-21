@@ -7,6 +7,7 @@ from .protocols import (
     ZxdgOutputManagerV1,
 )
 from .protocols.wayland.wl_output import WlOutputProxy
+from .protocols.wayland.wl_registry import WlRegistryProxy
 from .protocols.wlr_virtual_pointer_unstable_v1.zwlr_virtual_pointer_manager_v1 import (
     ZwlrVirtualPointerManagerV1Proxy,
 )
@@ -44,10 +45,20 @@ class VirtualPointer(WaylandClient):
         self.output_height = 0
 
     def registry_global(
-        self, registry, id_num: int, iface_name: str, version: int
+        self,
+        registry: WlRegistryProxy,
+        id_num: int,
+        iface_name: str,
+        version: int,
     ) -> None:
         """
         Binds to the Wayland global objects needed for this interface.
+
+        Args:
+            registry: the Wayland registry
+            id_num: object id
+            iface_name: name of the interface
+            version: interface version
         """
         if iface_name == ZwlrVirtualPointerManagerV1.name:
             self.pointer_manager = registry.bind(
@@ -70,6 +81,9 @@ class VirtualPointer(WaylandClient):
         """
         Registers handlers for the output events and create the virtual pointer
         object.
+
+        Raises:
+            AssertionError: if XDG output manager or WLR pointer manager are not available
         """
         assert self.output_manager is not None, "No XDG output manager"
         assert self.pointer_manager is not None, "No WLR pointer manager"
@@ -89,10 +103,15 @@ class VirtualPointer(WaylandClient):
         pass
 
     def xdg_output_logical_size(
-        self, xdg_output, width: int, height: int
+        self, xdg_output: ZxdgOutputV1Proxy, width: int, height: int
     ) -> None:
         """
         Update the size of the display.
+
+        Args:
+            xdg_output: the XDG output object
+            width: new width of the output in logical coordinates
+            height: new height of the output in logical coordinates
         """
         if xdg_output == self.xdg_outputs[0]:
             self.output_width = width
@@ -101,6 +120,13 @@ class VirtualPointer(WaylandClient):
     def move_to_absolute(self, x: int, y: int) -> None:
         """
         Move pointer to absolute x, y in logical coordinates.
+
+        Args:
+            x: horizontal coordinate, 0 <= x <= output width
+            y: vertical coordinate, 0 <= y <= output height
+
+        Raises:
+            AssertionError: if the provided coordinates are out of the display boundaries
         """
         assert self.pointer is not None, "No pointer"
         assert self.display is not None, "No display"
@@ -126,6 +152,10 @@ class VirtualPointer(WaylandClient):
         """
         Move pointer to a location proportional to the dimensions of the
         display.
+
+        Args:
+            x: horizontal coordinate, 0 <= x <= 1
+            y: vertical coordinate, 0 <= y <= 1
         """
         self.move_to_absolute(
             int(x * self.output_width), int(y * self.output_height)
@@ -134,6 +164,13 @@ class VirtualPointer(WaylandClient):
     def button(self, button: Button, state: bool) -> None:
         """
         Set button state.
+
+        Args:
+            button: button to press
+            state: True for down, False for up
+
+        Raises:
+            AssertionError: if the pointer, the display, or both are unavailable
         """
         assert self.pointer is not None, "No pointer"
         assert self.display is not None, "No display"

@@ -31,7 +31,7 @@ class OCRResult:
     text: str
     confidence: float
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if isinstance(self.position, list):
             self.position = Quad(self.position)
 
@@ -49,14 +49,14 @@ class RapidOCRReader:
     DEFAULT_CONFIDENCE: float = 0.7
     DEFAULT_COINCIDENCE: float = 80.0
 
-    def __new__(cls):
+    def __new__(cls) -> "RapidOCRReader":
         if not hasattr(cls, "instance"):
             print("Creating RapidOCR instance")
             cls.instance = super(RapidOCRReader, cls).__new__(cls)
         print("Returning RapidOCR instance")
         return cls.instance
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.reader = RapidOCR()
 
     def read(self, image: Image.Image | Path) -> str:

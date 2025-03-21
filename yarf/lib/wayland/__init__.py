@@ -15,6 +15,9 @@ def get_memfd() -> int:
 
     Returns:
         file descriptor id
+
+    Raises:
+        AssertionError: if it can't create memfd
     """
     global memfd_counter
     memfd_counter += 1

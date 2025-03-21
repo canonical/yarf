@@ -22,21 +22,27 @@ class PointerPosition(NamedTuple):
 class HidBase(ABC):
     """
     This class provides the Robot interface for HID interactions.
+
+    Attributes:
+        ROBOT_LIBRARY_SCOPE: The scope of the robot library
     """
 
     ROBOT_LIBRARY_SCOPE = "TEST"
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._pointer_position = PointerPosition(0, 0)
 
     @keyword
-    async def keys_combo(self, combo: Sequence[str] | str, *keys: str):
+    async def keys_combo(self, combo: Sequence[str] | str, *keys: str) -> None:
         """
         Press and release a combination of keys.
 
         Arguments:
             combo: first key, or a list of keys to press at the same time.
             *keys: remaining keys to press.
+
+        Raises:
+            AssertionError: If both combo and keys are provided.
         """
         assert type(combo) is str or not keys, (
             "Pass keys as a list, or as argument list, not both"
@@ -47,11 +53,12 @@ class HidBase(ABC):
 
     @abstractmethod
     @keyword
-    async def type_string(self, string: str):
+    async def type_string(self, string: str) -> None:
         """
         Type a string.
 
-        :param string: string to type.
+        Args:
+            string: string to type.
         """
 
     @abstractmethod
@@ -60,7 +67,8 @@ class HidBase(ABC):
         """
         Press the specified pointer button.
 
-        :param button: either LEFT, MIDDLE or RIGHT.
+        Args:
+            button: either LEFT, MIDDLE or RIGHT.
         """
 
     @abstractmethod
@@ -69,7 +77,8 @@ class HidBase(ABC):
         """
         Release the specified pointer button.
 
-        :param button: either LEFT, MIDDLE or RIGHT.
+        Args:
+            button: either LEFT, MIDDLE or RIGHT.
         """
 
     @abstractmethod
@@ -78,7 +87,8 @@ class HidBase(ABC):
         """
         Press and release the specified pointer button.
 
-        :param button: either LEFT, MIDDLE or RIGHT.
+        Args:
+            button: either LEFT, MIDDLE or RIGHT.
         """
 
     @abstractmethod
@@ -89,21 +99,31 @@ class HidBase(ABC):
         """
 
     @abstractmethod
-    async def _keys_combo(self, combo: Sequence[str]) -> Size:
+    async def _keys_combo(self, combo: Sequence[str]) -> None:
         """
         Return the size of the screen in platform coordinates.
+
+        Args:
+            combo: list of keys to press at the same time.
         """
 
     @abstractmethod
     async def _get_display_size(self) -> Size:
         """
         Return the size of the screen in platform coordinates.
+
+        Returns:
+            Size: size of the screen in platform coordinates.
         """
 
     @abstractmethod
     async def _move_pointer(self, x: float, y: float) -> None:
         """
         Platform implementation of the pointer move.
+
+        Args:
+            x: horizontal coordinate, 0 <= x <= 1
+            y: vertical coordinate, 0 <= y <= 1
         """
 
     @keyword
@@ -111,6 +131,13 @@ class HidBase(ABC):
         """
         Move the virtual pointer to a position proportional to the size of the
         output.
+
+        Args:
+            x: horizontal coordinate, 0 <= x <= 1
+            y: vertical coordinate, 0 <= y <= 1
+
+        Raises:
+            AssertionError: if coordinates are out of range
         """
 
         assert 0 <= x <= 1, "x not in range 0..1"
@@ -123,6 +150,13 @@ class HidBase(ABC):
     async def move_pointer_to_absolute(self, x: int, y: int) -> None:
         """
         Move the virtual pointer to an absolute position within the output.
+
+        Args:
+            x: horizontal coordinate, 0 <= x <= screen width
+            y: vertical coordinate, 0 <= y <= screen height
+
+        Raises:
+            AssertionError: if coordinates are out of range
         """
 
         assert isinstance(x, int) and isinstance(y, int), (
@@ -148,6 +182,15 @@ class HidBase(ABC):
         """
         Walk the virtual pointer to an absolute position within the output,
         maximum `step_distance` at a time, with `delay` seconds in between.
+
+        Args:
+            x: horizontal coordinate, 0 <= x <= screen width
+            y: vertical coordinate, 0 <= y <= screen height
+            step_distance: maximum distance to move per step
+            delay: delay between steps in seconds
+
+        Raises:
+            AssertionError: if coordinates are out of range or if x and y are not integers
         """
 
         assert isinstance(x, int) and isinstance(y, int), (
@@ -173,6 +216,15 @@ class HidBase(ABC):
         Walk the virtual pointer to a position proportional to the size of the
         output, maximum `step_distance` at a time, with `delay` seconds in
         between.
+
+        Args:
+            x: horizontal coordinate, 0 <= x <= 1
+            y: vertical coordinate, 0 <= y <= 1
+            step_distance: maximum distance to move per step
+            delay: delay between steps in seconds
+
+        Raises:
+            AssertionError: if coordinates are out of range
         """
         assert 0 <= x <= 1, "x not in range 0..1"
         assert 0 <= y <= 1, "y not in range 0..1"

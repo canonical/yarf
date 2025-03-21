@@ -2,7 +2,7 @@ import os
 import warnings
 from collections import namedtuple
 from functools import cached_property
-from typing import Any, List, Mapping, Optional, Sequence
+from typing import List, Mapping, Optional, Sequence
 
 from xkbcommon import xkb
 
@@ -15,6 +15,7 @@ from .protocols.virtual_keyboard_unstable_v1.zwp_virtual_keyboard_v1 import (
     ZwpVirtualKeyboardV1Proxy,
 )
 from .protocols.wayland.wl_keyboard import WlKeyboard
+from .protocols.wayland.wl_registry import WlRegistryProxy
 from .protocols.wayland.wl_seat import WlSeatProxy
 from .wayland_client import WaylandClient
 
@@ -47,11 +48,11 @@ class VirtualKeyboard(WaylandClient):
             names: a mapping of key names to `Key(keycode, level)`s
         """
 
-        xkb_keymap: Optional[xkb.Keymap] = None
+        xkb_keymap: xkb.Keymap = None
         strings: Mapping[str, Key] = {}
         names: Mapping[str, Key] = {}
 
-        def __init__(self):
+        def __init__(self) -> None:
             self.xkb_keymap = xkb.Context().keymap_new_from_names()
             self.strings = {}
             self.names = {}
@@ -91,11 +92,15 @@ class VirtualKeyboard(WaylandClient):
         self.keyboard: Optional[ZwpVirtualKeyboardV1Proxy] = None
 
     @cached_property
-    def _keymap(self):
+    def _keymap(self) -> Keymap:
         return VirtualKeyboard.Keymap()
 
     def registry_global(
-        self, registry: Any, id_num: int, iface_name: str, version: int
+        self,
+        registry: WlRegistryProxy,
+        id_num: int,
+        iface_name: str,
+        version: int,
     ) -> None:
         """
         Invoked by the compositor, bind to the available Wayland globals.
@@ -120,6 +125,11 @@ class VirtualKeyboard(WaylandClient):
     def connected(self) -> None:
         """
         Creates the virtual keyboard object.
+
+        Raises:
+            AssertionError: if any of the following:
+                1. virtual-keyboard extension is unavailable
+                2. Cannot create a virtual keyboard
         """
         assert self.keyboard_manager is not None, (
             "virtual-keyboard extension unavailable"
@@ -150,11 +160,12 @@ class VirtualKeyboard(WaylandClient):
         Types the given string.
 
         Arguments:
-          string: the string to type through the virtual keyboard
+            string: the string to type through the virtual keyboard
 
         Raises:
-          ValueError: if the character was not found in the keymap
-          Exception: all other errors encountered
+            AssertionError: if virtual-keyboard extension unavailable
+            ValueError: if the character was not found in the keymap
+            Exception: any other errors encountered
         """
         assert self.keyboard, "virtual-keyboard extension unavailable"
         try:
@@ -193,7 +204,7 @@ class VirtualKeyboard(WaylandClient):
             self.display.roundtrip()
             raise
 
-    def key_combo(self, keys: Sequence[str]):
+    def key_combo(self, keys: Sequence[str]) -> None:
         """
         Presses the given keys in the order given (to simulate a human) and
         releases them in reverse order.
@@ -204,10 +215,11 @@ class VirtualKeyboard(WaylandClient):
         for the list of available names (without the `XK_` prefix).
 
         Arguments:
-          keys: the keys to press and release
+            keys: the keys to press and release
 
         Raises:
-          ValueError: if the key was not found in the keymap
+            AssertionError: if the virtual-keyboard extension is unavailable
+            ValueError: if a key was not found in the keymap
         """
         assert self.keyboard, "virtual-keyboard extension unavailable"
         pressed: List[int] = []

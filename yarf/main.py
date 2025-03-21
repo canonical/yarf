@@ -355,6 +355,9 @@ def main(argv: Optional[list[str]] = None) -> None:
     Args:
         argv: list of arguments received via command line, defaults
             to None
+
+    Raises:
+        FileNotFoundError: If the start_console.robot file is not found
     """
 
     args, cli_options = parse_arguments(argv)

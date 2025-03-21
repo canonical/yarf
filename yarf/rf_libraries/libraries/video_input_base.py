@@ -35,16 +35,20 @@ class VideoInputBase(ABC):
     """
     This module provides the Robot interface for Video-driven interaction and
     assertion.
+
+    Initialize the Video Input.
+
+    Attributes:
+        ROBOT_LIBRARY_SCOPE: The scope of the robot library
+        ROBOT_LISTENER_API_VERSION: The robot listener API version
+        TOLERANCE: The tolerance for image comparison in the compare_images method
     """
 
     ROBOT_LIBRARY_SCOPE = "GLOBAL"
     ROBOT_LISTENER_API_VERSION = 3
     TOLERANCE = 0.8
 
-    def __init__(self):
-        """
-        Initialize the Video Input.
-        """
+    def __init__(self) -> None:
         self._rpa_images = Images()
         self.ROBOT_LIBRARY_LISTENER = self
         self._frame_count: int = 0
@@ -109,11 +113,11 @@ class VideoInputBase(ABC):
         Grab screenshots and compare until there's a match with the provided
         template or timeout.
 
-        :param template: path to an image file to be used as template
-        :param timeout: timeout in seconds
-        :return: list of matched regions
-        :raises ImageNotFoundError: if no match is found within the
-            timeout
+        Args:
+            template: path to an image file to be used as template
+            timeout: timeout in seconds
+        Returns:
+            list of matched regions
         """
         return await self.match_any([template], timeout=timeout)
 
@@ -125,12 +129,12 @@ class VideoInputBase(ABC):
         Grab screenshots and compare with the provided templates until a frame
         is found which matches all templates simultaneously or timeout.
 
-        :param templates: sequence of paths to image files to use as
-            templates
-        :param timeout: timeout in seconds
-        :return: list of matched regions and template path matched
-        :raises ImageNotFoundError: if no match is found within the
-            timeout
+        Args:
+            templates: sequence of paths to image files to use as templates
+            timeout: timeout in seconds
+
+        Returns:
+            List of matched regions and template path matched
         """
         return await self._do_match(
             templates, accept_any=False, timeout=timeout
@@ -144,12 +148,12 @@ class VideoInputBase(ABC):
         Grab screenshots and compare with the provided templates until there's
         at least one match or timeout.
 
-        :param templates: sequence of paths to image files to use as
-            templates
-        :param timeout: timeout in seconds
-        :return: list of matched regions and template path matched
-        :raises ImageNotFoundError: if no match is found within the
-            timeout
+        Args:
+            templates: sequence of paths to image files to use as templates
+            timeout: timeout in seconds
+
+        Returns:
+            list of matched regions and template path matched
         """
         return await self._do_match(
             templates, accept_any=True, timeout=timeout
@@ -164,8 +168,11 @@ class VideoInputBase(ABC):
         Read the text from the provided image or grab a screenshot to read
         from.
 
-        :param image: image to read text from
-        :return: text read from the image
+        Args:
+            image: image to read text from
+
+        Returns:
+            text read from the image
         """
         if not image:
             image = await self._grab_screenshot()
@@ -240,20 +247,20 @@ class VideoInputBase(ABC):
 
     @abstractmethod
     @keyword
-    async def start_video_input(self):
+    async def start_video_input(self) -> None:
         """
         Start video stream process if needed.
         """
 
     @abstractmethod
     @keyword
-    async def stop_video_input(self):
+    async def stop_video_input(self) -> None:
         """
         Stop video stream process if needed.
         """
 
     @keyword
-    async def restart_video_input(self):
+    async def restart_video_input(self) -> None:
         """
         Restart video stream process if needed.
         """
@@ -264,6 +271,9 @@ class VideoInputBase(ABC):
     async def _grab_screenshot(self) -> Image.Image:
         """
         Grab and return a screenshot from the video feed.
+
+        Returns:
+            screenshot as an Image object
         """
 
     async def _do_match(
@@ -273,13 +283,16 @@ class VideoInputBase(ABC):
         Platform-specific implementation of :meth:`match_all` and
         :meth:`match_any`.
 
-        :param templates: path to an image file to be used as template
-        :param accept_any: whether to terminate on the first match (when
-            True)
-        :param timeout: timeout in seconds
-        :return: list of matched regions
-        :raises ImageNotFoundError: if no match is found within the
-            timeout
+        Args:
+            templates: path to an image file to be used as template
+            accept_any: whether to terminate on the first match (when True)
+            timeout: timeout in seconds
+
+        Returns:
+            list of matched regions
+
+        Raises:
+            ImageNotFoundError: if no match is found within the timeout
         """
         regions = []
         screenshot = None
@@ -359,6 +372,12 @@ class VideoInputBase(ABC):
     def _to_base64(image: Image.Image) -> str:
         """
         Convert Pillow Image to b64.
+
+        Args:
+            image: The image to convert to base64.
+
+        Returns:
+            The base64 representation of the image.
         """
 
         im_file = BytesIO()
@@ -368,9 +387,15 @@ class VideoInputBase(ABC):
         im_b64 = base64.b64encode(im_bytes)
         return im_b64.decode()
 
-    def _log_failed_match(self, screenshot: Image.Image, template: str):
+    def _log_failed_match(
+        self, screenshot: Image.Image, template: str
+    ) -> None:
         """
         Log a failure with template matching.
+
+        Args:
+            screenshot: The screenshot where the template was not found.
+            template: The template that was not found.
         """
 
         template_img = Image.open(template)
@@ -389,7 +414,7 @@ class VideoInputBase(ABC):
             html=True,
         )
 
-    def _log_video(self, video_path: str):
+    def _log_video(self, video_path: str) -> None:
         with open(video_path, "rb") as f:
             logger.error(
                 '<video controls style="max-width: 50%" src="data:video/webm;base64,'
@@ -397,7 +422,7 @@ class VideoInputBase(ABC):
                 html=True,
             )
 
-    def _close(self):
+    def _close(self) -> None:
         """
         Listener method called when the library goes out of scope.
         """

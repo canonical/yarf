@@ -1,6 +1,7 @@
 import abc
 import importlib
 import pathlib
+from typing import Any
 
 SUPPORTED_PLATFORMS: dict[str, type] = {}
 
@@ -10,9 +11,24 @@ class PlatformMeta(abc.ABCMeta):
     Metaclass for creating Platfrom classes.
     """
 
-    def __new__(mcs, name, bases, namespace, **kwargs):
+    def __new__(
+        mcs,
+        name: str,
+        bases: tuple[type, ...],
+        namespace: dict[str, Any],
+        **kwargs: dict[str, Any],
+    ) -> "PlatformMeta":
         """
         Create a module class and register it in SUPPORTED_PLATFORMS.
+
+        Arguments:
+            name: module name
+            bases: parent classes
+            namespace: module namespace
+            **kwargs: additional keyword arguments
+
+        Returns:
+            module_class: the created module class with registered in SUPPORTED_PLATFORMS.
         """
         module_class = super().__new__(mcs, name, bases, namespace, **kwargs)
         SUPPORTED_PLATFORMS[name] = module_class
@@ -25,7 +41,10 @@ class PlatformBase(abc.ABC, metaclass=PlatformMeta):
     @abc.abstractmethod
     def get_pkg_path() -> str:
         """
-        Retruns the library directory path.
+        Returns:
+            Library directory path.
+        Raises:
+            NotImplementedError: if the method is not implemented in the subclass.
         """
         raise NotImplementedError
 

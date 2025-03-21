@@ -61,14 +61,14 @@ class Screencopy(WaylandClient):
         self._buffer_data: Optional[BufferData] = None
         self._frame_is_ready = False
 
-    async def connect(self):
+    async def connect(self) -> None:
         """
         Connect to the display.
         """
         if not self._shm_data:
             await super().connect()
 
-    async def disconnect(self):
+    async def disconnect(self) -> None:
         """
         Disconnect from the display.
         """
@@ -135,6 +135,12 @@ class Screencopy(WaylandClient):
             width: frame width
             height: frame height
             stride: buffer stride
+
+        Raises:
+            AssertionError: If any of the following:
+                1. Buffer parameters or size have changed
+                2. SHM was not created
+                3. Frame was not copied before the buffer was submitted
         """
         buffer_data = BufferData(width, height, stride)
 
@@ -189,6 +195,11 @@ class Screencopy(WaylandClient):
     def _copy_frame(self) -> None:
         """
         Request the next frame.
+
+        Raises:
+            AssertionError: If any of the following:
+                1. The zwlr screencopy manager not supported
+                2. There is no display
         """
         self._frame_is_ready = False
         assert self._screencopy_manager is not None, (
@@ -208,6 +219,12 @@ class Screencopy(WaylandClient):
         """
         Returns:
             The PIL.Image of the next frame
+
+        Raises:
+            AssertionError: If any of the following:
+                1. No SHM data available
+                2. Buffer not initialized
+                3. Not enough image data
         """
         self._copy_frame()
 

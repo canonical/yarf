@@ -33,14 +33,14 @@ class VideoInput(VideoInputBase):
         return await self._screencopy.grab_screenshot()
 
     @keyword
-    async def start_video_input(self):
+    async def start_video_input(self) -> None:
         """
         Connect to the display.
         """
         await self._screencopy.connect()
 
     @keyword
-    async def stop_video_input(self):
+    async def stop_video_input(self) -> None:
         """
         Disconnect from the display.
         """

@@ -18,6 +18,9 @@ class Hid(HidBase):
     and disconnects when the library goes out of scope.
 
     If WAYLAND_DISPLAY is not defined, it defaults to 'wayland-0'.
+
+    Attributes:
+        ROBOT_LISTENER_API_VERSION: Robot listener API version
     """
 
     ROBOT_LISTENER_API_VERSION = 3
@@ -30,7 +33,7 @@ class Hid(HidBase):
         self._connected: bool = False
         super().__init__()
 
-    def _start_test(self, *_args: Any):
+    def _start_test(self, *_args: Any) -> None:
         """
         Listener method called when tests are started.
 
@@ -40,7 +43,7 @@ class Hid(HidBase):
         if not self._connected:
             asyncio.get_event_loop().run_until_complete(self._connect())
 
-    async def _keys_combo(self, combo: Sequence[str]):
+    async def _keys_combo(self, combo: Sequence[str]) -> None:
         """
         Press and release a combination of keys.
 
@@ -50,7 +53,7 @@ class Hid(HidBase):
         self._virtual_keyboard.key_combo(combo)
 
     @keyword
-    async def type_string(self, string: str):
+    async def type_string(self, string: str) -> None:
         """
         Type a string.
 
@@ -114,7 +117,7 @@ class Hid(HidBase):
         for button in Button:
             self._virtual_pointer.button(button, False)
 
-    async def _connect(self):
+    async def _connect(self) -> None:
         """
         Connect to the display.
         """
@@ -123,7 +126,7 @@ class Hid(HidBase):
             await self._virtual_keyboard.connect()
             self._connected = True
 
-    async def _disconnect(self):
+    async def _disconnect(self) -> None:
         """
         Disconnect from the display.
         """
@@ -132,7 +135,7 @@ class Hid(HidBase):
             await self._virtual_pointer.disconnect()
             await self._virtual_keyboard.disconnect()
 
-    def _close(self):
+    def _close(self) -> None:
         """
         Listener method called when the library goes out of scope.
         """

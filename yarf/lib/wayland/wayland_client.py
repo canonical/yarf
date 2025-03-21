@@ -12,12 +12,12 @@ from .protocols.wayland.wl_registry import WlRegistryProxy
 class WaylandClient(ABC):
     """
     A base class for components communicating with Wayland compositors.
+
+    Args:
+        display_name: the name of the Wayland socket (the value of `WAYLAND_DISPLAY` environment variable)
     """
 
     def __init__(self, display_name: str) -> None:
-        """
-        :param display_name: the name of the Wayland socket (the value of `WAYLAND_DISPLAY` environment variable)
-        """
         self.display = pywayland.client.Display(display_name)
         self._registry: Optional[WlRegistryProxy] = None
 
@@ -35,18 +35,31 @@ class WaylandClient(ABC):
 
         It's "casted" to a 32-bit to fit in uint32_t without losing the
         millisecond precision.
+
+        Returns:
+            The client-local timestamp in milliseconds
         """
         return int(time.monotonic() * 1000) & 0xFFFFFFFF
 
     @abstractmethod
     def registry_global(
-        self, registry, id_num: int, iface_name: str, version: int
+        self,
+        registry: WlRegistryProxy,
+        id_num: int,
+        iface_name: str,
+        version: int,
     ) -> None:
         """
         Implement binding to global objects here.
 
         Ref.:
         https://pywayland.readthedocs.io/en/latest/module/protocol/wayland.html?highlight=wlregistry#wlregistry
+
+        Args:
+            registry: the Wayland registry
+            id_num: object id
+            iface_name: name of the interface
+            version: interface version
         """
 
     @abstractmethod
@@ -62,12 +75,18 @@ class WaylandClient(ABC):
         Called on disconnection, perform any needed cleanup here.
         """
 
-    async def connect(self) -> "WaylandClient":
+    async def connect(self) -> Optional["WaylandClient"]:
         """
         Initiate the connection with the compositor.
 
         You can also use the object as an async context manager to
         connect and disconnect as needed.
+
+        Returns:
+            self
+
+        Raises:
+            Exception: if connection fails
         """
         try:
             self.display.connect()
@@ -92,7 +111,7 @@ class WaylandClient(ABC):
         self.display.disconnect()
         self.disconnected()
 
-    async def __aenter__(self) -> "WaylandClient":
+    async def __aenter__(self) -> Optional["WaylandClient"]:
         return await self.connect()
 
     async def __aexit__(self, *args) -> None:

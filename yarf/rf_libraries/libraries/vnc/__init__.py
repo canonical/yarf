@@ -9,6 +9,9 @@ from yarf.rf_libraries.libraries import PlatformBase
 class Vnc(PlatformBase):
     """
     Vnc platform.
+
+    Raises:
+        AssertionError: if VNC_PORT is not numeric or invalid.
     """
 
     def __init__(self) -> None:

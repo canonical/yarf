@@ -9,6 +9,7 @@ import os
 import sys
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Any, Generator
 
 ROBOT_RESOURCE_PATH = os.path.abspath(
     os.path.join(str(Path(__file__).parent), "resources")
@@ -16,10 +17,19 @@ ROBOT_RESOURCE_PATH = os.path.abspath(
 
 
 @contextmanager
-def robot_in_path(lib_path: str):
+def robot_in_path(lib_path: str) -> Generator[None, Any, None]:
     """
     This context manager setup the python environment targeting the requested
     platform.
+
+    Arguments:
+        lib_path: str: Path to the library directory.
+
+    Yields:
+        None: No value is returned by this context manager.
+
+    Raises:
+        ValueError: If the library path does not exist.
     """
     if not os.path.exists(lib_path):
         raise ValueError("Please specify a valid library path.")
