@@ -403,12 +403,12 @@ class TestVideoInputBase:
         """
         Test the function raises an error if the text is not found.
         """
-        mock_time.side_effect = [0, 1, 2, 11]
+        mock_time.side_effect = [0, 1, 11, 12]
         stub_videoinput.find_text = AsyncMock()
         stub_videoinput.find_text.return_value = []
         stub_videoinput.read_text = AsyncMock()
         stub_videoinput.read_text.return_value = "wrong\ntext"
-        with pytest.raises(ValueError) as e:
+        with pytest.raises(Exception) as e:
             await stub_videoinput.match_text("hello")
 
         assert "Timed out looking for 'hello'" in str(e.value)
@@ -427,22 +427,52 @@ class TestVideoInputBase:
         stub_videoinput.stop_video_input.assert_called_once()
         stub_videoinput.start_video_input.assert_called_once()
 
+    def test_to_base64(self, stub_videoinput):
+        """
+        Test the function converts the image to base64.
+        """
+        image = Mock()
+
+        stub_videoinput._to_base64(image)
+        image.convert.assert_called_with("RGB")
+
+        converted_image = image.convert.return_value
+        converted_image.save.assert_called_with(ANY, format="PNG")
+
     @patch("yarf.rf_libraries.libraries.video_input_base.Image")
-    def test_log_failed_match(self, mock_image, stub_videoinput, mock_logger):
+    def test_log_image(self, mock_image, stub_videoinput, mock_logger):
         """
         Test whether the function converts the images to base64 and add them to
         the HTML Robot log.
         """
 
         image = Mock()
-        template = mock_image.open.return_value
+        stub_videoinput._to_base64 = Mock()
 
-        stub_videoinput._log_failed_match(image, "template")
+        stub_videoinput._log_image(image, "Debug message")
 
-        mock_image.open.assert_called_with("template")
-        template.convert.assert_called_with("RGB")
+        stub_videoinput._to_base64.assert_called_once_with(image)
+        mock_logger.info.assert_called_once_with(ANY, html=True)
+        assert mock_logger.info.call_args.args[0].startswith("Debug message")
 
-        mock_logger.info.assert_called_once()
+    @patch("yarf.rf_libraries.libraries.video_input_base.Image")
+    def test_log_failed_match(self, mock_image, stub_videoinput, mock_logger):
+        """
+        Test whether the function logs the failed match with the template and
+        screenshot images.
+        """
+        screenshot = Mock()
+        template = mock_image.open.return_value = Mock()
+        stub_videoinput._log_image = Mock()
+
+        stub_videoinput._log_failed_match(screenshot, "template")
+
+        stub_videoinput._log_image.assert_has_calls(
+            [
+                call(template, "Template was:"),
+                call(screenshot, "Image was:"),
+            ]
+        )
 
     @pytest.mark.asyncio
     async def test_screenshot_timeout(self, stub_videoinput):

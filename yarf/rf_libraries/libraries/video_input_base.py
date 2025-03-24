@@ -239,6 +239,7 @@ class VideoInputBase(ABC):
             if text_matches:
                 return text_matches
 
+        self._log_image(cropped_image, "The image used for ocr was:")
         read_text = await self.read_text(cropped_image)
         raise ValueError(
             f"Timed out looking for '{text}' after '{timeout}' seconds. "
@@ -387,6 +388,24 @@ class VideoInputBase(ABC):
         im_b64 = base64.b64encode(im_bytes)
         return im_b64.decode()
 
+    def _log_image(self, image: Image.Image, msg: str = "") -> None:
+        """
+        Log an image.
+
+        Args:
+            image: Image to log
+            msg: Message to log with the image
+        """
+        image_string = (
+            f"{msg}<br />"
+            '<img style="max-width: 100%" src="data:image/png;base64,'
+            f'{self._to_base64(image)}" />'
+        )
+        logger.info(
+            image_string,
+            html=True,
+        )
+
     def _log_failed_match(
         self, screenshot: Image.Image, template: str
     ) -> None:
@@ -394,27 +413,21 @@ class VideoInputBase(ABC):
         Log a failure with template matching.
 
         Args:
-            screenshot: The screenshot where the template was not found.
-            template: The template that was not found.
+            screenshot: The screenshot used to look for the template
+            template: The template used for matching
         """
 
         template_img = Image.open(template)
-        template_string = (
-            "Template was:<br />"
-            '<img style="max-width: 100%" src="data:image/png;base64,'
-            f'{self._to_base64(template_img)}" /><br />'
-        )
-        image_string = (
-            "Image was:<br />"
-            '<img style="max-width: 100%" src="data:image/png;base64,'
-            f'{self._to_base64(screenshot)}" />'
-        )
-        logger.info(
-            template_string + image_string,
-            html=True,
-        )
+        self._log_image(template_img, "Template was:")
+        self._log_image(screenshot, "Image was:")
 
     def _log_video(self, video_path: str) -> None:
+        """
+        Create a video element from a video file and add it to the log.
+
+        Args:
+            video_path: Path to the video file.
+        """
         with open(video_path, "rb") as f:
             logger.error(
                 '<video controls style="max-width: 50%" src="data:video/webm;base64,'
@@ -431,8 +444,10 @@ class VideoInputBase(ABC):
     @staticmethod
     def get_displays() -> list[tuple[Optional[str], str]]:
         """
-        This functions parse the displays metadata and returns a dictionary of
-        display names and their respective resolutions.
+        This function parses the displays metadata and returns a dictionary of
+        display names and their respective resolutions. In the case of the
+        camera input, this resolution will be the one used in the display the
+        camera is pointing at.
 
         Returns:
             Dictionary of display indices or names and their respective resolutions
