@@ -13,7 +13,7 @@ jobs:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
     - uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
       id: snapcraft
-    - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
       with:
         name: yarf-amd64
         path: ${{ steps.snapcraft.outputs.snap }}
@@ -30,7 +30,7 @@ jobs:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
     - uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
       id: snapcraft
-    - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
       with:
         name: yarf-arm64
         path: ${{ steps.snapcraft.outputs.snap }}
