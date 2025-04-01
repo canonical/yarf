@@ -19,9 +19,9 @@ jobs:
     name: Build snap on amd64
     runs-on: [self-hosted, linux, jammy, x64, large]
     steps:
-    - uses: actions/checkout@v4
-    - uses: canonical/action-build@v1
-    - uses: actions/upload-artifact@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+    - uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
+    - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
       with:
         name: amd64-snap
         path: "*.snap"
@@ -32,9 +32,9 @@ jobs:
     name: Build snap on arm64
     runs-on: [self-hosted, linux, jammy, arm64, large]
     steps:
-    - uses: actions/checkout@v4
-    - uses: canonical/action-build@v1
-    - uses: actions/upload-artifact@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+    - uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
+    - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
       with:
         name: arm64-snap
         path: "*.snap"

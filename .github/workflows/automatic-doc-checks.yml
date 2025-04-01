@@ -26,19 +26,19 @@ jobs:
             clang
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           fetch-depth: '0'
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
         with:
           python-version: 3.12
 
       - name: Spell Check
         id: spellcheck-step
         if: success() || failure()
-        uses: canonical/documentation-workflows/spellcheck@main
+        uses: canonical/documentation-workflows/spellcheck@12ec83203d373adf3f6a8fef6ef1f0e3db8dadcb
         with:
           working-directory: 'docs/'
           install-target: 'install'
@@ -48,7 +48,7 @@ jobs:
       - name: Inclusive Language Check
         id: woke-step
         if: success() || failure()
-        uses: canonical/documentation-workflows/inclusive-language@main
+        uses: canonical/documentation-workflows/inclusive-language@1f5b0900b9c570021f35101ddf0456c70994db0e
         with:
           working-directory: 'docs/'
           install-target: 'install'
@@ -58,7 +58,7 @@ jobs:
       - name: Link Check
         id: linkcheck-step
         if: success() || failure()
-        uses: canonical/documentation-workflows/linkcheck@main
+        uses: canonical/documentation-workflows/linkcheck@9e1646051a7c99df3c347304122308a5d517e065
         with:
           working-directory: 'docs/'
           install-target: 'install'

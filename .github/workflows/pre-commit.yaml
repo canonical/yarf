@@ -15,8 +15,8 @@ jobs:
   PreCommit:
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+    - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
       with:
         python-version: "3.12"
     - run: |
@@ -25,6 +25,6 @@ jobs:
           libxkbcommon-dev \
           libwayland-dev
         python -m pip install --editable .[develop]
-    - uses: pre-commit/action@v3.0.1
-    - uses: pre-commit-ci/lite-action@v1.1.0
+    - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd
+    - uses: pre-commit-ci/lite-action@5d6cc0eb514c891a40562a58a8e71576c5c7fb43
       if: always()
