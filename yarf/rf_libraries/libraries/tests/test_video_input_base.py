@@ -20,7 +20,11 @@ from RPA.core.geometry import Region
 from RPA.recognition.templates import ImageNotFoundError
 
 from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
-from yarf.rf_libraries.libraries.video_input_base import VideoInputBase
+from yarf.rf_libraries.libraries.video_input_base import (
+    VideoInputBase,
+    _to_base64,
+    log_image,
+)
 
 
 class StubVideoInput(VideoInputBase):
@@ -427,47 +431,45 @@ class TestVideoInputBase:
         stub_videoinput.stop_video_input.assert_called_once()
         stub_videoinput.start_video_input.assert_called_once()
 
-    def test_to_base64(self, stub_videoinput):
+    def test_to_base64(self):
         """
         Test the function converts the image to base64.
         """
         image = Mock()
 
-        stub_videoinput._to_base64(image)
+        _to_base64(image)
         image.convert.assert_called_with("RGB")
 
         converted_image = image.convert.return_value
         converted_image.save.assert_called_with(ANY, format="PNG")
 
-    @patch("yarf.rf_libraries.libraries.video_input_base.Image")
-    def test_log_image(self, mock_image, stub_videoinput, mock_logger):
+    @patch("yarf.rf_libraries.libraries.video_input_base._to_base64")
+    def test_log_image(self, mock_base_64, mock_logger):
         """
         Test whether the function converts the images to base64 and add them to
         the HTML Robot log.
         """
 
         image = Mock()
-        stub_videoinput._to_base64 = Mock()
+        log_image(image, "Debug message")
 
-        stub_videoinput._log_image(image, "Debug message")
-
-        stub_videoinput._to_base64.assert_called_once_with(image)
+        mock_base_64.assert_called_once_with(image)
         mock_logger.info.assert_called_once_with(ANY, html=True)
         assert mock_logger.info.call_args.args[0].startswith("Debug message")
 
+    @patch("yarf.rf_libraries.libraries.video_input_base.log_image")
     @patch("yarf.rf_libraries.libraries.video_input_base.Image")
-    def test_log_failed_match(self, mock_image, stub_videoinput, mock_logger):
+    def test_log_failed_match(self, mock_image, mock_log_img, stub_videoinput):
         """
         Test whether the function logs the failed match with the template and
         screenshot images.
         """
         screenshot = Mock()
         template = mock_image.open.return_value = Mock()
-        stub_videoinput._log_image = Mock()
 
         stub_videoinput._log_failed_match(screenshot, "template")
 
-        stub_videoinput._log_image.assert_has_calls(
+        mock_log_img.assert_has_calls(
             [
                 call(template, "Template was:"),
                 call(screenshot, "Image was:"),

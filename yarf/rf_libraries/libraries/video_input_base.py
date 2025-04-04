@@ -31,6 +31,41 @@ DISPLAY_RE = re.compile(rf"{DISPLAY_PATTERN}")
 DISPLAYS_RE = re.compile(rf"^({DISPLAY_PATTERN})+$")
 
 
+def log_image(image: Image.Image, msg: str = "") -> None:
+    """
+    Log an image.
+
+    Args:
+        image: Image to log
+        msg: Message to log with the image
+    """
+    image_string = (
+        f"{msg}<br />"
+        '<img style="max-width: 100%" src="data:image/png;base64,'
+        f'{_to_base64(image)}" />'
+    )
+    logger.info(image_string, html=True)
+
+
+def _to_base64(image: Image.Image) -> str:
+    """
+    Convert Pillow Image to b64.
+
+    Args:
+        image: Image to convert
+
+    Returns:
+        Image as base64 string
+    """
+
+    im_file = BytesIO()
+    image = image.convert("RGB")
+    image.save(im_file, format="PNG")
+    im_bytes = im_file.getvalue()  # im_bytes: image in binary format.
+    im_b64 = base64.b64encode(im_bytes)
+    return im_b64.decode()
+
+
 class VideoInputBase(ABC):
     """
     This module provides the Robot interface for Video-driven interaction and
@@ -239,7 +274,7 @@ class VideoInputBase(ABC):
             if text_matches:
                 return text_matches
 
-        self._log_image(cropped_image, "The image used for ocr was:")
+        log_image(cropped_image, "The image used for ocr was:")
         read_text = await self.read_text(cropped_image)
         raise ValueError(
             f"Timed out looking for '{text}' after '{timeout}' seconds. "
@@ -369,43 +404,6 @@ class VideoInputBase(ABC):
             f"Timed out looking for {template_names} after {timeout} seconds."
         )
 
-    @staticmethod
-    def _to_base64(image: Image.Image) -> str:
-        """
-        Convert Pillow Image to b64.
-
-        Args:
-            image: The image to convert to base64.
-
-        Returns:
-            The base64 representation of the image.
-        """
-
-        im_file = BytesIO()
-        image = image.convert("RGB")
-        image.save(im_file, format="PNG")
-        im_bytes = im_file.getvalue()  # im_bytes: image in binary format.
-        im_b64 = base64.b64encode(im_bytes)
-        return im_b64.decode()
-
-    def _log_image(self, image: Image.Image, msg: str = "") -> None:
-        """
-        Log an image.
-
-        Args:
-            image: Image to log
-            msg: Message to log with the image
-        """
-        image_string = (
-            f"{msg}<br />"
-            '<img style="max-width: 100%" src="data:image/png;base64,'
-            f'{self._to_base64(image)}" />'
-        )
-        logger.info(
-            image_string,
-            html=True,
-        )
-
     def _log_failed_match(
         self, screenshot: Image.Image, template: str
     ) -> None:
@@ -418,8 +416,8 @@ class VideoInputBase(ABC):
         """
 
         template_img = Image.open(template)
-        self._log_image(template_img, "Template was:")
-        self._log_image(screenshot, "Image was:")
+        log_image(template_img, "Template was:")
+        log_image(screenshot, "Image was:")
 
     def _log_video(self, video_path: str) -> None:
         """

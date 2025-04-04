@@ -34,7 +34,7 @@ class TestRapidOCR:
 
         assert result == "Hello\nWorld"
 
-        reader_result = []
+        reader_result = None
         mock_reader.reader.return_value = (reader_result, None)
         result = RapidOCRReader.read(mock_reader, None)
         assert result == ""

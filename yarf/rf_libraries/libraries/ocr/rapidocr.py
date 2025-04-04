@@ -71,6 +71,9 @@ class RapidOCRReader:
         """
         image = to_image(image)
         result, _ = self.reader(np.array(image))
+
+        if not result:
+            return ""
         return "\n".join([item[1] for item in result])
 
     def find(
