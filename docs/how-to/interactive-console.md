@@ -115,6 +115,8 @@ INFO:root:Scanned image in 0.06 seconds
 
 We can use the interactive console as if we are scripting a `.robot` file. For more information about the supported commands, please use the `help` command inside the interactive console.
 
+We can also enable auto completion by pressing `Fn + F5`.
+
 When we exit the interactive console, YARF will save the console log will be saved in the file `/tmp/yarf-outdir` directory. However, the user can also change it by providing a path to the `--outdir` option in the `yarf` command.
 
 Please note that the interactive console log is just a track record of the commands used by the user in the interactive console session along with timestamps. The user is still responsible to come up with a proper test suite along with the `.robot` scripts required. For more information about how to write a `.robot` script please visit the official [Robot Framework Documentation](https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html#test-data-sections)

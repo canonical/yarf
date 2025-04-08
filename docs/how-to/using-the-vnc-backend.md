@@ -9,7 +9,9 @@ You can do this with QEMU/MIR and other backends.
 To spawn a QEMU VM with an appropriate VNC server, you can use something along the lines of the following command (this example is for an Ubuntu Desktop live ISO):
 
 ```
-qemu-system-x86_64 -boot d -cdrom /path/to/$series-desktop-amd64.iso -m 8192M -smp 2 -hda /tmp/yarf-vm.qcow2 -enable-kvm -device qxl -vnc :0
+qemu-img create -f qcow2 /tmp/yarf-vm.qcow2 20G
+
+qemu-system-x86_64 -boot d -cdrom /path/to/$series-desktop-amd64.iso -m 8192M -smp 2 -hda /tmp/yarf-vm.qcow2 -enable-kvm -vnc :0
 ```
 
 If you want to allow multiple VNC clients (i.e. if you want to use a VNC viewer), you can replace `-vnc :0` with `-vnc :0,share=ignore`.
