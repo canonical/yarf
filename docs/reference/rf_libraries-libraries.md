@@ -21,4 +21,5 @@ glob:
 maxdepth: 1
 ---
 rf_libraries/library-*
+rf_libraries/interactive_console-*
 ```

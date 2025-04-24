@@ -18,16 +18,19 @@ logger = logging.getLogger(__name__)
 class RobotFile(Enum):
     LIBRARY = 0
     RESOURCE = 1
+    INTERACTIVE_CONSOLE = 2
 
 
 SUFFIX = {
     RobotFile.LIBRARY: ".py",
     RobotFile.RESOURCE: ".resource",
+    RobotFile.INTERACTIVE_CONSOLE: ".py",
 }
 
 PACKAGE = {
     RobotFile.LIBRARY: Path("yarf/rf_libraries/libraries"),
     RobotFile.RESOURCE: Path("yarf/rf_libraries/resources"),
+    RobotFile.INTERACTIVE_CONSOLE: Path("yarf/rf_libraries/interactive_console"),
 }
 
 
@@ -165,6 +168,13 @@ def generate_markdown(
             ):
                 continue
 
+            if target == RobotFile.INTERACTIVE_CONSOLE and (
+                file.stem.startswith("test_") 
+                or file.stem == "__init__" 
+                or root.name != "interactive_console"
+            ):
+                continue
+
             robot_file = root / file
             input_json_file = docs_ref_dir / file.parent / f"{file.stem}.json"
             output_md_file = (
@@ -172,10 +182,8 @@ def generate_markdown(
             )
 
             try:
-                if target == RobotFile.RESOURCE:
+                if target in [RobotFile.RESOURCE, RobotFile.LIBRARY, RobotFile.INTERACTIVE_CONSOLE]:
                     generate_libdoc_for_resources(robot_file, input_json_file)
-                elif target == RobotFile.LIBRARY:
-                    generate_libdoc_for_libraries(robot_file, input_json_file)
                 else:
                     logger.warning("Unknown robot file.")
                     continue

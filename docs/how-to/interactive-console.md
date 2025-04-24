@@ -120,3 +120,16 @@ We can also enable auto completion by pressing `Fn + F5`.
 When we exit the interactive console, YARF will save the console log will be saved in the file `/tmp/yarf-outdir` directory. However, the user can also change it by providing a path to the `--outdir` option in the `yarf` command.
 
 Please note that the interactive console log is just a track record of the commands used by the user in the interactive console session along with timestamps. The user is still responsible to come up with a proper test suite along with the `.robot` scripts required. For more information about how to write a `.robot` script please visit the official [Robot Framework Documentation](https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html#test-data-sections)
+
+## Interactive keywords
+
+There are also interactive mode exclusive Robot Framework keywords that can help us to build test cases. One keyword is `Template Factory` which shows a current screenshot in the platform and allow users to crop templates from it. For the details, please visit the [interactive library](./../reference/rf_libraries/interactive_console-Interactive.md)
+
+```{code-block} text
+> Template Factory
+Click and drag to select and save an ROI, press Esc to exit the ROI selector.
+ROI saved as /tmp/yarf-outdir/roi_20250415_100750.png
+ROI saved as /tmp/yarf-outdir/roi_20250415_100751.png
+ROI saved as /tmp/yarf-outdir/roi_20250415_100752.png
+>
+```

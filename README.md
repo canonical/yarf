@@ -32,8 +32,11 @@ This repository requires the following dependencies
    First, install a couple of deb package dependencies:
 
    ```
-   sudo apt install -y clang libxkbcommon-dev tesseract-ocr
+   sudo apt install -y clang libxkbcommon-dev tesseract-ocr python3-tk
    ```
+
+   > [!NOTE]
+   > The package `python3-tk` is optional when running from source.
 
    We can install YARF along with the dependencies specified in
    `pyproject.toml` in the virtual environment using the command:
