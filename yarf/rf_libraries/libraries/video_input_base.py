@@ -210,7 +210,7 @@ class VideoInputBase(ABC):
             text read from the image
         """
         if not image:
-            image = await self._grab_screenshot()
+            image = await self.grab_screenshot()
 
         return self.ocr.read(image)
 
@@ -236,7 +236,7 @@ class VideoInputBase(ABC):
             match is a dictionary with "text", "region", and "confidence".
         """
         if not image:
-            image = await self._grab_screenshot()
+            image = await self.grab_screenshot()
         return self.ocr.find(image, text, region=region)
 
     @keyword
@@ -264,7 +264,7 @@ class VideoInputBase(ABC):
         region = to_region(region)
         start_time = time.time()
         while time.time() - start_time < timeout:
-            image = await self._grab_screenshot()
+            image = await self.grab_screenshot()
             # Save the cropped image for debugging
             cropped_image = image.crop(region.as_tuple()) if region else image
 
@@ -304,7 +304,8 @@ class VideoInputBase(ABC):
         await self.start_video_input()
 
     @abstractmethod
-    async def _grab_screenshot(self) -> Image.Image:
+    @keyword
+    async def grab_screenshot(self) -> Image.Image:
         """
         Grab and return a screenshot from the video feed.
 
@@ -347,14 +348,14 @@ class VideoInputBase(ABC):
         while (now := time.time()) < end_time:
             try:
                 screenshot = await asyncio.wait_for(
-                    self._grab_screenshot(), end_time - now
+                    self.grab_screenshot(), end_time - now
                 )
             except RuntimeError:
                 continue
             else:
                 if self._screenshots_dir is not None:
                     self._frame_count += 1
-                    screenshot.save(
+                    screenshot.save(  # type: ignore[union-attr]
                         f"{self._screenshots_dir.name}/{self._frame_count:010d}.png",
                         compress_level=1,
                     )

@@ -38,7 +38,7 @@ class StubVideoInput(VideoInputBase):
     async def stop_video_input(self):
         pass
 
-    async def _grab_screenshot(self):
+    async def grab_screenshot(self):
         pass
 
 
@@ -46,7 +46,7 @@ class StubVideoInput(VideoInputBase):
 def stub_videoinput(request):
     vi = StubVideoInput()
     vi._rpa_images = Mock()
-    vi._grab_screenshot = AsyncMock(return_value=Mock())
+    vi.grab_screenshot = AsyncMock(return_value=Mock())
     if request.node.get_closest_marker("start_suite") is not None:
         vi._start_suite(sentinel.data, sentinel.result)
     yield vi
@@ -96,9 +96,9 @@ class TestVideoInputBase:
         Check the *Match* keyword returns the regions found.
         """
 
-        stub_videoinput._grab_screenshot.side_effect = [
+        stub_videoinput.grab_screenshot.side_effect = [
             RuntimeError,
-            stub_videoinput._grab_screenshot.return_value,
+            stub_videoinput.grab_screenshot.return_value,
         ]
 
         mock_regions = [Mock()]
@@ -117,7 +117,7 @@ class TestVideoInputBase:
             }
         ]
         assert await stub_videoinput.match("path") == expected
-        stub_videoinput._grab_screenshot.return_value.save.assert_called_once()
+        stub_videoinput.grab_screenshot.return_value.save.assert_called_once()
 
     @pytest.mark.asyncio
     @pytest.mark.start_suite
@@ -132,7 +132,7 @@ class TestVideoInputBase:
 
         await stub_videoinput.match("path")
 
-        stub_videoinput._grab_screenshot.return_value.save.assert_called_once()
+        stub_videoinput.grab_screenshot.return_value.save.assert_called_once()
         stub_videoinput._log_video = Mock()
         stub_videoinput._end_suite(None, Mock(passed=True))
         stub_videoinput._log_video.assert_not_called()
@@ -196,7 +196,7 @@ class TestVideoInputBase:
         ]
         assert await stub_videoinput.match_all(["path1", "path2"]) == expected
         assert (
-            stub_videoinput._grab_screenshot.return_value.save.call_count == 2
+            stub_videoinput.grab_screenshot.return_value.save.call_count == 2
         )
 
     @pytest.mark.asyncio
@@ -216,7 +216,7 @@ class TestVideoInputBase:
         with pytest.raises(ImageNotFoundError):
             await stub_videoinput.match("path", timeout=1)
         stub_videoinput._log_failed_match.assert_called_with(
-            stub_videoinput._grab_screenshot.return_value, "path"
+            stub_videoinput.grab_screenshot.return_value, "path"
         )
 
         # Template not found
@@ -250,7 +250,7 @@ class TestVideoInputBase:
             await stub_videoinput.match("path", timeout=1)
 
         assert (
-            stub_videoinput._grab_screenshot.return_value.save.call_args_list
+            stub_videoinput.grab_screenshot.return_value.save.call_args_list
             == [
                 call("sentinel.tempdir/0000000001.png", compress_level=ANY),
                 call("sentinel.tempdir/0000000002.png", compress_level=ANY),
@@ -333,7 +333,7 @@ class TestVideoInputBase:
         await stub_videoinput.read_text()
 
         stub_videoinput.ocr.read.assert_called_once_with(
-            stub_videoinput._grab_screenshot.return_value
+            stub_videoinput.grab_screenshot.return_value
         )
 
     @pytest.mark.asyncio
@@ -358,7 +358,7 @@ class TestVideoInputBase:
         await stub_videoinput.find_text("text")
 
         stub_videoinput.ocr.find.assert_called_once_with(
-            stub_videoinput._grab_screenshot.return_value, "text", region=None
+            stub_videoinput.grab_screenshot.return_value, "text", region=None
         )
 
     @pytest.mark.asyncio
@@ -383,7 +383,7 @@ class TestVideoInputBase:
         await stub_videoinput.find_text("text", region=Region(0, 0, 1, 1))
 
         stub_videoinput.ocr.find.assert_called_once_with(
-            stub_videoinput._grab_screenshot.return_value,
+            stub_videoinput.grab_screenshot.return_value,
             "text",
             region=Region(0, 0, 1, 1),
         )
@@ -481,7 +481,7 @@ class TestVideoInputBase:
         async def timeout():
             await asyncio.sleep(0.2)
 
-        stub_videoinput._grab_screenshot = timeout
+        stub_videoinput.grab_screenshot = timeout
 
         with pytest.raises(asyncio.exceptions.TimeoutError):
             await stub_videoinput.match("path", timeout=0.1)

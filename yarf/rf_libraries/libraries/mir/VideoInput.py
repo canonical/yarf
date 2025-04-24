@@ -22,7 +22,7 @@ class VideoInput(VideoInputBase):
         self._screencopy = screencopy.Screencopy(display_name)
         super().__init__()
 
-    async def _grab_screenshot(self) -> Image.Image:
+    async def grab_screenshot(self) -> Image.Image:
         """
         Grabs the current frame through screencopy.
 

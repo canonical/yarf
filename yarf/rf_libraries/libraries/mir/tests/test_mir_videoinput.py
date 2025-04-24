@@ -46,7 +46,7 @@ class TestMirVideoInput:
         with patch.object(video_input, "start_video_input") as m:
             m.attach_mock(mock_screencopy, "screencopy")
             assert (
-                await video_input._grab_screenshot()
+                await video_input.grab_screenshot()
                 == mock_screencopy().grab_screenshot.return_value
             )
 

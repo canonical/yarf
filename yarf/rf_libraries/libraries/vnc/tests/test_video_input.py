@@ -51,6 +51,6 @@ class TestVncVideoInput:
                 client_mock = connect_mock.return_value.__aenter__.return_value
                 client_mock.screenshot = AsyncMock()
                 mock_image.from_array.return_value = Image.Image()
-                screenshot = await video_input._grab_screenshot()
+                screenshot = await video_input.grab_screenshot()
                 assert screenshot is not None
                 client_mock.screenshot.assert_called_once

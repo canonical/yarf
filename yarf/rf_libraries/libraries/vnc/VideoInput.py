@@ -16,15 +16,12 @@ class VideoInput(VideoInputBase):
         super().__init__()
         self.vnc = Vnc()
 
-    async def _grab_screenshot(self) -> Image.Image:
+    @keyword
+    async def grab_screenshot(self) -> Image.Image:
         screenshot = None
         async with connect(self.vnc.host, self.vnc.port) as client:
             screenshot = Image.fromarray(await client.screenshot())
         return screenshot
-
-    @keyword
-    async def grab_screenshot(self) -> Image.Image:
-        return await self._grab_screenshot()
 
     @keyword
     async def stop_video_input(self) -> None:
