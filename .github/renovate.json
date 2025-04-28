@@ -1,0 +1,8 @@
+{
+    "packageRules": [
+        {
+            "matchManagers": ["github-actions"],
+            "enabled": false
+        }
+    ]
+}
