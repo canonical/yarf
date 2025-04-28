@@ -15,7 +15,7 @@ from yarf.rf_libraries.interactive_console.tools.roi_selector import (
 class Interactive:
     """
     A class for the user to interact with the console and perform various
-    tasks.
+    tasks. The keywords under this class is exclusive to interactive mode.
 
     Attributes:
         ROBOT_LIBRARY_SCOPE: Scope of the library.

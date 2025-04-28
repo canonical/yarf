@@ -123,10 +123,10 @@ Please note that the interactive console log is just a track record of the comma
 
 ## Interactive keywords
 
-There are also interactive mode exclusive Robot Framework keywords that can help us to build test cases. One keyword is `Template Factory` which shows a current screenshot in the platform and allow users to crop templates from it. For the details, please visit the [interactive library](./../reference/rf_libraries/interactive_console-Interactive.md)
+There are also interactive mode exclusive Robot Framework keywords that can help us to build test cases. One keyword is `Grab Template` which shows a current screenshot in the platform and allow users to crop templates from it. For the details, please visit the [interactive library](./../reference/rf_libraries/interactive_console-Interactive.md)
 
 ```{code-block} text
-> Template Factory
+> Interactive.Grab Template
 Click and drag to select and save an ROI, press Esc to exit the ROI selector.
 ROI saved as /tmp/yarf-outdir/roi_20250415_100750.png
 ROI saved as /tmp/yarf-outdir/roi_20250415_100751.png
