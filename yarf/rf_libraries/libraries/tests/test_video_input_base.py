@@ -393,6 +393,7 @@ class TestVideoInputBase:
         """
         Test the function returns the matches of the text found.
         """
+        image = AsyncMock()
         mock_time.side_effect = [0, 1, 2]
         stub_videoinput.find_text = AsyncMock()
         result = [
@@ -400,7 +401,8 @@ class TestVideoInputBase:
             {"text": "Hell", "region": Region(1, 1, 2, 2), "confidence": 0.8},
         ]
         stub_videoinput.find_text.return_value = result
-        assert await stub_videoinput.match_text("Hello") == result
+        stub_videoinput.grab_screenshot.return_value = image
+        assert await stub_videoinput.match_text("Hello") == (result, image)
 
     @pytest.mark.asyncio
     async def test_match_text_fails(self, stub_videoinput, mock_time):
@@ -417,6 +419,24 @@ class TestVideoInputBase:
 
         assert "Timed out looking for 'hello'" in str(e.value)
         assert "Text read on screen was:\nwrong\ntext" in str(e.value)
+
+    @pytest.mark.asyncio
+    async def test_get_text_position(self, stub_videoinput):
+        """
+        Test the function returns the center of the best match.
+        """
+        image = Mock()
+        stub_videoinput.match_text = AsyncMock()
+        result = [
+            {"text": "text", "region": Region(0, 0, 4, 4), "confidence": 0.9}
+        ]
+        stub_videoinput.match_text.return_value = (
+            result,
+            image,
+        )
+
+        result = await stub_videoinput.get_text_position("text")
+        assert result == (2, 2)
 
     @pytest.mark.asyncio
     async def test_restart_video_input(self, stub_videoinput):
@@ -502,6 +522,19 @@ class TestVideoInputBase:
         mock_logger.error.assert_called_once_with(ANY, html=True)
         assert mock_logger.error.call_args.args[0].startswith(
             "<video controls"
+        )
+
+    @patch("yarf.rf_libraries.libraries.video_input_base.ImageDraw")
+    def test_draw_region_on_image(self, mock_draw, stub_videoinput):
+        """
+        Test the function draws a rectangle on the image.
+        """
+        image = Mock()
+        region = Region(0, 0, 1, 1)
+        stub_videoinput._draw_region_on_image(image, region)
+        mock_draw.Draw.assert_called_once_with(image)
+        mock_draw.Draw.return_value.rectangle.assert_called_once_with(
+            (0, 0, 1, 1), outline="red", width=2
         )
 
     @patch("asyncio.get_event_loop")

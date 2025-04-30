@@ -180,7 +180,7 @@ class ROISelector:
             logger.info("ROI too small.", also_console=True)
             return
 
-        self.crop = self.original.crop((x1, y1, x2, y2))
+        self.crop = self.original.crop((int(x1), int(y1), int(x2), int(y2)))
         self._show_crop()
 
     def _show_crop(self) -> None:

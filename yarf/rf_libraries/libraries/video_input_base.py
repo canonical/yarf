@@ -14,7 +14,7 @@ from abc import ABC, abstractmethod
 from io import BytesIO
 from typing import List, Optional, Sequence
 
-from PIL import Image
+from PIL import Image, ImageDraw
 from robot.api import logger
 from robot.api.deco import keyword
 from robot.libraries.BuiltIn import BuiltIn
@@ -24,7 +24,7 @@ from RPA.recognition import ocr as tesseract
 from RPA.recognition.templates import ImageNotFoundError
 
 from yarf import LABEL_PREFIX
-from yarf.rf_libraries.libraries.ocr.rapidocr import OCRResult, RapidOCRReader
+from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
 
 DISPLAY_PATTERN = r"((?P<id>[\w-]+)\:)?(?P<resolution>\d+x\d+)(\s+|$)"
 DISPLAY_RE = re.compile(rf"{DISPLAY_PATTERN}")
@@ -220,7 +220,7 @@ class VideoInputBase(ABC):
         text: str,
         region: Region = None,
         image: Optional[Image.Image] = None,
-    ) -> List[OCRResult]:
+    ) -> List[dict]:
         """
         Find the specified text in the provided image or grab a screenshot to
         search from. The region can be specified directly in the robot file
@@ -245,19 +245,22 @@ class VideoInputBase(ABC):
         text: str,
         timeout: int = 10,
         region: Region | tuple[int] | None = None,
-    ) -> Region:
+    ) -> tuple[list[dict], Image.Image]:
         """
         Wait for specified text to appear on screen and get the position of the
         best match. The region can be specified directly in the robot file
-        using `RPA.core.geometry.to_region`
+        using `RPA.core.geometry.to_region`.
 
         Args:
             text: The text to match on screen
             timeout: Time to wait for the text to appear
             region: The region to search for the text
         Returns:
-            The list of matched text regions where the text was found. Each
-            match is a dictionary with "text", "region", and "confidence".
+            It returns a tuple with:
+             - The list of matched text regions where the text was found,
+               sorted by confidence.
+             - The image (used for debugging).
+            Each match is a dictionary with "text", "region", and "confidence".
         Raises:
             ValueError: If the specified text isn't found in time
         """
@@ -272,7 +275,7 @@ class VideoInputBase(ABC):
                 text, image=image, region=region
             )
             if text_matches:
-                return text_matches
+                return text_matches, cropped_image
 
         log_image(cropped_image, "The image used for ocr was:")
         read_text = await self.read_text(cropped_image)
@@ -280,6 +283,36 @@ class VideoInputBase(ABC):
             f"Timed out looking for '{text}' after '{timeout}' seconds. "
             f"Text read on screen was:\n{read_text}"
         )
+
+    @keyword
+    async def get_text_position(
+        self, text: str, region: Region = None
+    ) -> tuple[int, int]:
+        """
+        Get the center position of the best match for the specified text. The
+        region to search can be also specified. The center position is round to
+        the nearest integer.
+
+        Args:
+            text: The text to match on screen
+            region: The region to search for the text
+        Returns:
+            The x and y coordinates of the center of the best match
+        """
+        logger.info(f"\nLooking for '{text}'", also_console=True)
+        text_matches, image = await self.match_text(text, region=region)
+
+        # Get the best match
+        match = text_matches[0]
+
+        # Draw the region on the image for debugging
+        matched_image = self._draw_region_on_image(image, match["region"])
+        log_image(matched_image, "Matched text region:")
+
+        # Get the center of the region
+        center = match["region"].center
+        logger.info(f"\nThe center of the best match is: {center}")
+        return center.x, center.y
 
     @abstractmethod
     @keyword
@@ -433,6 +466,27 @@ class VideoInputBase(ABC):
                 f'{base64.b64encode(f.read()).decode()}" />',
                 html=True,
             )
+
+    def _draw_region_on_image(
+        self, image: Image.Image, region: Region
+    ) -> Image.Image:
+        """
+        Draw a rectangle on the image.
+
+        Args:
+            image: Image to draw on
+            region: Region to draw
+
+        Returns:
+            Image with the rectangle drawn
+        """
+        draw = ImageDraw.Draw(image)
+        draw.rectangle(
+            (region.left, region.top, region.right, region.bottom),
+            outline="red",
+            width=2,
+        )
+        return image
 
     def _close(self) -> None:
         """
