@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   documentation-checks:
-    runs-on: [self-hosted-linux-amd64-jammy-large]
+    runs-on: [self-hosted, linux, noble, x64, large]
     steps:
       - name: Install dependencies
         run: |

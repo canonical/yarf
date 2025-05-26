@@ -17,7 +17,7 @@ concurrency:
 jobs:
   build-amd:
     name: Build snap on amd64
-    runs-on: [self-hosted, linux, jammy, x64, large]
+    runs-on: [self-hosted, linux, noble, x64, large]
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
     - uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
@@ -30,7 +30,7 @@ jobs:
 
   build-arm:
     name: Build snap on arm64
-    runs-on: [self-hosted, linux, jammy, arm64, large]
+    runs-on: [self-hosted, linux, noble, arm64, large]
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
     - uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79

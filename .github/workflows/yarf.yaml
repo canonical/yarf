@@ -8,10 +8,11 @@ on:
       - 'docs/**'
       - 'snap/**'
       - '.github/workflows/**'
+      - '!.github/workflows/yarf.yaml'
 
 jobs:
   build:
-    runs-on: [self-hosted, linux, jammy, x64, large]
+    runs-on: [self-hosted, linux, noble, x64, large]
     steps:
     - name: Install dependencies
       run: |
