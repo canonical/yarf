@@ -88,7 +88,7 @@ class VideoInputBase(ABC):
         self.ROBOT_LIBRARY_LISTENER = self
         self._frame_count: int = 0
         self._screenshots_dir: Optional[tempfile.TemporaryDirectory] = None
-        self.ocr = tesseract
+        self.ocr = RapidOCRReader()
 
     def _start_suite(self, data, result) -> None:
         self._frame_count = 0
@@ -212,7 +212,7 @@ class VideoInputBase(ABC):
         if not image:
             image = await self.grab_screenshot()
 
-        return self.ocr.read(image)
+        return self.ocr.read(image)  # type: ignore[arg-type]
 
     @keyword
     async def find_text(
@@ -237,7 +237,7 @@ class VideoInputBase(ABC):
         """
         if not image:
             image = await self.grab_screenshot()
-        return self.ocr.find(image, text, region=region)
+        return self.ocr.find(image, text, region=region)  # type: ignore[arg-type]
 
     @keyword
     async def match_text(
