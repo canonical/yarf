@@ -30,6 +30,7 @@ parts:
       - libblas3
       - liblapack3
       - tesseract-ocr
+      - xclip
     override-pull: |
       craftctl default
       craftctl set version=$(yq -r .project.version pyproject.toml) || true
