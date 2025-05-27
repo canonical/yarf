@@ -45,6 +45,32 @@ parts:
       usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/blas/*: usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
       usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/lapack/*: usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
 
+    prime:
+      - -etc/X11
+      - -etc/fonts
+      - -usr/share/drirc.d
+      - -usr/share/X11
+      - -usr/share/lintian
+      - -usr/share/man
+
+  cleanup:
+    after: [ yarf ]
+    plugin: nil
+    build-snaps: [core24, mesa-2404, gnome-46-2404 ]
+    override-prime: |
+      set -eux
+
+      # Go through the pre-requisite snaps of this snap and drop the relevant
+      # duplicate files, in particular:
+      #  - All the libraries (any so-version) that we ship in content snaps
+      #  - All the "usr" files that are already part of the content snaps
+      for snap in "core24" "mesa-2404" "gnome-46-2404"; do
+        cd "/snap/$snap/current" && find . -type f,l -name *.so.* -exec sh -c 'rm -fv "$CRAFT_PRIME/{}"*' \;
+        cd "/snap/$snap/current" && find usr -type f,l -exec rm -fv "$CRAFT_PRIME/{}" \;
+      done
+
+      find "$CRAFT_PRIME" -type d -empty -delete
+
 apps:
   yarf:
     extensions:
