@@ -15,6 +15,15 @@ layout:
     bind: $SNAP/usr/share/tesseract-ocr
   /usr/share/ffmpeg:
     bind: $SNAP/usr/share/ffmpeg
+  /usr/lib/python3.12/tkinter:
+    bind: $SNAP/usr/lib/python3.12/tkinter
+  /usr/lib/python3.12/lib-dynload/_tkinter.cpython-312-$CRAFT_ARCH_TRIPLET_BUILD_FOR.so:
+    symlink: $SNAP/usr/lib/python3.12/lib-dynload/_tkinter.cpython-312-$CRAFT_ARCH_TRIPLET_BUILD_FOR.so
+  /usr/lib/tcltk:
+    bind: $SNAP/usr/lib/tcltk
+  /usr/share/tcltk:
+    bind: $SNAP/usr/share/tcltk
+
 parts:
   scripts:
     plugin: dump
@@ -30,6 +39,7 @@ parts:
       - libblas3
       - liblapack3
       - tesseract-ocr
+      - python3-tk
       - xclip
     override-pull: |
       craftctl default
