@@ -74,8 +74,12 @@ video_modes: Dict[bytes, str] = {
 
 # Message structures
 
+# message-type (6), text length, text...
+clipboard_struct: struct.Struct = struct.Struct(">BxxxI")
 # message-type (4), down-flag, key
 keyboard_struct: struct.Struct = struct.Struct(">BBxxI")
+# message-type (5), buttons, x, y
+mouse_struct: struct.Struct = struct.Struct(">BBHH")
 
 
 async def read_int(reader: StreamReader, length: int) -> int:
@@ -121,8 +125,9 @@ class Clipboard:
         Sends clipboard text to the server.
         """
 
-        data = text.encode('latin-1')
-        self.writer.write(b'\x06\x00' + len(data).to_bytes(4, 'big') + data)
+        data = text.encode("latin-1")
+        self.writer.write(clipboard_struct.pack(6, len(data)))
+        self.writer.write(data)
 
 
 @dataclass
@@ -185,11 +190,7 @@ class Mouse:
     y: int = 0
 
     def _write(self):
-        self.writer.write(
-            b'\x05' +
-            self.buttons.to_bytes(1, 'big') +
-            self.x.to_bytes(2, 'big') +
-            self.y.to_bytes(2, 'big'))
+        self.writer.write(mouse_struct.pack(5, self.buttons, self.x, self.y))
 
     @contextmanager
     def hold(self, button: int = 0):
