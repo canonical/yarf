@@ -125,7 +125,7 @@ class VideoInputBase(ABC):
                 self._log_video(video_path)
 
     @keyword
-    def set_ocr_method(self, method: str) -> None:
+    def set_ocr_method(self, method: str = "rapidocr") -> None:
         """
         Set the OCR method to use.
 

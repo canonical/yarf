@@ -314,6 +314,9 @@ class TestVideoInputBase:
         """
         Test the OCR method can be set.
         """
+        stub_videoinput.set_ocr_method()
+        assert isinstance(stub_videoinput.ocr, RapidOCRReader)
+
         stub_videoinput.set_ocr_method("tesseract")
         print(stub_videoinput.ocr)
         assert isinstance(stub_videoinput.ocr, types.ModuleType)
