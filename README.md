@@ -28,6 +28,9 @@ On snap-ready systems, you can install it on the command-line with:
 
 ```shell
 sudo snap install yarf
+
+# Optional: in order to allow rapidocr to increase the process niceness
+snap connect yarf:process-control
 ```
 
 ## Documentation

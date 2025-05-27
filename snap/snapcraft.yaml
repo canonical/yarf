@@ -90,3 +90,4 @@ apps:
     plugs:
       - home
       - network
+      - process-control
