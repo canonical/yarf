@@ -1,3 +1,4 @@
+import struct
 from asyncio import StreamReader, StreamWriter, open_connection
 from contextlib import asynccontextmanager, contextmanager, ExitStack
 from dataclasses import dataclass, field
@@ -7,6 +8,7 @@ from itertools import product
 from os import urandom
 from typing import Callable, Dict, List, Optional, Set, Tuple
 from zlib import decompressobj
+import keysymdef
 
 import numpy as np
 
@@ -14,21 +16,49 @@ from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
-from .lib.keysymdef import keysymdef  # type: ignore
 
 
 # Keyboard keys
-key_codes: Dict[str, int] = {}
-key_codes.update((name, code) for name, code, char in keysymdef)
-key_codes.update((chr(char), code) for name, code, char in keysymdef if char)
-key_codes['Del'] = key_codes['Delete']
-key_codes['Esc'] = key_codes['Escape']
-key_codes['Cmd'] = key_codes['Super_L']
-key_codes['Alt'] = key_codes['Alt_L']
-key_codes['Ctrl'] = key_codes['Control_L']
-key_codes['Super'] = key_codes['Super_L']
-key_codes['Shift'] = key_codes['Shift_L']
-key_codes['Backspace'] = key_codes['BackSpace']
+shifted: dict[str, str] = {
+    chr(c): chr(c).upper() for c in range(ord("a"), ord("z") + 1)
+}
+shifted |= {
+    "1": "!",
+    "2": "@",
+    "3": "#",
+    "4": "$",
+    "5": "%",
+    "6": "^",
+    "7": "&",
+    "8": "*",
+    "9": "(",
+    "0": ")",
+    ";": ":",
+    ",": "<",
+    ".": ">",
+    "/": "?",
+    "-": "_",
+    "=": "+",
+}
+
+key_sequences: Dict[str, tuple[int, ...]] = {
+    name: (code,) for name, code, char in keysymdef
+}
+key_sequences |= {chr(char): (code,) for name, code, char in keysymdef if char}
+key_sequences |= {
+    upper: (key_sequences["Shift_L"][0], key_sequences[upper][0])
+    for lower, upper in shifted.items()
+}
+key_sequences["Del"] = key_sequences["Delete"]
+key_sequences["Esc"] = key_sequences["Escape"]
+key_sequences["Cmd"] = key_sequences["Super_L"]
+key_sequences["Alt"] = key_sequences["Alt_L"]
+key_sequences["Control"] = key_sequences["Control_L"]
+key_sequences["Ctrl"] = key_sequences["Control_L"]
+key_sequences["Super"] = key_sequences["Super_L"]
+key_sequences["Shift"] = key_sequences["Shift_L"]
+key_sequences["Backspace"] = key_sequences["BackSpace"]
+key_sequences["Enter"] = key_sequences["Return"]
 
 # Common screen aspect ratios
 screen_ratios: Set[Fraction] = {
@@ -41,6 +71,11 @@ video_modes: Dict[bytes, str] = {
      b'\x20\x18\x01\x01\x00\xff\x00\xff\x00\xff\x10\x08\x00': 'argb',
      b'\x20\x18\x01\x01\x00\xff\x00\xff\x00\xff\x00\x08\x10': 'abgr',
 }
+
+# Message structures
+
+# message-type (4), down-flag, key
+keyboard_struct: struct.Struct = struct.Struct(">BBxxI")
 
 
 async def read_int(reader: StreamReader, length: int) -> int:
@@ -100,12 +135,14 @@ class Keyboard:
 
     @contextmanager
     def _write(self, key: str):
-        data = key_codes[key].to_bytes(4, 'big')
-        self.writer.write(b'\x04\x01\x00\x00' + data)
+        codes = key_sequences[key]
+        for code in codes:
+            self.writer.write(keyboard_struct.pack(4, 1, code))
         try:
             yield
         finally:
-            self.writer.write(b'\x04\x00\x00\x00' + data)
+            for code in codes:
+                self.writer.write(keyboard_struct.pack(4, 0, code))
 
     @contextmanager
     def hold(self, *keys: str):
