@@ -18,26 +18,16 @@ parts:
   yarf:
     plugin: python
     source: .
-    build-packages:
-      - pkg-config
-      - libwayland-dev
-      - libxkbcommon-dev
     build-snaps:
       - yq
     stage-packages:
       - ffmpeg
-      - libpulse0
       - libblas3
       - liblapack3
-      - libice6
-      - libgl1
-      - libsm6
-      - libxkbcommon0
       - tesseract-ocr
-      - xkb-data
     override-pull: |
       craftctl default
-      craftctl set version=$(yq -r .project.version pyproject.toml)
+      craftctl set version=$(yq -r .project.version pyproject.toml) || true
     override-stage: |
       TESSDATA_DIR=$(find "$CRAFT_PART_INSTALL/usr/share/tesseract-ocr" -type d -name tessdata)
       TESSVER_DIR=$(dirname "$TESSDATA_DIR")
@@ -46,22 +36,24 @@ parts:
 
       craftctl default
 
+    build-environment:
+      # TODO: Drop this when this goes in:
+      #  https://github.com/canonical/snapcraft/pull/5514
+      - C_INCLUDE_PATH: /snap/gnome-46-2404-sdk/current/usr/include:${C_INCLUDE_PATH:-}
+
     organize:
-      usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/pulseaudio/*: usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
       usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/blas/*: usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
       usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/lapack/*: usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
 
-environment:
-  XKB_CONFIG_ROOT: $SNAP/usr/share/X11/xkb
-
 apps:
   yarf:
+    extensions:
+      - gnome
     command-chain:
       - bin/wayland-launch
     command: bin/yarf
     plugs:
       - home
       - network
-      - wayland
     environment:
       TESSDATA_PREFIX: "$SNAP/usr/share/tesseract-ocr/tessdata"
