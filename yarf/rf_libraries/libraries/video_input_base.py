@@ -269,7 +269,11 @@ class VideoInputBase(ABC):
         while time.time() - start_time < timeout:
             image = await self.grab_screenshot()
             # Save the cropped image for debugging
-            cropped_image = image.crop(region.as_tuple()) if region else image
+            cropped_image = (
+                image.crop(region.as_tuple())
+                if isinstance(region, Region)
+                else image
+            )
 
             text_matches = await self.find_text(
                 text, image=image, region=region
