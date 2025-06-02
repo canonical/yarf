@@ -29,6 +29,7 @@ from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
 DISPLAY_PATTERN = r"((?P<id>[\w-]+)\:)?(?P<resolution>\d+x\d+)(\s+|$)"
 DISPLAY_RE = re.compile(rf"{DISPLAY_PATTERN}")
 DISPLAYS_RE = re.compile(rf"^({DISPLAY_PATTERN})+$")
+DEFAULT_TEMPLATE_MATCHING_TOLERANCE = 0.8
 
 
 def log_image(image: Image.Image, msg: str = "") -> None:
@@ -76,12 +77,10 @@ class VideoInputBase(ABC):
     Attributes:
         ROBOT_LIBRARY_SCOPE: The scope of the robot library
         ROBOT_LISTENER_API_VERSION: The robot listener API version
-        TOLERANCE: The tolerance for image comparison in the compare_images method
     """
 
     ROBOT_LIBRARY_SCOPE = "GLOBAL"
     ROBOT_LISTENER_API_VERSION = 3
-    TOLERANCE = 0.8
 
     def __init__(self) -> None:
         self._rpa_images = Images()
@@ -143,7 +142,12 @@ class VideoInputBase(ABC):
             raise ValueError(f"Unknown OCR method: {method}")
 
     @keyword
-    async def match(self, template: str, timeout: int = 10) -> List[Region]:
+    async def match(
+        self,
+        template: str,
+        timeout: int = 10,
+        tolerance: float = DEFAULT_TEMPLATE_MATCHING_TOLERANCE,
+    ) -> List[Region]:
         """
         Grab screenshots and compare until there's a match with the provided
         template or timeout.
@@ -151,14 +155,20 @@ class VideoInputBase(ABC):
         Args:
             template: path to an image file to be used as template
             timeout: timeout in seconds
+            tolerance: The tolerance for image comparison in the compare_images method
         Returns:
             list of matched regions
         """
-        return await self.match_any([template], timeout=timeout)
+        return await self.match_any(
+            [template], timeout=timeout, tolerance=tolerance
+        )
 
     @keyword
     async def match_all(
-        self, templates: Sequence[str], timeout: int = 10
+        self,
+        templates: Sequence[str],
+        timeout: int = 10,
+        tolerance: float = DEFAULT_TEMPLATE_MATCHING_TOLERANCE,
     ) -> List[Region]:
         """
         Grab screenshots and compare with the provided templates until a frame
@@ -167,17 +177,21 @@ class VideoInputBase(ABC):
         Args:
             templates: sequence of paths to image files to use as templates
             timeout: timeout in seconds
+            tolerance: The tolerance for image comparison in the compare_images method
 
         Returns:
             List of matched regions and template path matched
         """
         return await self._do_match(
-            templates, accept_any=False, timeout=timeout
+            templates, accept_any=False, timeout=timeout, tolerance=tolerance
         )
 
     @keyword
     async def match_any(
-        self, templates: Sequence[str], timeout: int = 10
+        self,
+        templates: Sequence[str],
+        timeout: int = 10,
+        tolerance: float = DEFAULT_TEMPLATE_MATCHING_TOLERANCE,
     ) -> List[Region]:
         """
         Grab screenshots and compare with the provided templates until there's
@@ -186,12 +200,13 @@ class VideoInputBase(ABC):
         Args:
             templates: sequence of paths to image files to use as templates
             timeout: timeout in seconds
+            tolerance: The tolerance for image comparison in the compare_images method
 
         Returns:
             list of matched regions and template path matched
         """
         return await self._do_match(
-            templates, accept_any=True, timeout=timeout
+            templates, accept_any=True, timeout=timeout, tolerance=tolerance
         )
 
     @keyword
@@ -351,7 +366,11 @@ class VideoInputBase(ABC):
         """
 
     async def _do_match(
-        self, templates: Sequence[str], accept_any: bool, timeout: int = 10
+        self,
+        templates: Sequence[str],
+        accept_any: bool,
+        timeout: int = 10,
+        tolerance: float = DEFAULT_TEMPLATE_MATCHING_TOLERANCE,
     ) -> List[Region]:
         """
         Platform-specific implementation of :meth:`match_all` and
@@ -361,6 +380,7 @@ class VideoInputBase(ABC):
             templates: path to an image file to be used as template
             accept_any: whether to terminate on the first match (when True)
             timeout: timeout in seconds
+            tolerance: The tolerance for image comparison in the compare_images method
 
         Returns:
             list of matched regions
@@ -402,7 +422,7 @@ class VideoInputBase(ABC):
                     regions = self._rpa_images.find_template_in_image(
                         screenshot,
                         image,
-                        tolerance=self.TOLERANCE,
+                        tolerance=tolerance,
                     )
                 except (ValueError, ImageNotFoundError):
                     # If we're performing match_all, and we fail to match any

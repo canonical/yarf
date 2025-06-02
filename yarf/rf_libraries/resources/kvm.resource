@@ -8,6 +8,7 @@ Documentation       Keyword definitions for specialised functionality
 
 Library             Hid.py    AS    PlatformHid
 Library             VideoInput.py    AS    PlatformVideoInput
+Variables           ../video_input_base.py
 
 
 *** Keywords ***
@@ -23,10 +24,18 @@ Press Key And Match
 
 Press Combo And Match
     [Documentation]    If the provided template is not already matching, press a key combination until it does.
-    [Arguments]             ${keys-combo}           ${template}             ${tentatives}=1         ${timeout}=2
+    [Arguments]
+    ...                     ${keys-combo}
+    ...                     ${template}
+    ...                     ${tentatives}=1
+    ...                     ${timeout}=2
+    ...                     ${tolerance}=${DEFAULT_TEMPLATE_MATCHING_TOLERANCE}
 
     ${match}=               Run Keyword And Return Status
-    ...                     PlatformVideoInput.Match                        ${template}             ${timeout}
+    ...                     PlatformVideoInput.Match
+    ...                     ${template}
+    ...                     ${timeout}
+    ...                     ${tolerance}
     IF    ${match}
         Log                     Template is already matching.                   html=true               console=true
         RETURN
@@ -35,17 +44,24 @@ Press Combo And Match
     FOR    ${index}    IN RANGE    ${tentatives}
         PlatformHid.Keys Combo                          ${keys-combo}
         ${match}=               Run Keyword And Return Status
-        ...                     PlatformVideoInput.Match                        ${template}             ${timeout}
+        ...                     PlatformVideoInput.Match
+        ...                     ${template}
+        ...                     ${timeout}
+        ...                     ${tolerance}
         IF    ${match}    BREAK
     END
 
     IF    ${match} == ${FALSE}    Fail    No match found
 
 Press And Wait For Match
-    [Arguments]             ${keys-combo}           ${template}             ${timeout}=10
+    [Arguments]
+    ...                     ${keys-combo}
+    ...                     ${template}
+    ...                     ${timeout}=10
+    ...                     ${tolerance}=${DEFAULT_TEMPLATE_MATCHING_TOLERANCE}
 
     Keys Combo              ${keys-combo}
-    PlatformVideoInput.Match                        ${template}             ${timeout}
+    PlatformVideoInput.Match                        ${template}             ${timeout}              ${tolerance}
 
 Get Center Of ${region}
     [Documentation]    Get the center point of a region.
