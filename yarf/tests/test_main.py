@@ -309,7 +309,15 @@ class TestMain:
         and output directory.
         """
         variables = ["VAR1:value1", "VAR2:value2"]
-        options = {"variable": ["VAR3:value3"], "extra_arg": "extra_value"}
+        options = {
+            "variable": ["VAR3:value3"],
+            "extra_arg": "extra_value",
+            "suite": ["suiteA"],
+            "test": ["testA"],
+            "task": ["taskA"],
+            "include": ["tagA"],
+            "exclude": ["tagB"],
+        }
         outdir = Path(tempfile.gettempdir()) / "yarf-outdir"
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Example"] = Example
@@ -327,6 +335,12 @@ class TestMain:
         )
         assert rc == 0
         mock_get_yarf_settings.assert_called_once()
+        mock_test_suite.filter.assert_called_once_with(
+            included_suites=["suiteA"],
+            included_tests=["testA", "taskA"],
+            included_tags=["tagA"],
+            excluded_tags=["tagB"],
+        )
         mock_test_suite.run.assert_called_once_with(
             variable=["VAR1:value1", "VAR2:value2", "VAR3:value3"],
             outputdir=outdir,

@@ -272,6 +272,14 @@ def run_robot_suite(
     with contextlib.suppress(KeyError):
         variables.extend(options.pop("variable"))
 
+    selected_tests = options.pop("test", []) + options.pop("task", [])
+    suite.filter(
+        included_suites=options.pop("suite", None),
+        included_tests=selected_tests if len(selected_tests) > 0 else None,
+        included_tags=options.pop("include", None),
+        excluded_tags=options.pop("exclude", None),
+    )
+
     with robot_in_path(lib_cls.get_pkg_path()):
         result = suite.run(
             variable=variables,
