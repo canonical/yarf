@@ -108,16 +108,70 @@ Move Pointer To ${destination}
     ...    absolute position given by the tuple. Otherwise, if
     ...    ${destination} is the path of an image template file, the pointer
     ...    will move to the center of the first matching template region.
+    ...    ${destination} can also be a string, and the pointer will move to the
+    ...    center of the found text.
     ...
     ...    Return:
     ...    Absolute position of the pointer after the move, as a tuple (x, y)
     ...    of integers.
-    IF    ${{isinstance($destination, str)}}
+    IF    ${{ os.path.exists($destination) }}
         ${regions}=             PlatformVideoInput.Match                        ${destination}
         ${position}=            Get Center Of ${regions}[0]
-    ELSE
+    ELSE IF    ${{ isinstance($destination, tuple) }}
         ${position}=            Set Variable            ${destination}
+    ELSE
+        Log
+        ...                     Assuming ${destination} is a string as it isn't a file which exists.
+        ...                     html=true
+        ...                     console=true
+        ${position}=            PlatformVideoInput.Get Text Position            text=${destination}
     END
+
+    PlatformHid.Move Pointer To Absolute            ${position}[0]          ${position}[1]
+    RETURN                  ${position}
+
+Move Pointer To ${destination} In Domain ${domain}
+    [Documentation]    Move the pointer to an absolute position or image
+    ...    template.
+    ...
+    ...    Embedded arguments:
+    ...    - ${destination}: Where to move the pointer to. If ${destination}
+    ...    is a tuple (x, y) of integers, the pointer will move to the
+    ...    absolute position given by the tuple. Otherwise, if
+    ...    ${destination} is the path of an image template file, the pointer
+    ...    will move to the center of the first matching template region.
+    ...    ${destination} can also be a string, and the pointer will move to the
+    ...    center of the found text.
+    ...
+    ...    - ${domain}: Given region or template to search for ${destination} within.
+    ...
+    ...    Return:
+    ...    Absolute position of the pointer after the move, as a tuple (x, y)
+    ...    of integers.
+    IF    ${{ isinstance(domain, dict) }}
+        ${sub_region}=          Set Variable            ${domain}
+    ELSE IF    ${{ isinstance(domain, str) }}
+        IF    ${{ os.path.exists($domain) }}
+            ${sub_regions}=         PlatformVideoInput.Match                        ${domain}
+            ${sub_region}=          Set Variable            ${sub_regions}[0]
+        ELSE
+            Fail                    Template ${domain} doesn't exist!
+        END
+    ELSE
+        Fail                    Incorrect domain type
+    END
+
+    IF    ${{ os.path.exists($destination) }}
+        ${regions}=             PlatformVideoInput.Match
+        ...                     template=${destination}
+        ...                     region=${sub_region}
+        ${position}=            Get Center Of ${regions}[0]
+    ELSE
+        ${position}=            PlatformVideoInput.Get Text Position
+        ...                     text=${destination}
+        ...                     region=${sub_region}
+    END
+
     PlatformHid.Move Pointer To Absolute            ${position}[0]          ${position}[1]
     RETURN                  ${position}
 

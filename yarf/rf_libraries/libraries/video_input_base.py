@@ -12,7 +12,7 @@ import tempfile
 import time
 from abc import ABC, abstractmethod
 from io import BytesIO
-from typing import List, Optional, Sequence
+from typing import List, Optional, Sequence, Union
 
 from PIL import Image, ImageDraw
 from robot.api import logger
@@ -147,6 +147,7 @@ class VideoInputBase(ABC):
         template: str,
         timeout: int = 10,
         tolerance: float = DEFAULT_TEMPLATE_MATCHING_TOLERANCE,
+        region: Optional[Union[Region, dict]] = None,
     ) -> List[Region]:
         """
         Grab screenshots and compare until there's a match with the provided
@@ -156,11 +157,16 @@ class VideoInputBase(ABC):
             template: path to an image file to be used as template
             timeout: timeout in seconds
             tolerance: The tolerance for image comparison in the compare_images method
+            region: the region to search for the template in
         Returns:
             list of matched regions
         """
+
+        if isinstance(region, dict):
+            region = Region(**region)
+
         return await self.match_any(
-            [template], timeout=timeout, tolerance=tolerance
+            [template], timeout=timeout, tolerance=tolerance, region=region
         )
 
     @keyword
@@ -192,6 +198,7 @@ class VideoInputBase(ABC):
         templates: Sequence[str],
         timeout: int = 10,
         tolerance: float = DEFAULT_TEMPLATE_MATCHING_TOLERANCE,
+        region: Optional[Union[Region, dict]] = None,
     ) -> List[Region]:
         """
         Grab screenshots and compare with the provided templates until there's
@@ -201,12 +208,19 @@ class VideoInputBase(ABC):
             templates: sequence of paths to image files to use as templates
             timeout: timeout in seconds
             tolerance: The tolerance for image comparison in the compare_images method
+            region: the region to search for the template in
 
         Returns:
             list of matched regions and template path matched
         """
+        if isinstance(region, dict):
+            region = Region(**region)
         return await self._do_match(
-            templates, accept_any=True, timeout=timeout, tolerance=tolerance
+            templates,
+            accept_any=True,
+            timeout=timeout,
+            tolerance=tolerance,
+            region=region,
         )
 
     @keyword
@@ -233,7 +247,7 @@ class VideoInputBase(ABC):
     async def find_text(
         self,
         text: str,
-        region: Region = None,
+        region: Optional[Union[Region, dict]] = None,
         image: Optional[Image.Image] = None,
     ) -> List[dict]:
         """
@@ -250,6 +264,9 @@ class VideoInputBase(ABC):
             The list of matched text regions where the text was found. Each
             match is a dictionary with "text", "region", and "confidence".
         """
+        if isinstance(region, dict):
+            region = Region(**region)
+
         if not image:
             image = await self.grab_screenshot()
         return self.ocr.find(image, text, region=region)  # type: ignore[arg-type]
@@ -305,7 +322,7 @@ class VideoInputBase(ABC):
 
     @keyword
     async def get_text_position(
-        self, text: str, region: Region = None
+        self, text: str, region: Region | dict = None
     ) -> tuple[int, int]:
         """
         Get the center position of the best match for the specified text. The
@@ -318,6 +335,8 @@ class VideoInputBase(ABC):
         Returns:
             The x and y coordinates of the center of the best match
         """
+        if isinstance(region, dict):
+            region = Region(**region)
         logger.info(f"\nLooking for '{text}'", also_console=True)
         text_matches, image = await self.match_text(text, region=region)
 
@@ -371,6 +390,7 @@ class VideoInputBase(ABC):
         accept_any: bool,
         timeout: int = 10,
         tolerance: float = DEFAULT_TEMPLATE_MATCHING_TOLERANCE,
+        region: Optional[Region] = None,
     ) -> List[Region]:
         """
         Platform-specific implementation of :meth:`match_all` and
@@ -381,6 +401,7 @@ class VideoInputBase(ABC):
             accept_any: whether to terminate on the first match (when True)
             timeout: timeout in seconds
             tolerance: The tolerance for image comparison in the compare_images method
+            region: the region to search for the template in
 
         Returns:
             list of matched regions
@@ -423,7 +444,15 @@ class VideoInputBase(ABC):
                         screenshot,
                         image,
                         tolerance=tolerance,
+                        region=region,
                     )
+                    if region:
+                        adjusted_regions = []
+                        for reg in regions:
+                            adjusted_regions.append(
+                                reg.move(region.left, region.top)
+                            )
+                        regions = adjusted_regions
                 except (ValueError, ImageNotFoundError):
                     # If we're performing match_all, and we fail to match any
                     # single template, move onto the next screenshot
