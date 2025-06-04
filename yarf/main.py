@@ -16,6 +16,7 @@ from robot import rebot
 from robot.api import TestSuite, TestSuiteBuilder
 from robot.errors import Information
 from robot.run import RobotFramework
+from RobotStackTracer import RobotStackTracer
 
 from yarf import LABEL_PREFIX
 from yarf.output import OUTPUT_FORMATS, get_outdir_path, output_converter
@@ -284,7 +285,7 @@ def run_robot_suite(
         result = suite.run(
             variable=variables,
             outputdir=outdir,
-            listener=MetadataListener(),
+            listener=[MetadataListener(), RobotStackTracer()],
             **options,
         )
 
