@@ -92,7 +92,7 @@ In the interactive console, we can see information about the built-in and YARF s
    Displace ${point} By (${x}, ${y})     Shift a point by the specified displacements along the x and y axes.
    Get Center Of ${region}       Get the center point of a region.
    Move Pointer To ${destination}        Move the pointer to an absolute position, image template, or text.
-   Move Pointer To ${destination} In Domain ${domain}        Move the pointer to an absolute position, image template, or text, within a given template or region.
+   Move Pointer To ${destination} In ${domain}        Move the pointer to an absolute position, image template, or text, within a given template or region.
    Move Pointer To (${x}, ${y})  Move the pointer to an absolute position.
    Move Pointer To Proportional (${x}, ${y})     Move the pointer to a destination position given as proportions to the size of the display output.
    ...

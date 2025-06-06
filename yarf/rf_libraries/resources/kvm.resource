@@ -130,7 +130,7 @@ Move Pointer To ${destination}
     PlatformHid.Move Pointer To Absolute            ${position}[0]          ${position}[1]
     RETURN                  ${position}
 
-Move Pointer To ${destination} In Domain ${domain}
+Move Pointer To ${destination} In ${domain}
     [Documentation]    Move the pointer to an absolute position or image
     ...    template.
     ...
