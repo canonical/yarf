@@ -121,6 +121,48 @@ class TestVideoInputBase:
 
     @pytest.mark.asyncio
     @pytest.mark.start_suite
+    async def test_match_in_region(self, stub_videoinput):
+        """
+        Check the *Match* keyword returns the regions found.
+        """
+
+        stub_videoinput.grab_screenshot.side_effect = [
+            RuntimeError,
+            stub_videoinput.grab_screenshot.return_value,
+        ]
+
+        stub_videoinput._rpa_images.find_template_in_image.return_value = [
+            Region(
+                left=10,
+                top=10,
+                right=125,
+                bottom=125,
+            )
+        ]
+
+        region = {
+            "left": 0,
+            "top": 0,
+            "right": 400,
+            "bottom": 400,
+        }
+
+        expected = [
+            {
+                "left": 10,
+                "top": 10,
+                "right": 125,
+                "bottom": 125,
+                "path": "path",
+            }
+        ]
+        assert (
+            await stub_videoinput.match(template="path", region=region)
+            == expected
+        )
+
+    @pytest.mark.asyncio
+    @pytest.mark.start_suite
     async def test_match_no_video(self, stub_videoinput, mock_run):
         """
         Check that successful matches don't log video.
@@ -160,6 +202,42 @@ class TestVideoInputBase:
             }
         ]
         assert await stub_videoinput.match_any(["path1", "path2"]) == expected
+
+    @pytest.mark.asyncio
+    @pytest.mark.start_suite
+    async def test_match_any_in_region(self, stub_videoinput):
+        """
+        Check the *Match Any* keyword returns the regions found in the first
+        matched template, after providing a region.
+        """
+
+        stub_videoinput._rpa_images.find_template_in_image.return_value = [
+            Region(
+                left=10,
+                top=10,
+                right=125,
+                bottom=125,
+            )
+        ]
+        region = {
+            "left": 0,
+            "top": 0,
+            "right": 400,
+            "bottom": 400,
+        }
+        expected = [
+            {
+                "left": 10,
+                "top": 10,
+                "right": 125,
+                "bottom": 125,
+                "path": "path1",
+            }
+        ]
+        assert (
+            await stub_videoinput.match_any(["path1", "path2"], region=region)
+            == expected
+        )
 
     @pytest.mark.asyncio
     @pytest.mark.start_suite
@@ -365,6 +443,28 @@ class TestVideoInputBase:
         )
 
     @pytest.mark.asyncio
+    async def test_find_text_in_region(self, stub_videoinput):
+        """
+        Test if the function grabs a new screenshot and finds the text
+        position.
+        """
+        stub_videoinput.ocr.find = Mock()
+        region = {
+            "left": 0,
+            "top": 0,
+            "right": 1,
+            "bottom": 1,
+        }
+        expected_region = Region(0, 0, 1, 1)
+        await stub_videoinput.find_text("text", region=region)
+
+        stub_videoinput.ocr.find.assert_called_once_with(
+            stub_videoinput.grab_screenshot.return_value,
+            "text",
+            region=expected_region,
+        )
+
+    @pytest.mark.asyncio
     async def test_find_text_in_image(self, stub_videoinput):
         """
         Test if the function finds the text position in an image.
@@ -439,6 +539,31 @@ class TestVideoInputBase:
         )
 
         result = await stub_videoinput.get_text_position("text")
+        assert result == (2, 2)
+
+    @pytest.mark.asyncio
+    async def test_get_text_position_in_region(self, stub_videoinput):
+        """
+        Test the function returns the center of the best match.
+        """
+        image = Mock()
+        stub_videoinput.match_text = AsyncMock()
+        result = [
+            {"text": "text", "region": Region(0, 0, 4, 4), "confidence": 0.9}
+        ]
+        stub_videoinput.match_text.return_value = (
+            result,
+            image,
+        )
+
+        region = {
+            "left": 0,
+            "top": 0,
+            "right": 400,
+            "bottom": 400,
+        }
+
+        result = await stub_videoinput.get_text_position("text", region=region)
         assert result == (2, 2)
 
     @pytest.mark.asyncio
