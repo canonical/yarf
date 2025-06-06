@@ -30,6 +30,7 @@ dependencies = [
     "robotframework~=6.1.1",
     "robotframework-debug~=4.5.0",
     "robotframework-sshlibrary~=3.8.0",
+    "robotframework-stacktrace==0.4.1",
     "rpaframework~=29.0.0",
     "rpaframework-recognition~=5.2.3",
     "rpyc~=5.3.1",

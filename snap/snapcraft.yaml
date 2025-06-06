@@ -10,6 +10,20 @@ description: |
 grade: stable
 confinement: strict
 
+layout:
+  /usr/share/tesseract-ocr:
+    bind: $SNAP/usr/share/tesseract-ocr
+  /usr/share/ffmpeg:
+    bind: $SNAP/usr/share/ffmpeg
+  /usr/lib/python3.12/tkinter:
+    bind: $SNAP/usr/lib/python3.12/tkinter
+  /usr/lib/python3.12/lib-dynload/_tkinter.cpython-312-$CRAFT_ARCH_TRIPLET_BUILD_FOR.so:
+    symlink: $SNAP/usr/lib/python3.12/lib-dynload/_tkinter.cpython-312-$CRAFT_ARCH_TRIPLET_BUILD_FOR.so
+  /usr/lib/tcltk:
+    bind: $SNAP/usr/lib/tcltk
+  /usr/share/tcltk:
+    bind: $SNAP/usr/share/tcltk
+
 parts:
   scripts:
     plugin: dump
@@ -18,50 +32,62 @@ parts:
   yarf:
     plugin: python
     source: .
-    build-packages:
-      - pkg-config
-      - libwayland-dev
-      - libxkbcommon-dev
     build-snaps:
       - yq
     stage-packages:
       - ffmpeg
-      - libpulse0
       - libblas3
       - liblapack3
-      - libice6
-      - libgl1
-      - libsm6
-      - libxkbcommon0
       - tesseract-ocr
-      - xkb-data
+      - python3-tk
+      - xclip
     override-pull: |
       craftctl default
-      craftctl set version=$(yq -r .project.version pyproject.toml)
-    override-stage: |
-      TESSDATA_DIR=$(find "$CRAFT_PART_INSTALL/usr/share/tesseract-ocr" -type d -name tessdata)
-      TESSVER_DIR=$(dirname "$TESSDATA_DIR")
-      mv "$TESSDATA_DIR" $(dirname "$TESSVER_DIR")
-      rm -r "$TESSVER_DIR"
+      craftctl set version=$(yq -r .project.version pyproject.toml) || true
 
-      craftctl default
+    build-environment:
+      # TODO: Drop this when this goes in:
+      #  https://github.com/canonical/snapcraft/pull/5514
+      - C_INCLUDE_PATH: /snap/gnome-46-2404-sdk/current/usr/include:${C_INCLUDE_PATH:-}
 
     organize:
-      usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/pulseaudio/*: usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
       usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/blas/*: usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
       usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/lapack/*: usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
 
-environment:
-  XKB_CONFIG_ROOT: $SNAP/usr/share/X11/xkb
+    prime:
+      - -etc/X11
+      - -etc/fonts
+      - -usr/share/drirc.d
+      - -usr/share/X11
+      - -usr/share/lintian
+      - -usr/share/man
+
+  cleanup:
+    after: [ yarf ]
+    plugin: nil
+    build-snaps: [core24, mesa-2404, gnome-46-2404 ]
+    override-prime: |
+      set -eux
+
+      # Go through the pre-requisite snaps of this snap and drop the relevant
+      # duplicate files, in particular:
+      #  - All the libraries (any so-version) that we ship in content snaps
+      #  - All the "usr" files that are already part of the content snaps
+      for snap in "core24" "mesa-2404" "gnome-46-2404"; do
+        cd "/snap/$snap/current" && find . -type f,l -name *.so.* -exec sh -c 'rm -fv "$CRAFT_PRIME/{}"*' \;
+        cd "/snap/$snap/current" && find usr -type f,l -exec rm -fv "$CRAFT_PRIME/{}" \;
+      done
+
+      find "$CRAFT_PRIME" -type d -empty -delete
 
 apps:
   yarf:
+    extensions:
+      - gnome
     command-chain:
       - bin/wayland-launch
     command: bin/yarf
     plugs:
       - home
       - network
-      - wayland
-    environment:
-      TESSDATA_PREFIX: "$SNAP/usr/share/tesseract-ocr/tessdata"
+      - process-control
