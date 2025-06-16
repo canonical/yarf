@@ -35,6 +35,8 @@ dependencies = [
     "rpaframework-recognition~=5.2.3",
     "rpyc~=5.3.1",
     "xkbcommon<1.1",
+    "pyte~=0.8.2",
+    "pyserial>=3.5",
 ]
 
 [project.optional-dependencies]
