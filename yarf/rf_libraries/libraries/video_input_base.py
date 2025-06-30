@@ -256,9 +256,10 @@ class VideoInputBase(ABC):
         using `RPA.core.geometry.to_region`
 
         Args:
-            text: text to search for
-            region: region to search for the text
-            image: image to search from
+            text: text or regex to search for, use the format `regex:<regex-string>`
+                  if the text we want to find is a regex.
+            region: region to search for the text.
+            image: image to search from.
 
         Returns:
             The list of matched text regions where the text was found. Each
@@ -269,7 +270,23 @@ class VideoInputBase(ABC):
 
         if not image:
             image = await self.grab_screenshot()
-        return self.ocr.find(image, text, region=region)  # type: ignore[arg-type]
+
+        matched_text_regions = []
+        regex_prefix = "regex:"
+        if text.startswith(regex_prefix):
+            image_text = self.ocr.read(image)  # type: ignore[arg-type]
+            unique_match_texts = set(
+                re.findall(rf"{text[len(regex_prefix) :]}", image_text)
+            )
+            for match_text in unique_match_texts:
+                matched_text_regions.extend(
+                    self.ocr.find(image, match_text, region=region)  # type: ignore[arg-type]
+                )
+
+        else:
+            matched_text_regions = self.ocr.find(image, text, region=region)  # type: ignore[arg-type]
+
+        return matched_text_regions
 
     @keyword
     async def match_text(
@@ -284,7 +301,8 @@ class VideoInputBase(ABC):
         using `RPA.core.geometry.to_region`.
 
         Args:
-            text: The text to match on screen
+            text: text or regex to match, use the format `regex:<regex-string>`
+                  if the text we want to find is a regex.
             timeout: Time to wait for the text to appear
             region: The region to search for the text
         Returns:
@@ -308,7 +326,7 @@ class VideoInputBase(ABC):
             )
 
             text_matches = await self.find_text(
-                text, image=image, region=region
+                text, image=cropped_image, region=region
             )
             if text_matches:
                 return text_matches, cropped_image

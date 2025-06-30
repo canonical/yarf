@@ -478,6 +478,41 @@ class TestVideoInputBase:
         )
 
     @pytest.mark.asyncio
+    async def test_find_text_with_regex(self, stub_videoinput):
+        """
+        Test if the function finds the text position with a regex.
+        """
+        stub_videoinput.ocr.find = Mock(
+            side_effect=[
+                [sentinel.region1, sentinel.region2, sentinel.region3],
+                [sentinel.region4],
+            ]
+        )
+        stub_videoinput.ocr.read = Mock(
+            return_value="""
+            This is a test text with some text in it.
+            Another line with the text we want to find.
+        """
+        )
+        await stub_videoinput.find_text("regex:te[x|s]t")
+
+        stub_videoinput.ocr.find.assert_has_calls(
+            [
+                call(
+                    stub_videoinput.grab_screenshot.return_value,
+                    "text",
+                    region=None,
+                ),
+                call(
+                    stub_videoinput.grab_screenshot.return_value,
+                    "test",
+                    region=None,
+                ),
+            ],
+            any_order=True,
+        )
+
+    @pytest.mark.asyncio
     async def test_match_text_in_region(self, stub_videoinput):
         """
         Test if the function finds the text in a region.
@@ -522,6 +557,19 @@ class TestVideoInputBase:
 
         assert "Timed out looking for 'hello'" in str(e.value)
         assert "Text read on screen was:\nwrong\ntext" in str(e.value)
+
+    @pytest.mark.asyncio
+    async def test_match_text_with_regex(self, stub_videoinput):
+        """
+        Test the function returns the matches of the text found with regex.
+        """
+        stub_videoinput.find_text = AsyncMock()
+        stub_videoinput.find_text.return_value = sentinel.result
+        stub_videoinput.grab_screenshot.return_value = sentinel.image
+        assert await stub_videoinput.match_text("regex:te[s|x]t") == (
+            sentinel.result,
+            sentinel.image,
+        )
 
     @pytest.mark.asyncio
     async def test_get_text_position(self, stub_videoinput):
