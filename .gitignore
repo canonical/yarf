@@ -8,11 +8,14 @@
 .vscode/
 *.egg-info/
 *.snap
+*.log
 /*env*/
 __pycache__
 coverage_html_report
 out/
 output.xml
+log.html
+report.html
 package*.json
 results
 squashfs-root

@@ -10,6 +10,12 @@ description: |
 grade: stable
 confinement: strict
 
+slots:
+  platform-plugins:
+    interface: content
+    write:
+      - $SNAP_COMMON/platform_plugins
+
 layout:
   /usr/share/tesseract-ocr:
     bind: $SNAP/usr/share/tesseract-ocr

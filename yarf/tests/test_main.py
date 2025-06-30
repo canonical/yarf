@@ -70,31 +70,41 @@ class TestMain:
         with pytest.raises(ValueError):
             compare_version(version_tag)
 
-    def test_parse_arguments(self) -> None:
+    @pytest.mark.parametrize(
+        "argv,expected",
+        [
+            (["suite/", "--"], {"suite": "suite/"}),
+            (["--debug"], {"verbosity": "DEBUG"}),
+            (["--quiet"], {"verbosity": "WARNING"}),
+            (["--variant", "var1/var2/var3"], {"variant": "var1/var2/var3"}),
+            (["--outdir", "out/dir"], {"outdir": "out/dir"}),
+        ],
+    )
+    def test_parse_arguments_args(
+        self, argv: list[str], expected: dict[str, str]
+    ) -> None:
         """
-        Test whether the "parse_arguments" function returns the expected
+        Test whether the "parse_arguments" function returns the expected args
         Namespace.
         """
-        argv = ["suite/", "--"]
         args, _ = parse_arguments(argv)
-        assert args.suite == "suite/"
+        for key, value in expected.items():
+            assert getattr(args, key) == value
 
-        argv = ["--debug"]
-        args, _ = parse_arguments(argv)
-        assert args.verbosity == "DEBUG"
+    def test_parse_arguments_extra_args(self) -> None:
+        """
+        Test whether the "parse_arguments" function correctly parses extra
+        arguments.
+        """
+        argv = ["--", "--variable", "key:value"]
+        _, extra = parse_arguments(argv)
+        assert extra == {"variable": ["key:value"]}
 
-        argv = ["--quiet"]
-        args, _ = parse_arguments(argv)
-        assert args.verbosity == "WARNING"
-
-        argv = ["--variant", "var1/var2/var3"]
-        args, _ = parse_arguments(argv)
-        assert args.variant == "var1/var2/var3"
-
-        argv = ["--outdir", "out/dir"]
-        args, _ = parse_arguments(argv)
-        assert args.outdir == "out/dir"
-
+    def test_parse_arguments_output_format_and_platform(self) -> None:
+        """
+        Test whether the "parse_arguments" function correctly parses output
+        format and platform arguments.
+        """
         OUTPUT_FORMATS.clear()
         OUTPUT_FORMATS["TestSubmissionSchema"] = TestSubmissionSchema
         argv = ["--output-format", "TestSubmissionSchema"]
@@ -106,10 +116,6 @@ class TestMain:
         argv = ["--platform", "Example"]
         args, _ = parse_arguments(argv)
         assert args.platform == "Example"
-
-        argv = ["--", "--variable", "key:value"]
-        _, extra = parse_arguments(argv)
-        assert extra == {"variable": ["key:value"]}
 
     @patch("yarf.main.RobotFramework")
     @patch("builtins.print")
