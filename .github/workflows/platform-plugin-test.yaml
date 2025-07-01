@@ -27,7 +27,7 @@ jobs:
         with:
           path: tests/yarf-example-plugin
         env:
-          SNAP_CHANNEL: beta
+          SNAP_CHANNEL: edge
 
       - name: Install yarf-example-plugin snap
         working-directory: tests/yarf-example-plugin
