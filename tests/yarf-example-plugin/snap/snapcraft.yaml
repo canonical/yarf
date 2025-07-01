@@ -20,6 +20,8 @@ parts:
     source: .
     python-packages:
       - .
+    stage-packages:
+      - bash
     stage:
       - -src  # prevent staging the full src/ tree
     override-build: |
@@ -29,4 +31,4 @@ parts:
 
 apps:
   yarf-example-plugin:
-    command: bash
+    command: usr/bin/bash
