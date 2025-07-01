@@ -25,17 +25,18 @@ jobs:
       - name: Build yarf-example-plugin snap
         uses: snapcore/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
         with:
-          path: test/yarf-example-plugin
+          path: tests/yarf-example-plugin
 
       - name: Install yarf-example-plugin snap
+        working-directory: tests/yarf-example-plugin
         run: |
-          sudo snap install test/yarf-example-plugin/*.snap --dangerous
+          sudo snap install *.snap --dangerous
 
       - name: Connect platform plugin interface
         run: |
           sudo snap connect yarf-example-plugin:platform-plugins yarf:platform-plugins
 
       - name: Run plugin integration tests
-        working-directory: test/yarf-example-plugin
+        working-directory: tests/yarf-example-plugin
         run: |
           snap run yarf --platform Example plugin_suite
