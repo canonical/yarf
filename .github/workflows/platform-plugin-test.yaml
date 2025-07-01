@@ -13,19 +13,23 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
-      - name: Set up Snapcraft
+      - name: Build yarf snap
         uses: snapcore/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
+        with:
+          path: .
 
-      - name: Build and install main snap (yarf)
+      - name: Install yarf snap
         run: |
-          snapcraft
           sudo snap install *.snap --dangerous
 
-      - name: Build and install yarf-example-plugin snap
-        working-directory: test/yarf-example-plugin
+      - name: Build yarf-example-plugin snap
+        uses: snapcore/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
+        with:
+          path: test/yarf-example-plugin
+
+      - name: Install yarf-example-plugin snap
         run: |
-          snapcraft
-          sudo snap install *.snap --dangerous
+          sudo snap install test/yarf-example-plugin/*.snap --dangerous
 
       - name: Connect platform plugin interface
         run: |
