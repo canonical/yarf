@@ -14,10 +14,6 @@ plugs:
     interface: content
     target: $SNAP/yarf_plugin_example
 
-layout:
-  /platform_plugins/yarf_plugin_example:
-    bind: $SNAP/yarf_plugin_example
-
 parts:
   yarf-example:
     plugin: python
