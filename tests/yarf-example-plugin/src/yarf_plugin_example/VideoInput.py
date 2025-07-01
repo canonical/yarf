@@ -6,6 +6,10 @@ from yarf.rf_libraries.libraries.video_input_base import VideoInputBase
 
 @library
 class VideoInput(VideoInputBase):
+    """
+    Provides robot interface for Video interactions.
+    """
+
     def __init__(self) -> None:
         self.platform = Example()
 

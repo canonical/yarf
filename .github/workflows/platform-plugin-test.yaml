@@ -1,0 +1,37 @@
+name: Install and Test Plugin
+
+on:
+  merge_group:
+    types: [checks_requested]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test-plugin:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Set up Snapcraft
+        uses: snapcore/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
+
+      - name: Build and install main snap (yarf)
+        run: |
+          snapcraft
+          sudo snap install *.snap --dangerous
+
+      - name: Build and install yarf-example-plugin snap
+        working-directory: test/yarf-example-plugin
+        run: |
+          snapcraft
+          sudo snap install *.snap --dangerous
+
+      - name: Connect platform plugin interface
+        run: |
+          sudo snap connect yarf-example-plugin:platform-plugins yarf:platform-plugins
+
+      - name: Run plugin integration tests
+        working-directory: test/yarf-example-plugin
+        run: |
+          snap run yarf --platform Example plugin_suite

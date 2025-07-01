@@ -15,16 +15,16 @@ class Hid(HidBase):
 
     @keyword
     async def type_string(self, string: str) -> None:
-        return "string"
+        return string
 
     @keyword
     async def click_pointer_button(self, button: str) -> None:
-        return "click"
+        return button
 
     @keyword
     async def press_pointer_button(self, button: str) -> None:
-        return "press"
+        return button
 
     @keyword
     async def release_pointer_button(self, button: str) -> None:
-        return "release"
+        return button
