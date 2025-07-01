@@ -26,3 +26,7 @@ parts:
       craftctl default
       mkdir -p $CRAFT_PART_INSTALL/yarf_plugin_example
       cp -r src/yarf_plugin_example/* $CRAFT_PART_INSTALL/yarf_plugin_example/
+
+apps:
+  yarf-example-plugin:
+    command: bash
