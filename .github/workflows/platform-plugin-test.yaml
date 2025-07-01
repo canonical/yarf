@@ -10,44 +10,17 @@ jobs:
   test-plugin:
     runs-on: ubuntu-latest
     steps:
-      # - name: Install tools
-      #   run: |
-      #     sudo apt-get update -qq
-      #     sudo apt-get install -y git-lfs
-
-      # - name: Setup SSH keys
-      #   run: |
-      #       mkdir -p ~/.ssh
-      #       chmod 700 ~/.ssh
-      #       rm -f ~/.ssh/id_* 2> /dev/null || true
-
-      #       echo "${{ secrets.CERTBOT_SSH_KEY }}" > ~/.ssh/id_ed25519
-      #       chmod 600 ~/.ssh/id_ed25519
-
-      #       cat <<'EOF' >> ~/.ssh/config
-      #       Host github.com
-      #         HostName github.com
-      #         Port 22
-      #         User git
-      #         UserKnownHostsFile=/dev/null
-      #         StrictHostKeyChecking no
-      #         IdentityFile ~/.ssh/id_ed25519
-      #         proxycommand socat - PROXY:egress.ps7.internal:%h:%p,proxyport=3128
-      #       EOF
-
-      #       cat ~/.ssh/config
-
       - name: Checkout repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
-      # - name: Build yarf snap
-      #   uses: snapcore/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
-      #   with:
-      #     path: .
+      - name: Build yarf snap
+        uses: snapcore/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
+        with:
+          path: .
 
-      # - name: Install yarf snap
-      #   run: |
-      #     sudo snap install *.snap --dangerous
+      - name: Install yarf snap
+        run: |
+          sudo snap install *.snap --dangerous
 
       - name: Build yarf-example-plugin snap
         uses: snapcore/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
@@ -59,11 +32,11 @@ jobs:
         run: |
           sudo snap install *.snap --dangerous
 
-      # - name: Connect platform plugin interface
-      #   run: |
-      #     sudo snap connect yarf-example-plugin:platform-plugins yarf:platform-plugins
+      - name: Connect platform plugin interface
+        run: |
+          sudo snap connect yarf-example-plugin:platform-plugins yarf:platform-plugins
 
-      # - name: Run plugin integration tests
-      #   working-directory: tests/yarf-example-plugin
-      #   run: |
-      #     snap run yarf --platform Example plugin_suite
+      - name: Run plugin integration tests
+        working-directory: tests/yarf-example-plugin
+        run: |
+          snap run yarf --platform Example plugin_suite
