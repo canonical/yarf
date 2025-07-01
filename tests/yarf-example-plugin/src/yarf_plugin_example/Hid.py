@@ -7,8 +7,7 @@ from yarf.rf_libraries.libraries.hid_base import HidBase
 @library
 class Hid(HidBase):
     """
-    Provides robot interface for HID interactions with a VM with a running VNC
-    server.
+    Provides robot interface for HID interactions.
     """
 
     def __init__(self) -> None:
