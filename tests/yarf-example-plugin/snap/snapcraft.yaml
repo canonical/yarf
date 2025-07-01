@@ -1,0 +1,34 @@
+name: yarf-example-plugin
+base: core24
+version: '0.0.1'
+summary: YARF example plugin library
+description: |
+  A Python library providing a YARF-compatible example plugin,
+  shared via a content interface.
+
+grade: stable
+confinement: strict
+
+plugs:
+  platform-plugins:
+    default-provider: yarf
+    content: platform-plugins
+    interface: content
+    target: $SNAP/yarf-example
+
+layout:
+  /platform_plugins/yarf-example:
+    bind: $SNAP/yarf-example
+
+parts:
+  yarf-example:
+    plugin: python
+    source: .
+    python-packages:
+      - .
+    stage:
+      - -src  # prevent staging the full src/ tree
+    override-build: |
+      craftctl default
+      mkdir -p $CRAFT_PART_INSTALL/yarf-example
+      cp -r src/yarf-example/* $CRAFT_PART_INSTALL/yarf-example/
