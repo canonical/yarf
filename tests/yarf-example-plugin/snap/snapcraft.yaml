@@ -11,8 +11,6 @@ confinement: strict
 
 plugs:
   platform-plugins:
-    default-provider: yarf
-    content: platform-plugins
     interface: content
     target: $SNAP/yarf-example
 
