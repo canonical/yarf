@@ -12,11 +12,11 @@ confinement: strict
 plugs:
   platform-plugins:
     interface: content
-    target: $SNAP/yarf-example
+    target: $SNAP/yarf_plugin_example
 
 layout:
-  /platform_plugins/yarf-example:
-    bind: $SNAP/yarf-example
+  /platform_plugins/yarf_plugin_example:
+    bind: $SNAP/yarf_plugin_example
 
 parts:
   yarf-example:
@@ -28,5 +28,5 @@ parts:
       - -src  # prevent staging the full src/ tree
     override-build: |
       craftctl default
-      mkdir -p $CRAFT_PART_INSTALL/yarf-example
-      cp -r src/yarf-example/* $CRAFT_PART_INSTALL/yarf-example/
+      mkdir -p $CRAFT_PART_INSTALL/yarf_plugin_example
+      cp -r src/yarf_plugin_example/* $CRAFT_PART_INSTALL/yarf_plugin_example/
