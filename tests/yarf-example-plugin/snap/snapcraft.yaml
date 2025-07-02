@@ -22,8 +22,10 @@ parts:
       - .
     stage-packages:
       - bash
-    stage:
-      - bin/onboard-plugin
+    override-build: |
+      craftctl default
+      mkdir -p $CRAFT_PART_INSTALL/bin
+      cp bin/onboard-plugin $CRAFT_PART_INSTALL/bin/onboard-plugin
 
 apps:
   onboard-plugin:
