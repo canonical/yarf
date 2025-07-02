@@ -13,7 +13,6 @@ plugs:
   platform-plugins:
     interface: content
     target: $SNAP_COMMON/platform_plugins
-    default-provider: yarf
 
 parts:
   yarf-example:
