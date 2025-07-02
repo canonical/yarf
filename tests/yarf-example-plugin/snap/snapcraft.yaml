@@ -12,7 +12,8 @@ confinement: strict
 plugs:
   platform-plugins:
     interface: content
-    target: $SNAP/platform_plugins
+    target: $SNAP_COMMON/platform_plugins
+    default-provider: yarf
 
 parts:
   yarf-example:
@@ -22,12 +23,6 @@ parts:
       - .
     stage-packages:
       - bash
-    stage:
-      - -src  # prevent staging the full src/ tree
-    override-build: |
-      craftctl default
-      mkdir -p $CRAFT_PART_INSTALL/platform_plugins/yarf_plugin_example
-      cp -r src/yarf_plugin_example/. $CRAFT_PART_INSTALL/platform_plugins/yarf_plugin_example/
 
 apps:
   yarf-example-plugin:
