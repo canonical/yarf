@@ -70,7 +70,7 @@ jobs:
 
       - name: Onboard plugin
         run: |
-          snap run yarf-example-plugin.onboard-plugin
+          sudo snap run yarf-example-plugin.onboard-plugin
 
       - name: Run plugin integration tests
         working-directory: tests/yarf-example-plugin
