@@ -22,7 +22,11 @@ parts:
       - .
     stage-packages:
       - bash
+    stage:
+      - bin/onboard-plugin
 
 apps:
-  yarf-example-plugin:
-    command: usr/bin/bash
+  onboard-plugin:
+    command: bin/onboard-plugin
+    plugs:
+      - platform-plugins
