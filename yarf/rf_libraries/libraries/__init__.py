@@ -19,6 +19,7 @@ SNAP_PLUGINS_DIR = (
     else None
 )
 SITE_PLUGINS_DIR = site.getsitepackages()[0]
+PLATFORM_PLUGIN_PREFIX = "yarf_plugin_"
 
 
 class PlatformMeta(abc.ABCMeta):
@@ -46,6 +47,13 @@ class PlatformMeta(abc.ABCMeta):
             module_class: the created module class with registered in SUPPORTED_PLATFORMS.
         """
         module_class = super().__new__(mcs, name, bases, namespace, **kwargs)
+        if (
+            module_class.__module__.startswith(PLATFORM_PLUGIN_PREFIX)
+            and SUPPORTED_PLATFORMS.get(name) is not None
+        ):
+            _logger.warning(
+                f"Platform {name} is being overridden by {module_class.__module__}."
+            )
         SUPPORTED_PLATFORMS[name] = module_class
 
         return module_class
@@ -116,7 +124,7 @@ def import_platform_plugin(dir_path: str) -> None:
         if not is_pkg:
             continue
 
-        if not module_name.startswith("yarf_plugin_"):
+        if not module_name.startswith(PLATFORM_PLUGIN_PREFIX):
             continue
 
         external_module_path = external_plugins_path / module_name

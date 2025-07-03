@@ -4,8 +4,10 @@ from textwrap import dedent
 from unittest.mock import MagicMock, patch
 
 import pytest
+from pytest import LogCaptureFixture
 
 from yarf.rf_libraries.libraries import (
+    PLATFORM_PLUGIN_PREFIX,
     SUPPORTED_PLATFORMS,
     PlatformBase,
     PlatformMeta,
@@ -30,6 +32,34 @@ class TestPlatformMeta:
             pass
 
         assert SUPPORTED_PLATFORMS.get(TestModule.__name__) == TestModule
+
+    def test_platform_meta_logs_warning(self, caplog: LogCaptureFixture):
+        """
+        Test whether a warning is logged when a platform is overridden by
+        another module with the same name.
+        """
+        SUPPORTED_PLATFORMS.clear()
+
+        class FirstPlatform(metaclass=PlatformMeta):
+            pass
+
+        assert "FirstPlatform" in SUPPORTED_PLATFORMS
+        assert not caplog.records
+
+        with caplog.at_level("WARNING"):
+
+            class FirstPlatform(metaclass=PlatformMeta):
+                __module__ = PLATFORM_PLUGIN_PREFIX + "second"
+
+        assert any(
+            FirstPlatform.__module__ in record.message
+            for record in caplog.records
+        )
+
+        assert (
+            SUPPORTED_PLATFORMS["FirstPlatform"].__module__
+            == FirstPlatform.__module__
+        )
 
 
 class TestPlatformBase:
