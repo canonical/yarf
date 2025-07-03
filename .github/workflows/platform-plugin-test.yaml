@@ -7,71 +7,33 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-yarf:
+  test-plugin:
     runs-on: ubuntu-latest
     steps:
+      - name: Install dependencies
+        run: |
+          sudo apt update -qq
+          sudo apt install -y \
+            git-lfs \
+            libgl1 \
+            libxkbcommon-dev \
+            jq \
+            clang \
+            python3-tk
       - name: Checkout repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-
-      - name: Build yarf snap
-        uses: snapcore/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
         with:
-          path: .
-
-      - name: Upload yarf snap
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+          lfs: true
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
-          name: yarf
-          path: ./*.snap
-
-  build-yarf-example-plugin:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-
-      - name: Build yarf-example-plugin snap
-        uses: snapcore/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
-        with:
-          path: tests/yarf-example-plugin
-
-      - name: Upload plugin snap
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: plugin
-          path: tests/yarf-example-plugin/*.snap
-
-  integration-test:
-    runs-on: ubuntu-latest
-    needs: [build-yarf, build-yarf-example-plugin]
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-
-      - name: Download yarf snap
-        uses: actions/download-artifact@v4
-        with:
-          name: yarf
-
-      - name: Download plugin snap
-        uses: actions/download-artifact@v4
-        with:
-          name: plugin
-          path: plugin-snap
-
-      - name: Install both snaps
+          python-version: "3.12"
+      - name: Install uv and json schema
+        run: pip install uv check-jsonschema
+      - name: Instal yarf and yarf-example-plugin
         run: |
-          sudo snap install *.snap --dangerous
-          sudo snap install plugin-snap/*.snap --dangerous
-
-      - name: Connect platform plugin interface
-        run: |
-          sudo snap connect yarf-example-plugin:platform-plugins yarf:platform-plugins
-
-      - name: Onboard plugin
-        run: |
-          sudo snap run yarf-example-plugin.onboard-plugin
-
+          uv pip install .
+          uv pip install tests/yarf-example-plugin
       - name: Run plugin integration tests
         working-directory: tests/yarf-example-plugin
         run: |
