@@ -32,12 +32,12 @@ jobs:
         run: pip install uv check-jsonschema
       - name: Instal yarf and yarf-example-plugin
         run: |
-          uv pip install .
-          uv pip install tests/yarf-example-plugin
+          pip install .
+          pip install tests/yarf-example-plugin
       - name: Run plugin integration tests
         working-directory: tests/yarf-example-plugin
         run: |
-          snap run yarf --platform Example plugin_suite
+          yarf --platform Example plugin_suite
 
       - if: failure() && runner.debug
         name: Setup upterm session (restart with "Enable debug logging" to activate)
