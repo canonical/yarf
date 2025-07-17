@@ -8,7 +8,7 @@ Documentation       Keyword definitions for specialised functionality
 
 Library             Hid.py    AS    PlatformHid
 Library             VideoInput.py    AS    PlatformVideoInput
-Variables           ../video_input_base.py
+Variables           video_input_vars.py
 
 
 *** Keywords ***

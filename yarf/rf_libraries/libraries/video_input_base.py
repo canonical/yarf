@@ -25,11 +25,13 @@ from RPA.recognition.templates import ImageNotFoundError
 
 from yarf import LABEL_PREFIX
 from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
+from yarf.rf_libraries.variables.video_input_vars import (
+    DEFAULT_TEMPLATE_MATCHING_TOLERANCE,
+)
 
 DISPLAY_PATTERN = r"((?P<id>[\w-]+)\:)?(?P<resolution>\d+x\d+)(\s+|$)"
 DISPLAY_RE = re.compile(rf"{DISPLAY_PATTERN}")
 DISPLAYS_RE = re.compile(rf"^({DISPLAY_PATTERN})+$")
-DEFAULT_TEMPLATE_MATCHING_TOLERANCE = 0.8
 
 
 def log_image(image: Image.Image, msg: str = "") -> None:
