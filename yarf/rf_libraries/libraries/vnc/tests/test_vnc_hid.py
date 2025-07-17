@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 
@@ -42,7 +42,10 @@ class TestVncHid:
                 client_mock.mouse.move = MagicMock()
                 farnsworth = "Good news, everyone!"
                 await vnc_hid.type_string(farnsworth)
-                client_mock.keyboard.write.assert_called_once_with(farnsworth)
+                calls = [call(x) for x in farnsworth]
+                client_mock.keyboard.write.assert_has_calls(
+                    calls, any_order=False
+                )
                 client_mock.mouse.move.assert_called_once
 
     @pytest.mark.asyncio

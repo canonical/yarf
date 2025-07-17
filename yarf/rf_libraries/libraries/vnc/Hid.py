@@ -1,4 +1,5 @@
 from enum import IntEnum
+from time import sleep
 from typing import Sequence
 
 from asyncvnc import connect
@@ -19,7 +20,12 @@ class Hid(HidBase):
     """
     Provides robot interface for HID interactions with a VM with a running VNC
     server.
+
+    Attributes:
+        type_string_delay: Time between keypresses when typing a string.
     """
+
+    type_string_delay = 0.05
 
     def __init__(self) -> None:
         super().__init__()
@@ -48,7 +54,9 @@ class Hid(HidBase):
         """
         async with connect(self.vnc.host, self.vnc.port) as client:
             client.mouse.move(self.curr_x, self.curr_y)
-            client.keyboard.write(string)
+            for character in string:
+                client.keyboard.write(character)
+                sleep(self.type_string_delay)
 
     @keyword
     async def click_pointer_button(self, button: str) -> None:
