@@ -14,6 +14,9 @@ from typing import Any, Generator
 ROBOT_RESOURCE_PATH = os.path.abspath(
     os.path.join(str(Path(__file__).parent), "resources")
 )
+ROBOT_VARIABLES_PATH = os.path.abspath(
+    os.path.join(str(Path(__file__).parent), "variables")
+)
 
 
 @contextmanager
@@ -36,8 +39,10 @@ def robot_in_path(lib_path: str) -> Generator[None, Any, None]:
 
     sys.path.append(lib_path)
     sys.path.append(ROBOT_RESOURCE_PATH)
+    sys.path.append(ROBOT_VARIABLES_PATH)
     try:
         yield
     finally:
         sys.path.remove(lib_path)
         sys.path.remove(ROBOT_RESOURCE_PATH)
+        sys.path.remove(ROBOT_VARIABLES_PATH)
