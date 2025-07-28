@@ -26,9 +26,9 @@ layout:
   /usr/lib/python3.12/lib-dynload/_tkinter.cpython-312-$CRAFT_ARCH_TRIPLET_BUILD_FOR.so:
     symlink: $SNAP/usr/lib/python3.12/lib-dynload/_tkinter.cpython-312-$CRAFT_ARCH_TRIPLET_BUILD_FOR.so
   /usr/lib/tcltk:
-    bind: $SNAP/usr/lib/tcltk
+    symlink: $SNAP/gnome-platform/usr/lib/tcltk
   /usr/share/tcltk:
-    bind: $SNAP/usr/share/tcltk
+    symlink: $SNAP/gnome-platform/usr/share/tcltk
 
 parts:
   scripts:
