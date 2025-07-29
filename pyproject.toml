@@ -49,6 +49,7 @@ develop = [
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
+    "pytest-xdist",
     "tox",
     "types-python-dateutil",
 ]
