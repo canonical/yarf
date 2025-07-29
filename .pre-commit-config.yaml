@@ -113,3 +113,11 @@ repos:
       --check-return-types=False,
       --check-yield-types=False,
     ]
+
+- repo: local
+  hooks:
+    - id: licensecheck
+      name: licensecheck
+      entry: uv tool run licensecheck --zero --show-only-failing --requirements-paths=pyproject.toml
+      language: system
+      pass_filenames: false

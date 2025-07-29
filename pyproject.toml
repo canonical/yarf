@@ -4,6 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "yarf"
+license = "GPL-3.0"
 authors = [
     {name = "Hou Nam Chiang", email = "douglas.chiang@canonical.com"},
     {name = "Michał Sawicz", email = "michal.sawicz@canonical.com"},
@@ -41,6 +42,7 @@ dependencies = [
 
 [project.optional-dependencies]
 develop = [
+    "licensecheck",
     "mypy",
     "pre-commit<4.0.0",
     "pyfakefs",
@@ -115,3 +117,10 @@ exclude_also = [
 
 [tool.coverage.html]
 directory = "coverage_html_report"
+
+[tool.licensecheck]
+ignore_packages = [
+    "asyncvnc",             # Wrote GPL on setup.cfg but it actually have GPL-3.0 license
+    "keysymdef",            # X11 is compatible with GPL (https://www.gnu.org/licenses/gpl-faq.en.html#GPLWrapper)
+    "orderedmultidict",     # orderedmultidict is unlicensed
+]

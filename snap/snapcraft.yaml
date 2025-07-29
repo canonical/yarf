@@ -6,6 +6,7 @@ description: |
   Yet Another Robot Framework (YARF) is an interface that
   allows developers to build complex test scenarios and
   bootstrap them locally, then work towards automated runs.
+license: GPL-3.0
 
 grade: stable
 confinement: strict

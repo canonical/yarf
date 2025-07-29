@@ -53,7 +53,7 @@ If you are interested, start with the [contribution guide].
 
 ## License and Copyright
 
-<!-- TODO: YARF is released under the [TBD license](COPYING). -->
+YARF is released under the [GNU General Public License Version 3.0](./LICENSE).
 
 © 2025 Canonical Ltd.
 
