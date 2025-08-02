@@ -48,8 +48,8 @@ The `variants` directory contains modified versions of the base templates, organ
 
 We need to identify the platform that we would like to run to use YARF. The choice is different in different case, for now we are working to support the following platforms:
 
-- Example: A hardware test fixture enabling advanced system testing. For details please visit [here](https://canonical-Example.readthedocs-hosted.com/en/latest/)
 - Mir: A display server that is suitable for local development and continuous integration. For details please visit [here](https://canonical-mir.readthedocs-hosted.com/stable/)
+- Vnc: A backend that use QEMU to view and control a virtual machine's graphical desktop. For details of how to start a VNC session please visit [here](using-the-vnc-backend.md)
 
 ## Provide the correct variant
 
@@ -101,10 +101,10 @@ yarf --variant <variant> --platform <platform> --outdir <outdir> <path-to-test-s
 <u><center>Code Snippet: `yarf` command</center></u>
 
 For information about the option `--outdir`, please refer to the section [Debug failing tests](#debug-failing-tests).
-If the `--platform` argument is not specified, then YARF will use Example as the platform:
+If the `--platform` argument is not specified, then YARF will use Vnc as the platform:
 
 ```{code-block} bash
-Example_IP=<Example_IP> yarf <path-to-suite>/suite
+yarf --platform Vnc <path-to-suite>/suite
 ```
 
 <u><center>Code Snippet: `yarf` command without `--platform` option</center></u>

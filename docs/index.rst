@@ -8,7 +8,7 @@ Yet Another Robot Framework (YARF)
 YARF is a tool built upon the `Robot Framework <https://robotframework.org/>`_
 that allows developers to build complex visual test scenarios and bootstrap them
 locally, and then work towards automated runs in continuous integration (CI) and
-use of platforms/fixtures like Example with minimal effort. This reduces turnaround
+use of platforms/fixtures like Vnc and Mir with minimal effort. This reduces turnaround
 times without sacrificing quality and trust in the test results.
 
 ---------

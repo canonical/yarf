@@ -9,13 +9,13 @@ In this document, we will walk through how to use the interactive console in YAR
 
 ## Entering the interactive console
 
-We can enter the interactive console by supplying an empty suite path. For example, in terms of Example, we can use:
+We can enter the interactive console by supplying the platform choice with an empty suite path. For example, in terms of Vnc, we can use:
 
 ```{code-block} bash
-Example_IP=<ip> yarf
+yarf --platform Vnc
 ```
 
-<u><center>Code Snippet: Example's `yarf` command that enters interactive console</center></u>
+<u><center>Code Snippet: `yarf` command for Vnc that enters interactive console</center></u>
 
 After we enter the command, we should see something similar to the following:
 
@@ -55,13 +55,13 @@ In the interactive console, we can see information about the built-in and YARF s
        Debug Library for RobotFramework.
    Smoke
    VideoInput
-       This class provides access to Example video input devices.
+       This class provides access to Vnc video input devices.
    Hid
        This class provides the Robot interface for HID interactions.
    HID
        This class provides the Robot interface for HID interactions.
    VIDEO
-       This class provides access to Example video input devices.
+       This class provides access to Vnc video input devices.
 >
 > keywords
 < Keywords of library BuiltIn

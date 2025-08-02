@@ -25,7 +25,7 @@ from yarf.main import (
 from yarf.output import OUTPUT_FORMATS
 from yarf.output.test_submission_schema import TestSubmissionSchema
 from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS
-from yarf.rf_libraries.libraries.Example import Example
+from yarf.rf_libraries.libraries.vnc import Vnc
 from yarf.tests.fixtures import fs  # noqa: F401
 
 
@@ -112,10 +112,10 @@ class TestMain:
         assert args.output_format == "TestSubmissionSchema"
 
         SUPPORTED_PLATFORMS.clear()
-        SUPPORTED_PLATFORMS["Example"] = Example
-        argv = ["--platform", "Example"]
+        SUPPORTED_PLATFORMS["Vnc"] = Vnc
+        argv = ["--platform", "Vnc"]
         args, _ = parse_arguments(argv)
-        assert args.platform == "Example"
+        assert args.platform == "Vnc"
 
     @patch("yarf.main.RobotFramework")
     @patch("builtins.print")
@@ -138,7 +138,7 @@ class TestMain:
         provided.
         """
         SUPPORTED_PLATFORMS.clear()
-        SUPPORTED_PLATFORMS["Example"] = Example
+        SUPPORTED_PLATFORMS["Vnc"] = Vnc
         with patch.object(
             sys,
             "argv",
@@ -146,7 +146,7 @@ class TestMain:
                 "prog",
                 "--debug",
                 "--platform",
-                "Example",
+                "Vnc",
                 "suite-path",
                 "--",
                 "--variable",
@@ -155,7 +155,7 @@ class TestMain:
         ):
             args, extra = parse_arguments()
             assert args.verbosity == "DEBUG"
-            assert args.platform == "Example"
+            assert args.platform == "Vnc"
             assert args.suite == "suite-path"
             assert extra == {"variable": ["key:value"]}
 
@@ -328,7 +328,7 @@ class TestMain:
         }
         outdir = Path(tempfile.gettempdir()) / "yarf-outdir"
         SUPPORTED_PLATFORMS.clear()
-        SUPPORTED_PLATFORMS["Example"] = Example
+        SUPPORTED_PLATFORMS["Vnc"] = Vnc
 
         mock_test_suite = Mock()
         mock_test_suite.run.return_value.return_code = 0
@@ -336,7 +336,7 @@ class TestMain:
         mock_get_robot_reserved_settings.return_value = {}
         rc = run_robot_suite(
             mock_test_suite,
-            SUPPORTED_PLATFORMS["Example"],
+            SUPPORTED_PLATFORMS["Vnc"],
             variables,
             outdir,
             options,
@@ -377,7 +377,7 @@ class TestMain:
         fs.create_dir(outdir)
         variables = ["VAR1:value1", "VAR2:value2"]
         SUPPORTED_PLATFORMS.clear()
-        SUPPORTED_PLATFORMS["Example"] = Example
+        SUPPORTED_PLATFORMS["Vnc"] = Vnc
 
         mock_get_yarf_settings.return_value = {}
         mock_get_robot_reserved_settings.return_value = {}
@@ -387,7 +387,7 @@ class TestMain:
         with patch("yarf.main.robot_in_path"):
             rc = run_robot_suite(
                 mock_test_suite,
-                SUPPORTED_PLATFORMS["Example"],
+                SUPPORTED_PLATFORMS["Vnc"],
                 variables,
                 outdir,
                 {},
@@ -414,11 +414,11 @@ class TestMain:
         mock_console_suite.run.return_value.return_code = 0
 
         SUPPORTED_PLATFORMS.clear()
-        SUPPORTED_PLATFORMS["Example"] = Example
+        SUPPORTED_PLATFORMS["Vnc"] = Vnc
 
         run_interactive_console(
             mock_console_suite,
-            SUPPORTED_PLATFORMS["Example"],
+            SUPPORTED_PLATFORMS["Vnc"],
             outdir,
             rf_debug_log_path,
             cli_options,
@@ -442,7 +442,7 @@ class TestMain:
         test_path = "suite-path"
         fs.create_file(f"{test_path}/test.robot")
         SUPPORTED_PLATFORMS.clear()
-        SUPPORTED_PLATFORMS["Example"] = Example
+        SUPPORTED_PLATFORMS["Vnc"] = Vnc
 
         main.run_robot_suite = Mock()
         main.run_robot_suite.return_value = 0
@@ -454,7 +454,7 @@ class TestMain:
         mock_test_suite.assert_called_once()
         main.run_robot_suite.assert_called_once_with(
             suite=mock_test_suite(),
-            lib_cls=SUPPORTED_PLATFORMS["Example"],
+            lib_cls=SUPPORTED_PLATFORMS["Vnc"],
             variables=[],
             outdir=Path(tempfile.gettempdir()) / "yarf-outdir",
             cli_options={},
@@ -477,7 +477,7 @@ class TestMain:
         fs.create_file(f"{test_path}/test.robot")
         fs.create_dir(outdir)
         SUPPORTED_PLATFORMS.clear()
-        SUPPORTED_PLATFORMS["Example"] = Example
+        SUPPORTED_PLATFORMS["Vnc"] = Vnc
 
         main.run_robot_suite = Mock()
         main.run_robot_suite.return_value = 0
@@ -490,7 +490,7 @@ class TestMain:
         mock_test_suite.assert_called_once()
         main.run_robot_suite.assert_called_once_with(
             suite=mock_test_suite(),
-            lib_cls=SUPPORTED_PLATFORMS["Example"],
+            lib_cls=SUPPORTED_PLATFORMS["Vnc"],
             variables=[],
             outdir=Path(outdir),
             cli_options={},
@@ -508,7 +508,7 @@ class TestMain:
         outdir = Path(f"{tempfile.gettempdir()}/yarf-outdir")
         rf_debug_log_path = outdir / "rfdebug_history.log"
         SUPPORTED_PLATFORMS.clear()
-        SUPPORTED_PLATFORMS["Example"] = Example
+        SUPPORTED_PLATFORMS["Vnc"] = Vnc
 
         main.run_interactive_console = Mock()
         main.get_outdir_path = Mock(return_value=outdir)
@@ -517,7 +517,7 @@ class TestMain:
         mock_test_suite_builder.assert_called_once()
         main.run_interactive_console.assert_called_once_with(
             suite=mock_test_suite_builder(),
-            lib_cls=SUPPORTED_PLATFORMS["Example"],
+            lib_cls=SUPPORTED_PLATFORMS["Vnc"],
             outdir=outdir,
             rf_debug_history_log_path=rf_debug_log_path,
             cli_options={},
@@ -535,7 +535,7 @@ class TestMain:
         mock_path_exists.return_value = False
 
         SUPPORTED_PLATFORMS.clear()
-        SUPPORTED_PLATFORMS["Example"] = Example
+        SUPPORTED_PLATFORMS["Vnc"] = Vnc
 
         main.run_interactive_console = Mock()
         argv = [""]

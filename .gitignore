@@ -5,6 +5,7 @@
 .tox
 .coverage
 .idea/
+.mypy_cache
 .vscode/
 *.egg-info/
 *.snap

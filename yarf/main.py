@@ -105,7 +105,7 @@ def parse_yarf_arguments(argv: list[str]) -> Namespace:
         "--platform",
         type=str,
         choices=SUPPORTED_PLATFORMS.keys(),
-        default="Example",
+        default="Vnc",
         help="Specify the target platform",
     )
 
