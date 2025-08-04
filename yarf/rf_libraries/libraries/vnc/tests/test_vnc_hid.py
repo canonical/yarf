@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 
-from yarf.rf_libraries.libraries.vnc.Hid import Hid
+from yarf.rf_libraries.libraries.vnc.Hid import Hid, MouseTranslation
 
 
 @pytest.fixture
@@ -59,21 +59,27 @@ class TestVncHid:
             ) as connect_mock:
                 client_mock = connect_mock.return_value.__aenter__.return_value
                 client_mock.mouse.move = MagicMock()
-                client_mock.mouse.click = MagicMock()
-                client_mock.mouse.right_click = MagicMock()
-                client_mock.mouse.middle_click = MagicMock()
-                button = "LEFT"
-                await vnc_hid.click_pointer_button(button)
-                client_mock.mouse.click.assert_called_once()
-                client_mock.mouse.move.assert_called_once
-                button = "RIGHT"
-                await vnc_hid.click_pointer_button(button)
-                client_mock.mouse.right_click.assert_called_once()
-                client_mock.mouse.move.assert_called_once
-                button = "MIDDLE"
-                await vnc_hid.click_pointer_button(button)
-                client_mock.mouse.middle_click.assert_called_once()
-                client_mock.mouse.move.assert_called_once
+                client_mock.mouse.hold = MagicMock()
+                hold_calls = []
+                for button in ["LEFT", "MIDDLE", "RIGHT"]:
+                    await vnc_hid.click_pointer_button(button)
+                    hold_calls += [
+                        call(MouseTranslation[button]),
+                        call().__enter__(),
+                        call().__exit__(None, None, None),
+                    ]
+                client_mock.mouse.hold.assert_has_calls(
+                    hold_calls,
+                    any_order=False,
+                )
+                client_mock.mouse.move.assert_has_calls(
+                    [
+                        call(0, 0),
+                        call(0, 0),
+                        call(0, 0),
+                    ],
+                    any_order=False,
+                )
 
     @pytest.mark.asyncio
     async def test_click_pointer_button_bad(self, monkeypatch, vnc_hid):

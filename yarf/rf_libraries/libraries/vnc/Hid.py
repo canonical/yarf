@@ -68,18 +68,16 @@ class Hid(HidBase):
         Raises:
             ValueError: if the specified button isn't supported
         """
+        try:
+            MouseTranslation[button]
+        except (NameError, KeyError):
+            raise ValueError(
+                f"Button {button} is not supported for mouse clicks"
+            )
         async with connect(self.vnc.host, self.vnc.port) as client:
             client.mouse.move(self.curr_x, self.curr_y)
-            if button == "LEFT":
-                client.mouse.click()
-            elif button == "RIGHT":
-                client.mouse.right_click()
-            elif button == "MIDDLE":
-                client.mouse.middle_click()
-            else:
-                raise ValueError(
-                    f"Button {button} is not supported for mouse clicks"
-                )
+            with client.mouse.hold(MouseTranslation[button]):
+                sleep(0.005)
 
     @keyword
     async def press_pointer_button(self, button: str) -> None:
