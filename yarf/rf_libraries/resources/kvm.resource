@@ -307,3 +307,34 @@ Click ${button} Button On ${destination}
 Release Buttons
     [Documentation]    Release all buttons on the virtual pointer.
     PlatformHid.Release Pointer Buttons
+
+Ensure ${destination} Does Not Match
+    [Documentation]    Ensure a given template or string doesn't match within a given timeout and
+    ...    number of attempts.
+    ...    This function is intended to be used like:
+    ...    "This given template or image should, by the end of this time,
+    ...    not be found on the screen."
+    ...
+    ...    Embedded arguments:
+    ...    - ${destination}: The template or string to match.
+    ...    This function ensures that the given destination is not found.
+    [Arguments]             ${timeout}=2
+
+    IF    ${{ os.path.exists($destination) }}
+        ${match}=               Run Keyword And Return Status
+        ...                     PlatformVideoInput.Match
+        ...                     ${destination}
+        ...                     timeout=${timeout}
+    ELSE
+        Log
+        ...                     Assuming ${destination} is a string as it isn't a file which exists.
+        ...                     html=true
+        ...                     console=true
+        ${match}=               Run Keyword And Return Status
+        ...                     PlatformVideoInput.Match Text
+        ...                     ${destination}
+        ...                     timeout=${timeout}
+    END
+    IF    ${match}
+        Fail                    Found ${destination} where it wasn't intended or expected
+    END
