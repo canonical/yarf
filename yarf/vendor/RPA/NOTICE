@@ -1,0 +1,28 @@
+NOTICE: Vendored RPAFramework Code
+
+This directory contains code vendored from the RPAFramework project:
+- Original Repository: https://github.com/robocorp/rpaframework
+- Original Version: 29.0.0
+- Original License: Apache License 2.0
+- Original Copyright: Robocorp Technologies, Inc.
+
+The original RPAFramework is licensed under the Apache License 2.0.
+A copy of this license is included in the LICENSE file in this directory.
+
+MODIFICATIONS:
+- Files have been extracted and reorganized for vendoring purposes
+- Import statements have been modified to use relative imports
+- Some dependencies have been removed or replaced
+- Code has been adapted to work as a standalone vendor package
+
+The vendored code includes minimal subsets of the following modules:
+- RPA.core.geometry (Region, Point classes and utilities)
+- RPA.Images (basic image manipulation and template matching)
+- RPA.recognition.ocr (OCR functionality using pytesseract)
+- RPA.recognition.templates (template matching using OpenCV)
+- RPA.recognition.utils (image conversion utilities)
+
+This vendoring was done to reduce dependencies while maintaining 
+compatibility with existing code that relies on these specific modules.
+
+All original copyright notices and attribution are preserved.

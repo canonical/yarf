@@ -1,10 +1,10 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from RPA.core.geometry import Region
 
 from yarf.rf_libraries.libraries.geometry.quad import Quad
 from yarf.rf_libraries.libraries.ocr.rapidocr import OCRResult, RapidOCRReader
+from yarf.vendor.RPA.core.geometry import Region
 
 
 @pytest.fixture(autouse=True)

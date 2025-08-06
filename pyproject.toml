@@ -32,12 +32,12 @@ dependencies = [
     "robotframework-debug~=4.5.0",
     "robotframework-sshlibrary~=3.8.0",
     "robotframework-stacktrace==0.4.1",
-    "rpaframework~=29.0.0",
-    "rpaframework-recognition~=5.2.3",
+    "numpy~=1.26.0",
     "rpyc~=5.3.1",
     "xkbcommon<1.1",
     "pyte~=0.8.2",
     "pyserial>=3.5",
+    "python-dateutil>=2.9.0.post0",
 ]
 
 [project.optional-dependencies]
@@ -77,6 +77,7 @@ line-length = 79
 # In addition to the standard set of exclusions, omit all tests, plus a specific file.
 extend-exclude = [
     "docs/*",
+    "yarf/vendor/*",
 ]
 
 [tool.pytest.ini_options]
@@ -93,6 +94,7 @@ markers = [
 omit = [
     "hatch_build.py",
     "yarf/lib/wayland/protocols/*/*",
+    "yarf/vendor/*",
 ]
 
 [tool.coverage.report]

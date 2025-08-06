@@ -1,6 +1,5 @@
-from RPA.core.geometry import Region
-
 from yarf.rf_libraries.libraries.geometry.quad import Quad
+from yarf.vendor.RPA.core.geometry import Region
 
 
 class TestGeometry:

@@ -1,5 +1,5 @@
 # Exclude doc starter pack (but keep .md, .rst)
-exclude: '^docs/(doc-cheat-sheet.*|(?!.+\.(md|rst)).+)|hatch_build.py|yarf/lib/wayland/protocols/.*$'
+exclude: '^docs/(doc-cheat-sheet.*|(?!.+\.(md|rst)).+)|hatch_build.py|yarf/lib/wayland/protocols/.*|yarf/vendor/.*$'
 
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -43,6 +43,8 @@ repos:
     - docs/.*
     - --exclude
     - hatch_build.py
+    - --exclude
+    - yarf/vendor/.*
     - .
 
 - repo: https://github.com/MarketSquare/robotframework-tidy

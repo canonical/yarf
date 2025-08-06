@@ -12,22 +12,23 @@ import tempfile
 import time
 from abc import ABC, abstractmethod
 from io import BytesIO
+from types import ModuleType
 from typing import List, Optional, Sequence, Union
 
 from PIL import Image, ImageDraw
 from robot.api import logger
 from robot.api.deco import keyword
 from robot.libraries.BuiltIn import BuiltIn
-from RPA.core.geometry import to_region
-from RPA.Images import Images, Region, to_image
-from RPA.recognition import ocr as tesseract
-from RPA.recognition.templates import ImageNotFoundError
 
 from yarf import LABEL_PREFIX
 from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
 from yarf.rf_libraries.variables.video_input_vars import (
     DEFAULT_TEMPLATE_MATCHING_TOLERANCE,
 )
+from yarf.vendor.RPA.core.geometry import to_region
+from yarf.vendor.RPA.Images import Images, Region, to_image
+from yarf.vendor.RPA.recognition import ocr as tesseract
+from yarf.vendor.RPA.recognition.templates import ImageNotFoundError
 
 DISPLAY_PATTERN = r"((?P<id>[\w-]+)\:)?(?P<resolution>\d+x\d+)(\s+|$)"
 DISPLAY_RE = re.compile(rf"{DISPLAY_PATTERN}")
@@ -89,7 +90,7 @@ class VideoInputBase(ABC):
         self.ROBOT_LIBRARY_LISTENER = self
         self._frame_count: int = 0
         self._screenshots_dir: Optional[tempfile.TemporaryDirectory] = None
-        self.ocr = RapidOCRReader()
+        self.ocr: RapidOCRReader | ModuleType = RapidOCRReader()
 
     def _start_suite(self, data, result) -> None:
         self._frame_count = 0
@@ -177,7 +178,7 @@ class VideoInputBase(ABC):
         templates: Sequence[str],
         timeout: int = 10,
         tolerance: float = DEFAULT_TEMPLATE_MATCHING_TOLERANCE,
-    ) -> List[Region]:
+    ) -> List[dict]:
         """
         Grab screenshots and compare with the provided templates until a frame
         is found which matches all templates simultaneously or timeout.
@@ -201,7 +202,7 @@ class VideoInputBase(ABC):
         timeout: int = 10,
         tolerance: float = DEFAULT_TEMPLATE_MATCHING_TOLERANCE,
         region: Optional[Union[Region, dict]] = None,
-    ) -> List[Region]:
+    ) -> List[dict]:
         """
         Grab screenshots and compare with the provided templates until there's
         at least one match or timeout.
@@ -273,7 +274,7 @@ class VideoInputBase(ABC):
         if not image:
             image = await self.grab_screenshot()
 
-        matched_text_regions = []
+        matched_text_regions: list[dict] = []
         regex_prefix = "regex:"
         if text.startswith(regex_prefix):
             image_text = self.ocr.read(image)  # type: ignore[arg-type]
@@ -342,7 +343,7 @@ class VideoInputBase(ABC):
 
     @keyword
     async def get_text_position(
-        self, text: str, region: Region | dict = None
+        self, text: str, region: Region | dict | None = None
     ) -> tuple[int, int]:
         """
         Get the center position of the best match for the specified text. The
@@ -411,7 +412,7 @@ class VideoInputBase(ABC):
         timeout: int = 10,
         tolerance: float = DEFAULT_TEMPLATE_MATCHING_TOLERANCE,
         region: Optional[Region] = None,
-    ) -> List[Region]:
+    ) -> List[dict]:
         """
         Platform-specific implementation of :meth:`match_all` and
         :meth:`match_any`.

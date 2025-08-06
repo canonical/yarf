@@ -10,10 +10,10 @@ import numpy as np
 import rapidfuzz
 from PIL import Image
 from rapidocr_onnxruntime import RapidOCR
-from RPA.core.geometry import Region
-from RPA.recognition.utils import to_image
 
 from yarf.rf_libraries.libraries.geometry.quad import Quad
+from yarf.vendor.RPA.core.geometry import Region
+from yarf.vendor.RPA.recognition.utils import to_image
 
 
 @dataclass
