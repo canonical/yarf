@@ -1,3 +1,4 @@
+import contextlib
 import tkinter as tk
 from pathlib import Path
 from tkinter import Event
@@ -6,6 +7,8 @@ from PIL import Image, ImageTk
 from robot.api import logger
 
 IMAGE_EXTS = set(Image.registered_extensions().keys())
+DEFAULT_TEMPLATE_PREFIX = "roi_"
+EXTENSION = ".png"
 
 
 class ROISelector:
@@ -52,6 +55,9 @@ class ROISelector:
         self.canvas = tk.Canvas(self.root, highlightthickness=0)
         self.canvas.pack()
 
+        # Check output directory
+        self.check_target_outdir()
+
         self.root_msg = None
         self._update_instructions()
 
@@ -67,6 +73,36 @@ class ROISelector:
 
         # Draw image
         self._display_image()
+
+    def check_target_outdir(self) -> None:
+        """
+        Check if the output directory exists, if not create it.
+
+        If the output directory already exists and is not empty, scan
+        for existing template files and determine the next template
+        index to use for saving new templates. If template names are
+        provided, the existing templates will be overwritten.
+        """
+
+        if not self.outdir.exists():
+            self.outdir.mkdir(parents=True, exist_ok=True)
+            return
+
+        if not self.template_names and (
+            templates := sorted(
+                self.outdir.glob(f"{DEFAULT_TEMPLATE_PREFIX}*{EXTENSION}"),
+                reverse=True,
+            )
+        ):
+            # Find biggest valid index
+            for template in templates:
+                with contextlib.suppress(ValueError):
+                    index = (
+                        int(template.stem.split(DEFAULT_TEMPLATE_PREFIX)[-1])
+                        + 1
+                    )
+                    self.template_idx = int(index)
+                    break
 
     def previous_template(self) -> None:
         """
@@ -221,32 +257,34 @@ class ROISelector:
         Args:
             window: The preview window to be closed.
         """
-        if self.crop:
-            if self.template_names:
-                if self.template_names_idx < len(self.template_names):
-                    filepath = (
-                        self.outdir
-                        / f"{self.template_names[self.template_names_idx]}.png"
-                    )
-                    self.template_names_idx += 1
+        if not self.crop:
+            return
 
-                else:
-                    filepath = (
-                        self.outdir
-                        / f"{self.template_names[-1]}_{self.template_idx}.png"
-                    )
-                    self.template_idx += 1
+        if self.template_names:
+            if self.template_names_idx < len(self.template_names):
+                filepath = (
+                    self.outdir
+                    / f"{self.template_names[self.template_names_idx]}{EXTENSION}"
+                )
+                self.template_names_idx += 1
+
             else:
-                filepath = self.outdir / f"roi_{self.template_idx}.png"
+                filepath = (
+                    self.outdir
+                    / f"{self.template_names[-1]}_{self.template_idx}{EXTENSION}"
+                )
                 self.template_idx += 1
+        else:
+            filepath = (
+                self.outdir
+                / f"{DEFAULT_TEMPLATE_PREFIX}{self.template_idx}{EXTENSION}"
+            )
+            self.template_idx += 1
 
-            if not filepath.exists():
-                filepath.parent.mkdir(parents=True, exist_ok=True)
-
-            self.crop.save(filepath)
-            logger.info(f"ROI saved as {filepath}", also_console=True)
-            self._update_instructions()
-            self.close_preview(window)
+        self.crop.save(filepath)
+        logger.info(f"ROI saved as {filepath}", also_console=True)
+        self._update_instructions()
+        self.close_preview(window)
 
     def close_preview(self, window: tk.Toplevel) -> None:
         """

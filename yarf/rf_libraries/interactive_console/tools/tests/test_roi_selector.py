@@ -76,6 +76,51 @@ class TestROISelector:
         assert roi_selector.template_names == ["template1", "template2"]
 
     @pytest.mark.parametrize(
+        "outdir_content,expected_idx",
+        [
+            ([], 0),
+            (
+                [Path("roi_0.png"), Path("roi_1.png")],
+                2,
+            ),
+            (
+                [Path("dir"), Path("roi_0.png"), Path("roi_1.png")],
+                2,
+            ),
+            (
+                [Path("dir"), Path("roi_0.png"), Path("roi_a.png")],
+                1,
+            ),
+            (
+                [Path("README.md"), Path("roi_0.png")],
+                1,
+            ),
+        ],
+    )
+    def test_check_target_outdir_with_templates(
+        self,
+        outdir_content: list[Path],
+        expected_idx: int,
+        roi_selector: ROISelector,
+    ) -> None:
+        with (
+            patch.object(Path, "exists", return_value=True),
+            patch.object(Path, "glob", return_value=outdir_content),
+        ):
+            roi_selector.check_target_outdir()
+        roi_selector.template_names_idx = expected_idx
+
+    def test_check_target_outdir_not_exist(
+        self, roi_selector: ROISelector
+    ) -> None:
+        with (
+            patch.object(Path, "exists", return_value=False),
+            patch.object(Path, "mkdir", return_value=None) as mock_mkdir,
+        ):
+            roi_selector.check_target_outdir()
+            mock_mkdir.assert_called_once_with(parents=True, exist_ok=True)
+
+    @pytest.mark.parametrize(
         "template_names,template_names_idx,template_idx,expected_template_names_idx,expected_template_idx",
         [
             (["a", "b"], 0, 0, 0, 0),
@@ -285,6 +330,56 @@ class TestROISelector:
         roi_selector._show_crop.assert_not_called()
 
     def test_save_and_close(self, roi_selector: ROISelector) -> None:
+        roi_selector.crop = Mock()
+        roi_selector.close_preview = Mock()
+
+        mock_process = Mock()
+        mock_process.attach_mock(roi_selector.crop, "crop")
+        mock_process.attach_mock(roi_selector.close_preview, "close_preview")
+        roi_selector.save_and_close(sentinel.window)
+
+        mock_process.assert_has_calls(
+            [
+                call.crop.save(ANY),
+                call.close_preview(sentinel.window),
+            ]
+        )
+
+    def test_save_and_close_allow_overwrites(
+        self, roi_selector: ROISelector
+    ) -> None:
+        roi_selector.crop = Mock()
+        roi_selector.close_preview = Mock()
+        roi_selector.allowed_overwrites = ["roi_0.png"]
+
+        mock_process = Mock()
+        mock_process.attach_mock(roi_selector.crop, "crop")
+        mock_process.attach_mock(roi_selector.close_preview, "close_preview")
+        with patch.object(Path, "exists", return_value=True):
+            roi_selector.save_and_close(sentinel.window)
+
+        mock_process.assert_has_calls(
+            [
+                call.crop.save(ANY),
+                call.close_preview(sentinel.window),
+            ]
+        )
+        args, _ = mock_process.crop.save.call_args
+        filepath: Path = args[0]
+        assert filepath.name == "roi_0.png"
+
+    def test_save_and_close_no_crop(self, roi_selector: ROISelector) -> None:
+        roi_selector.crop = None
+        roi_selector.close_preview = Mock()
+
+        mock_process = Mock()
+        mock_process.attach_mock(roi_selector.close_preview, "close_preview")
+        roi_selector.save_and_close(sentinel.window)
+        mock_process.assert_not_called()
+
+    def test_save_and_close_images_exist(
+        self, roi_selector: ROISelector
+    ) -> None:
         roi_selector.crop = Mock()
         roi_selector.close_preview = Mock()
 
