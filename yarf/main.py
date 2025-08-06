@@ -130,6 +130,12 @@ def parse_yarf_arguments(argv: list[str]) -> Namespace:
     )
 
     top_level_parser.add_argument(
+        "--log-video",
+        action="store_true",
+        help="Log video even if test succeeds - you can alternatively the YARF_LOG_VIDEO env variable to 1.",
+    )
+
+    top_level_parser.add_argument(
         "suite",
         type=str,
         default=None,
@@ -370,6 +376,9 @@ def main(argv: Optional[list[str]] = None) -> None:
     """
 
     args, cli_options = parse_arguments(argv)
+
+    if args.log_video:
+        os.environ["YARF_LOG_VIDEO"] = "1"
 
     lib_cls = SUPPORTED_PLATFORMS[args.platform]
     logging.basicConfig(level=args.verbosity)

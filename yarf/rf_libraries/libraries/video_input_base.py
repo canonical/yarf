@@ -97,34 +97,35 @@ class VideoInputBase(ABC):
         self._screenshots_dir = tempfile.TemporaryDirectory()
 
     def _end_suite(self, data, result) -> None:
-        if not result.passed and self._frame_count > 0:
-            assert self._screenshots_dir
-            video_path = f"{self._screenshots_dir.name}/video.webm"
-            try:
-                subprocess.run(
-                    (
-                        "ffmpeg",
-                        "-f",
-                        "image2",
-                        "-r",
-                        "5",
-                        "-pattern_type",
-                        "glob",
-                        "-i",
-                        f"{self._screenshots_dir.name}/*.png",
-                        video_path,
-                    ),
-                    capture_output=True,
-                    check=True,
-                )
-            except (
-                FileNotFoundError,
-                PermissionError,
-                subprocess.CalledProcessError,
-            ) as ex:
-                logger.warn(ex)
-            else:
-                self._log_video(video_path)
+        if not result.passed or os.environ.get("YARF_LOG_VIDEO") == "1":
+            if self._frame_count > 0:
+                assert self._screenshots_dir
+                video_path = f"{self._screenshots_dir.name}/video.webm"
+                try:
+                    subprocess.run(
+                        (
+                            "ffmpeg",
+                            "-f",
+                            "image2",
+                            "-r",
+                            "5",
+                            "-pattern_type",
+                            "glob",
+                            "-i",
+                            f"{self._screenshots_dir.name}/*.png",
+                            video_path,
+                        ),
+                        capture_output=True,
+                        check=True,
+                    )
+                except (
+                    FileNotFoundError,
+                    PermissionError,
+                    subprocess.CalledProcessError,
+                ) as ex:
+                    logger.warn(ex)
+                else:
+                    self._log_video(video_path)
 
     @keyword
     def set_ocr_method(self, method: str = "rapidocr") -> None:

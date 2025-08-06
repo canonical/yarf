@@ -462,6 +462,40 @@ class TestMain:
         )
 
     @patch("yarf.main.TestSuite.from_file_system")
+    def test_main_log_video(
+        self,
+        mock_test_suite: MagicMock,
+        fs: FakeFilesystem,  # noqa: F811
+    ) -> None:
+        """
+        Test whether the --log-video flag correctly sets the relevant
+        environmental variable.
+        """
+        outdir = Path(tempfile.gettempdir()) / "yarf-outdir"
+        test_path = "suite-path"
+        fs.create_file(f"{test_path}/test.robot")
+        SUPPORTED_PLATFORMS.clear()
+        SUPPORTED_PLATFORMS["Vnc"] = Vnc
+
+        main.run_robot_suite = Mock()
+        main.run_robot_suite.return_value = 0
+        main.get_outdir_path = Mock(return_value=outdir)
+        argv = ["--log-video", test_path]
+        with pytest.raises(SystemExit) as cm:
+            main.main(argv)
+        assert cm.value.code == 0
+        mock_test_suite.assert_called_once()
+        main.run_robot_suite.assert_called_once_with(
+            suite=mock_test_suite(),
+            lib_cls=SUPPORTED_PLATFORMS["Vnc"],
+            variables=[],
+            outdir=Path(tempfile.gettempdir()) / "yarf-outdir",
+            cli_options={},
+            output_format=None,
+        )
+        assert os.environ["YARF_LOG_VIDEO"] == "1"
+
+    @patch("yarf.main.TestSuite.from_file_system")
     def test_main_custom_outdir(
         self,
         mock_test_suite: MagicMock,
