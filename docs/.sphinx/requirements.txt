@@ -1,0 +1,6 @@
+canonical-sphinx[full]==0.5.1
+packaging
+sphinxcontrib-svg2pdfconverter[CairoSVG]
+sphinx-last-updated-by-git
+sphinx-sitemap
+sphinxcontrib-mermaid

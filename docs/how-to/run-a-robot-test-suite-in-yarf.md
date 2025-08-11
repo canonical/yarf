@@ -49,7 +49,7 @@ The `variants` directory contains modified versions of the base templates, organ
 We need to identify the platform that we would like to run to use YARF. The choice is different in different case, for now we are working to support the following platforms:
 
 - Mir: A display server that is suitable for local development and continuous integration. For details please visit [here](https://canonical-mir.readthedocs-hosted.com/stable/)
-- Vnc: A backend that use QEMU to view and control a virtual machine's graphical desktop. For details of how to start a VNC session please visit [here](using-the-vnc-backend.md)
+- VNC: A backend that use QEMU to view and control a virtual machine's graphical desktop. For details of how to start a VNC session please visit [here](using-the-vnc-backend.md)
 
 ## Provide the correct variant
 

@@ -91,6 +91,11 @@ the repository directory:
 uvx tox
 ```
 
+## Documentation
+
+The YARF documentation is maintained under the [`docs/`](./docs/) subdirectory.
+To submit changes to the documentation, please read the [documentation contributing guide](./docs/CONTRIBUTING.md).
+
 [pytest]: https://docs.pytest.org/en/stable/
 [python]: https://www.python.org/downloads/release/python-3125/
 [ruff]: https://docs.astral.sh/ruff/
