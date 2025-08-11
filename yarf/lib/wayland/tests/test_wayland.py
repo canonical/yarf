@@ -63,3 +63,14 @@ class TestShmOpen:
 
         with pytest.raises(AssertionError, match="creating memfd"):
             get_memfd()
+
+    def test_memfd_create_missing(self):
+        """
+        Raises SystemExit with helpful message when os.memfd_create is not
+        available.
+        """
+        with patch("os.memfd_create", side_effect=AttributeError):
+            with pytest.raises(
+                SystemExit, match="os.memfd_create is not available"
+            ):
+                get_memfd()
