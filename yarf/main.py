@@ -88,7 +88,7 @@ def parse_yarf_arguments(argv: list[str]) -> Namespace:
         "--debug",
         action="store_const",
         const="DEBUG",
-        dest="verbosity",
+        dest="log_level",
         help="be very verbose",
         default="INFO",
     )
@@ -97,7 +97,7 @@ def parse_yarf_arguments(argv: list[str]) -> Namespace:
         "--quiet",
         action="store_const",
         const="WARNING",
-        dest="verbosity",
+        dest="log_level",
         help="be less verbose",
     )
 
@@ -377,11 +377,12 @@ def main(argv: Optional[list[str]] = None) -> None:
 
     args, cli_options = parse_arguments(argv)
 
+    os.environ["YARF_LOG_LEVEL"] = args.log_level
     if args.log_video:
         os.environ["YARF_LOG_VIDEO"] = "1"
 
     lib_cls = SUPPORTED_PLATFORMS[args.platform]
-    logging.basicConfig(level=args.verbosity)
+    logging.basicConfig(level=args.log_level)
     outdir = get_outdir_path(args.outdir)
 
     if args.suite:

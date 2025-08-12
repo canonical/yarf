@@ -74,8 +74,8 @@ class TestMain:
         "argv,expected",
         [
             (["suite/", "--"], {"suite": "suite/"}),
-            (["--debug"], {"verbosity": "DEBUG"}),
-            (["--quiet"], {"verbosity": "WARNING"}),
+            (["--debug"], {"log_level": "DEBUG"}),
+            (["--quiet"], {"log_level": "WARNING"}),
             (["--variant", "var1/var2/var3"], {"variant": "var1/var2/var3"}),
             (["--outdir", "out/dir"], {"outdir": "out/dir"}),
         ],
@@ -154,7 +154,7 @@ class TestMain:
             ],
         ):
             args, extra = parse_arguments()
-            assert args.verbosity == "DEBUG"
+            assert args.log_level == "DEBUG"
             assert args.platform == "Vnc"
             assert args.suite == "suite-path"
             assert extra == {"variable": ["key:value"]}
@@ -460,6 +460,7 @@ class TestMain:
             cli_options={},
             output_format=None,
         )
+        assert os.getenv("YARF_LOG_LEVEL") == "INFO"
 
     @patch("yarf.main.TestSuite.from_file_system")
     def test_main_log_video(
