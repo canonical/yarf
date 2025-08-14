@@ -41,8 +41,8 @@ dependencies = [
     "python-dateutil>=2.9.0.post0",
 ]
 
-[project.optional-dependencies]
-develop = [
+[dependency-groups]
+dev = [
     "licensecheck",
     "mypy",
     "pre-commit<4.3.1",
@@ -52,6 +52,8 @@ develop = [
     "pytest-cov",
     "pytest-xdist",
     "tox",
+    "tox-uv",
+    "types-python-dateutil",
 ]
 
 [project.scripts]
