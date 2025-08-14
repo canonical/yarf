@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.10, <3.13"
 resolution-markers = [
     "python_full_version >= '3.12' and sys_platform == 'darwin'",
@@ -795,18 +795,6 @@ wheels = [
 ]
 
 [[package]]
-name = "plumbum"
-version = "1.9.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pywin32", marker = "platform_python_implementation != 'PyPy' and sys_platform == 'win32'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/f0/5d/49ba324ad4ae5b1a4caefafbce7a1648540129344481f2ed4ef6bb68d451/plumbum-1.9.0.tar.gz", hash = "sha256:e640062b72642c3873bd5bdc3effed75ba4d3c70ef6b6a7b907357a84d909219", size = 319083, upload-time = "2024-10-05T05:59:27.059Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/4f/9d/d03542c93bb3d448406731b80f39c3d5601282f778328c22c77d270f4ed4/plumbum-1.9.0-py3-none-any.whl", hash = "sha256:9fd0d3b0e8d86e4b581af36edf3f3bbe9d1ae15b45b8caab28de1bcb27aaa7f5", size = 127970, upload-time = "2024-10-05T05:59:25.102Z" },
-]
-
-[[package]]
 name = "pre-commit"
 version = "3.8.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1069,22 +1057,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pywin32"
-version = "311"
-source = { registry = "https://pypi.org/simple" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/7b/40/44efbb0dfbd33aca6a6483191dae0716070ed99e2ecb0c53683f400a0b4f/pywin32-311-cp310-cp310-win32.whl", hash = "sha256:d03ff496d2a0cd4a5893504789d4a15399133fe82517455e78bad62efbb7f0a3", size = 8760432, upload-time = "2025-07-14T20:13:05.9Z" },
-    { url = "https://files.pythonhosted.org/packages/5e/bf/360243b1e953bd254a82f12653974be395ba880e7ec23e3731d9f73921cc/pywin32-311-cp310-cp310-win_amd64.whl", hash = "sha256:797c2772017851984b97180b0bebe4b620bb86328e8a884bb626156295a63b3b", size = 9590103, upload-time = "2025-07-14T20:13:07.698Z" },
-    { url = "https://files.pythonhosted.org/packages/57/38/d290720e6f138086fb3d5ffe0b6caa019a791dd57866940c82e4eeaf2012/pywin32-311-cp310-cp310-win_arm64.whl", hash = "sha256:0502d1facf1fed4839a9a51ccbcc63d952cf318f78ffc00a7e78528ac27d7a2b", size = 8778557, upload-time = "2025-07-14T20:13:11.11Z" },
-    { url = "https://files.pythonhosted.org/packages/7c/af/449a6a91e5d6db51420875c54f6aff7c97a86a3b13a0b4f1a5c13b988de3/pywin32-311-cp311-cp311-win32.whl", hash = "sha256:184eb5e436dea364dcd3d2316d577d625c0351bf237c4e9a5fabbcfa5a58b151", size = 8697031, upload-time = "2025-07-14T20:13:13.266Z" },
-    { url = "https://files.pythonhosted.org/packages/51/8f/9bb81dd5bb77d22243d33c8397f09377056d5c687aa6d4042bea7fbf8364/pywin32-311-cp311-cp311-win_amd64.whl", hash = "sha256:3ce80b34b22b17ccbd937a6e78e7225d80c52f5ab9940fe0506a1a16f3dab503", size = 9508308, upload-time = "2025-07-14T20:13:15.147Z" },
-    { url = "https://files.pythonhosted.org/packages/44/7b/9c2ab54f74a138c491aba1b1cd0795ba61f144c711daea84a88b63dc0f6c/pywin32-311-cp311-cp311-win_arm64.whl", hash = "sha256:a733f1388e1a842abb67ffa8e7aad0e70ac519e09b0f6a784e65a136ec7cefd2", size = 8703930, upload-time = "2025-07-14T20:13:16.945Z" },
-    { url = "https://files.pythonhosted.org/packages/e7/ab/01ea1943d4eba0f850c3c61e78e8dd59757ff815ff3ccd0a84de5f541f42/pywin32-311-cp312-cp312-win32.whl", hash = "sha256:750ec6e621af2b948540032557b10a2d43b0cee2ae9758c54154d711cc852d31", size = 8706543, upload-time = "2025-07-14T20:13:20.765Z" },
-    { url = "https://files.pythonhosted.org/packages/d1/a8/a0e8d07d4d051ec7502cd58b291ec98dcc0c3fff027caad0470b72cfcc2f/pywin32-311-cp312-cp312-win_amd64.whl", hash = "sha256:b8c095edad5c211ff31c05223658e71bf7116daa0ecf3ad85f3201ea3190d067", size = 9495040, upload-time = "2025-07-14T20:13:22.543Z" },
-    { url = "https://files.pythonhosted.org/packages/ba/3a/2ae996277b4b50f17d61f0603efd8253cb2d79cc7ae159468007b586396d/pywin32-311-cp312-cp312-win_arm64.whl", hash = "sha256:e286f46a9a39c4a18b319c28f59b61de793654af2f395c102b4f819e584b5852", size = 8710102, upload-time = "2025-07-14T20:13:24.682Z" },
-]
-
-[[package]]
 name = "pyyaml"
 version = "6.0.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1305,18 +1277,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/f6/cf/6e6934c3d037ef3f5914e88494127ec4d0fea73bd566539e08b9fa2c9324/robotframework-stacktrace-0.4.1.tar.gz", hash = "sha256:e96cb36e7e9ab55104c1f7d3606249a109e0a4c3bb6a0e294bff07d54ee6f6a5", size = 12634, upload-time = "2021-07-12T18:04:24.993Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/4e/f2/be7d680eb8a23e86ea288f6c421e1e8c30c823a8f1521dc6b9f9d7b7692b/robotframework_stacktrace-0.4.1-py3-none-any.whl", hash = "sha256:018d7a55b99733e64e3cc0b134771b61a47de61de23609ed35c7bf0a53e9290e", size = 8543, upload-time = "2021-07-12T18:04:22.85Z" },
-]
-
-[[package]]
-name = "rpyc"
-version = "5.3.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "plumbum" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/0f/e0/a584823afecc5d8a0c18c46da4e028876e3e34946e6e3b2c3d430cd19b18/rpyc-5.3.1.tar.gz", hash = "sha256:f2233174879faf18ae266437d5a65511ce46c817cec4edc1344f036758cfbf52", size = 61611, upload-time = "2023-02-22T03:45:02.967Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a4/d8/715206e54dfc54177d126f05b6ecc9526891b11ac7a4bafdb1ae4df55eab/rpyc-5.3.1-py3-none-any.whl", hash = "sha256:6e8153792ac221a80f420d2e0b241a10c6e43b105d325998b18a4e7af329f9ec", size = 74036, upload-time = "2023-02-22T03:45:00.933Z" },
 ]
 
 [[package]]
@@ -1577,7 +1537,6 @@ dependencies = [
     { name = "robotframework-debug" },
     { name = "robotframework-sshlibrary" },
     { name = "robotframework-stacktrace" },
-    { name = "rpyc" },
     { name = "xkbcommon" },
 ]
 
@@ -1621,7 +1580,6 @@ requires-dist = [
     { name = "robotframework-debug", specifier = "~=4.5.0" },
     { name = "robotframework-sshlibrary", specifier = "~=3.8.0" },
     { name = "robotframework-stacktrace", specifier = "==0.4.1" },
-    { name = "rpyc", specifier = "~=5.3.1" },
     { name = "tox", marker = "extra == 'develop'" },
     { name = "types-python-dateutil", marker = "extra == 'develop'" },
     { name = "xkbcommon", specifier = "<1.1" },

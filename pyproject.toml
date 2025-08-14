@@ -33,7 +33,6 @@ dependencies = [
     "robotframework-sshlibrary~=3.8.0",
     "robotframework-stacktrace==0.4.1",
     "numpy~=1.26.0",
-    "rpyc~=5.3.1",
     "xkbcommon<1.1",
     "pyte~=0.8.2",
     "pyserial>=3.5",
