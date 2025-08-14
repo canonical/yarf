@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.10, <3.13"
 resolution-markers = [
     "python_full_version >= '3.12' and sys_platform == 'darwin'",
@@ -1309,14 +1309,14 @@ wheels = [
 
 [[package]]
 name = "rpyc"
-version = "5.3.1"
+version = "6.0.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "plumbum" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0f/e0/a584823afecc5d8a0c18c46da4e028876e3e34946e6e3b2c3d430cd19b18/rpyc-5.3.1.tar.gz", hash = "sha256:f2233174879faf18ae266437d5a65511ce46c817cec4edc1344f036758cfbf52", size = 61611, upload-time = "2023-02-22T03:45:02.967Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8b/e7/1c17410673b634f4658bb5d2232d0c4507432a97508b2c6708e59481644a/rpyc-6.0.2.tar.gz", hash = "sha256:8e780a6a71b842128a80a337c64adfb6f919014e069951832161c9efc630c93b", size = 62321, upload-time = "2025-04-18T16:33:21.693Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a4/d8/715206e54dfc54177d126f05b6ecc9526891b11ac7a4bafdb1ae4df55eab/rpyc-5.3.1-py3-none-any.whl", hash = "sha256:6e8153792ac221a80f420d2e0b241a10c6e43b105d325998b18a4e7af329f9ec", size = 74036, upload-time = "2023-02-22T03:45:00.933Z" },
+    { url = "https://files.pythonhosted.org/packages/3f/99/2e119d541d596daea39643eb9312b47c7847383951300f889166938035b1/rpyc-6.0.2-py3-none-any.whl", hash = "sha256:8072308ad30725bc281c42c011fc8c922be15f3eeda6eafb2917cafe1b6f00ec", size = 74768, upload-time = "2025-04-18T16:33:20.147Z" },
 ]
 
 [[package]]
@@ -1621,7 +1621,7 @@ requires-dist = [
     { name = "robotframework-debug", specifier = "~=4.5.0" },
     { name = "robotframework-sshlibrary", specifier = "~=3.8.0" },
     { name = "robotframework-stacktrace", specifier = "==0.4.1" },
-    { name = "rpyc", specifier = "~=5.3.1" },
+    { name = "rpyc", specifier = "~=6.0.2" },
     { name = "tox", marker = "extra == 'develop'" },
     { name = "types-python-dateutil", marker = "extra == 'develop'" },
     { name = "xkbcommon", specifier = "<1.1" },
