@@ -27,32 +27,16 @@ We can install YARF along with the dependencies specified in
 
 ```shell
 uv sync
-uv pip install .[develop]
-```
-
-After that, we enter the virtual environment:
-
-```shell
-. .venv/bin/activate
 ```
 
 Optionally, enable pre-commit checks, so your contribution will pass all the checks
 we run on the code:
 
 ```shell
-uvx --from 'pre-commit<4.0.0' pre-commit install
+uv run pre-commit install
 ```
 
 We can start working on the repository here.
-
-#### Leave the virtual environment
-
-When we finish working with the repository and leaving the virtual environment,
-we can execute:
-
-```shell
-deactivate
-```
 
 ## Build the Snap Package
 
@@ -88,7 +72,7 @@ To run the above quality control tasks, simply execute the command under
 the repository directory:
 
 ```shell
-uvx tox
+uv run tox
 ```
 
 ## Documentation
