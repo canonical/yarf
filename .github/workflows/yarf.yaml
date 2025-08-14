@@ -37,7 +37,7 @@ jobs:
       run: uv lock --check
     - name: Run tests
       run: |
-        uv tool run tox
+        uv run tox
 
     - name: Install integration dependencies
       run: |
