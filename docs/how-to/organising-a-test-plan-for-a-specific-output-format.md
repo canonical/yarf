@@ -8,7 +8,7 @@ YARF can convert the output to supported output formats, including:
 
 1. [Test Submission Schema](https://github.com/canonical/test-submission-schema)
 
-## Test Submission Schema
+## Test submission schema
 
 To prepare a test plan for the test submission schema, we need to provide the following metadata and tags:
 Metadata:
@@ -30,6 +30,9 @@ Please visit the YARF Tags documentation in the Reference section for the detail
 To add the metadata of for a test plan, we need to write an `__init__.robot` file under the test plan. For example:
 
 ```{code-block} bash
+---
+caption: An example of a test plan with an `__init__.robot` file
+---
 test_plan_X
 ├── __init__.robot
 ├── suite1.robot
@@ -43,11 +46,12 @@ test_plan_X
             └── a2.png
 ```
 
-<u><center>Code Snippet: An example of a test plan with an `__init__.robot` file</center></u>
-
 In the `__init__.robot`, we will have the following:
 
 ```{code-block} text
+---
+caption: An example of `__init__.robot` that contains the metadata
+---
 *** Settings ***
 Metadata        namespace           com.canonical.yarf
 Metadata        title               The title of the test plan
@@ -55,7 +59,5 @@ Metadata        description         A brief description of the test plan
 Metadata        test_plan_id        com.canonical.test::plan_A
 Metadata        execution_id        EXE_ID
 ```
-
-<u><center>Code Snippet: An example of `__init__.robot` that contains the metadata</center></u>
 
 In YARF, we will extract these information, convert and export the output under the `outdir`.
