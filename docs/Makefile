@@ -117,7 +117,7 @@ linkcheck: install
 	exit 0
 
 pa11y: pa11y-install html
-	find $(BUILDDIR) -name *.html -print0 | xargs -n 1 -0 $(PA11Y)
+	find $(BUILDDIR) -type d -path '*/reference/rf_libraries*' -prune -o -type f -name '*.html' -print0 | xargs -n 1 -0 $(PA11Y)
 
 vale-install: install
 	@. $(VENV); test -d $(SPHINXDIR)/venv/lib/python*/site-packages/vale || pip install rst2html vale

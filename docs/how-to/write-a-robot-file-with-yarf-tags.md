@@ -10,6 +10,9 @@ For details of the metadata and tags we supported in YARF, please visit [here](.
 To add YARF metadata to a robot suite, we will create a `__init__.robot` file under the suite directory:
 
 ```{code-block} bash
+---
+caption: An example of a test suite file structure with an `__init__.robot` file
+---
 suite
 ├── __init__.robot
 ├── test.robot
@@ -23,16 +26,15 @@ suite
             └── a2.png
 ```
 
-<u><center>Code Snippet: An example of a test suite file structure with an `__init__.robot` file</center></u>
-
 In the `__init__.robot` file, we will then specify the metadata under the `*** Settings ***` section. For example:
 
-```{code-block} text
+```{code-block} robotframework
+---
+caption: An example of an `__init__.robot` file with a Metadata specified
+---
 *** Settings ***
 Metadata       metadata_nameA       metadata_valueA
 ```
-
-<u><center>Code Snippet: An example of an `__init__.robot` file with a Metadata specified</center></u>
 
 ## Adding a YARF tag to a robot file
 
@@ -41,6 +43,10 @@ There are two ways to add a YARF tag to a robot file:
 1. Add the tag to the `Settings` section of the robot file, in this case, the tag will be applied to each of the tasks under the robot file. For example:
 
 ```{code-block} text
+---
+caption: An example of a test robot file using a YARF tag under the Settings 
+  section
+---
 *** Settings ***
 Documentation       Example
 Test Tags           yarf:yarf_tagA: valueA
@@ -55,11 +61,12 @@ Task 2
     Log To Console    message 1
 ```
 
-<u><center>Code Snippet: An example of a test robot file using a YARF tag under the Settings section</center></u>
-
 1. Add the tag to individual tasks in the robot file, in this case the tag will be applied to the corresponding tasks only. For example:
 
-```{code-block} text
+```{code-block} robotframework
+---
+caption: An example of a test robot file using the tag `yarf:version: <operator> X.Y`
+---
 *** Settings ***
 Documentation       Example
 Library             some_lib.py
@@ -74,5 +81,3 @@ Task 2
     [Tags]            yarf:yarf_tagC: valueC
     Log To Console    message 1
 ```
-
-<u><center>Code Snippet: An example of a test robot file using the tag `yarf:version: <operator> X.Y`</center></u>

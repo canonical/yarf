@@ -148,3 +148,9 @@ repos:
       entry: make -C docs vale
       language: system
       pass_filenames: false
+
+    - id: docs-pa11y
+      name: Docs accessibility check
+      entry: make -C docs pa11y
+      language: system
+      pass_filenames: false
