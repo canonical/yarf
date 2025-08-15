@@ -1,4 +1,8 @@
-# YARF Metadata and Tags
+<!-- vale off -->
+
+# YARF metadata and tags
+
+<!-- vale on -->
 
 In yarf we support the following metadata and tags in addition to the [official ones](https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html#tagging-test-cases).
 
@@ -6,7 +10,7 @@ In yarf we support the following metadata and tags in addition to the [official 
 
 We can add metadata in the `*** Settings ***` section in `__init__.robot` of a suite so that we can apply the metadata for all tasks in the test suite.
 
-### Display Resolutions
+### Display resolutions
 
 This metadata specifies the display resolutions of different displays in the form of `yarf:displays     <screen_1_name>:W1xH1 <screen_2_name>:W2xH2 ... <screen_n_name>:WnxHn`, where `<screen_x_name>` is optional. For example:
 
@@ -19,7 +23,11 @@ Metadata       yarf:displays       HDMI_1:1920x1080 Camera_1:1280x1080 800x600
 
 ## Tags
 
+<!-- vale off -->
+
 ### YARF version
+
+<!-- vale on -->
 
 We can add this tag in the `Test Tags` section under `*** Settings ***` or under individual tasks. For example:
 
@@ -65,7 +73,11 @@ We support the following operators:
 
 With this tag, we can control which task will run in the suite with respect to YARF version.
 
+<!-- vale off -->
+
 ### Category ID
+
+<!-- vale on -->
 
 This tag specifies the category of a test case in the form of `yarf:category_id: <category_namespace>::<category>`. We can add this tag in the `Test Tags` section under `*** Settings ***` so that we can apply the tag for all tasks under the file, or we can add the tag under individual tasks. For example:
 
@@ -104,7 +116,7 @@ Task 2
 
 <u><center>Code Snippet: An example of a test robot file using the tag `yarf:category_id: full_id` under individual tasks</center></u>
 
-### Certification Status
+### Certification status
 
 This tag specifies the certification status of a test case in the form of `yarf:certification_status: <value>`, where `<value>` can either be `blocker` or `non-blocker`. We can add this tag under each test case. For example:
 
@@ -126,7 +138,11 @@ Task 2
 
 <u><center>Code Snippet: An example of a test robot file using the tag `yarf:certification_status: <value>` under individual tasks</center></u>
 
-### Test Group ID
+<!-- vale off -->
+
+### Test group ID
+
+<!-- vale on -->
 
 This tag specifies the scenario group of a test case in the form of `yarf:test_group_id: <test_group_namespace>::<group>`. We can add this tag in the `Test Tags` section under `*** Settings ***` so that we can apply the tag for all tasks under the file, or we can add the tag under individual tasks. For example:
 

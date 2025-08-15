@@ -8,7 +8,7 @@ YARF can convert the output to supported output formats, including:
 
 1. [Test Submission Schema](https://github.com/canonical/test-submission-schema)
 
-## Test Submission Schema
+## Test submission schema
 
 To prepare a test plan for the test submission schema, we need to provide the following metadata and tags:
 Metadata:

@@ -124,3 +124,27 @@ repos:
       entry: uv tool run licensecheck --zero --show-only-failing --requirements-paths=pyproject.toml
       language: system
       pass_filenames: false
+
+    - id: docs-spelling
+      name: Docs spell check
+      entry: make -C docs spelling
+      language: system
+      pass_filenames: false
+
+    - id: docs-linkcheck
+      name: Docs link check
+      entry: make -C docs linkcheck
+      language: system
+      pass_filenames: false
+
+    - id: docs-woke
+      name: Docs inclusive language check
+      entry: make -C docs woke
+      language: system
+      pass_filenames: false
+
+    - id: docs-vale
+      name: Docs style guide compliance check
+      entry: make -C docs vale
+      language: system
+      pass_filenames: false

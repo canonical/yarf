@@ -1,8 +1,8 @@
-# Platform Plugins
+# Platform plugins
 
 YARF allows platforms to be added as plugins. In this guide, we will walk through how to write a platform plugin and how to make it available in YARF.
 
-## Writing a Platform Plugin
+## Writing a platform plugin
 
 In YARF, all platforms are delivered as a package and must implement the `PlatformBase` class in an `__init__.py`, this extends to the platform plugins. For example:
 
@@ -107,7 +107,7 @@ class Hid(HidBase):
 
 <u><center>Code Snippet: An example of Hid implementation in Platform A</center></u>
 
-## Managing Plugin Platforms in YARF
+## Managing plugin platforms in YARF
 
 There are two ways to manage platform plugins in YARF:
 

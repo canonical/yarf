@@ -1,4 +1,4 @@
-# Write a Robot File with YARF Tags
+# Write a robot file with YARF tags
 
 This guide will show how to write a robot file with yarf metadata and tags.
 For details of how to write a general test robot file please visit the [Robot Framework official documentation](https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html#test-data-sections)
