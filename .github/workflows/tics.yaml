@@ -1,7 +1,7 @@
 name: TICS Code Quality Analysis
 
 on:
-  pull_request:
+  pull_request: # to be deleted
   workflow_dispatch:
 
 permissions:
@@ -11,7 +11,7 @@ jobs:
   testing:
     uses: ./.github/workflows/yarf.yaml
     with:
-      ref: main
+      ref: tics # main
 
   TICS:
     needs: testing
@@ -20,7 +20,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: tics # main
 
       - name: Install dependencies
         run: |

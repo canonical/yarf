@@ -49,84 +49,79 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: coverage
-        path: .coverage.xml
+        path: ./coverage.xml
         retention-days: 2
 
-    - name: Setup upterm session
+    - name: Install integration dependencies
+      run: |
+        sudo snap install mir-test-tools
+        sudo apt-get --yes --no-install-recommends install \
+          ffmpeg \
+          inotify-tools \
+          gnome-calculator
+
+    - name: Run integration tests
+      run: |
+        export WAYLAND_DISPLAY=wayland-99
+
+        # Start Mir on a virtual display (doesn't require graphics hardware)
+        mir-test-tools.demo-server \
+          --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
+          --platform-display-libs mir:virtual \
+          --virtual-output 1280x1024 &
+
+        # Wait for the compositor to start
+        inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-99\$" $XDG_RUNTIME_DIR
+
+        # Avoid GNOME apps waiting for portals
+        dbus-run-session -- gnome-calculator &
+
+        uv run yarf --platform Mir --output-format TestSubmissionSchema tests/basic_suite
+
+    - name: Download test submission schema and validate
+      run: |
+        version=$(jq -r '.version' /tmp/yarf-outdir/TestSubmissionSchema_output.json)
+        check-jsonschema --schemafile https://raw.githubusercontent.com/canonical/test-submission-schema/refs/heads/main/test_submission_schema/schemas/v${version}.json /tmp/yarf-outdir/TestSubmissionSchema_output.json
+
+    - name: Install tutorial dependencies
+      run: |
+        sudo apt-get --yes --no-install-recommends install \
+          python3-gi \
+          gir1.2-gtk-4.0 \
+          libadwaita-1-dev \
+          gir1.2-adw-1
+
+    - name: Run tutorial examples
+      run: |
+        export WAYLAND_DISPLAY=wayland-0
+
+        # Start Mir on a virtual display (doesn't require graphics hardware)
+        mir-test-tools.demo-server \
+          --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
+          --platform-display-libs mir:virtual \
+          --virtual-output 1280x1024 &
+
+        # Wait for the compositor to start
+        inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-0\$" $XDG_RUNTIME_DIR
+
+        uv venv --python=/usr/bin/python3 --system-site-packages --project=$(pwd)/examples/yarf-example-simple-counter
+        dbus-run-session -- uv --project=$(pwd)/examples/yarf-example-simple-counter run simple-counter &
+
+        uv run yarf --platform Mir examples/yarf-example-simple-counter/yarf_tests
+
+        dbus-run-session -- uv --project=$(pwd)/examples/yarf-example-simple-counter run simple-counter --theme light &
+        uv run yarf --platform Mir --variant light examples/yarf-example-simple-counter/yarf_tests
+
+    - if: failure()
+      name: Collect test results
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      with:
+        name: yarf-output
+        path: /tmp/yarf-outdir/*
+        retention-days: 5
+
+    - if: failure() && runner.debug
+      name: Setup upterm session (restart with "Enable debug logging" to activate)
       uses: canonical/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48
       with:
         limit-access-to-actor: true
-
-    # - name: Install integration dependencies
-    #   run: |
-    #     sudo snap install mir-test-tools
-    #     sudo apt-get --yes --no-install-recommends install \
-    #       ffmpeg \
-    #       inotify-tools \
-    #       gnome-calculator
-
-    # - name: Run integration tests
-    #   run: |
-    #     export WAYLAND_DISPLAY=wayland-99
-
-    #     # Start Mir on a virtual display (doesn't require graphics hardware)
-    #     mir-test-tools.demo-server \
-    #       --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
-    #       --platform-display-libs mir:virtual \
-    #       --virtual-output 1280x1024 &
-
-    #     # Wait for the compositor to start
-    #     inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-99\$" $XDG_RUNTIME_DIR
-
-    #     # Avoid GNOME apps waiting for portals
-    #     dbus-run-session -- gnome-calculator &
-
-    #     uv run yarf --platform Mir --output-format TestSubmissionSchema tests/basic_suite
-
-    # - name: Download test submission schema and validate
-    #   run: |
-    #     version=$(jq -r '.version' /tmp/yarf-outdir/TestSubmissionSchema_output.json)
-    #     check-jsonschema --schemafile https://raw.githubusercontent.com/canonical/test-submission-schema/refs/heads/main/test_submission_schema/schemas/v${version}.json /tmp/yarf-outdir/TestSubmissionSchema_output.json
-
-    # - name: Install tutorial dependencies
-    #   run: |
-    #     sudo apt-get --yes --no-install-recommends install \
-    #       python3-gi \
-    #       gir1.2-gtk-4.0 \
-    #       libadwaita-1-dev \
-    #       gir1.2-adw-1
-
-    # - name: Run tutorial examples
-    #   run: |
-    #     export WAYLAND_DISPLAY=wayland-0
-
-    #     # Start Mir on a virtual display (doesn't require graphics hardware)
-    #     mir-test-tools.demo-server \
-    #       --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
-    #       --platform-display-libs mir:virtual \
-    #       --virtual-output 1280x1024 &
-
-    #     # Wait for the compositor to start
-    #     inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-0\$" $XDG_RUNTIME_DIR
-
-    #     uv venv --python=/usr/bin/python3 --system-site-packages --project=$(pwd)/examples/yarf-example-simple-counter
-    #     dbus-run-session -- uv --project=$(pwd)/examples/yarf-example-simple-counter run simple-counter &
-
-    #     uv run yarf --platform Mir examples/yarf-example-simple-counter/yarf_tests
-
-    #     dbus-run-session -- uv --project=$(pwd)/examples/yarf-example-simple-counter run simple-counter --theme light &
-    #     uv run yarf --platform Mir --variant light examples/yarf-example-simple-counter/yarf_tests
-
-    # - if: failure()
-    #   name: Collect test results
-    #   uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-    #   with:
-    #     name: yarf-output
-    #     path: /tmp/yarf-outdir/*
-    #     retention-days: 5
-
-    # - if: failure() && runner.debug
-    #   name: Setup upterm session (restart with "Enable debug logging" to activate)
-    #   uses: canonical/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48
-    #   with:
-    #     limit-access-to-actor: true
