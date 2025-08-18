@@ -2,10 +2,11 @@
 
 .. _home:
 
-.. vale off
+.. class:: vale-ignore
+
 Yet Another Robot Framework (YARF)
 ==================================
-.. vale on
+
 
 YARF is a tool built upon the `Robot Framework <https://robotframework.org/>`_
 that allows developers to build complex visual test scenarios and bootstrap them
