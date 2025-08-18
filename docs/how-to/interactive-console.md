@@ -144,7 +144,7 @@ Please note that the interactive console log is just a track record of the comma
 
 ## Interactive keywords
 
-There are also interactive mode exclusive Robot Framework keywords that can help us to build test cases. One keyword is `Grab Template` which shows a current screenshot in the platform and allow users to crop templates from it. For the details, please visit the [interactive library][interactive-lib-doc]
+There are also interactive mode exclusive Robot Framework keywords that can help us to build test cases. One keyword is `Grab Template` which shows a current screenshot in the platform and allow users to crop templates from it. For the details, please visit the {doc}`Interactive Console API </reference/rf_libraries/interactive_console-Interactive>`
 
 ```{code-block} text
 > Interactive.Grab Template
@@ -155,5 +155,4 @@ ROI saved as /tmp/yarf-outdir/roi_20250415_100752.png
 >
 ```
 
-[interactive-lib-doc]: ../reference/rf_libraries/interactive_console-Interactive.md
 [rf-doc-test-data]: https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html#test-data-sections
