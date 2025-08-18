@@ -1,0 +1,31 @@
+name: Test Semantic Version
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [git-version]
+
+jobs:
+  git-version:
+    runs-on: ubuntu-latest
+    outputs:
+      semver: ${{ steps.gv.outputs.semVer }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: gittools/actions/gitversion/setup@v4
+        with:
+          versionSpec: '6.x'
+
+      - id: gv
+        uses: gittools/actions/gitversion/execute@v4
+        with:
+          configFilePath: GitVersion.yaml
+
+      - name: Show SemVer
+        run: |
+          echo "Semantic Version: ${{ steps.gv.outputs.semVer }}"
+          echo "All Outputs: ${{ toJson(steps.gv.outputs) }}"
