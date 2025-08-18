@@ -134,7 +134,7 @@ The interactive console supports the same set of commands as any regular `.robot
 
 When we exit the interactive console, YARF will save the console log will be saved in the file `/tmp/yarf-outdir` directory. However, the user can also change it by providing a path to the `--outdir` option in the `yarf` command.
 
-Please note that the interactive console log is just a track record of the commands used by the user in the interactive console session along with timestamps. The user is still responsible to come up with a proper test suite along with the `.robot` scripts required. For more information about how to write a `.robot` script please visit the official [Robot Framework Documentation](https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html#test-data-sections)
+Please note that the interactive console log is just a track record of the commands used by the user in the interactive console session along with timestamps. The user is still responsible to come up with a proper test suite along with the `.robot` scripts required. For more information about how to write a `.robot` script please visit the official [Robot Framework Documentation][rf-doc-test-data]
 
 ## Common shortcuts
 
@@ -144,7 +144,7 @@ Please note that the interactive console log is just a track record of the comma
 
 ## Interactive keywords
 
-There are also interactive mode exclusive Robot Framework keywords that can help us to build test cases. One keyword is `Grab Template` which shows a current screenshot in the platform and allow users to crop templates from it. For the details, please visit the [interactive library](../reference/rf_libraries/interactive_console-Interactive.md)
+There are also interactive mode exclusive Robot Framework keywords that can help us to build test cases. One keyword is `Grab Template` which shows a current screenshot in the platform and allow users to crop templates from it. For the details, please visit the [interactive library][interactive-lib-doc]
 
 ```{code-block} text
 > Interactive.Grab Template
@@ -154,3 +154,6 @@ ROI saved as /tmp/yarf-outdir/roi_20250415_100751.png
 ROI saved as /tmp/yarf-outdir/roi_20250415_100752.png
 >
 ```
+
+[interactive-lib-doc]: ../reference/rf_libraries/interactive_console-Interactive.md
+[rf-doc-test-data]: https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html#test-data-sections
