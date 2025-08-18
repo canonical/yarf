@@ -11,7 +11,7 @@ on:
       - '!.github/workflows/yarf.yaml'
 
 jobs:
-  build:
+  testing:
     runs-on: [self-hosted, linux, noble, x64, large]
     steps:
     - name: Install dependencies
@@ -38,6 +38,12 @@ jobs:
     - name: Run tests
       run: |
         uv tool run tox
+    - name: Upload Coverage Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage
+        path: ./coverage.xml
+        retention-days: 2
 
     - name: Install integration dependencies
       run: |
