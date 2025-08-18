@@ -49,7 +49,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: coverage
-        path: ./coverage.xml
+        path: .coverage.xml
         retention-days: 2
 
     - name: Install integration dependencies
