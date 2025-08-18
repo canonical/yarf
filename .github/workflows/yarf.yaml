@@ -38,6 +38,7 @@ jobs:
     - name: Run tests
       run: |
         uv tool run tox
+
     - name: Install integration dependencies
       run: |
         sudo snap install mir-test-tools
