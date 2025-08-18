@@ -1,0 +1,58 @@
+name: TICS Code Quality Analysis
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  testing:
+    uses: ./.github/workflows/yarf.yaml
+    with:
+      ref: main
+
+  TICS:
+    needs: testing
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Install dependencies
+        run: |
+            sudo apt update -qq
+            sudo apt install -y \
+            git-lfs \
+            libgl1 \
+            libxkbcommon-dev \
+            jq \
+            clang \
+            python3-tk
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c7f87aa956e4c323abf06d5dec078e358f6b4d04 # v6
+
+      - name: Download coverage report
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage
+
+      - name: Rename coverage report for TICS
+        run: |
+          mkdir ./.coverage
+          mv ./coverage.xml ./.coverage/cobertura.xml
+
+      - name: TICS GitHub Action
+        uses: tiobe/tics-github-action@v3
+        with:
+          mode: qserver
+          project: yarf
+          viewerUrl: https://canonical.tiobe.com/tiobeweb/TICS/api/cfg?name=default
+          branchdir: ${{ github.workspace }}
+          ticsAuthToken: ${{ secrets.TICSAUTHTOKEN }}
+          installTics: true
+          calc: ALL
