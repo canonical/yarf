@@ -119,26 +119,18 @@ jobs:
             # exit 1
           fi
 
-      - name: Determine installed revision
+      - name: Promote ${{ env.TRACK }}/${{ env.FROM }} to ${{ env.TRACK }}/${{ env.TO }} for ${{ env.SNAP_ARCH }}
         if: steps.versions.outputs.should_continue == 'true'
-        id: revision
         shell: bash
         run: |
           set -euo pipefail
-          INST_REV=$(snap list "${SNAP_NAME}" | awk 'NR>1 && $1=="'${SNAP_NAME}'"{print $3; exit}')
-          if [[ -z "${INST_REV:-}" ]]; then
+          REVISION=$(snap list "${SNAP_NAME}" | awk 'NR>1 && $1=="'${SNAP_NAME}'"{print $3; exit}')
+          if [[ -z "${REVISION:-}" ]]; then
             echo "Could not determine installed revision via 'snap list'."
             snap list "${SNAP_NAME}" || true
             exit 1
           fi
-          echo "revision=${INST_REV}" >> "$GITHUB_OUTPUT"
-          echo "Installed revision: ${INST_REV}"
-
-      # - name: Promote ${{ env.TRACK }}/${{ env.FROM }} to ${{ env.TRACK }}/${{ env.TO }} for ${{ env.SNAP_ARCH }}
-      #   if: steps.versions.outputs.should_continue == 'true'
-      #   shell: bash
-      #   run: |
-      #     set -euo pipefail
-      #     REVISION="${{ steps.revision.outputs.revision }}"
-      #     snapcraft release "${SNAP_NAME}" "${REVISION}" "${TRACK}/${TO}"
-      #     echo "Released ${SNAP_NAME} ${REVISION} to ${TRACK}/${TO} for ${SNAP_ARCH}."
+          echo "Revision: ${REVISION}"
+          # Uncomment when merge
+          # snapcraft release "${SNAP_NAME}" "${REVISION}" "${TRACK}/${TO}"
+          # echo "Released ${SNAP_NAME} ${REVISION} to ${TRACK}/${TO} for ${SNAP_ARCH}."
