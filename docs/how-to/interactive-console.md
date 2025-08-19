@@ -137,7 +137,7 @@ Please note that the interactive console log is just a track record of the comma
 
 ## Interactive keywords
 
-There are also interactive mode exclusive Robot Framework keywords that can help us to build test cases. One keyword is `Grab Template` which shows a current screenshot in the platform and allow users to crop templates from it. For the details, please visit the interactive library in our [reference](./../reference/rf_libraries/rf_libraries-libraries.md).
+There are also interactive mode exclusive Robot Framework keywords that can help us to build test cases. One keyword is `Grab Template` which shows a current screenshot in the platform and allow users to crop templates from it. For the details, please visit the interactive library in our [reference](./../reference/rf_libraries-libraries.md).
 
 ```{code-block} text
 > Interactive.Grab Template
