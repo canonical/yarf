@@ -20,7 +20,7 @@ jobs:
       matrix:
         track: [latest]
         arch:  [amd64, arm64]
-        lane:  [edge_to_beta, beta_to_candidate, candidate_to_stable]
+        lane:  [edge_to_beta]
         include:
           - arch: amd64
             runs_on: '["self-hosted","linux","noble","x64","large"]'
@@ -89,7 +89,8 @@ jobs:
             exit 1
           fi
 
-          if [[ -n "${TO_VER:-}" && "$FROM_VER" == "$TO_VER" ]]; then
+          # change to <= after testing CI
+          if [[ -n "${TO_VER:-}" && "$FROM_VER" < "$TO_VER" ]]; then
             echo "Versions match ($FROM_VER) in ${TRACK} (${FROM} vs ${TO}). Nothing to do."
             echo "should_continue=false" >> "$GITHUB_OUTPUT"
           else
