@@ -65,7 +65,7 @@ jobs:
             sudo apt-get install -y jq
           fi
 
-      - name: Get versions in $TRACK/$FROM and $TRACK/$TO
+      - name: Get versions in ${{ env.TRACK }}/${{ env.FROM }} and ${{ env.TRACK }}/${{ env.TO }}
         id: versions
         shell: bash
         run: |
@@ -98,7 +98,7 @@ jobs:
             echo "should_continue=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Install $TRACK/$FROM snap (${{ env.SNAP_ARCH }})
+      - name: Install ${{ env.TRACK }}/${{ env.FROM }} snap (${{ env.SNAP_ARCH }})
         if: steps.versions.outputs.should_continue == 'true'
         id: download
         shell: bash
@@ -134,7 +134,7 @@ jobs:
           echo "revision=${INST_REV}" >> "$GITHUB_OUTPUT"
           echo "Installed revision: ${INST_REV}"
 
-      # - name: Promote $TRACK/$FROM to $TRACK/$TO for ${{ env.SNAP_ARCH }}
+      # - name: Promote ${{ env.TRACK }}/${{ env.FROM }} to ${{ env.TRACK }}/${{ env.TO }} for ${{ env.SNAP_ARCH }}
       #   if: steps.versions.outputs.should_continue == 'true'
       #   shell: bash
       #   run: |
