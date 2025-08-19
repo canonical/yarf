@@ -1,0 +1,176 @@
+name: YARF snap promotion
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: promote-yarf-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    name: ${{ matrix.track }} / ${{ matrix.arch }} — ${{ matrix.from }} → ${{ matrix.to }}
+    runs-on: ${{ fromJSON(matrix.runs_on) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        track: [latest]
+        arch:  [amd64, arm64]
+        lane:  [edge_to_beta, beta_to_candidate, candidate_to_stable]
+        include:
+          - arch: amd64
+            runs_on: '["self-hosted","linux","noble","x64","large"]'
+            snap_arch: amd64
+          - arch: arm64
+            runs_on: '["self-hosted","linux","noble","arm64","large"]'
+            snap_arch: arm64
+
+          - lane: edge_to_beta
+            from: edge
+            to: beta
+            test_cmd: ./ci/tests-edge-to-beta.sh
+
+    env:
+      SNAP_NAME: yarf
+      TRACK: ${{ matrix.track }}
+      ARCH: ${{ matrix.arch }}
+      SNAP_ARCH: ${{ matrix.snap_arch }}
+      FROM: ${{ matrix.from }}
+      TO: ${{ matrix.to }}
+      TEST_CMD: ${{ matrix.test_cmd }}
+      SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT }}
+
+    steps:
+      - name: Context
+        shell: bash
+        run: |
+          echo "Track: ${TRACK}"
+          echo "Arch:  ${ARCH} (snap_arch=${SNAP_ARCH})"
+          echo "Lane:  ${FROM} → ${TO}"
+          echo "Tests: ${TEST_CMD}"
+
+      - name: Ensure tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v snapcraft >/dev/null 2>&1; then
+            sudo snap install snapcraft --classic
+          fi
+          if ! command -v jq >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y jq
+          fi
+
+      - name: Get versions in $TRACK/$FROM and $TRACK/$TO
+        id: versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Fetching channel info for ${SNAP_NAME}..."
+
+          snap info "${SNAP_NAME}" \
+          | awk '/^[[:space:]]*[[:alnum:].-]+\/(edge|beta|candidate|stable):/ { gsub(":","",$1); print $1, $2 }' \
+          > channels.txt || true
+          echo "Channel map:"
+          cat channels.txt || true
+
+          FROM_VER=$(awk -v t="${TRACK}/${FROM}" '$1==t{print $2}' channels.txt || true)
+          TO_VER=$(awk -v t="${TRACK}/${TO}"   '$1==t{print $2}' channels.txt || true)
+
+          echo "from_version=$FROM_VER" >> "$GITHUB_OUTPUT"
+          echo "to_version=$TO_VER"     >> "$GITHUB_OUTPUT"
+
+          if [[ -z "${FROM_VER:-}" ]]; then
+            echo "No version found in ${TRACK}/${FROM}."
+            exit 1
+          fi
+
+          if [[ -n "${TO_VER:-}" && "$FROM_VER" == "$TO_VER" ]]; then
+            echo "Versions match ($FROM_VER) in ${TRACK} (${FROM} vs ${TO}). Nothing to do."
+            echo "should_continue=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Versions differ (${FROM}=$FROM_VER, ${TO}=${TO_VER:-none}) in ${TRACK}. Proceeding…"
+            echo "should_continue=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Early exit if versions equal
+        if: steps.versions.outputs.should_continue == 'false'
+        run: echo "No promotion needed for ${TRACK}/${FROM} → ${TRACK}/${TO} on ${ARCH}."
+
+      - name: Download $TRACK/$FROM snap (${{ env.SNAP_ARCH }})
+        if: steps.versions.outputs.should_continue == 'true'
+        id: download
+        shell: bash
+        run: |
+          set -euo pipefail
+          snap download "${SNAP_NAME}" --channel="${TRACK}/${FROM}" --target-arch="${SNAP_ARCH}"
+          ls -l
+          SNAP_FILE=$(ls -1 ${SNAP_NAME}_*_${SNAP_ARCH}.snap | head -n1 || true)
+          ASSERT_FILE=$(ls -1 ${SNAP_NAME}_*_${SNAP_ARCH}.assert | head -n1 || true)
+          if [[ -z "${SNAP_FILE}" || -z "${ASSERT_FILE}" ]]; then
+            echo "Could not find downloaded snap/assert for arch ${SNAP_ARCH}."
+            ls -l
+            exit 1
+          fi
+          echo "snap_file=$SNAP_FILE" >> "$GITHUB_OUTPUT"
+          echo "assert_file=$ASSERT_FILE" >> "$GITHUB_OUTPUT"
+
+      - name: Install downloaded snap (for tests)
+        if: steps.versions.outputs.should_continue == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo snap ack "${{ steps.download.outputs.assert_file }}"
+          sudo snap install "${{ steps.download.outputs.snap_file }}"
+
+      - name: Run lane-specific tests
+        if: steps.versions.outputs.should_continue == 'true'
+        id: tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -x "${TEST_CMD}" ]]; then
+            "${TEST_CMD}" --track "${TRACK}" --arch "${ARCH}" --from "${FROM}" --to "${TO}"
+          else
+            echo "⚠️ Test command ${TEST_CMD} not found or not executable."
+            # exit 1
+          fi
+
+      - name: Extract revision from assertion
+        if: steps.versions.outputs.should_continue == 'true'
+        id: revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          REVISION=$(awk '/^revision:/{print $2; exit}' "${{ steps.download.outputs.assert_file }}")
+          if [[ -z "$REVISION" ]]; then
+            echo "Could not determine revision from assertion."
+            exit 1
+          fi
+          echo "revision=$REVISION" >> "$GITHUB_OUTPUT"
+          echo "Revision to release: $REVISION"
+
+      - name: Verify Snap Store credentials
+        if: steps.versions.outputs.should_continue == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          snapcraft --version
+          snapcraft whoami || {
+            echo "Snapcraft authentication failed.";
+            exit 1;
+          }
+
+      # - name: Release $TRACK/$FROM → $TRACK/$TO for ${{ env.SNAP_ARCH }}
+      #   if: steps.versions.outputs.should_continue == 'true'
+      #   shell: bash
+      #   run: |
+      #     set -euo pipefail
+      #     REVISION="${{ steps.revision.outputs.revision }}"
+      #     echo "Releasing ${SNAP_NAME} revision ${REVISION} to ${TRACK}/${TO}…"
+      #     snapcraft release "${SNAP_NAME}" "${REVISION}" "${TRACK}/${TO}"
+      #     echo "Released ${SNAP_NAME} ${REVISION} to ${TRACK}/${TO} for ${SNAP_ARCH}."
