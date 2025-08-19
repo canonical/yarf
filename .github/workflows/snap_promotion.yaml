@@ -94,13 +94,9 @@ jobs:
             echo "Versions match ($FROM_VER) in ${TRACK} (${FROM} vs ${TO}). Nothing to do."
             echo "should_continue=false" >> "$GITHUB_OUTPUT"
           else
-            echo "Versions differ (${FROM}=$FROM_VER, ${TO}=${TO_VER:-none}) in ${TRACK}. Proceeding…"
+            echo "Version in edge ${FROM}=$FROM_VER > ${TO}=${TO_VER:-none} in ${TRACK}."
             echo "should_continue=true" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: Early exit if versions equal
-        if: steps.versions.outputs.should_continue == 'false'
-        run: echo "No promotion needed for ${TRACK}/${FROM} to ${TRACK}/${TO} on ${ARCH}."
 
       - name: Install $TRACK/$FROM snap (${{ env.SNAP_ARCH }})
         if: steps.versions.outputs.should_continue == 'true'
@@ -144,6 +140,5 @@ jobs:
       #   run: |
       #     set -euo pipefail
       #     REVISION="${{ steps.revision.outputs.revision }}"
-      #     echo "Releasing ${SNAP_NAME} revision ${REVISION} to ${TRACK}/${TO}…"
       #     snapcraft release "${SNAP_NAME}" "${REVISION}" "${TRACK}/${TO}"
       #     echo "Released ${SNAP_NAME} ${REVISION} to ${TRACK}/${TO} for ${SNAP_ARCH}."
