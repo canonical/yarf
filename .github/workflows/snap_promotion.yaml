@@ -100,7 +100,7 @@ jobs:
 
       - name: Early exit if versions equal
         if: steps.versions.outputs.should_continue == 'false'
-        run: echo "No promotion needed for ${TRACK}/${FROM} → ${TRACK}/${TO} on ${ARCH}."
+        run: echo "No promotion needed for ${TRACK}/${FROM} to ${TRACK}/${TO} on ${ARCH}."
 
       - name: Download $TRACK/$FROM snap (${{ env.SNAP_ARCH }})
         if: steps.versions.outputs.should_continue == 'true'
@@ -110,15 +110,35 @@ jobs:
           set -euo pipefail
           snap download "${SNAP_NAME}" --channel="${TRACK}/${FROM}"
           ls -l
-          SNAP_FILE=$(ls -1 ${SNAP_NAME}_*_${SNAP_ARCH}.snap | head -n1 || true)
-          ASSERT_FILE=$(ls -1 ${SNAP_NAME}_*_${SNAP_ARCH}.assert | head -n1 || true)
+          SNAP_FILE=$(ls -1 ${SNAP_NAME}_*.snap | head -n1 || true)
+          ASSERT_FILE=$(ls -1 ${SNAP_NAME}_*.assert | head -n1 || true)
           if [[ -z "${SNAP_FILE}" || -z "${ASSERT_FILE}" ]]; then
-            echo "Could not find downloaded snap/assert for arch ${SNAP_ARCH}."
+            echo "Could not find downloaded snap/assert files."
             ls -l
             exit 1
           fi
           echo "snap_file=$SNAP_FILE" >> "$GITHUB_OUTPUT"
           echo "assert_file=$ASSERT_FILE" >> "$GITHUB_OUTPUT"
+
+      - name: Verify assertion architecture matches matrix arch
+        if: steps.versions.outputs.should_continue == 'true'
+        id: assertarch
+        shell: bash
+        run: |
+          set -euo pipefail
+          ASSERT_FILE="${{ steps.download.outputs.assert_file }}"
+          ASSERT_ARCH=$(awk '/^architecture:/{print $2; exit}' "$ASSERT_FILE")
+          echo "Assertion architecture: ${ASSERT_ARCH}"
+          case "${ARCH}" in
+            amd64) EXPECTED="amd64|x86_64" ;;
+            arm64) EXPECTED="arm64|aarch64" ;;
+            *) echo "Unknown matrix arch ${ARCH}"; exit 1 ;;
+          esac
+          if ! echo "${ASSERT_ARCH}" | grep -Eq "${EXPECTED}"; then
+            echo "Assertion arch (${ASSERT_ARCH}) does not match expected (${ARCH})."
+            exit 1
+          fi
+          echo "ok=true" >> "$GITHUB_OUTPUT"
 
       - name: Install downloaded snap (for tests)
         if: steps.versions.outputs.should_continue == 'true'
