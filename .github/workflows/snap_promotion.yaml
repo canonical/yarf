@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   promote:
-    name: ${{ matrix.track }} / ${{ matrix.arch }} — ${{ matrix.from }} → ${{ matrix.to }}
+    name: ${{ matrix.track }} / ${{ matrix.arch }} — ${{ matrix.from }} to ${{ matrix.to }}
     runs-on: ${{ fromJSON(matrix.runs_on) }}
     strategy:
       fail-fast: false
@@ -129,7 +129,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # snap list columns: Name Version Rev Tracking Publisher Notes
           INST_REV=$(snap list "${SNAP_NAME}" | awk 'NR>1 && $1=="'${SNAP_NAME}'"{print $3; exit}')
           if [[ -z "${INST_REV:-}" ]]; then
             echo "Could not determine installed revision via 'snap list'."
