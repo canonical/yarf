@@ -138,17 +138,6 @@ jobs:
           echo "revision=${INST_REV}" >> "$GITHUB_OUTPUT"
           echo "Installed revision: ${INST_REV}"
 
-      - name: Verify Snap Store credentials
-        if: steps.versions.outputs.should_continue == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          snapcraft --version
-          snapcraft whoami || {
-            echo "Snapcraft authentication failed.";
-            exit 1;
-          }
-
       # - name: Release $TRACK/$FROM → $TRACK/$TO for ${{ env.SNAP_ARCH }}
       #   if: steps.versions.outputs.should_continue == 'true'
       #   shell: bash
