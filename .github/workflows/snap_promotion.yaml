@@ -138,7 +138,7 @@ jobs:
           echo "revision=${INST_REV}" >> "$GITHUB_OUTPUT"
           echo "Installed revision: ${INST_REV}"
 
-      # - name: Release $TRACK/$FROM → $TRACK/$TO for ${{ env.SNAP_ARCH }}
+      # - name: Promote $TRACK/$FROM to $TRACK/$TO for ${{ env.SNAP_ARCH }}
       #   if: steps.versions.outputs.should_continue == 'true'
       #   shell: bash
       #   run: |
