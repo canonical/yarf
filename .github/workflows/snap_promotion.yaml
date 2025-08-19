@@ -108,7 +108,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          snap download "${SNAP_NAME}" --channel="${TRACK}/${FROM}""
+          snap download "${SNAP_NAME}" --channel="${TRACK}/${FROM}"
           ls -l
           SNAP_FILE=$(ls -1 ${SNAP_NAME}_*_${SNAP_ARCH}.snap | head -n1 || true)
           ASSERT_FILE=$(ls -1 ${SNAP_NAME}_*_${SNAP_ARCH}.assert | head -n1 || true)
