@@ -1,4 +1,4 @@
-name: Build YARF snap without publishing to the store
+name: Build YARF snap (dry-run)
 
 on:
   workflow_dispatch:
@@ -51,7 +51,7 @@ jobs:
           name: updated-pyproject
           path: pyproject.toml
 
-  build_and_publish_amd64:
+  build_amd64:
     needs: set-version
     runs-on: [self-hosted, linux, noble, x64, large]
     steps:
@@ -70,7 +70,7 @@ jobs:
         name: yarf-amd64
         path: ${{ steps.snapcraft.outputs.snap }}
 
-  build_and_publish_arm64:
+  build_arm64:
     needs: set-version
     runs-on: [self-hosted, linux, noble, arm64, large]
     steps:
