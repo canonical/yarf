@@ -17,7 +17,12 @@ jobs:
         PR_TITLE: ${{ github.event.pull_request.title }}
       run: |
         error_msg() {
-            title=$(sed -E ':a; s/^(\[[[:alnum:]_-]+]?[[:space:]]*|[[:alnum:]_-]+][[:space:]]*)//; ta' <<< "$PR_TITLE")
+            title=$(printf '%s' "$PR_TITLE" | sed -E \
+                -e 's/\[[^]]*\]?[[:space:]]*//g' \
+                -e 's/(^|[[:space:]])[^[:space:]]*\][[:space:]]*/\1/g' \
+                -e 's/\][[:space:]]*//g' \
+                -e 's/[[:space:]]+/ /g' \
+                -e 's/^[[:space:]]+//; s/[[:space:]]+$//')
             echo "No recognized traceability tag / there are multiple tags"
             echo "Please start the PR title with one of the following tags: [New], [Breaking], [Infra], [BugFix]"
             echo "e.g. [New] $title"
