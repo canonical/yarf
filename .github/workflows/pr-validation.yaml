@@ -16,7 +16,7 @@ jobs:
       env:
         PR_TITLE: ${{ github.event.pull_request.title }}
       run: |
-        echo "$PR_TITLE" | awk '
+        echo "$PR_TITLE" | awk -v title="$PR_TITLE" '
         /^\[(New|Breaking|Infra|BugFix)\]/ {
             print "Starts with a recognized tag"
             exit 0
@@ -24,6 +24,6 @@ jobs:
         {
             print "No recognized traceability tag"
             print "Please start the PR title with one of the following tags: [New], [Breaking], [Infra], [BugFix]"
-            print "e.g. [New] $PR_TITLE"
+            print "e.g. [New] " title
             exit 1
         }'
