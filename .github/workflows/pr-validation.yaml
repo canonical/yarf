@@ -12,7 +12,7 @@ jobs:
   validate_title:
     runs-on: ubuntu-latest
     steps:
-    - name: Checking the presence of the Traceability Marker in the PR title
+    - name: Checking the presence of the traceability tag in the PR title
       env:
         PR_TITLE: ${{ github.event.pull_request.title }}
       run: |
@@ -22,6 +22,8 @@ jobs:
             exit 0
         }
         {
-            print "No recognized tag"
+            print "No recognized traceability tag"
+            print "Please start the PR title with one of the following tags: [New], [Breaking], [Infra], [BugFix]"
+            print "e.g. [New] $PR_TITLE"
             exit 1
         }'
