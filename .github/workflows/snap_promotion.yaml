@@ -121,16 +121,10 @@ jobs:
 
       - name: Promote ${{ env.TRACK }}/${{ env.FROM }} to ${{ env.TRACK }}/${{ env.TO }} for ${{ env.SNAP_ARCH }}
         if: steps.versions.outputs.should_continue == 'true'
-        shell: bash
+        env:
+          SNAPCRAFT_HAS_TTY: "true" # this is necessary because snapcraft will not allow --yes for promotions of the edge channel
         run: |
-          set -euo pipefail
-          REVISION=$(snap list "${SNAP_NAME}" | awk 'NR>1 && $1=="'${SNAP_NAME}'"{print $3; exit}')
-          if [[ -z "${REVISION:-}" ]]; then
-            echo "Could not determine installed revision via 'snap list'."
-            snap list "${SNAP_NAME}" || true
-            exit 1
-          fi
-          echo "Revision: ${REVISION}"
-          # Uncomment when merge
-          # snapcraft release "${SNAP_NAME}" "${REVISION}" "${TRACK}/${TO}"
-          # echo "Released ${SNAP_NAME} ${REVISION} to ${TRACK}/${TO} for ${SNAP_ARCH}."
+          # Note: using `yes |` instead of `--yes` because snapcraft will
+          #       refuse to non-interactively promote a snap from the edge
+          #       channel if it is done without any branch qualifiers
+          # yes | snapcraft promote yarf --from-channel latest/edge --to-channel latest/beta
