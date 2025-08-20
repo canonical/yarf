@@ -16,14 +16,23 @@ jobs:
       env:
         PR_TITLE: ${{ github.event.pull_request.title }}
       run: |
-        echo "$PR_TITLE" | awk -v title="$PR_TITLE" '
-        /^\[(New|Breaking|Infra|BugFix)\]/ {
-            print "Starts with a recognized tag"
-            exit 0
+        error_msg() {
+            title=$(sed -E ':a; s/^(\[[[:alnum:]_-]+]?[[:space:]]*|[[:alnum:]_-]+][[:space:]]*)//; ta' <<< "$PR_TITLE")
+            echo "No recognized traceability tag / there are multiple tags"
+            echo "Please start the PR title with one of the following tags: [New], [Breaking], [Infra], [BugFix]"
+            echo "e.g. [New] $title"
         }
-        {
-            print "No recognized traceability tag"
-            print "Please start the PR title with one of the following tags: [New], [Breaking], [Infra], [BugFix]"
-            print "e.g. [New] " title
+
+        if echo "$PR_TITLE" | grep -Eq '^\[(New|Breaking|Infra|BugFix)\]'; then
+            count=$(grep -o '\[[^]]\+\]' <<< "$PR_TITLE" | wc -l)
+            if [ "$count" -eq 1 ]; then
+                echo "Traceability tag found."
+                exit 0
+            else
+                error_msg
+                exit 1
+            fi
+        else
+            error_msg
             exit 1
-        }'
+        fi
