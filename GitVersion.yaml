@@ -8,4 +8,5 @@ branches:
     increment: Patch
     is-main-branch: true
 
-assembly-informational-format: '{Major}.{Minor}.{Patch}+{BranchName}.{Sha}'
+# PEP440 is not compatible with Semantic Versioning 🥹, therefore for non-main branches version will be set from InformationalVersion
+assembly-informational-format: '{Major}.{Minor}.{Patch}+{BranchName}.{ShortSha}'
