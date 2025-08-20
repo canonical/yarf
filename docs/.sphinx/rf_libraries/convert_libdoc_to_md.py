@@ -247,7 +247,12 @@ def main():
                     index_file.write(f"# {platform_name.capitalize()} libraries\n\n")
                     if platform_name == "base":
                         index_file.write(
-                            "We provide the following base classes for implementing a new platform.\n\n"
+                            dedent(
+                                """
+                                We provide the following base classes for implementing a new platform plugin.
+                                For details of how to implement a new platform plugin, please refer to the [Platform Plugin Development Guide](../../../how-to/platform-plugins.md).\n
+                                """
+                            )
                         )
                     else:
                         index_file.write(
