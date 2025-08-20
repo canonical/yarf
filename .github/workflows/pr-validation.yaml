@@ -1,0 +1,26 @@
+name: PR Validation
+permissions:
+  contents: read
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - edited
+
+jobs:
+  validate_title:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checking the presence of the Traceability Marker in the PR title
+      env:
+        PR_TITLE: ${{ github.event.pull_request.title }}
+      run: |
+        echo "$PR_TITLE" | awk '
+        /^\[(New|Breaking|Infra|BugFix)\]/ {
+            print "Starts with a recognized tag"
+            next
+        }
+        {
+            print "No recognized tag"
+        }'
