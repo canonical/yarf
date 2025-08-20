@@ -81,9 +81,6 @@ jobs:
           FROM_VER=$(awk -v t="${TRACK}/${FROM}" '$1==t{print $2}' channels.txt || true)
           TO_VER=$(awk -v t="${TRACK}/${TO}"   '$1==t{print $2}' channels.txt || true)
 
-          echo "from_version=$FROM_VER" >> "$GITHUB_OUTPUT"
-          echo "to_version=$TO_VER"     >> "$GITHUB_OUTPUT"
-
           if [[ -z "${FROM_VER:-}" ]]; then
             echo "No version found in ${TRACK}/${FROM}."
             exit 1
