@@ -19,8 +19,9 @@ jobs:
         echo "$PR_TITLE" | awk '
         /^\[(New|Breaking|Infra|BugFix)\]/ {
             print "Starts with a recognized tag"
-            next
+            exit 0
         }
         {
             print "No recognized tag"
+            exit 1
         }'
