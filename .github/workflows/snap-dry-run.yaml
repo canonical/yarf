@@ -33,7 +33,7 @@ jobs:
       - uses: astral-sh/setup-uv@v3
 
       - name: Set version
-        run: uv version "${{ inputs.version }}"
+        run: uv version "${{ inputs.version }}" --frozen
 
       - name: Upload updated project files
         uses: actions/upload-artifact@v4
@@ -41,7 +41,6 @@ jobs:
           name: updated-project-files
           path: |
             pyproject.toml
-            uv.lock
 
   build_amd64:
     needs: set-version
