@@ -1,12 +1,18 @@
 name: PR Validation
-permissions:
-  contents: read
+
 on:
   pull_request:
     types:
       - opened
       - synchronize
       - edited
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-validation-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   validate_title:
