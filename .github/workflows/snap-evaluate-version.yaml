@@ -65,7 +65,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: process.env.TARGET_WORKFLOW,
-              ref: context.ref_name,
+              ref: process.env.GITHUB_REF_NAME,
               inputs: {
                 version: version,
                 commit_sha: sha
