@@ -50,7 +50,7 @@ jobs:
           else
             VERSION="${{ steps.gv.outputs.informationalVersion }}"
           fi
-          VERSION_PEP440=$(uv run --with packaging python -c "from packaging.version import Version; print(Version('$VERSION'))")
+          VERSION_PEP440=$(uv tool run --with packaging python -c "from packaging.version import Version; print(Version('$VERSION'))")
           echo "Normalized PEP 440 version: $VERSION_PEP440"
 
           echo "version=$VERSION_PEP440" >> "$GITHUB_OUTPUT"
