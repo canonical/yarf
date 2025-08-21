@@ -1,9 +1,18 @@
-name: Build YARF snap (dry-run)
+name: "Build YARF snap: Dry Run"
 
 on:
   workflow_dispatch:
-  push:
-    branches: [git-version]
+    inputs:
+      version:
+        description: 'PEP 440 compliant version string'
+        required: true
+        type: string
+      commit_sha:
+        description: 'Commit SHA to build from'
+        required: true
+        type: string
+
+run-name: "Build version: ${{ inputs.version }} (${{ inputs.commit_sha }})"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -12,38 +21,15 @@ concurrency:
 jobs:
   set-version:
     runs-on: ubuntu-24.04
-    outputs:
-      semver: ${{ steps.gv.outputs.semVer }}
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          fetch-tags: true
-
-      - uses: gittools/actions/gitversion/setup@v4
-        with:
-          versionSpec: '6.x'
-
-      - id: gv
-        uses: gittools/actions/gitversion/execute@v4
-        with:
-          configFilePath: GitVersion.yaml
-
-      - name: Show available outputs
-        run: |
-          echo "::notice title=Building YARF Snap::Version ${{ steps.gv.outputs.semVer }} from commit ${{ steps.gv.outputs.shortSha }}"
-          echo "All Outputs: ${{ toJson(steps.gv.outputs) }}"
+          ref: ${{ inputs.commit_sha }}
 
       - uses: astral-sh/setup-uv@v3
 
       - name: Set version
-        run: |
-          if [[ "${{ github.ref_name }}" == "main" ]]; then
-            VERSION="${{ steps.gv.outputs.semVer }}"
-          else
-            VERSION="${{ steps.gv.outputs.informationalVersion }}"
-          fi
-          uv version "$VERSION" --frozen
+        run: uv version "${{ inputs.version }}" --frozen
 
       - name: Upload updated pyproject.toml
         uses: actions/upload-artifact@v4
@@ -56,6 +42,8 @@ jobs:
     runs-on: [self-hosted, linux, noble, x64, large]
     steps:
     - uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.commit_sha }}
 
     - name: Download updated pyproject.toml
       uses: actions/download-artifact@v4
@@ -65,7 +53,7 @@ jobs:
 
     - uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
       id: snapcraft
-    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+    - uses: actions/upload-artifact@v4
       with:
         name: yarf-amd64
         path: ${{ steps.snapcraft.outputs.snap }}
@@ -75,6 +63,8 @@ jobs:
     runs-on: [self-hosted, linux, noble, arm64, large]
     steps:
     - uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.commit_sha }}
 
     - name: Download updated pyproject.toml
       uses: actions/download-artifact@v4
@@ -84,7 +74,7 @@ jobs:
 
     - uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
       id: snapcraft
-    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+    - uses: actions/upload-artifact@v4
       with:
         name: yarf-arm64
         path: ${{ steps.snapcraft.outputs.snap }}
