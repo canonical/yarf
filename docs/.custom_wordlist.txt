@@ -4,3 +4,4 @@ msg
 step_distance
 tentatives
 typename
+rapidocr

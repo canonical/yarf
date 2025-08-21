@@ -12,14 +12,18 @@ In this document, we will walk through how to use the interactive console in YAR
 We can enter the interactive console by supplying the platform choice with an empty suite path. For example, in terms of Vnc, we can use:
 
 ```{code-block} bash
+---
+caption: `yarf` command for Vnc that enters interactive console
+---
 yarf --platform Vnc
 ```
-
-<u><center>Code Snippet: `yarf` command for Vnc that enters interactive console</center></u>
 
 After we enter the command, we should see something similar to the following:
 
 ```{code-block} bash
+---
+caption: `yarf`'s interactive console
+---
 WARNING:yarf.main:Removing existing output directory: /tmp/yarf-outdir
 INFO:The value of CURDIR is: /path/to/current/directory
 INFO:You can change the value of CURDIR by using ${CURDIR}= <path-you-want>
@@ -35,8 +39,6 @@ Type "help" for more information.
 >
 ```
 
-<u><center>Code Snippet: `yarf`'s interactive console</center></u>
-
 With this, we can start using the interactive console.
 
 ## Exploring in the interactive console
@@ -44,6 +46,10 @@ With this, we can start using the interactive console.
 In the interactive console, we can see information about the built-in and YARF specific libraries along with their corresponding keywords by using the commands `libs` and `keywords` respectively:
 
 ```{code-block} text
+---
+caption: Truncated result of using the commands `libs` and `keywords` 
+  respectively
+---
 > libs
 < Imported libraries:
    BuiltIn 6.1.1
@@ -99,11 +105,12 @@ In the interactive console, we can see information about the built-in and YARF s
 >
 ```
 
-<u><center>Code Snippet: Truncated result of using the commands `libs` and `keywords` respectively</center></u>
-
 We can then study the information given and try out the supported keywords. For example:
 
 ```{code-block} text
+---
+caption: An example of using a keyword `Walk Pointer To`
+---
 > Walk Pointer To foo.png
 INFO:root:Scanned image in 0.07 seconds
 < (595, 568)
@@ -112,22 +119,22 @@ INFO:root:Scanned image in 0.07 seconds
 INFO:root:Scanned image in 0.06 seconds
 ```
 
-<u><center>Snippet: An example of using a keyword `Walk Pointer To`</center></u>
-
 The `Import Library` or `Import Resource` keywords can be used to reload a library or a resource. For example:
 
 ```{code-block} text
+---
+caption: An example of using keywords `Import Library` and `Import Resource` to 
+  reload a library and a resource
+---
 Import Library     String
 Import Resource    /path/to/kvm.resource
 ```
-
-<u><center>Snippet: An example of using keywords `Import Library` and `Import Resource` to reload a library and a resource</center></u>
 
 The interactive console supports the same set of commands as any regular `.robot` file. For more information about the supported commands, please use the `help` command inside the interactive console.
 
 When we exit the interactive console, YARF will save the console log will be saved in the file `/tmp/yarf-outdir` directory. However, the user can also change it by providing a path to the `--outdir` option in the `yarf` command.
 
-Please note that the interactive console log is just a track record of the commands used by the user in the interactive console session along with timestamps. The user is still responsible to come up with a proper test suite along with the `.robot` scripts required. For more information about how to write a `.robot` script please visit the official [Robot Framework Documentation](https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html#test-data-sections)
+Please note that the interactive console log is just a track record of the commands used by the user in the interactive console session along with timestamps. The user is still responsible to come up with a proper test suite along with the `.robot` scripts required. For more information about how to write a `.robot` script please visit the official [Robot Framework Documentation][rf-doc-test-data]
 
 ## Common shortcuts
 
@@ -147,3 +154,5 @@ ROI saved as /tmp/yarf-outdir/roi_20250415_100751.png
 ROI saved as /tmp/yarf-outdir/roi_20250415_100752.png
 >
 ```
+
+[rf-doc-test-data]: https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html#test-data-sections
