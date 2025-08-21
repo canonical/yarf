@@ -60,7 +60,7 @@ jobs:
         with:
           script: |
             const version = "${{ steps.nv.outputs.version }}";
-            const sha = "${{ steps.gv.outputs.shortSha }}";
+            const sha = "${{ steps.gv.outputs.sha }}";
             const response = await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
