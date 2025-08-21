@@ -6,10 +6,11 @@ and convert the JSON output in Markdown format for the YARF sphinx documentation
 import json
 import logging
 import os
+import re
 from enum import Enum
 from pathlib import Path
-
-from generate_library_libdoc import generate_libdoc_for_libraries
+from textwrap import dedent
+from generate_library_libdoc import generate_libdoc_for_abstract_libraries
 from robot.libdoc import libdoc
 
 logger = logging.getLogger(__name__)
@@ -18,19 +19,23 @@ logger = logging.getLogger(__name__)
 class RobotFile(Enum):
     LIBRARY = 0
     RESOURCE = 1
-    INTERACTIVE_CONSOLE = 2
 
 
 SUFFIX = {
     RobotFile.LIBRARY: ".py",
     RobotFile.RESOURCE: ".resource",
-    RobotFile.INTERACTIVE_CONSOLE: ".py",
 }
 
 PACKAGE = {
-    RobotFile.LIBRARY: Path("yarf/rf_libraries/libraries"),
-    RobotFile.RESOURCE: Path("yarf/rf_libraries/resources"),
-    RobotFile.INTERACTIVE_CONSOLE: Path("yarf/rf_libraries/interactive_console"),
+    RobotFile.LIBRARY: [
+        Path("yarf/rf_libraries/libraries"),
+        Path("yarf/rf_libraries/libraries/vnc"),
+        Path("yarf/rf_libraries/libraries/mir"),
+        Path("yarf/rf_libraries/interactive_console"),
+    ],
+    RobotFile.RESOURCE: [
+        Path("yarf/rf_libraries/resources"),
+    ],
 }
 
 
@@ -128,12 +133,12 @@ def convert_json_to_markdown(json_file, markdown_file):
                     md.write("<hr style=\"border:1px solid grey\">\n\n")
 
 
-def generate_libdoc_for_resources(resource_file: Path, output_file: Path):
+def generate_libdoc(file: Path, output_file: Path):
     """
-    Simply run `libdoc` on the resource file.
+    Simply run `libdoc` on the file.
     """
     rc = libdoc(
-        str(resource_file),
+        str(file),
         str(output_file),
         quiet=True,
     )
@@ -151,61 +156,62 @@ def generate_markdown(
     this function will invoke libdoc on every target file
     attempting to generate a documentation file in Markdown format.
     """
-    for root, _, files in os.walk(source_dir):
-        root = Path(root)
+    for f in source_dir.iterdir():
+        if not f.is_file():
+            continue
 
-        for file in files:
-            file = Path(file)
+        if f.suffix != SUFFIX[target]:
+            continue
 
-            if file.suffix != SUFFIX[target]:
+        # If a library, it should end not start with "test_"
+        if target == RobotFile.LIBRARY and (
+            f.stem.startswith("test_")
+            or f.stem == "__init__"
+        ):
+            continue
+
+        is_base_class = False
+        if target == RobotFile.LIBRARY and f.parent.stem == "libraries":
+            if f.stem.endswith("_base"):
+                is_base_class = True
+            else:
                 continue
 
-            # If a library, it should end not start with "test_"
-            # and it should end with "_base".
-            if target == RobotFile.LIBRARY and (
-                not file.stem.endswith("_base")
-                or file.stem.startswith("test_")
-            ):
-                continue
+        robot_file = f
+        input_json_file = docs_ref_dir / f"{f.stem}.json"
+        output_md_file = (
+            docs_ref_dir / f"{target.name.lower()}-{f.stem}.md"
+        )
 
-            if target == RobotFile.INTERACTIVE_CONSOLE and (
-                file.stem.startswith("test_") 
-                or file.stem == "__init__" 
-                or root.name != "interactive_console"
-            ):
-                continue
-
-            robot_file = root / file
-            input_json_file = docs_ref_dir / file.parent / f"{file.stem}.json"
-            output_md_file = (
-                docs_ref_dir / f"{target.name.lower()}-{file.stem}.md"
-            )
-
-            try:
-                if target in [RobotFile.RESOURCE, RobotFile.LIBRARY, RobotFile.INTERACTIVE_CONSOLE]:
-                    generate_libdoc_for_resources(robot_file, input_json_file)
+        try:
+            if target in [RobotFile.RESOURCE, RobotFile.LIBRARY]:
+                if is_base_class:
+                    # For base classes, generate the libdoc for libraries
+                    generate_libdoc_for_abstract_libraries(robot_file, input_json_file)
                 else:
-                    logger.warning("Unknown robot file.")
-                    continue
-
-            except ValueError:
-                logger.warning(
-                    "Libdoc failed at generating the doc. Skipped %s",
-                    robot_file,
-                )
+                    generate_libdoc(robot_file, input_json_file)
+            else:
+                logger.warning("Unknown robot file.")
                 continue
 
-            # Skip conversion if the JSON file was not created
-            if not input_json_file.exists():
-                logger.warning(
-                    "Expected JSON file not found. Skipped %s",
-                    input_json_file,
-                )
-                continue
+        except ValueError:
+            logger.warning(
+                "Libdoc failed at generating the doc. Skipped %s",
+                robot_file,
+            )
+            continue
 
-            # Convert the JSON file to Markdown
-            convert_json_to_markdown(input_json_file, output_md_file)
-            print(f"  Converted to <{output_md_file}>")
+        # Skip conversion if the JSON file was not created
+        if not input_json_file.exists():
+            logger.warning(
+                "Expected JSON file not found. Skipped %s",
+                input_json_file,
+            )
+            continue
+
+        # Convert the JSON file to Markdown
+        convert_json_to_markdown(input_json_file, output_md_file)
+        print(f"  Converted to <{output_md_file}>")
 
 
 def main():
@@ -223,14 +229,49 @@ def main():
     repo_root = docs_dir.parent
 
     for target in RobotFile:
+        for source_pkg in PACKAGE[target]:
+            source_dir = repo_root / source_pkg
+            idx = source_dir.parts.index("rf_libraries")
+            
+            target_dir = docs_dir / Path("reference", *source_dir.parts[idx:])
 
-        source_dir = repo_root / PACKAGE[target]
-        target_dir = docs_dir / Path("reference/rf_libraries")
+            if not target_dir.exists():
+                os.makedirs(target_dir)
+            
+            if target is RobotFile.LIBRARY and not (target_dir / "index.md").exists():
+                with open(target_dir / "index.md", "w") as index_file:
+                    platform_name = re.sub(r'_+', ' ', target_dir.stem.strip('_'))
+                    if platform_name == "libraries":
+                        platform_name = "base"
 
-        if not target_dir.exists():
-            os.makedirs(target_dir)
+                    index_file.write(f"# {platform_name.capitalize()} libraries\n\n")
+                    if platform_name == "base":
+                        index_file.write(
+                            dedent(
+                                """
+                                YARF provides the following base classes for implementing a new platform plugin.\n
+                                For details of how to implement a new platform plugin, please refer to the [Platform Plugin Development Guide](../../../how-to/platform-plugins.md).\n
+                                """
+                            )
+                        )
+                    else:
+                        index_file.write(
+                            f"YARF supports the following classes for {platform_name}:\n\n"
+                        )
 
-        generate_markdown(target, source_dir, target_dir)
+                    index_file.write(
+                        dedent(
+                            """
+                            ```{toctree}
+                            :maxdepth: 1
+                            :glob:
+                            library-*
+                            ```
+                            """
+                        )
+                    )
+
+            generate_markdown(target, source_dir, target_dir)
 
 
 if __name__ == "__main__":
