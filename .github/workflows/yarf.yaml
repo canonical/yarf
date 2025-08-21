@@ -50,7 +50,7 @@ jobs:
       with:
         name: coverage
         path: ./coverage.xml
-        retention-days: 2
+        retention-days: 5
     - name: Install integration dependencies
       run: |
         sudo snap install mir-test-tools
