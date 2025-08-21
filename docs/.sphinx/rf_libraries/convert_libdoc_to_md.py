@@ -249,14 +249,14 @@ def main():
                         index_file.write(
                             dedent(
                                 """
-                                We provide the following base classes for implementing a new platform plugin.
+                                YARF provides the following base classes for implementing a new platform plugin.\n
                                 For details of how to implement a new platform plugin, please refer to the [Platform Plugin Development Guide](../../../how-to/platform-plugins.md).\n
                                 """
                             )
                         )
                     else:
                         index_file.write(
-                            f"We support the following classes for {platform_name}:\n\n"
+                            f"YARF supports the following classes for {platform_name}:\n\n"
                         )
 
                     index_file.write(
