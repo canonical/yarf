@@ -11,8 +11,12 @@ on:
         description: 'Commit SHA to build from'
         required: true
         type: string
+      commit_short_sha:
+        description: 'Commit SHA to build from'
+        required: true
+        type: string
 
-run-name: "Build version: ${{ inputs.version }} (${{ inputs.commit_sha }})"
+run-name: "Build version: ${{ inputs.version }} (${{ inputs.commit_short_sha }})"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

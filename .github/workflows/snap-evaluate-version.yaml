@@ -61,6 +61,7 @@ jobs:
           script: |
             const version = "${{ steps.nv.outputs.version }}";
             const sha = "${{ steps.gv.outputs.sha }}";
+            const short_sha = "${{ steps.gv.outputs.shortSha }}";
             const response = await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -68,7 +69,8 @@ jobs:
               ref: process.env.GITHUB_REF_NAME,
               inputs: {
                 version: version,
-                commit_sha: sha
+                commit_sha: sha,
+                commit_short_sha: short_sha
               }
             });
 
