@@ -130,7 +130,8 @@ jobs:
       - check-versions
     if: >
       needs.check-versions.outputs.should_continue == 'true' &&
-      fromJSON(needs.define-matrix.outputs.matrix).lane == 'edge_to_beta'
+      fromJSON(needs.define-matrix.outputs.matrix).from == 'edge' &&
+      fromJSON(needs.define-matrix.outputs.matrix).to == 'beta'
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.define-matrix.outputs.matrix) }}
