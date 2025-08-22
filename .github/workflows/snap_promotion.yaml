@@ -115,8 +115,8 @@ jobs:
             exit 1
           fi
 
-          # change to <= after testing CI
-          if [[ -n "${TO_VER:-}" && "$FROM_VER" < "$TO_VER" ]]; then
+          # change to le after testing CI
+          if [[ -n "${TO_VER:-}" ]] && dpkg --compare-versions "$FROM_VER" lt "$TO_VER"; then
             echo "Versions match ($FROM_VER) in ${TRACK} (${FROM} vs ${TO}). Nothing to do."
             echo "should_continue=false" >> "$GITHUB_OUTPUT"
           else
