@@ -56,7 +56,7 @@ jobs:
 
             prepare-platform-cmds: |
               mkdir -p ~/images
-              wget -c -P ~/images https://cdimage.ubuntu.com/noble/daily-live/current/noble-desktop-${{ inputs.ARCH }}.iso
+              wget -nv -c -P ~/images https://cdimage.ubuntu.com/noble/daily-live/current/noble-desktop-${{ inputs.ARCH }}.iso
               qemu-img create -f qcow2 /tmp/yarf-vm.qcow2 20G
               qemu-system-${{ inputs.ARCH }} \
                 -boot d \
