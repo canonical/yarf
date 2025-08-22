@@ -105,7 +105,7 @@ jobs:
           lfs: true
           fetch-depth: 1
           sparse-checkout: |
-            tests
+            ${{ env.TEST_SUITE_PATH }}
           sparse-checkout-cone-mode: false
 
       - name: Install YARF from channel
