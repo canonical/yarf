@@ -92,6 +92,13 @@ jobs:
       TEST_SUITE_PATH: tests/canary_test
 
     steps:
+      - name: Install workflow dependencies
+        shell: bash
+        run: |
+          sudo apt update -qq
+          sudo apt install -y \
+            git-lfs
+
       - name: Check out tests
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
