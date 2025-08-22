@@ -31,18 +31,15 @@ jobs:
               {
                 "arch": "amd64",
                 "runs_on": ["self-hosted","linux","noble","x64","large"],
-                "snap_arch": "amd64"
               },
               {
                 "arch": "arm64",
                 "runs_on": ["self-hosted","linux","noble","arm64","large"],
-                "snap_arch": "arm64"
               },
               {
                 "lane": "edge_to_beta",
                 "from": "edge",
                 "to":   "beta",
-                "test_workflow": "run_canary_test.yaml"
               }
             ]
           }
@@ -65,7 +62,6 @@ jobs:
       SNAP_NAME: yarf
       TRACK: ${{ matrix.track }}
       ARCH: ${{ matrix.arch }}
-      SNAP_ARCH: ${{ matrix.snap_arch }}
       FROM: ${{ matrix.from }}
       TO: ${{ matrix.to }}
       TEST_WORKFLOW: ${{ matrix.test_workflow }}
@@ -81,7 +77,7 @@ jobs:
         shell: bash
         run: |
           echo "Track: ${TRACK}"
-          echo "Arch:  ${ARCH} (snap_arch=${SNAP_ARCH})"
+          echo "Arch:  ${ARCH}"
           echo "Lane:  ${FROM} --> ${TO}"
           echo "Tests: ${TEST_WORKFLOW}"
 
@@ -127,18 +123,53 @@ jobs:
             echo "from_channel=${TRACK}/${FROM}" >> "$GITHUB_OUTPUT"
           fi
 
-  # canary:
-  #   name: Canary — ${{ matrix.track }} / ${{ matrix.arch }} — ${{ matrix.from }}
-  #   needs: check-versions
-  #   if: needs.check-versions.outputs.should_continue == 'true'
-  #   strategy:
-  #     fail-fast: false
-  #     matrix: *promo_matrix
-  #   uses: ./.github/workflows/run_canary_test.yaml
-  #   with:
-  #     NAME:    yarf
-  #     TRACK:   ${{ matrix.track }}
-  #     CHANNEL: ${{ matrix.from }}
-  #     REV:     ${{ needs.check-versions.outputs.from_revision }}
-  #     ARCH:    ${{ matrix.arch }}
-  #     MACHINE_TYPE: ${{ matrix.runs_on }}
+  canary:
+    name: Canary Test for channel ${{ matrix.track }} / ${{ matrix.from }} — ${{ matrix.arch }}
+    needs:
+      - define-matrix
+      - check-versions
+    if: >
+      needs.check-versions.outputs.should_continue == 'true' &&
+      fromJSON(needs.define-matrix.outputs.matrix).lane == 'edge_to_beta'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.define-matrix.outputs.matrix) }}
+
+    uses: ./.github/workflows/canary_test.yaml
+    with:
+      NAME:    yarf
+      TRACK:   ${{ matrix.track }}
+      CHANNEL: ${{ matrix.from }}
+      REV:     ${{ needs.check-versions.outputs.from_revision }}
+      ARCH:    ${{ matrix.arch }}
+      MACHINE_TYPE: ${{ matrix.runs_on }}
+
+  promote:
+    name: Promote — ${{ matrix.track }} / ${{ matrix.from }} to ${{ matrix.to }} ( ${{ matrix.arch }} )
+    needs:
+      - define-matrix
+      - canary
+    if: needs.canary.outputs.passed == 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.define-matrix.outputs.matrix) }}
+    runs-on: ${{ matrix.runs_on }}
+
+    steps:
+      - name: Install snapcraft
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v snapcraft >/dev/null 2>&1; then
+            sudo snap install snapcraft --classic
+          fi
+
+      - name: Promote ${{ matrix.TRACK }}/${{ matrix.FROM }} to ${{ matrix.TRACK }}/${{ matrix.TO }} for ${{ matrix.ARCH }}
+        env:
+          SNAPCRAFT_HAS_TTY: "true" # this is necessary because snapcraft will not allow --yes for promotions of the edge channel
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT }}
+        run: |
+          # Note: using `yes |` instead of `--yes` because snapcraft will
+          #       refuse to non-interactively promote a snap from the edge
+          #       channel if it is done without any branch qualifiers
+          # yes | snapcraft promote yarf --from-channel ${{ matrix.track }}/${{ matrix.from }} --to-channel ${{ matrix.track }}/${{ matrix.to }}
