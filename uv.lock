@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.10, <3.13"
 resolution-markers = [
     "python_full_version >= '3.12' and sys_platform == 'darwin'",
@@ -1518,7 +1518,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/03/29/fd4be2098b0a963c9
 
 [[package]]
 name = "yarf"
-version = "2.0.1"
+version = "0.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "asyncvnc" },
