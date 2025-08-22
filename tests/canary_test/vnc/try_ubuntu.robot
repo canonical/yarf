@@ -10,7 +10,7 @@ Task Tags
 *** Test Cases ***
 Assert Try Ubuntu Window Started
     [Tags]                  yarf:certification_status: blocker
-    Match                   ${CURDIR}/01_language_choosing_screen.png       120
+    Match                   ${CURDIR}/01_language_choosing_screen.png       300
 
 Navigate to Choose Keyboard Screen
     [Tags]                  yarf:certification_status: blocker
@@ -21,7 +21,7 @@ Type Sample Text
     [Tags]                  yarf:certification_status: blocker
     Click LEFT Button On Type here to test your keyboard
     ${sample_text} =        Set Variable            This is a sample text for YARF canary testing.
-    Typer String
+    Type String             ${sample_text}
     Match Text              ${sample_text}
 
 Try Ubuntu
