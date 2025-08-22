@@ -50,7 +50,7 @@ jobs:
             suite: vnc
             install-platform-deps-cmds: |
               sudo apt-get --yes --no-install-recommends install \
-              qemu-system-x86 \
+              qemu-system-${{ inputs.ARCH }} \
               qemu-utils \
               qemu-kvm
 
@@ -58,7 +58,7 @@ jobs:
               mkdir -p ~/images
               wget -c -P ~/images https://cdimage.ubuntu.com/noble/daily-live/current/noble-desktop-${{ inputs.ARCH }}.iso
               qemu-img create -f qcow2 /tmp/yarf-vm.qcow2 20G
-              qemu-system-x86_64 \
+              qemu-system-${{ inputs.ARCH }} \
                 -boot d \
                 -cdrom ~/images/noble-desktop-${{ inputs.ARCH }}.iso \
                 -m 8192M \
