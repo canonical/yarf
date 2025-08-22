@@ -28,7 +28,6 @@ Try Ubuntu
     [Tags]                  yarf:certification_status: blocker
     Click LEFT Button On Next
     Click LEFT Button On Next
-    Click LEFT Button On Skip
     Click LEFT Button On ${CURDIR}/02_try_ubuntu.png
     Click LEFT Button On Close
 
