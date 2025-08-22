@@ -125,7 +125,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          eval "${{ matrix.install-platform-deps-cmds }}"
+          bash -euo pipefail <<'SCRIPT'
+          ${{ matrix.install-platform-deps-cmds }}
+          SCRIPT
 
       - name: Run canary test
         id: test
@@ -133,7 +135,9 @@ jobs:
         run: |
           set -euo pipefail
           echo "Preparing platform:"
-          eval "${{ matrix.prepare-platform-cmds }}"
+          bash -euo pipefail <<'SCRIPT'
+          ${{ matrix.prepare-platform-cmds }}
+          SCRIPT
 
           snap run yarf --platform="${{ matrix.platform }}" ${{ env.TEST_SUITE_PATH }} -- --suite="${{ matrix.suite }}"
 
