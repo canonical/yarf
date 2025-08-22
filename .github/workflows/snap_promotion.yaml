@@ -14,33 +14,44 @@ concurrency:
 
 jobs:
   define-matrix:
+    name: Define job matrix
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        track: [latest]
-        arch:  [amd64, arm64]
-        lane:  [edge_to_beta]
-        include:
-          - arch: amd64
-            runs_on: '["self-hosted","linux","noble","x64","large"]'
-            snap_arch: amd64
-          - arch: arm64
-            runs_on: '["self-hosted","linux","noble","arm64","large"]'
-            snap_arch: arm64
-
-          - lane: edge_to_beta
-            from: edge
-            to: beta
-            test_workflow: run_canary_test.yaml
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      matrix: ${{ steps.out.outputs.matrix }}
     steps:
-      - name: Define job matrix
-        id: set-matrix
+      - id: out
+        shell: bash
         run: |
-          echo "matrix=$(echo '${{ toJson(matrix) }}')" >> "$GITHUB_OUTPUT"
-          echo ${{ toJson(matrix) }}
+          cat > matrix.json <<'JSON'
+          {
+            "track": ["latest"],
+            "arch":  ["amd64","arm64"],
+            "lane":  ["edge_to_beta"],
+            "include": [
+              {
+                "arch": "amd64",
+                "runs_on": ["self-hosted","linux","noble","x64","large"],
+                "snap_arch": "amd64"
+              },
+              {
+                "arch": "arm64",
+                "runs_on": ["self-hosted","linux","noble","arm64","large"],
+                "snap_arch": "arm64"
+              },
+              {
+                "lane": "edge_to_beta",
+                "from": "edge",
+                "to":   "beta",
+                "test_workflow": "run_canary_test.yaml"
+              }
+            ]
+          }
+          JSON
+          {
+            echo "matrix<<EOF"
+            cat matrix.json
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
   # check-versions:
   #   name: ${{ matrix.track }} / ${{ matrix.arch }} — ${{ matrix.from }} to ${{ matrix.to }}
