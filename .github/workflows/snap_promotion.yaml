@@ -71,7 +71,7 @@ jobs:
       should_continue: ${{ steps.versions.outputs.should_continue }}
       from_revision:   ${{ steps.versions.outputs.from_revision }}
       from_channel:    ${{ steps.versions.outputs.from_channel }}
-      lane:           ${{ matrix.lane }}
+      lane:            ${{ steps.versions.outputs.lane }}
 
     steps:
       - name: Context
@@ -122,6 +122,7 @@ jobs:
             echo "should_continue=true" >> "$GITHUB_OUTPUT"
             echo "from_revision=$FROM_REV" >> "$GITHUB_OUTPUT"
             echo "from_channel=${TRACK}/${FROM}" >> "$GITHUB_OUTPUT"
+            echo "lane=${{ matrix.lane }}" >> "$GITHUB_OUTPUT"
           fi
 
   canary:
