@@ -56,10 +56,11 @@ jobs:
   check-versions:
     name: ${{ matrix.track }} / ${{ matrix.arch }} — ${{ matrix.from }} to ${{ matrix.to }}
     needs: define-matrix
+    runs-on: ${{ matrix.runs_on }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.define-matrix.outputs.matrix) }}
-    runs-on: ${{ fromJSON(matrix.runs_on) }}
+
     env:
       SNAP_NAME: yarf
       TRACK: ${{ matrix.track }}
