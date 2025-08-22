@@ -75,7 +75,7 @@ jobs:
                 -smp 2 \
                 -hda /tmp/yarf-vm.qcow2 \
                 -enable-kvm \
-                -vnc :0
+                -vnc :0 &
 
           - platform: Mir
             suite: mir
