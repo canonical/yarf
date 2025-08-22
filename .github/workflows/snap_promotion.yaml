@@ -131,8 +131,7 @@ jobs:
       - define-matrix
       - check-versions
     if: >
-      needs.check-versions.outputs.should_continue == 'true' &&
-      needs.check-versions.outputs.lane == 'edge_to_beta'
+      needs.check-versions.outputs.should_continue == 'true'
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.define-matrix.outputs.matrix) }}
