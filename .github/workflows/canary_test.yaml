@@ -49,7 +49,8 @@ jobs:
           - platform: Vnc
             suite: vnc
             install-platform-deps-cmds: |
-              sudo apt install qemu-system-x86 \
+              sudo apt-get --yes --no-install-recommends install \
+              qemu-system-x86 \
               qemu-utils \
               qemu-kvm
 
