@@ -60,7 +60,7 @@ jobs:
               qemu-img create -f qcow2 /tmp/yarf-vm.qcow2 20G
               qemu-system-${{ inputs.ARCH }} \
                 -boot d \
-                -machine pc-i440fx-noble \
+                -machine ubuntu \
                 -cdrom ~/images/noble-desktop-${{ inputs.ARCH }}.iso \
                 -m 8192M \
                 -smp 2 \
@@ -123,12 +123,6 @@ jobs:
         run: |
           set -euo pipefail
           eval "${{ matrix.install-platform-deps-cmds }}"
-
-      - if: inputs.ARCH == 'arm64' && matrix.platform == 'Vnc'
-        name: Debug upterm session
-        uses: canonical/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48
-        with:
-          limit-access-to-actor: true
 
       - name: Run canary test
         id: test
