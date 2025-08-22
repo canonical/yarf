@@ -71,7 +71,7 @@ jobs:
       should_continue: ${{ steps.versions.outputs.should_continue }}
       from_revision:   ${{ steps.versions.outputs.from_revision }}
       from_channel:    ${{ steps.versions.outputs.from_channel }}
-      lane:            ${{ steps.versions.outputs.lane }}
+      lane:           ${{ matrix.lane }}
 
     steps:
       - name: Context
@@ -122,7 +122,6 @@ jobs:
             echo "should_continue=true" >> "$GITHUB_OUTPUT"
             echo "from_revision=$FROM_REV" >> "$GITHUB_OUTPUT"
             echo "from_channel=${TRACK}/${FROM}" >> "$GITHUB_OUTPUT"
-            echo "lane=${{ matrix.lane }}" >> "$GITHUB_OUTPUT"
           fi
 
   canary:
@@ -130,8 +129,7 @@ jobs:
     needs:
       - define-matrix
       - check-versions
-    if: >
-      needs.check-versions.outputs.should_continue == 'true'
+
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.define-matrix.outputs.matrix) }}
@@ -143,7 +141,7 @@ jobs:
       CHANNEL: ${{ matrix.from }}
       REV:     ${{ needs.check-versions.outputs.from_revision }}
       ARCH:    ${{ matrix.arch }}
-      MACHINE_TYPE: ${{ matrix.runs_on }}
+      MACHINE_TYPE: ${{ toJson(matrix.runs_on) }}
 
   promote:
     name: Promote — ${{ matrix.track }} / ${{ matrix.from }} to ${{ matrix.to }} ( ${{ matrix.arch }} )
