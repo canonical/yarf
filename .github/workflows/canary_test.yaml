@@ -92,6 +92,15 @@ jobs:
       TEST_SUITE_PATH: tests/canary_test
 
     steps:
+      - name: Check out tests
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          lfs: true
+          fetch-depth: 1
+          sparse-checkout: |
+            tests
+          sparse-checkout-cone-mode: false
+
       - name: Install YARF from channel
         shell: bash
         run: |
