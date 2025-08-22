@@ -55,16 +55,21 @@ jobs:
               qemu-kvm
 
             prepare-platform-cmds: |
-              mkdir -p ~/images
-              wget -c -P ~/images https://cdimage.ubuntu.com/noble/daily-live/current/noble-desktop-${{ inputs.ARCH }}.iso
+              IMAGE_DIR=~/images
+              IMAGE=noble-desktop-${{ inputs.ARCH }}.iso
+
+              mkdir -p $IMAGE_DIR
+              wget -c -P $IMAGE_DIR https://cdimage.ubuntu.com/noble/daily-live/current/$IMAGE
               qemu-img create -f qcow2 /tmp/yarf-vm.qcow2 20G
               qemu-system-${{ inputs.ARCH }} \
                 -boot d \
-                -cdrom ~/images/noble-desktop-${{ inputs.ARCH }}.iso \
+                -machine pc-i440fx-noble \
+                -cdrom $IMAGE_DIR/$IMAGE \
                 -m 8192M \
                 -smp 2 \
                 -hda /tmp/yarf-vm.qcow2 \
-                -enable-kvm -vnc :0
+                -enable-kvm \
+                -vnc :0
 
           - platform: Mir
             suite: mir
