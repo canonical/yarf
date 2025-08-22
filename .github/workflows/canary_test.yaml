@@ -39,7 +39,7 @@ concurrency:
 
 jobs:
   canary-test:
-    name: ${{ matrix.platform}} - Canary test ${{ inputs.NAME }} snap at channel ${{ inputs.TRACK }}/${{ inputs.CHANNEL }} (rev. ${{ inputs.REV }}, arch. ${{ inputs.ARCH }})
+    name: ${{ matrix.platform }} - Canary test ${{ inputs.NAME }} snap at channel ${{ inputs.TRACK }}/${{ inputs.CHANNEL }} (rev. ${{ inputs.REV }})
     runs-on: ${{ fromJSON(inputs.MACHINE_TYPE) }}
     strategy:
       fail-fast: false
@@ -49,14 +49,23 @@ jobs:
           - platform: Vnc
             suite: vnc
             install-platform-deps-cmds: |
+              sudo apt update -qq
               sudo apt-get --yes --no-install-recommends install \
+              acl \
               qemu-system-${{ inputs.ARCH }} \
               qemu-utils \
               qemu-kvm
 
+              # Ensure current runner (user) can access /dev/kvm
+              sudo setfacl -m u:"$USER":rw /dev/kvm
+
             prepare-platform-cmds: |
               mkdir -p ~/images
+
+              echo "Downloading Ubuntu Noble ISO..."
               wget -nv -c -P ~/images https://cdimage.ubuntu.com/noble/daily-live/current/noble-desktop-${{ inputs.ARCH }}.iso
+
+              echo "Preparing platform:"
               qemu-img create -f qcow2 /tmp/yarf-vm.qcow2 20G
               qemu-system-${{ inputs.ARCH }} \
                 -boot d \
@@ -72,6 +81,7 @@ jobs:
             suite: mir
             install-platform-deps-cmds: |
               sudo snap install mir-test-tools
+              sudo apt update -qq
               sudo apt-get --yes --no-install-recommends install \
                 ffmpeg \
                 inotify-tools \
@@ -129,7 +139,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "Preparing platform:"
           eval "${{ matrix.prepare-platform-cmds }}"
 
           snap run yarf --platform="${{ matrix.platform }}" ${{ env.TEST_SUITE_PATH }} -- --suite="${{ matrix.suite }}"
