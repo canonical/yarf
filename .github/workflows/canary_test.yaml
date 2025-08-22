@@ -55,16 +55,13 @@ jobs:
               qemu-kvm
 
             prepare-platform-cmds: |
-              IMAGE_DIR=~/images
-              IMAGE=noble-desktop-${{ inputs.ARCH }}.iso
-
-              mkdir -p $IMAGE_DIR
-              wget -c -P $IMAGE_DIR https://cdimage.ubuntu.com/noble/daily-live/current/$IMAGE
+              mkdir -p ~/images
+              wget -c -P ~/images https://cdimage.ubuntu.com/noble/daily-live/current/noble-desktop-${{ inputs.ARCH }}.iso
               qemu-img create -f qcow2 /tmp/yarf-vm.qcow2 20G
               qemu-system-${{ inputs.ARCH }} \
                 -boot d \
                 -machine pc-i440fx-noble \
-                -cdrom $IMAGE_DIR/$IMAGE \
+                -cdrom ~/images/noble-desktop-${{ inputs.ARCH }}.iso \
                 -m 8192M \
                 -smp 2 \
                 -hda /tmp/yarf-vm.qcow2 \
@@ -125,9 +122,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          bash -euo pipefail <<'SCRIPT'
-          ${{ matrix.install-platform-deps-cmds }}
-          SCRIPT
+          eval "${{ matrix.install-platform-deps-cmds }}"
 
       - name: Run canary test
         id: test
@@ -135,9 +130,7 @@ jobs:
         run: |
           set -euo pipefail
           echo "Preparing platform:"
-          bash -euo pipefail <<'SCRIPT'
-          ${{ matrix.prepare-platform-cmds }}
-          SCRIPT
+          eval "${{ matrix.prepare-platform-cmds }}"
 
           snap run yarf --platform="${{ matrix.platform }}" ${{ env.TEST_SUITE_PATH }} -- --suite="${{ matrix.suite }}"
 
