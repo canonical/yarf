@@ -39,7 +39,7 @@ concurrency:
 
 jobs:
   canary-test:
-    name: Canary test ${{ inputs.NAME }} snap at channel ${{ inputs.TRACK }}/${{ inputs.CHANNEL }} (rev. ${{ inputs.REV }}, arch. ${{ inputs.ARCH }}) with ${{ matrix.platform}}
+    name: ${{ matrix.platform}} - Canary test ${{ inputs.NAME }} snap at channel ${{ inputs.TRACK }}/${{ inputs.CHANNEL }} (rev. ${{ inputs.REV }}, arch. ${{ inputs.ARCH }})
     runs-on: ${{ fromJSON(inputs.MACHINE_TYPE) }}
     strategy:
       fail-fast: false
@@ -55,10 +55,12 @@ jobs:
               qemu-kvm
 
             prepare-platform-cmds: |
+              mkdir -p ~/images
+              wget -c -P ~/images https://cdimage.ubuntu.com/noble/daily-live/current/noble-desktop-${{ inputs.ARCH }}.iso
               qemu-img create -f qcow2 /tmp/yarf-vm.qcow2 20G
               qemu-system-x86_64 \
                 -boot d \
-                -cdrom /path/to/$series-desktop-amd64.iso \
+                -cdrom ~/images/noble-desktop-${{ inputs.ARCH }}.iso \
                 -m 8192M \
                 -smp 2 \
                 -hda /tmp/yarf-vm.qcow2 \
