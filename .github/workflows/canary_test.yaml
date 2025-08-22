@@ -34,12 +34,12 @@ on:
         value: ${{ jobs.summarize.outputs.passed }}
 
 concurrency:
-  group: canary-test-${{ github.ref }}
+  group: canary-test-${{ github.ref }}-${{ inputs.TRACK }}-${{ inputs.CHANNEL }}-${{ inputs.ARCH }}
   cancel-in-progress: true
 
 jobs:
   canary-test:
-    name: Canary test ${{ inputs.NAME }} snap at channel ${{ inputs.TRACK }}/${{ inputs.CHANNEL }} (rev. ${{ inputs.REV }}, arch. ${{ inputs.ARCH }})
+    name: Canary test ${{ inputs.NAME }} snap at channel ${{ inputs.TRACK }}/${{ inputs.CHANNEL }} (rev. ${{ inputs.REV }}, arch. ${{ inputs.ARCH }}) with ${{ matrix.platform}}
     runs-on: ${{ fromJSON(inputs.MACHINE_TYPE) }}
     strategy:
       fail-fast: false

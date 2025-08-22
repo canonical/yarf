@@ -125,7 +125,7 @@ jobs:
           fi
 
   canary:
-    name: Canary Test for channel ${{ matrix.track }} / ${{ matrix.from }} — ${{ matrix.arch }}
+    name: Canary Test
     needs:
       - define-matrix
       - check-versions
