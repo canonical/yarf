@@ -65,21 +65,7 @@ jobs:
               mkdir -p ~/images
 
               echo "Downloading Ubuntu Noble ISO. Progress will update every 10%:"
-              wget --progress=bar:force -c -P ~/images https://cdimage.ubuntu.com/noble/daily-live/current/noble-desktop-${{ inputs.ARCH }}.iso 2>&1 | \
-              awk 'BEGIN{last=-10; print "0%"}
-              {
-                if (match($0,/([0-9]{1,3})%/,m)) {
-                  p = m[1] + 0
-                  step = int(p/10)*10
-                  if (step >= last + 10) {
-                    for (i = last + 10; i <= step; i += 10) {
-                      if (i <= 100) printf "%d%%\n", i
-                    }
-                    last = step
-                  }
-                }
-              }
-              END { if (last < 100) print "100%" }'
+              wget -nv -c -P ~/images https://cdimage.ubuntu.com/noble/daily-live/current/noble-desktop-${{ inputs.ARCH }}.iso
 
               echo "Preparing platform:"
               qemu-img create -f qcow2 /tmp/yarf-vm.qcow2 20G
