@@ -56,9 +56,17 @@ jobs:
               qemu-utils \
               qemu-kvm
 
-              # Ensure current runner (user) can access /dev/kvm (amd64 only)
               if [ "${{ inputs.ARCH }}" = "amd64" ]; then
+                # Ensure current runner (user) can access /dev/kvm (amd64 only)
                 sudo setfacl -m u:"$USER":rw /dev/kvm
+                MACHINE="ubuntu"
+
+              elif [ "${{ inputs.ARCH }}" = "arm64" ]; then
+                MACHINE="virt"
+
+              else
+                echo "Unsupported architecture: ${{ inputs.ARCH }}"
+                exit 1
               fi
 
             prepare-platform-cmds: |
@@ -71,7 +79,7 @@ jobs:
               qemu-img create -f qcow2 /tmp/yarf-vm.qcow2 20G
               qemu-system-${{ inputs.ARCH }} \
                 -boot d \
-                -machine ubuntu \
+                -machine "$MACHINE" \
                 -cdrom ~/images/noble-desktop-${{ inputs.ARCH }}.iso \
                 -m 8192M \
                 -smp 2 \
@@ -106,7 +114,6 @@ jobs:
 
     env:
       TEST_SUITE_PATH: tests/canary_test
-      SNAP_USER_COMMON: "$HOME/snap/${{ inputs.NAME }}/common"
 
     steps:
       - name: Install workflow dependencies
