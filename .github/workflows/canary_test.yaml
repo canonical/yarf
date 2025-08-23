@@ -40,7 +40,7 @@ concurrency:
 jobs:
   canary-test:
     name: ${{ matrix.platform }} - Canary test ${{ inputs.NAME }} snap at channel ${{ inputs.TRACK }}/${{ inputs.CHANNEL }} (rev. ${{ inputs.REV }})
-    runs-on: ${{ fromJSON(inputs.MACHINE_TYPE) }}
+    runs-on: ${{ inputs.MACHINE_TYPE }}
     strategy:
       fail-fast: false
       matrix:
@@ -64,8 +64,16 @@ jobs:
             prepare-platform-cmds: |
               mkdir -p ~/images
 
-              echo "Downloading Ubuntu Noble ISO..."
-              wget -nv -c -P ~/images https://cdimage.ubuntu.com/noble/daily-live/current/noble-desktop-${{ inputs.ARCH }}.iso
+              echo "Downloading Ubuntu Noble ISO. Progress will update every 10%:"
+              wget --progress=dot:mega -c -P ~/images https://cdimage.ubuntu.com/noble/daily-live/current/noble-desktop-${{ inputs.ARCH }}.iso 2>&1 | \
+              grep --line-buffered -o '[0-9]\+%' | \
+              awk 'BEGIN{last=0; print "0%"} {
+                p = int($1);
+                if (p % 10 == 0 && p != last) {
+                  printf "%d%%\n", p;
+                  last = p;
+                }
+              }'
 
               echo "Preparing platform:"
               qemu-img create -f qcow2 /tmp/yarf-vm.qcow2 20G
