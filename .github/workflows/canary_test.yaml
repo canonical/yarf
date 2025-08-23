@@ -83,7 +83,7 @@ jobs:
               qemu-img create -f qcow2 /tmp/yarf-vm.qcow2 20G
               qemu-system-${{ inputs.ARCH }} \
                 -boot d \
-                -machine "$MACHINE" \
+                -machine \$$MACHINE \
                 -cdrom ~/images/noble-desktop-${{ inputs.ARCH }}.iso \
                 -m 8192M \
                 -smp 2 \
