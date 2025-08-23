@@ -30,11 +30,11 @@ jobs:
             "include": [
               {
                 "arch": "amd64",
-                "runs_on": ["self-hosted","linux","noble","x64","large"],
+                "runs_on": "ubuntu-24.04",
               },
               {
                 "arch": "arm64",
-                "runs_on": ["self-hosted","linux","noble","arm64","large"],
+                "runs_on": "ubuntu-24.04-arm,"
               },
               {
                 "lane": "edge_to_beta",
@@ -64,8 +64,6 @@ jobs:
       ARCH: ${{ matrix.arch }}
       FROM: ${{ matrix.from }}
       TO: ${{ matrix.to }}
-      TEST_WORKFLOW: ${{ matrix.test_workflow }}
-      SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT }}
 
     outputs:
       should_continue: ${{ steps.versions.outputs.should_continue }}
@@ -143,7 +141,7 @@ jobs:
       CHANNEL: ${{ matrix.from }}
       REV:     ${{ needs.check-versions.outputs.from_revision }}
       ARCH:    ${{ matrix.arch }}
-      MACHINE_TYPE: ${{ toJson(matrix.runs_on) }}
+      MACHINE_TYPE: ${{ matrix.runs_on }}
 
   promote:
     name: Promote — ${{ matrix.track }} / ${{ matrix.from }} to ${{ matrix.to }} ( ${{ matrix.arch }} )
