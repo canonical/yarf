@@ -11,7 +11,7 @@ Task Tags
 Navigate GRUB Menu
     [Tags]                  yarf:certification_status: blocker
     Match                   ${CURDIR}/01_grub_menu.png                      300
-    Press Key And Match     DOWN                    ${CURDIR}/02_ubuntu_safe_graphics.png
+    Press Key And Match     Down                    ${CURDIR}/02_ubuntu_safe_graphics.png
     Keys Combo              Return
 
 Assert Try Ubuntu Window Started
