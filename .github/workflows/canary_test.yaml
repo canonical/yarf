@@ -62,10 +62,15 @@ jobs:
               fi
 
             prepare-platform-cmds: |
-              mkdir -p ~/images
+              IMAGE_DIR=~/images
+              IMAGE=noble-desktop-${{ inputs.ARCH }}.iso
+              IMAGE_URL=https://cdimage.ubuntu.com/noble/daily-live/current/$IMAGE
+              VM_IMAGE_PATH=/tmp/yarf-vm.qcow2
+
+              mkdir -p $IMAGE_DIR
 
               echo "Downloading Ubuntu Noble ISO."
-              wget -nv -c -P ~/images https://cdimage.ubuntu.com/noble/daily-live/current/noble-desktop-${{ inputs.ARCH }}.iso
+              wget -nv -c -P $IMAGE_DIR $IMAGE_URL
 
               # If arch is amd64, use ubuntu machine, else use virt:
               if [ "${{ inputs.ARCH }}" = "amd64" ]; then
@@ -80,14 +85,14 @@ jobs:
               fi
 
               echo "Preparing platform:"
-              qemu-img create -f qcow2 /tmp/yarf-vm.qcow2 20G
+              qemu-img create -f qcow2 $VM_IMAGE_PATH 20G
               qemu-system-${{ inputs.ARCH }} \
                 -boot d \
                 -machine $MACHINE \
-                -cdrom ~/images/noble-desktop-${{ inputs.ARCH }}.iso \
+                -cdrom $IMAGE_DIR/$IMAGE \
                 -m 8192M \
                 -smp 2 \
-                -hda /tmp/yarf-vm.qcow2 \
+                -hda $VM_IMAGE_PATH \
                 -enable-kvm \
                 -vnc :0 &
 
@@ -146,7 +151,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          eval "${{ matrix.install-platform-deps-cmds }}"
+          eval "$(
+          cat <<'SCRIPT'
+          ${{ matrix.install-platform-deps-cmds }}
+          SCRIPT
+          )"
 
           # Debug arm64 Vnc QEMU
           if [ "${{ inputs.ARCH }}" = "arm64" ] && [ "${{ matrix.platform }}" = "Vnc" ]; then
