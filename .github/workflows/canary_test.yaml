@@ -159,7 +159,7 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: yarf-canary-output-${{ matrix.platform }}-${{ inputs.ARCH }}
-          path: ${{ env.SNAP_USER_COMMON }}/yarf-outdir/*
+          path: ~/snap/${{ inputs.NAME }}/common/yarf-outdir/*
           retention-days: 5
 
       - if: failure() && runner.debug
