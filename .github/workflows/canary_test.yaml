@@ -56,8 +56,10 @@ jobs:
               qemu-utils \
               qemu-kvm
 
-              # Ensure current runner (user) can access /dev/kvm
-              sudo setfacl -m u:"$USER":rw /dev/kvm
+              # Ensure current runner (user) can access /dev/kvm (amd64 only)
+              if [ "${{ inputs.ARCH }}" = "amd64" ]; then
+                sudo setfacl -m u:"$USER":rw /dev/kvm
+              fi
 
             prepare-platform-cmds: |
               mkdir -p ~/images
@@ -134,6 +136,14 @@ jobs:
           set -euo pipefail
           eval "${{ matrix.install-platform-deps-cmds }}"
 
+          # Debug arm64 Vnc QEMU
+          if [ "${{ inputs.ARCH }}" = "arm64" ] && [ "${{ matrix.platform }}" = "Vnc" ]; then
+            echo "QEMU version info:"
+            qemu-system-arm -machine help
+            echo "Listing /dev/kvm:"
+            ls -l /dev/kvm || echo "/dev/kvm does not exist"
+          fi
+
       - name: Run canary test
         id: test
         shell: bash
@@ -141,7 +151,7 @@ jobs:
           set -euo pipefail
           eval "${{ matrix.prepare-platform-cmds }}"
 
-          snap run yarf --platform="${{ matrix.platform }}" ${{ env.TEST_SUITE_PATH }} -- --suite="${{ matrix.suite }}"
+          snap run yarf --platform="${{ matrix.platform }}" ${{ env.TEST_SUITE_PATH }}/${{ matrix.suite }}
 
       - if: failure()
         name: Collect test results
@@ -165,7 +175,6 @@ jobs:
     steps:
       - id: set
         run: |
-          # This tiny job converts the prior jobs overall result into a boolean output.
           if [[ "${{ needs.canary-test.result }}" == "success" ]]; then
             echo "passed=true" >> "$GITHUB_OUTPUT"
           else
