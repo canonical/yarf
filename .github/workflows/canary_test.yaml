@@ -68,7 +68,7 @@ jobs:
               wget --progress=dot:mega -c -P ~/images https://cdimage.ubuntu.com/noble/daily-live/current/noble-desktop-${{ inputs.ARCH }}.iso 2>&1 | \
               grep --line-buffered -o '[0-9]\+%' | \
               awk 'BEGIN{last=0; print "0%"} {
-                p = int($1);
+                p = int(\$1);
                 if (p % 10 == 0 && p != last) {
                   printf "%d%%\n", p;
                   last = p;
