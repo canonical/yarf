@@ -49,7 +49,6 @@ jobs:
           - platform: Vnc
             suite: vnc
             install-platform-deps-cmds: |
-              set -euo pipefail
               sudo apt update -qq
               sudo apt-get --yes --no-install-recommends install \
               acl \
@@ -63,7 +62,6 @@ jobs:
               fi
 
             prepare-platform-cmds: |
-              set -euo pipefail
               mkdir -p ~/images
 
               echo "Downloading Ubuntu Noble ISO."
@@ -85,7 +83,7 @@ jobs:
               qemu-img create -f qcow2 /tmp/yarf-vm.qcow2 20G
               qemu-system-${{ inputs.ARCH }} \
                 -boot d \
-                -machine \$$MACHINE \
+                -machine $MACHINE \
                 -cdrom ~/images/noble-desktop-${{ inputs.ARCH }}.iso \
                 -m 8192M \
                 -smp 2 \
@@ -147,7 +145,8 @@ jobs:
       - name: Install platform ${{ matrix.platform }} dependencies
         shell: bash
         run: |
-          bash -euo pipefail -c "${{ matrix.install-platform-deps-cmds }}"
+          set -euo pipefail
+          eval "${{ matrix.install-platform-deps-cmds }}"
 
           # Debug arm64 Vnc QEMU
           if [ "${{ inputs.ARCH }}" = "arm64" ] && [ "${{ matrix.platform }}" = "Vnc" ]; then
@@ -161,7 +160,12 @@ jobs:
         id: test
         shell: bash
         run: |
-          bash -euo pipefail -c "${{ matrix.prepare-platform-cmds }}"
+          set -euo pipefail
+          eval "$(
+          cat <<'SCRIPT'
+            ${{ matrix.big_script }}
+          SCRIPT
+          )"
 
           snap run yarf --platform="${{ matrix.platform }}" ${{ env.TEST_SUITE_PATH }}/${{ matrix.suite }}
 
