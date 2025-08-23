@@ -163,7 +163,7 @@ jobs:
           set -euo pipefail
           eval "$(
           cat <<'SCRIPT'
-            ${{ matrix.big_script }}
+          ${{ matrix.prepare-platform-cmds }}
           SCRIPT
           )"
 
