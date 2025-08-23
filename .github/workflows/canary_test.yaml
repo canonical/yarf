@@ -64,7 +64,7 @@ jobs:
             prepare-platform-cmds: |
               mkdir -p ~/images
 
-              echo "Downloading Ubuntu Noble ISO. Progress will update every 10%:"
+              echo "Downloading Ubuntu Noble ISO."
               wget -nv -c -P ~/images https://cdimage.ubuntu.com/noble/daily-live/current/noble-desktop-${{ inputs.ARCH }}.iso
 
               echo "Preparing platform:"
