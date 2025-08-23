@@ -56,9 +56,19 @@ jobs:
               qemu-utils \
               qemu-kvm
 
+              # Ensure current runner (user) can access /dev/kvm (amd64 only)
               if [ "${{ inputs.ARCH }}" = "amd64" ]; then
-                # Ensure current runner (user) can access /dev/kvm (amd64 only)
                 sudo setfacl -m u:"$USER":rw /dev/kvm
+              fi
+
+            prepare-platform-cmds: |
+              mkdir -p ~/images
+
+              echo "Downloading Ubuntu Noble ISO."
+              wget -nv -c -P ~/images https://cdimage.ubuntu.com/noble/daily-live/current/noble-desktop-${{ inputs.ARCH }}.iso
+
+              # If arch is amd64, use ubuntu machine, else use virt:
+              if [ "${{ inputs.ARCH }}" = "amd64" ]; then
                 MACHINE="ubuntu"
 
               elif [ "${{ inputs.ARCH }}" = "arm64" ]; then
@@ -68,12 +78,6 @@ jobs:
                 echo "Unsupported architecture: ${{ inputs.ARCH }}"
                 exit 1
               fi
-
-            prepare-platform-cmds: |
-              mkdir -p ~/images
-
-              echo "Downloading Ubuntu Noble ISO."
-              wget -nv -c -P ~/images https://cdimage.ubuntu.com/noble/daily-live/current/noble-desktop-${{ inputs.ARCH }}.iso
 
               echo "Preparing platform:"
               qemu-img create -f qcow2 /tmp/yarf-vm.qcow2 20G
