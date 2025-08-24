@@ -1,0 +1,211 @@
+name: Canary test
+
+on:
+  workflow_call:
+    inputs:
+      NAME:
+        description: 'The name of the snap to promote'
+        type: string
+        required: true
+      TRACK:
+        description: 'The snap track to promote within (e.g., latest)'
+        type: string
+        required: true
+      CHANNEL:
+        description: 'The snap channel to promote from (e.g., stable, candidate, beta, edge)'
+        type: string
+        required: true
+      REV:
+        description: 'The revision number of the snap to promote'
+        type: string
+        required: true
+      ARCH:
+        description: 'The architecture of the snap to promote (e.g., amd64, arm64)'
+        type: string
+        required: true
+      MACHINE_TYPE:
+        description: 'The type of machine to run the canary test on'
+        type: string
+        required: true
+
+    outputs:
+      passed:
+        description: 'Whether all matrix canary tests passed'
+        value: ${{ jobs.summarize.outputs.passed }}
+
+concurrency:
+  group: canary-test-${{ github.ref }}-${{ inputs.TRACK }}-${{ inputs.CHANNEL }}-${{ inputs.ARCH }}
+  cancel-in-progress: true
+
+jobs:
+  canary-test:
+    name: ${{ matrix.platform }} - Canary test ${{ inputs.NAME }} snap at channel ${{ inputs.TRACK }}/${{ inputs.CHANNEL }} (rev. ${{ inputs.REV }})
+    runs-on: ${{ inputs.MACHINE_TYPE }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [Vnc, Mir]
+        include:
+          - platform: Vnc
+            suite: vnc
+            install-platform-deps-cmds: |
+              sudo apt update -qq
+              sudo apt-get --yes --no-install-recommends install \
+              acl \
+              qemu-system-${{ inputs.ARCH }} \
+              qemu-utils \
+              qemu-kvm
+
+            prepare-platform-cmds: |
+              IMAGE_DIR=~/images
+              IMAGE=noble-desktop-${{ inputs.ARCH }}.iso
+              IMAGE_URL=https://cdimage.ubuntu.com/noble/daily-live/current/$IMAGE
+              VM_IMAGE_PATH=/tmp/yarf-vm.qcow2
+
+              mkdir -p $IMAGE_DIR
+
+              echo "Downloading Ubuntu Noble ISO."
+              wget --progress=dot:mega -c -P $IMAGE_DIR $IMAGE_URL 2>&1 | \
+              grep --line-buffered -o '[0-9]\+%' | \
+              awk 'BEGIN{last=0; print "0%"} {
+                p = int($1);
+                if (p % 10 == 0 && p != last) {
+                  printf "%d%%\n", p;
+                  last = p;
+                }
+              }'
+
+              # If arch is amd64, use ubuntu machine, else use virt:
+              if [ "${{ inputs.ARCH }}" = "amd64" ]; then
+                # Ensure current runner (user) can access /dev/kvm (amd64 only)
+                sudo setfacl -m u:"$USER":rw /dev/kvm
+                MACHINE="ubuntu"
+
+              elif [ "${{ inputs.ARCH }}" = "arm64" ]; then
+                MACHINE="virt"
+
+              else
+                echo "Unsupported architecture: ${{ inputs.ARCH }}"
+                exit 1
+              fi
+
+              echo "Preparing platform:"
+              qemu-img create -f qcow2 $VM_IMAGE_PATH 20G
+              qemu-system-${{ inputs.ARCH }} \
+                -boot d \
+                -machine $MACHINE \
+                -cdrom $IMAGE_DIR/$IMAGE \
+                -m 8192M \
+                -smp 2 \
+                -hda $VM_IMAGE_PATH \
+                -enable-kvm \
+                -vnc :0 &
+
+          - platform: Mir
+            suite: mir
+            install-platform-deps-cmds: |
+              sudo snap install mir-test-tools
+              sudo apt update -qq
+              sudo apt-get --yes --no-install-recommends install \
+                ffmpeg \
+                inotify-tools \
+                gnome-calculator
+
+            prepare-platform-cmds: |
+              export WAYLAND_DISPLAY=wayland-99
+
+              # Start Mir on a virtual display (doesn't require graphics hardware)
+              mir-test-tools.demo-server \
+                --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
+                --platform-display-libs mir:virtual \
+                --virtual-output 1280x1024 &
+
+              # Wait for the compositor to start
+              inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-99\$" $XDG_RUNTIME_DIR
+
+              # Avoid GNOME apps waiting for portals
+              dbus-run-session -- gnome-calculator &
+
+    env:
+      TEST_SUITE_PATH: tests/canary_test
+
+    steps:
+      - name: Install workflow dependencies
+        shell: bash
+        run: |
+          sudo apt update -qq
+          sudo apt install -y \
+            git-lfs
+
+      - name: Check out tests
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          lfs: true
+          fetch-depth: 1
+          sparse-checkout: |
+            ${{ env.TEST_SUITE_PATH }}
+          sparse-checkout-cone-mode: false
+
+      - name: Install YARF from channel
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo snap install "${{ inputs.NAME }}" --channel="${{ inputs.TRACK }}/${{ inputs.CHANNEL }}"
+
+      - name: Install platform ${{ matrix.platform }} dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          eval "$(
+          cat <<'SCRIPT'
+          ${{ matrix.install-platform-deps-cmds }}
+          SCRIPT
+          )"
+
+          # Debug arm64 Vnc QEMU
+          if [ "${{ inputs.ARCH }}" = "arm64" ] && [ "${{ matrix.platform }}" = "Vnc" ]; then
+            qemu-system-arm -machine help
+            echo "Listing /dev/kvm:"
+            ls -l /dev/kvm || echo "/dev/kvm does not exist"
+          fi
+
+      - name: Run canary test
+        id: test
+        shell: bash
+        run: |
+          set -euo pipefail
+          eval "$(
+          cat <<'SCRIPT'
+          ${{ matrix.prepare-platform-cmds }}
+          SCRIPT
+          )"
+
+          snap run yarf --platform="${{ matrix.platform }}" ${{ env.TEST_SUITE_PATH }}/${{ matrix.suite }}
+
+      - if: failure()
+        name: Collect test results
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: yarf-canary-output-${{ matrix.platform }}-${{ inputs.ARCH }}
+          path: ~/snap/${{ inputs.NAME }}/common/yarf-outdir/*
+          retention-days: 5
+
+      - if: failure() && runner.debug
+        name: Setup upterm session (restart with "Enable debug logging" to activate)
+        uses: canonical/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48
+        with:
+          limit-access-to-actor: true
+
+  summarize:
+    needs: canary-test
+    runs-on: ubuntu-latest
+    outputs:
+      passed: ${{ steps.set.outputs.passed }}
+    steps:
+      - id: set
+        run: |
+          if [[ "${{ needs.canary-test.result }}" == "success" ]]; then
+            echo "passed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "passed=false" >> "$GITHUB_OUTPUT"
+          fi
