@@ -65,7 +65,7 @@ jobs:
               mkdir -p $IMAGE_DIR
 
               echo "Downloading Ubuntu Noble ISO."
-              curl -C - -L -o $IMAGE_DIR/$IMAGE $IMAGE_URL
+              curl -s -C - -L -o $IMAGE_DIR/$IMAGE $IMAGE_URL
 
               # If arch is amd64, use ubuntu machine, else use virt:
               if [ "${{ inputs.ARCH }}" = "amd64" ]; then
