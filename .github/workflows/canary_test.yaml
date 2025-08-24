@@ -65,15 +65,7 @@ jobs:
               mkdir -p $IMAGE_DIR
 
               echo "Downloading Ubuntu Noble ISO."
-              wget --progress=dot:mega -c -P $IMAGE_DIR $IMAGE_URL 2>&1 | \
-              grep --line-buffered -o '[0-9]\+%' | \
-              awk 'BEGIN{last=0; print "0%"} {
-                p = int($1);
-                if (p % 10 == 0 && p != last) {
-                  printf "%d%%\n", p;
-                  last = p;
-                }
-              }'
+              curl -C - -L -o $IMAGE_DIR/$IMAGE $IMAGE_URL
 
               # If arch is amd64, use ubuntu machine, else use virt:
               if [ "${{ inputs.ARCH }}" = "amd64" ]; then
