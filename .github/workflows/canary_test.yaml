@@ -65,7 +65,7 @@ jobs:
               mkdir -p $IMAGE_DIR
 
               echo "Downloading Ubuntu Noble ISO."
-              wget -nv -c -P $IMAGE_DIR $IMAGE_URL 2>&1 | \
+              wget --progress=dot:mega -c -P $IMAGE_DIR $IMAGE_URL 2>&1 | \
               grep --line-buffered -o '[0-9]\+%' | \
               awk 'BEGIN{last=0; print "0%"} {
                 p = int($1);

@@ -19,7 +19,8 @@ jobs:
     outputs:
       matrix: ${{ steps.out.outputs.matrix }}
     steps:
-      - id: out
+      - name: Define matrix
+        id: out
         shell: bash
         run: |
           cat > matrix.json <<'JSON'
