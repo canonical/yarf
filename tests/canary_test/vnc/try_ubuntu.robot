@@ -17,11 +17,13 @@ Navigate GRUB Menu
 Assert Try Ubuntu Window Started
     [Tags]                  yarf:certification_status: blocker
     Match                   ${CURDIR}/02_language_choosing_screen.png       300
+    Sleep                   2s
 
 Navigate to Choose Keyboard Screen
     [Tags]                  yarf:certification_status: blocker
     Click LEFT Button On Next
     Click LEFT Button On Next
+    Sleep                   2s
 
 Type Sample Text
     [Tags]                  yarf:certification_status: blocker
@@ -29,6 +31,7 @@ Type Sample Text
     ${sample_text} =        Set Variable            This is a sample text for YARF canary testing.
     Type String             ${sample_text}
     Match Text              ${sample_text}
+    Sleep                   2s
 
 Try Ubuntu
     [Tags]                  yarf:certification_status: blocker
