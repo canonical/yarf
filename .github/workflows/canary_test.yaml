@@ -56,11 +56,6 @@ jobs:
               qemu-utils \
               qemu-kvm
 
-              # Ensure current runner (user) can access /dev/kvm (amd64 only)
-              if [ "${{ inputs.ARCH }}" = "amd64" ]; then
-                sudo setfacl -m u:"$USER":rw /dev/kvm
-              fi
-
             prepare-platform-cmds: |
               IMAGE_DIR=~/images
               IMAGE=noble-desktop-${{ inputs.ARCH }}.iso
@@ -70,10 +65,20 @@ jobs:
               mkdir -p $IMAGE_DIR
 
               echo "Downloading Ubuntu Noble ISO."
-              wget -nv -c -P $IMAGE_DIR $IMAGE_URL
+              wget -nv -c -P $IMAGE_DIR $IMAGE_URL 2>&1 | \
+              grep --line-buffered -o '[0-9]\+%' | \
+              awk 'BEGIN{last=0; print "0%"} {
+                p = int($1);
+                if (p % 10 == 0 && p != last) {
+                  printf "%d%%\n", p;
+                  last = p;
+                }
+              }'
 
               # If arch is amd64, use ubuntu machine, else use virt:
               if [ "${{ inputs.ARCH }}" = "amd64" ]; then
+                # Ensure current runner (user) can access /dev/kvm (amd64 only)
+                sudo setfacl -m u:"$USER":rw /dev/kvm
                 MACHINE="ubuntu"
 
               elif [ "${{ inputs.ARCH }}" = "arm64" ]; then
@@ -159,7 +164,6 @@ jobs:
 
           # Debug arm64 Vnc QEMU
           if [ "${{ inputs.ARCH }}" = "arm64" ] && [ "${{ matrix.platform }}" = "Vnc" ]; then
-            echo "QEMU version info:"
             qemu-system-arm -machine help
             echo "Listing /dev/kvm:"
             ls -l /dev/kvm || echo "/dev/kvm does not exist"
