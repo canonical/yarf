@@ -8,26 +8,9 @@ permissions:
   contents: read
 
 jobs:
-  # testing:
-  #   uses: ./.github/workflows/yarf.yaml
-  #   with:
-  #     ref: main
-
   TICS:
-    # needs: testing
     runs-on: ubuntu-latest
     steps:
-      - name: Install dependencies
-        run: |
-            sudo apt update -qq
-            sudo apt install -y \
-            git-lfs \
-            libgl1 \
-            libxkbcommon-dev \
-            jq \
-            clang \
-            python3-tk \
-
       - name: Checkout repo
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
@@ -39,24 +22,34 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install uv
-        run: pip install uv
+      - name: Install dependencies
+        run: |
+            sudo apt update -qq
+            sudo apt install -y \
+            git-lfs \
+            libgl1 \
+            libxkbcommon-dev \
+            jq \
+            clang \
+            python3-tk \
 
-      - name: Install YARF and TICS dependencies
+            pip install uv
+
+      - name: Install TICS dependencies
+        run: |
+          pip install \
+          flake8 \
+          pylint
+
+      - name: Install YARF
         run: |
           uv sync
           source .venv/bin/activate
-          pip install flake8 pylint
           echo PATH=$PATH >> $GITHUB_ENV
 
       - name: Run test and coverage
         run: |
           uvx tox
-
-      # - name: Download coverage report
-      #   uses: actions/download-artifact@v4
-      #   with:
-      #     name: coverage
 
       - name: Rename coverage report for TICS
         run: |
@@ -73,9 +66,3 @@ jobs:
           ticsAuthToken: ${{ secrets.TICSAUTHTOKEN }}
           installTics: true
           calc: ALL
-
-      - if: failure()
-        name: Setup upterm session (restart with "Enable debug logging" to activate)
-        uses: canonical/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48
-        with:
-          limit-access-to-actor: true
