@@ -45,13 +45,13 @@ jobs:
       - name: Install YARF and TICS dependencies
         run: |
           uv sync
-          source .venv/bin/activate
           uv pip install flake8 pylint
-          echo PATH=$PATH >> $GITHUB_ENV
 
       - name: Run test and coverage
         run: |
           uvx tox
+          source .tox/py312/bin/activate
+          echo PATH=$PATH >> $GITHUB_ENV
 
       # - name: Download coverage report
       #   uses: actions/download-artifact@v4
