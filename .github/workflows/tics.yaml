@@ -27,6 +27,8 @@ jobs:
             jq \
             clang \
             python3-tk \
+            flake8 \
+            pylint
 
       - name: Checkout repo
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
@@ -45,12 +47,12 @@ jobs:
       - name: Install YARF and TICS dependencies
         run: |
           uv sync
-          uv pip install flake8 pylint
 
       - name: Run test and coverage
         run: |
           uvx tox
           source .tox/py312/bin/activate
+          pip install flake8 pylint
           echo PATH=$PATH >> $GITHUB_ENV
 
       # - name: Download coverage report
