@@ -8,13 +8,13 @@ permissions:
   contents: read
 
 jobs:
-  testing:
-    uses: ./.github/workflows/yarf.yaml
-    with:
-      ref: main
+  # testing:
+  #   uses: ./.github/workflows/yarf.yaml
+  #   with:
+  #     ref: main
 
   TICS:
-    needs: testing
+    # needs: testing
     runs-on: ubuntu-latest
     steps:
       - name: Install dependencies
@@ -42,24 +42,26 @@ jobs:
       - name: Install uv
         run: pip install uv
 
-      - name: Install YARF
-        run: uv sync
+      - name: Install YARF and TICS dependencies
+        run: |
+          uv sync
+          source .venv/bin/activate
+          uv pip install flake8 pylint
+          echo PATH=$PATH >> $GITHUB_ENV
 
-      - name: Download coverage report
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage
+      - name: Run test and coverage
+        run: |
+          uvx tox
+
+      # - name: Download coverage report
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     name: coverage
 
       - name: Rename coverage report for TICS
         run: |
           mkdir ./coverage
           mv ./coverage.xml ./coverage/cobertura.xml
-
-      - name: Install TICS dependencies
-        run: |
-            sudo apt install -y \
-            pylint \
-            flake8
 
       - name: TICS GitHub Action
         uses: tiobe/tics-github-action@v3
