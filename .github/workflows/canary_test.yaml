@@ -49,10 +49,13 @@ jobs:
           - platform: Vnc
             suite: mir
             install-platform-deps-cmds: |
+              sudo snap install mir-test-tools
               sudo apt update -qq
               sudo apt-get --yes --no-install-recommends install \
+              ffmpeg \
+              inotify-tools \
               wayvnc \
-              gnome-calculator \
+              gnome-calculator
 
             prepare-platform-cmds: |
               export WAYLAND_DISPLAY=wayland-99
