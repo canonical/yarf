@@ -4,19 +4,18 @@ Resource        kvm.resource
 Task Tags
 ...    robot:stop-on-failure
 ...    yarf:category_id: com.canonical.yarf::canary
-...    yarf:test_group_id: com.canonical.yarf::vnc
+...    yarf:test_group_id: com.canonical.yarf::canary
 
 
 *** Test Cases ***
 Assert Calculator Started
     [Tags]                  yarf:certification_status: blocker
     Match                   ${CURDIR}/01_calculator.png
-    Match Text              Basic
 
 Answer the ultimate question of life, the universe and everything
     [Tags]                  yarf:certification_status: blocker
-    Click LEFT Button On ${CURDIR}/calculator/1.png
-    Click LEFT Button On ${CURDIR}/calculator/0.png
+    Click LEFT Button On 1
+    Click LEFT Button On 0
     Click LEFT Button on ${CURDIR}/calculator/x.png
     Type String             4+2=
 

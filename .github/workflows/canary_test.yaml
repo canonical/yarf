@@ -47,7 +47,6 @@ jobs:
         platform: [Vnc, Mir]
         include:
           - platform: Vnc
-            suite: mir
             install-platform-deps-cmds: |
               sudo snap install mir-test-tools
               sudo apt update -qq
@@ -76,7 +75,6 @@ jobs:
               dbus-run-session -- gnome-calculator &
 
           - platform: Mir
-            suite: mir
             install-platform-deps-cmds: |
               sudo snap install mir-test-tools
               sudo apt update -qq
@@ -147,7 +145,7 @@ jobs:
           SCRIPT
           )"
 
-          snap run yarf --platform="${{ matrix.platform }}" ${{ env.TEST_SUITE_PATH }}/${{ matrix.suite }}
+          snap run yarf --platform="${{ matrix.platform }}" ${{ env.TEST_SUITE_PATH }}
 
       - if: failure()
         name: Collect test results

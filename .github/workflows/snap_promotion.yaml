@@ -1,7 +1,9 @@
 name: YARF snap promotion
 
 on:
-  pull_request:
+  schedule:
+    - cron: '00 00 * * *'
+  pull_request: # remove when merge
   workflow_dispatch:
 
 permissions:
@@ -70,7 +72,7 @@ jobs:
       should_continue: ${{ steps.versions.outputs.should_continue }}
       from_revision:   ${{ steps.versions.outputs.from_revision }}
       from_channel:    ${{ steps.versions.outputs.from_channel }}
-      lane:           ${{ matrix.lane }}
+      lane:            ${{ matrix.lane }}
 
     steps:
       - name: Context
