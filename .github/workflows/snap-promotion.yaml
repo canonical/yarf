@@ -3,7 +3,7 @@ name: YARF snap promotion
 on:
   schedule:
     - cron: '00 00 * * *'
-  pull_request: # remove when merge
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -61,13 +61,6 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.define-matrix.outputs.matrix) }}
 
-    env:
-      SNAP_NAME: yarf
-      TRACK: ${{ matrix.track }}
-      ARCH: ${{ matrix.arch }}
-      FROM: ${{ matrix.from }}
-      TO: ${{ matrix.to }}
-
     outputs:
       should_continue: ${{ steps.versions.outputs.should_continue }}
       from_revision:   ${{ steps.versions.outputs.from_revision }}
@@ -78,19 +71,19 @@ jobs:
       - name: Context
         shell: bash
         run: |
-          echo "Track: ${TRACK}"
-          echo "Arch:  ${ARCH}"
-          echo "Lane:  ${FROM} --> ${TO}"
+          echo "Track: ${{ matrix.track }}"
+          echo "Arch:  ${{ matrix.arch }}"
+          echo "Lane:  ${{ matrix.from }} --> ${{ matrix.to }}"
           echo "Tests: ${TEST_WORKFLOW}"
 
-      - name: Get versions in ${{ env.TRACK }}/${{ env.FROM }} and ${{ env.TRACK }}/${{ env.TO }}
+      - name: Get versions in ${{ matrix.track }}/${{ matrix.from }} and ${{ matrix.track }}/${{ matrix.to }}
         id: versions
         shell: bash
         run: |
           set -euo pipefail
-          echo "Fetching channel info for ${SNAP_NAME}..."
+          echo "Fetching channel info for yarf..."
 
-          snap info "${SNAP_NAME}" \
+          snap info yarf \
           | awk '/^[[:space:]]*[[:alnum:].-]+\/(edge|beta|candidate|stable):/ {
               gsub(":","",$1)
               ver=$2
@@ -102,27 +95,27 @@ jobs:
           echo "Channel map (channel version revision):"
           cat channels.txt || true
 
-          FROM_VER=$(awk -v t="${TRACK}/${FROM}" '$1==t{print $2}' channels.txt || true)
-          TO_VER=$(awk -v t="${TRACK}/${TO}"   '$1==t{print $2}' channels.txt || true)
+          FROM_VER=$(awk -v t="${{ matrix.track }}/${{ matrix.from }}" '$1==t{print $2}' channels.txt || true)
+          TO_VER=$(awk -v t="${{ matrix.track }}/${{ matrix.to }}"   '$1==t{print $2}' channels.txt || true)
 
-          FROM_REV=$(awk -v t="${TRACK}/${FROM}" '$1==t{print $3}' channels.txt || true)
-          TO_REV=$(awk -v t="${TRACK}/${TO}"   '$1==t{print $3}' channels.txt || true)
+          FROM_REV=$(awk -v t="${{ matrix.track }}/${{ matrix.from }}" '$1==t{print $3}' channels.txt || true)
+          TO_REV=$(awk -v t="${{ matrix.track }}/${{ matrix.to }}"   '$1==t{print $3}' channels.txt || true)
 
           if [[ -z "${FROM_VER:-}" ]]; then
-            echo "No version found in ${TRACK}/${FROM}."
+            echo "No version found in ${{ matrix.track }}/${{ matrix.from }}."
             exit 1
           fi
 
           # change to le after testing CI
           if [[ -n "${TO_VER:-}" ]] && dpkg --compare-versions "$FROM_VER" lt "$TO_VER"; then
-            echo "Versions match ($FROM_VER) in ${TRACK} (${FROM} vs ${TO}). Nothing to do."
+            echo "Versions match ($FROM_VER) in ${{ matrix.track }} (${{ matrix.from }} vs ${{ matrix.to }}). Nothing to do."
             echo "should_continue=false" >> "$GITHUB_OUTPUT"
           else
-            echo "Version in ${FROM}=$FROM_VER (rev $FROM_REV) > ${TO}=$TO_VER (rev ${TO_REV:-none}) in ${TRACK}."
-            echo "${FROM} revision is $FROM_REV"
+            echo "Version in ${{ matrix.from }}=$FROM_VER (rev $FROM_REV) > ${{ matrix.to }}=$TO_VER (rev ${TO_REV:-none}) in ${{ matrix.track }}."
+            echo "${{ matrix.from }} revision is $FROM_REV"
             echo "should_continue=true" >> "$GITHUB_OUTPUT"
             echo "from_revision=$FROM_REV" >> "$GITHUB_OUTPUT"
-            echo "from_channel=${TRACK}/${FROM}" >> "$GITHUB_OUTPUT"
+            echo "from_channel=${{ matrix.track }}/${{ matrix.from }}" >> "$GITHUB_OUTPUT"
           fi
 
   canary:
@@ -137,7 +130,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.define-matrix.outputs.matrix) }}
 
-    uses: ./.github/workflows/canary_test.yaml
+    uses: ./.github/workflows/canary-test.yaml
     with:
       NAME:    yarf
       TRACK:   ${{ matrix.track }}
@@ -166,7 +159,7 @@ jobs:
             sudo snap install snapcraft --classic
           fi
 
-      - name: Promote ${{ matrix.TRACK }}/${{ matrix.FROM }} to ${{ matrix.TRACK }}/${{ matrix.TO }} for ${{ matrix.ARCH }}
+      - name: Promote ${{ matrix.track }}/${{ matrix.from }} to ${{ matrix.track }}/${{ matrix.to }} for ${{ matrix.arch }}
         env:
           SNAPCRAFT_HAS_TTY: "true" # this is necessary because snapcraft will not allow --yes for promotions of the edge channel
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT }}
