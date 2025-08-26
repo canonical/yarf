@@ -56,6 +56,14 @@ jobs:
               qemu-utils \
               qemu-kvm
 
+              sudo apt-get --yes --no-install-recommends install \
+              sway \
+              wayvnc \
+              gnome-calculator \
+              remmina \
+              remmina-plugin-vnc
+
+
             prepare-platform-cmds: |
               # IMAGE_DIR=~/images
               # IMAGE=noble-desktop-${{ inputs.ARCH }}.iso
@@ -101,7 +109,7 @@ jobs:
               sway -d -V &
               wayvnc &
               gnome-calculator &
-              remmina -c vnc://localhost:5900 &
+              # remmina -c vnc://localhost:5900 &
 
           - platform: Mir
             suite: mir
