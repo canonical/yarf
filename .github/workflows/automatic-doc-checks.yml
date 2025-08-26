@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   documentation-checks:
-    runs-on: [self-hosted, linux, noble, x64, large]
+    runs-on: ubuntu-24.04
     steps:
       - name: Install dependencies
         run: |

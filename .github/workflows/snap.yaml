@@ -8,7 +8,7 @@ on:
 
 jobs:
   build_and_publish_amd64:
-    runs-on: [self-hosted, linux, noble, x64, large]
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
     - uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
@@ -25,7 +25,7 @@ jobs:
         release: edge
 
   build_and_publish_arm64:
-    runs-on: [self-hosted, linux, noble, arm64, large]
+    runs-on: ubuntu-24.04-arm
     steps:
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
     - uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
