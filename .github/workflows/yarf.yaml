@@ -3,12 +3,6 @@ name: Testing and quality control for YARF codebase
 on:
   merge_group:
     types: [checks_requested]
-  workflow_call:
-    inputs:
-      ref:
-        description: 'Git reference to checkout'
-        required: true
-        type: string
   pull_request:
     paths-ignore:
       - 'docs/**'
