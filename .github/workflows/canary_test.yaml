@@ -47,7 +47,7 @@ jobs:
         platform: [Vnc, Mir]
         include:
           - platform: Vnc
-            suite: vnc
+            suite: vnc-sway
             install-platform-deps-cmds: |
               sudo apt update -qq
               sudo apt-get --yes --no-install-recommends install \
@@ -57,41 +57,51 @@ jobs:
               qemu-kvm
 
             prepare-platform-cmds: |
-              IMAGE_DIR=~/images
-              IMAGE=noble-desktop-${{ inputs.ARCH }}.iso
-              IMAGE_URL=https://cdimage.ubuntu.com/noble/daily-live/current/$IMAGE
-              VM_IMAGE_PATH=/tmp/yarf-vm.qcow2
+              # IMAGE_DIR=~/images
+              # IMAGE=noble-desktop-${{ inputs.ARCH }}.iso
+              # IMAGE_URL=https://cdimage.ubuntu.com/noble/daily-live/current/$IMAGE
+              # VM_IMAGE_PATH=/tmp/yarf-vm.qcow2
 
-              mkdir -p $IMAGE_DIR
+              # mkdir -p $IMAGE_DIR
 
-              echo "Downloading Ubuntu Noble ISO."
-              curl -s -C - -L -o $IMAGE_DIR/$IMAGE $IMAGE_URL
+              # echo "Downloading Ubuntu Noble ISO."
+              # curl -s -C - -L -o $IMAGE_DIR/$IMAGE $IMAGE_URL
 
-              # If arch is amd64, use ubuntu machine, else use virt:
-              if [ "${{ inputs.ARCH }}" = "amd64" ]; then
-                # Ensure current runner (user) can access /dev/kvm (amd64 only)
-                sudo setfacl -m u:"$USER":rw /dev/kvm
-                MACHINE="ubuntu"
+              # # If arch is amd64, use ubuntu machine, else use virt:
+              # if [ "${{ inputs.ARCH }}" = "amd64" ]; then
+              #   # Ensure current runner (user) can access /dev/kvm (amd64 only)
+              #   sudo setfacl -m u:"$USER":rw /dev/kvm
+              #   MACHINE="ubuntu"
 
-              elif [ "${{ inputs.ARCH }}" = "arm64" ]; then
-                MACHINE="virt"
+              # elif [ "${{ inputs.ARCH }}" = "arm64" ]; then
+              #   MACHINE="virt"
 
-              else
-                echo "Unsupported architecture: ${{ inputs.ARCH }}"
-                exit 1
-              fi
+              # else
+              #   echo "Unsupported architecture: ${{ inputs.ARCH }}"
+              #   exit 1
+              # fi
 
               echo "Preparing platform:"
-              qemu-img create -f qcow2 $VM_IMAGE_PATH 20G
-              qemu-system-${{ inputs.ARCH }} \
-                -boot d \
-                -machine $MACHINE \
-                -cdrom $IMAGE_DIR/$IMAGE \
-                -m 8192M \
-                -smp 2 \
-                -hda $VM_IMAGE_PATH \
-                -enable-kvm \
-                -vnc :0 &
+              # qemu-img create -f qcow2 $VM_IMAGE_PATH 20G
+              # qemu-system-${{ inputs.ARCH }} \
+              #   -boot d \
+              #   -machine $MACHINE \
+              #   -cdrom $IMAGE_DIR/$IMAGE \
+              #   -m 8192M \
+              #   -smp 2 \
+              #   -hda $VM_IMAGE_PATH \
+              #   -enable-kvm \
+              #   -vnc :0 &
+
+              export XDG_RUNTIME_DIR=/tmp/xdg
+              mkdir -p $XDG_RUNTIME_DIR
+              chmod 0700 $XDG_RUNTIME_DIR
+              export WLR_BACKENDS=headless
+              export WAYLAND_DISPLAY=wayland-1
+              sway -d -V &
+              wayvnc &
+              gnome-calculator &
+              # remmina -c vnc://localhost:5900 &
 
           - platform: Mir
             suite: mir
@@ -153,13 +163,6 @@ jobs:
           ${{ matrix.install-platform-deps-cmds }}
           SCRIPT
           )"
-
-          # Debug arm64 Vnc QEMU
-          if [ "${{ inputs.ARCH }}" = "arm64" ] && [ "${{ matrix.platform }}" = "Vnc" ]; then
-            qemu-system-arm -machine help
-            echo "Listing /dev/kvm:"
-            ls -l /dev/kvm || echo "/dev/kvm does not exist"
-          fi
 
       - name: Run canary test
         id: test
