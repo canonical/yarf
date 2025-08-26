@@ -109,7 +109,7 @@ jobs:
               sway -d -V &
               wayvnc &
               gnome-calculator &
-              # remmina -c vnc://localhost:5900 &
+              remmina -c vnc://localhost:5900 &
 
           - platform: Mir
             suite: mir
