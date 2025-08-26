@@ -53,7 +53,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
   check-versions:
-    name: ${{ matrix.track }} / ${{ matrix.arch }} — ${{ matrix.from }} to ${{ matrix.to }}
+    name: ${{ matrix.track }} / ${{ matrix.from }} to ${{ matrix.to }} (${{ matrix.arch }})
     needs: define-matrix
     runs-on: ${{ matrix.runs_on }}
     strategy:
@@ -105,8 +105,7 @@ jobs:
             exit 1
           fi
 
-          # change to le after testing CI
-          if [[ -n "${TO_VER:-}" ]] && dpkg --compare-versions "$FROM_VER" lt "$TO_VER"; then
+          if [[ -n "${TO_VER:-}" ]] && dpkg --compare-versions "$FROM_VER" le "$TO_VER"; then
             echo "Versions match ($FROM_VER) in ${{ matrix.track }} (${{ matrix.from }} vs ${{ matrix.to }}). Nothing to do."
             echo "should_continue=false" >> "$GITHUB_OUTPUT"
           else
