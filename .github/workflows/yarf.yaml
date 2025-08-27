@@ -78,7 +78,7 @@ jobs:
 
     - name: Download snap artifact
       if: matrix.test_target == 'snap'
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v5
       with:
         name: ${{ matrix.arch }}-snap
 
