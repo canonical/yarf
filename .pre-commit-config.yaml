@@ -38,6 +38,8 @@ repos:
     args:
     - --check-untyped-defs
     - --ignore-missing-imports  # Ref.: https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-library-stubs-or-py-typed-marker
+    - --follow-imports
+    - silent
     - --exclude
     - tests/.*
     - --exclude
