@@ -8,6 +8,7 @@ on:
       - .github/workflows/test-snap-build.yml
       - snap/**
       - pyproject.toml
+  workflow_call:
   workflow_dispatch:
 
 concurrency:

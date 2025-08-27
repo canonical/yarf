@@ -11,7 +11,8 @@ on:
       - '!.github/workflows/yarf.yaml'
 
 jobs:
-  tests:
+  tests-src:
+    name: Run tests on source code
     runs-on: ubuntu-24.04
     steps:
     - name: Install dependencies
@@ -118,6 +119,63 @@ jobs:
       with:
         name: yarf-output
         path: /tmp/yarf-outdir/*
+        retention-days: 5
+
+    - if: failure() && runner.debug
+      name: Setup upterm session (restart with "Enable debug logging" to activate)
+      uses: canonical/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48
+      with:
+        limit-access-to-actor: true
+
+  build-snap:
+    name: Test snap
+    uses: ./.github/workflows/test-snap-build.yml
+
+  tests-snap:
+    name: Run tests on snap
+    needs: build-snap
+    runs-on: ubuntu-24.04
+    steps:
+    - name: Download amd64 snap artifact
+      uses: actions/download-artifact@v5
+      with:
+        name: amd64-snap
+
+    - name: Install amd64 snap
+      run: sudo snap install --dangerous *.snap
+
+    - name: Install integration dependencies
+      run: |
+        sudo snap install mir-test-tools
+        sudo apt-get --yes --no-install-recommends install \
+          ffmpeg \
+          inotify-tools \
+          gnome-calculator
+
+    - name: Run integration tests
+      run: |
+        export WAYLAND_DISPLAY=wayland-99
+
+        # Start Mir on a virtual display (doesn't require graphics hardware)
+        mir-test-tools.demo-server \
+          --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
+          --platform-display-libs mir:virtual \
+          --virtual-output 1280x1024 &
+
+        # Wait for the compositor to start
+        inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-99\$" $XDG_RUNTIME_DIR
+
+        # Avoid GNOME apps waiting for portals
+        dbus-run-session -- gnome-calculator &
+
+        snap run yarf --platform Mir --output-format TestSubmissionSchema tests/basic_suite
+
+    - if: failure()
+      name: Collect test results
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      with:
+        name: yarf-output
+        path: ~/snap/yarf/common/yarf-outdir/*
         retention-days: 5
 
     - if: failure() && runner.debug
