@@ -11,9 +11,28 @@ on:
       - '!.github/workflows/yarf.yaml'
 
 jobs:
-  tests-src:
-    name: Run tests on source code
+  build-snap:
+    name: Test snap
+    uses: ./.github/workflows/test-snap-build.yaml
+
+  tests:
+    name: Run tests on ${{ matrix.arch }} for ${{ matrix.test_target }}
+    needs: build-snap
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
+        test_target: [source, snap]
+        include:
+          - test_target: source
+            package_manager: uv
+            yarf_outdir: /tmp/yarf-outdir
+
+          - test_target: snap
+            package_manager: snap
+            yarf_outdir: ~/snap/yarf/common/yarf-outdir/*
+
     steps:
     - name: Install dependencies
       run: |
@@ -37,21 +56,31 @@ jobs:
         python-version: "3.12"
 
     - name: Install uv and json schema
+      if: matrix.test_target == 'source'
       run: pip install uv check-jsonschema
 
     - name: Check uv.lock file
+      if: matrix.test_target == 'source'
       run: uv lock --check
 
     - name: Run tests
+      if: matrix.test_target == 'source'
       run: |
         uv tool run tox
 
     - name: Upload Coverage Report
+      if: matrix.test_target == 'source'
       uses: actions/upload-artifact@v4
       with:
         name: coverage
         path: ./coverage.xml
         retention-days: 5
+
+    - name: Download snap artifact
+      if: matrix.test_target == 'snap'
+      uses: actions/download-artifact@v3
+      with:
+        name: ${{ matrix.arch }}-snap
 
     - name: Install integration dependencies
       run: |
@@ -77,7 +106,7 @@ jobs:
         # Avoid GNOME apps waiting for portals
         dbus-run-session -- gnome-calculator &
 
-        uv run yarf --platform Mir --output-format TestSubmissionSchema tests/basic_suite
+        ${{ matrix.package_manager }} run yarf --platform Mir --output-format TestSubmissionSchema tests/basic_suite
 
     - name: Download test submission schema and validate
       run: |
@@ -108,75 +137,17 @@ jobs:
         uv venv --python=/usr/bin/python3 --system-site-packages --project=$(pwd)/examples/yarf-example-simple-counter
         dbus-run-session -- uv --project=$(pwd)/examples/yarf-example-simple-counter run simple-counter &
 
-        uv run yarf --platform Mir examples/yarf-example-simple-counter/yarf_tests
+        ${{ matrix.package_manager }} run yarf --platform Mir examples/yarf-example-simple-counter/yarf_tests
 
         dbus-run-session -- uv --project=$(pwd)/examples/yarf-example-simple-counter run simple-counter --theme light &
-        uv run yarf --platform Mir --variant light examples/yarf-example-simple-counter/yarf_tests
+        ${{ matrix.package_manager }} run yarf --platform Mir --variant light examples/yarf-example-simple-counter/yarf_tests
 
     - if: failure()
       name: Collect test results
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
       with:
         name: yarf-output
-        path: /tmp/yarf-outdir/*
-        retention-days: 5
-
-    - if: failure() && runner.debug
-      name: Setup upterm session (restart with "Enable debug logging" to activate)
-      uses: canonical/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48
-      with:
-        limit-access-to-actor: true
-
-  build-snap:
-    name: Test snap
-    uses: ./.github/workflows/test-snap-build.yml
-
-  tests-snap:
-    name: Run tests on snap
-    needs: build-snap
-    runs-on: ubuntu-24.04
-    steps:
-    - name: Download amd64 snap artifact
-      uses: actions/download-artifact@v5
-      with:
-        name: amd64-snap
-
-    - name: Install amd64 snap
-      run: sudo snap install --dangerous *.snap
-
-    - name: Install integration dependencies
-      run: |
-        sudo snap install mir-test-tools
-        sudo apt-get update -qq
-        sudo apt-get --yes --no-install-recommends install \
-          ffmpeg \
-          inotify-tools \
-          gnome-calculator
-
-    - name: Run integration tests
-      run: |
-        export WAYLAND_DISPLAY=wayland-99
-
-        # Start Mir on a virtual display (doesn't require graphics hardware)
-        mir-test-tools.demo-server \
-          --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
-          --platform-display-libs mir:virtual \
-          --virtual-output 1280x1024 &
-
-        # Wait for the compositor to start
-        inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-99\$" $XDG_RUNTIME_DIR
-
-        # Avoid GNOME apps waiting for portals
-        dbus-run-session -- gnome-calculator &
-
-        snap run yarf --platform Mir --output-format TestSubmissionSchema tests/basic_suite
-
-    - if: failure()
-      name: Collect test results
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-      with:
-        name: yarf-output
-        path: ~/snap/yarf/common/yarf-outdir/*
+        path: ${{ matrix.yarf_outdir }}
         retention-days: 5
 
     - if: failure() && runner.debug

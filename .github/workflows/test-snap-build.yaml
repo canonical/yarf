@@ -5,7 +5,7 @@ on:
     types: [checks_requested]
   pull_request:
     paths:
-      - .github/workflows/test-snap-build.yml
+      - .github/workflows/test-snap-build.yaml
       - snap/**
       - pyproject.toml
   workflow_call:
