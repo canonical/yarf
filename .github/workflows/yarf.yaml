@@ -11,13 +11,8 @@ on:
       - '!.github/workflows/yarf.yaml'
 
 jobs:
-  build-snap:
-    name: Build snap
-    uses: ./.github/workflows/test-snap-build.yaml
-
   tests:
     name: Run tests on ${{ matrix.arch }} for ${{ matrix.test_target }}
-    needs: build-snap
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -76,11 +71,15 @@ jobs:
         path: ./coverage.xml
         retention-days: 5
 
-    - name: Download snap artifact
+    - name: Build snap
       if: matrix.test_target == 'snap'
-      uses: actions/download-artifact@v5
-      with:
-        name: ${{ matrix.arch }}-snap
+      uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
+
+    - name: Install snap
+      if: matrix.test_target == 'snap'
+      run: |
+        sudo snap install --dangerous *.snap
+        snap info yarf
 
     - name: Install integration dependencies
       run: |
@@ -110,8 +109,8 @@ jobs:
 
     - name: Download test submission schema and validate
       run: |
-        version=$(jq -r '.version' /tmp/yarf-outdir/TestSubmissionSchema_output.json)
-        check-jsonschema --schemafile https://raw.githubusercontent.com/canonical/test-submission-schema/refs/heads/main/test_submission_schema/schemas/v${version}.json /tmp/yarf-outdir/TestSubmissionSchema_output.json
+        version=$(jq -r '.version' ${{ matrix.yarf_outdir }}/TestSubmissionSchema_output.json)
+        check-jsonschema --schemafile https://raw.githubusercontent.com/canonical/test-submission-schema/refs/heads/main/test_submission_schema/schemas/v${version}.json ${{ matrix.yarf_outdir }}/TestSubmissionSchema_output.json
 
     - name: Install tutorial dependencies
       run: |
