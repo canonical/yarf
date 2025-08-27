@@ -330,7 +330,7 @@ class VideoInputBase(ABC):
             )
 
             text_matches = await self.find_text(
-                text, image=cropped_image, region=region
+                text, image=image, region=region
             )
             if text_matches:
                 return text_matches, cropped_image
