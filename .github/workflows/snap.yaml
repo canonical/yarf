@@ -21,14 +21,21 @@ jobs:
 
     runs-on: ${{ matrix.runs_on }}
     steps:
-    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
-    - uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
+    - name: Checkout Repository
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+
+    - name: Build snap
+      uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
       id: snapcraft
-    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+
+    - name: Upload snap artifact
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
       with:
         name: yarf-${{ matrix.arch }}
         path: ${{ steps.snapcraft.outputs.snap }}
-    - uses: canonical/action-publish@214b86e5ca036ead1668c79afb81e550e6c54d40
+
+    - name: Publish snap to the Snap Store
+      uses: canonical/action-publish@214b86e5ca036ead1668c79afb81e550e6c54d40
       env:
         SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT }}
       with:
