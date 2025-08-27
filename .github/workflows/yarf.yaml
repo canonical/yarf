@@ -67,7 +67,7 @@ jobs:
       if: matrix.test_target == 'source'
       uses: actions/upload-artifact@v4
       with:
-        name: coverage
+        name: coverage-${{ matrix.arch }}
         path: ./coverage.xml
         retention-days: 5
 
