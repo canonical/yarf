@@ -475,9 +475,7 @@ class VideoInputBase(ABC):
                     if region:
                         adjusted_regions = []
                         for reg in regions:
-                            adjusted_regions.append(
-                                reg.move(region.left, region.top)
-                            )
+                            adjusted_regions.append(reg)
                         regions = adjusted_regions
                 except (ValueError, ImageNotFoundError):
                     # If we're performing match_all, and we fail to match any
