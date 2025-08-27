@@ -3,6 +3,7 @@ name: TICS Code Quality Analysis
 on:
   schedule:
     - cron: '00 19 * * *'
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -45,6 +46,7 @@ jobs:
       - name: Install YARF
         run: |
           uv sync
+          uv pip install .[develop]
           source .venv/bin/activate
           echo PATH=$PATH >> $GITHUB_ENV
 
