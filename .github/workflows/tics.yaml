@@ -45,10 +45,11 @@ jobs:
 
       - name: Install YARF
         run: |
-          uv sync
-          uv pip install .[develop]
+          uv venv
           source .venv/bin/activate
           echo PATH=$PATH >> $GITHUB_ENV
+          pip install .
+          pip install .[develop]
 
       - name: Run test and coverage
         run: |
