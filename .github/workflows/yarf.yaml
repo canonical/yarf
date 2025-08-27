@@ -12,7 +12,7 @@ on:
 
 jobs:
   build-snap:
-    name: Test snap
+    name: Build snap
     uses: ./.github/workflows/test-snap-build.yaml
 
   tests:
