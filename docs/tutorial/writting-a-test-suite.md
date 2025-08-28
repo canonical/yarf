@@ -77,7 +77,7 @@ To work on the five testing steps we discussed earlier, we can identify from the
 1. `Match Text`: Wait for specified text to appear on screen and get the position of the best match. The region can be specified directly in the robot file using `RPA.core.geometry.to_region`. We can use this keyword to check the count is what we expected.
 1. `Keys Combo`: Press and release a combination of keys. :param combo: list of keys to press at the same time. We can use this to close the application by pressing `Alt + F4`.
 
-`PlatformVideoInput.Match` and `Click ${button} Button On ${destination}` use template matching, so we need to provide templates for these two keywords. In interactive mode, we provided a `Grab Templates` keyword that opens an ROI selector to allow our users to select templates.
+`Match` and `Click ${button} Button On ${destination}` use template matching, so we need to provide templates for these two keywords. In interactive mode, we provided a `Grab Templates` keyword that opens an ROI selector to allow our users to select templates.
 
 ```{figure} ./images/roi_selector_selecting_templates.png
 ---
@@ -122,26 +122,26 @@ Now, let's test our keywords and templates:
 ---
 caption: Testing out different keywords.
 ---
-> PlatformVideoInput.Match   template=/path/to/simple_counter.png
+> Match   template=/path/to/simple_counter.png
 ...
 < [{'left': 316, 'top': 182, 'right': 624, 'bottom': 407, 'path': '/path/to/simple_counter.png'}]
 > Click LEFT Button on /path/to/+.png                                                                       # ΔT: 0.141s
 INFO:root:Scanned image in 0.10 seconds
-> PlatformVideoInput.Match Text   text=Count: 1                                                             # ΔT: 0.084s
+> Match Text   text=Count: 1                                                                                # ΔT: 0.084s
 < ([{'text': 'Count: 1', 'region': Region(left=416, top=250, right=525, bottom=281), 'confidence': 100.0}], <PIL.Image.Image image mode=RGBA size=1280x1024 at 0x7011F836AE40>)
 > Click LEFT Button on /path/to/-.png                                                                       # ΔT: 0.374s
 INFO:root:Scanned image in 0.07 seconds
-> PlatformVideoInput.Match Text   text=Count: 0
+> Match Text   text=Count: 0
 < ([{'text': 'Count: 0', 'region': Region(left=415, top=248, right=526, bottom=281), 'confidence': 100.0}], <PIL.Image.Image image mode=RGBA size=1280x1024 at 0x7011F81CB4D0>)
 > Click LEFT Button on /path/to/toggle_theme.png                                                            # ΔT: 0.090s
 INFO:root:Scanned image in 0.08 seconds
-> PlatformHid.Move Pointer To Absolute  x=0  y=0   # This is to move away the pointer from the application.
+> Move Pointer To Absolute  x=0  y=0   # This is to move away the pointer from the application.
 >                                                                                                           # ΔT: 0.002s
 > Interactive.Grab Templates   simple_counter_toggled   # Grab the template for the simple counter in light theme here.
 ...
 Click and drag to select and save an ROI, press Esc to exit the ROI selector.
 ROI saved as /path/to/simple_counter_toggled.png
-> PlatformVideoInput.Match  /path/to/simple_counter_toggled.png
+> Match  /path/to/simple_counter_toggled.png
 INFO:root:Scanned image in 0.07 seconds
 < [{'left': 317, 'top': 177, 'right': 624, 'bottom': 407, 'path': '/path/to/simple_counter_toggled.png'}]
 >                                                                                                           # ΔT: 0.077s
@@ -191,7 +191,7 @@ Resource        kvm.resource
 
 *** Test Cases ***
 Assert simple counter started
-    PlatformVideoInput.Match                   ${CURDIR}/simple_counter.png
+    Match                   ${CURDIR}/simple_counter.png
 
 Increase the counter and assert count
     Click LEFT Button on ${CURDIR}/buttons/+.png
@@ -203,7 +203,7 @@ Decrease the counter and assert count
 
 Toggle theme and assert the theme changed
     Click LEFT Button on ${CURDIR}/buttons/toggle_theme.png
-    PlatformHid.Move Pointer To Absolute            x=0                     y=0
+    Move Pointer To Absolute            x=0                     y=0
     Match                   ${CURDIR}/simple_counter_toggled.png
 
 Close the simple counter
