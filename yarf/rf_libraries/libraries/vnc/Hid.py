@@ -59,7 +59,7 @@ class Hid(HidBase):
                 sleep(self.type_string_delay)
 
     @keyword
-    async def click_pointer_button(self, button: str) -> None:
+    async def pointer_click_button(self, button: str) -> None:
         """
         Press and release the specified pointer button.
 
@@ -80,7 +80,7 @@ class Hid(HidBase):
                 sleep(0.005)
 
     @keyword
-    async def press_pointer_button(self, button: str) -> None:
+    async def pointer_press_button(self, button: str) -> None:
         """
         Press the specified pointer button.
 
@@ -94,7 +94,7 @@ class Hid(HidBase):
             client.mouse._write()
 
     @keyword
-    async def release_pointer_button(self, button: str) -> None:
+    async def pointer_release_button(self, button: str) -> None:
         """
         Release the specified pointer button.
 
@@ -108,7 +108,7 @@ class Hid(HidBase):
             client.mouse._write()
 
     @keyword
-    async def release_pointer_buttons(self) -> None:
+    async def pointer_release_buttons(self) -> None:
         """
         Release all pointer buttons.
         """
@@ -118,7 +118,7 @@ class Hid(HidBase):
             client.mouse._write()
 
     @keyword
-    async def _move_pointer(
+    async def _pointer_move(
         self,
         x: float,
         y: float,

@@ -68,7 +68,7 @@ class Hid(HidBase):
             self._virtual_pointer.output_height,
         )
 
-    async def _move_pointer(self, x: float, y: float) -> None:
+    async def _pointer_move(self, x: float, y: float) -> None:
         """
         Move the pointer to proportional (x, y) position.
 
@@ -79,7 +79,7 @@ class Hid(HidBase):
         self._virtual_pointer.move_to_proportional(x, y)
 
     @keyword
-    async def press_pointer_button(self, button: str) -> None:
+    async def pointer_press_button(self, button: str) -> None:
         """
         Press pointer button.
 
@@ -89,7 +89,7 @@ class Hid(HidBase):
         self._virtual_pointer.button(Button[button], True)
 
     @keyword
-    async def release_pointer_button(self, button: str) -> None:
+    async def pointer_release_button(self, button: str) -> None:
         """
         Release pointer button.
 
@@ -99,7 +99,7 @@ class Hid(HidBase):
         self._virtual_pointer.button(Button[button], False)
 
     @keyword
-    async def click_pointer_button(self, button: str) -> None:
+    async def pointer_click_button(self, button: str) -> None:
         """
         Click pointer button.
 
@@ -110,7 +110,7 @@ class Hid(HidBase):
         self._virtual_pointer.button(Button[button], False)
 
     @keyword
-    async def release_pointer_buttons(self) -> None:
+    async def pointer_release_buttons(self) -> None:
         """
         Release all pointer buttons.
         """

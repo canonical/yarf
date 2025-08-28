@@ -79,8 +79,8 @@ class TestMirHid:
         assert await mir_hid._get_display_size() == size
 
     @pytest.mark.asyncio
-    async def test_move_pointer(self, mir_hid, mock_pointer):
-        await mir_hid._move_pointer(sentinel.x, sentinel.y)
+    async def test_pointer_move(self, mir_hid, mock_pointer):
+        await mir_hid._pointer_move(sentinel.x, sentinel.y)
         mock_pointer.move_to_proportional.assert_called_once_with(
             sentinel.x, sentinel.y
         )
@@ -95,14 +95,14 @@ class TestMirHid:
     async def test_pointer_buttons(
         self, mir_hid, mock_pointer, button, method
     ):
-        await getattr(mir_hid, f"{method[0]}_pointer_button")(button.name)
+        await getattr(mir_hid, f"pointer_{method[0]}_button")(button.name)
         mock_pointer.button.call_args_list == [
             call(Button[button.name], val) for val in method[1]
         ]
 
     @pytest.mark.asyncio
-    async def test_release_pointer_buttons(self, mir_hid, mock_pointer):
-        await mir_hid.release_pointer_buttons()
+    async def test_pointer_release_buttons(self, mir_hid, mock_pointer):
+        await mir_hid.pointer_release_buttons()
         mock_pointer.assert_has_calls(
             (call.button(Button[b.name], False) for b in Button),
             any_order=True,
