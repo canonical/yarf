@@ -91,7 +91,7 @@ Move Pointer To (${x}, ${y})
     ...    Embedded arguments:
     ...    - ${x}: Integer absolute x-coordinate to move the pointer to.
     ...    - ${y}: Integer absolute y-coordinate to move the pointer to.
-    Move Pointer To Absolute                        ${x}                    ${y}
+    Pointer Move To Absolute                        ${x}                    ${y}
 
 Move Pointer To ${destination}
     [Documentation]    Move the pointer to an absolute position or image
@@ -122,7 +122,7 @@ Move Pointer To ${destination}
         ${position}=            Get Text Position       text=${destination}
     END
 
-    Move Pointer To Absolute                        ${position}[0]          ${position}[1]
+    Pointer Move To Absolute                        ${position}[0]          ${position}[1]
     RETURN                  ${position}
 
 Move Pointer To ${destination} In ${domain}
@@ -168,7 +168,7 @@ Move Pointer To ${destination} In ${domain}
         ...                     region=${target_region}
     END
 
-    Move Pointer To Absolute                        ${position}[0]          ${position}[1]
+    Pointer Move To Absolute                        ${position}[0]          ${position}[1]
     RETURN                  ${position}
 
 Move Pointer To Proportional (${x}, ${y})
@@ -186,7 +186,7 @@ Move Pointer To Proportional (${x}, ${y})
     ...    Return:
     ...    Absolute position of the pointer after the move, as a tuple (x, y)
     ...    of integers.
-    ${position}=            Move Pointer To Proportional                    ${x}                    ${y}
+    ${position}=            Pointer Move To Proportional                    ${x}                    ${y}
     RETURN                  ${position}
 
 Walk Pointer To (${x}, ${y})
@@ -201,7 +201,7 @@ Walk Pointer To (${x}, ${y})
     ...    - ${delay} (optional): Time to sleep after each step, in seconds.
     ...    Default is 0.01.
     [Arguments]             ${step_distance}=16     ${delay}=0.01
-    Walk Pointer To Absolute
+    Pointer Walk To Absolute
     ...                     ${x}
     ...                     ${y}
     ...                     ${step_distance}
@@ -233,7 +233,7 @@ Walk Pointer To ${destination}
     ELSE
         ${position}=            Set Variable            ${destination}
     END
-    Walk Pointer To Absolute
+    Pointer Walk To Absolute
     ...                     ${position}[0]
     ...                     ${position}[1]
     ...                     ${step_distance}
@@ -261,7 +261,7 @@ Walk Pointer To Proportional (${x}, ${y})
     ...    Absolute position of the pointer after the walk, as a tuple (x, y)
     ...    of integers.
     [Arguments]             ${step_distance}=16     ${delay}=0.01
-    ${position}=            Walk Pointer To Proportional
+    ${position}=            Pointer Walk To Proportional
     ...                     ${x}
     ...                     ${y}
     ...                     ${step_distance}
@@ -273,21 +273,21 @@ Press ${button} Button
     ...
     ...    Embedded arguments:
     ...    - ${button}: Button to press (LEFT|RIGHT|MIDDLE).
-    Press Pointer Button    ${button}
+    Pointer Press Button    ${button}
 
 Release ${button} Button
     [Documentation]    Release a button on the virtual pointer.
     ...
     ...    Embedded arguments:
     ...    - ${button}: Button to release (LEFT|RIGHT|MIDDLE).
-    Release Pointer Button                          ${button}
+    Pointer Release Button                          ${button}
 
 Click ${button} Button
     [Documentation]    Click a button on the virtual pointer.
     ...
     ...    Embedded arguments:
     ...    - ${button}: Button to click (LEFT|RIGHT|MIDDLE).
-    Click Pointer Button    ${button}
+    Pointer Click Button    ${button}
 
 Click ${button} Button On ${destination}
     [Documentation]    Move the virtual pointer to the destination and click the button.
@@ -302,7 +302,7 @@ Click ${button} Button On ${destination}
 
 Release Buttons
     [Documentation]    Release all buttons on the virtual pointer.
-    Release Pointer Buttons
+    Pointer Release Buttons
 
 Ensure ${destination} Does Not Match
     [Documentation]    Ensure a given template or string doesn't match within a given timeout and
