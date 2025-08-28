@@ -33,7 +33,6 @@ class TestTestSubmissionSchema:
                     """
                     *** Settings ***
                     Resource        kvm.resource
-                    Library         Hid.py    AS    PlatformHid
 
 
                     *** Test Cases ***
@@ -47,7 +46,7 @@ class TestTestSubmissionSchema:
 
                     Task3
                         [Tags]                  yarf:certification_status: non-blocker        yarf:category_id: com.canonical.category::categoryC
-                        PlatformHid.Type String     1234567890
+                        Type String     1234567890
                     """
                 ),
                 "com.canonical.yarf",
@@ -67,7 +66,6 @@ class TestTestSubmissionSchema:
                     """
                     *** Settings ***
                     Resource        kvm.resource
-                    Library         Hid.py    AS    PlatformHid
 
 
                     *** Test Cases ***
@@ -81,7 +79,7 @@ class TestTestSubmissionSchema:
 
                     Task3
                         [Tags]                  yarf:certification_status: non-blocker        yarf:category_id: com.canonical.category::categoryC
-                        PlatformHid.Type String     1234567890
+                        Type String     1234567890
                     """
                 ),
                 "com.sample.space",
@@ -124,7 +122,6 @@ class TestTestSubmissionSchema:
                     """
                     *** Settings ***
                     Resource        kvm.resource
-                    Library         Hid.py    AS    PlatformHid
 
 
                     *** Test Cases ***
@@ -150,7 +147,6 @@ class TestTestSubmissionSchema:
                     f"""
                     *** Settings ***
                     Resource        kvm.resource
-                    Library         Hid.py    AS    PlatformHid
 
 
                     *** Test Cases ***
@@ -177,7 +173,6 @@ class TestTestSubmissionSchema:
                     """
                     *** Settings ***
                     Resource        kvm.resource
-                    Library         Hid.py    AS    PlatformHid
 
 
                     *** Test Cases ***
@@ -203,7 +198,6 @@ class TestTestSubmissionSchema:
                     """
                     *** Settings ***
                     Resource        kvm.resource
-                    Library         Hid.py    AS    PlatformHid
 
 
                     *** Test Cases ***
@@ -229,7 +223,6 @@ class TestTestSubmissionSchema:
                     """
                     *** Settings ***
                     Resource        kvm.resource
-                    Library         Hid.py    AS    PlatformHid
 
 
                     *** Test Cases ***

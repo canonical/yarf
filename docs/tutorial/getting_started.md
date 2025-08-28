@@ -204,9 +204,9 @@ Now let's use the YARF interactive mode to do some simple maths. With the cursor
 
 ```{code-block} bash
 ---
-caption: Using the command `PlatformHid.Type String`.
+caption: Using the command `Type String`.
 ---
-> PlatformHid.Type String   7*6=
+> Type String   7*6=
 > 
 ```
 
