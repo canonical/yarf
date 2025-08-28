@@ -135,7 +135,7 @@ INFO:root:Scanned image in 0.07 seconds
 < ([{'text': 'Count: 0', 'region': Region(left=415, top=248, right=526, bottom=281), 'confidence': 100.0}], <PIL.Image.Image image mode=RGBA size=1280x1024 at 0x7011F81CB4D0>)
 > Click LEFT Button on /path/to/toggle_theme.png                                                            # ΔT: 0.090s
 INFO:root:Scanned image in 0.08 seconds
-> Move Pointer To Absolute  x=0  y=0   # This is to move away the pointer from the application.
+> Pointer Move To Absolute  x=0  y=0   # This is to move away the pointer from the application.
 >                                                                                                           # ΔT: 0.002s
 > Interactive.Grab Templates   simple_counter_toggled   # Grab the template for the simple counter in light theme here.
 ...
@@ -203,7 +203,7 @@ Decrease the counter and assert count
 
 Toggle theme and assert the theme changed
     Click LEFT Button on ${CURDIR}/buttons/toggle_theme.png
-    Move Pointer To Absolute            x=0                     y=0
+    Pointer Move To Absolute            x=0                     y=0
     Match                   ${CURDIR}/simple_counter_toggled.png
 
 Close the simple counter
