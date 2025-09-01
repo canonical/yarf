@@ -99,7 +99,7 @@ jobs:
               dbus-run-session -- gnome-calculator &
 
     env:
-      TEST_SUITE_PATH: tests/canary_test
+      TEST_SUITE_PATH: tests
 
     steps:
       - name: Install workflow dependencies
@@ -127,6 +127,29 @@ jobs:
           set -euo pipefail
           sudo snap install "${{ inputs.NAME }}" --channel="${{ inputs.TRACK }}/${{ inputs.CHANNEL }}"
 
+      - name: Build yarf-example-plugin snap
+        uses: snapcore/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
+        with:
+          path: tests/yarf-example-plugin
+
+      - name: Install yarf-example-plugin snap
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo snap install tests/yarf-example-plugin/*.snap --dangerous
+
+      - name: Connect platform plugin interface
+        run: |
+          sudo snap connect yarf-example-plugin:platform-plugins yarf:platform-plugins
+
+      - name: Onboard plugin
+        run: |
+          sudo snap run yarf-example-plugin.onboard-plugin
+
+      - name: Run plugin tests
+        run: |
+          snap run yarf --platform Example tests/yarf-example-plugin/plugin_suite
+
       - name: Install platform ${{ matrix.platform }} dependencies
         shell: bash
         run: |
@@ -148,7 +171,7 @@ jobs:
           SCRIPT
           )"
 
-          snap run yarf --platform=${{ matrix.platform }} --output-format=TestSubmissionSchema ${{ env.TEST_SUITE_PATH }}
+          snap run yarf --platform=${{ matrix.platform }} --output-format=TestSubmissionSchema ${{ env.TEST_SUITE_PATH }}/canary_test
 
       - name: Download test submission schema and validate
         run: |
