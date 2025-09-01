@@ -188,9 +188,9 @@ class OutputConverterBase(abc.ABC, metaclass=OutputConverterMeta):
 
         try:
             yarf_snap_info = {
-                "name": os.environ.get("SNAP_NAME"),
-                "version": os.environ.get("SNAP_VERSION"),
-                "revision": os.environ.get("SNAP_REVISION"),
+                "name": os.environ["SNAP_NAME"],
+                "version": os.environ["SNAP_VERSION"],
+                "revision": os.environ["SNAP_REVISION"],
             }
         except KeyError as exc:
             raise ValueError("Cannot get installed YARF information.") from exc
