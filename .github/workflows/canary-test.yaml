@@ -152,7 +152,7 @@ jobs:
 
       - name: Download test submission schema and validate
         run: |
-          version=$(jq -r '.version' /tmp/yarf-outdir/TestSubmissionSchema_output.json)
+          version=$(jq -r '.version' ~/snap/${{ inputs.NAME }}/common/yarf-outdir/TestSubmissionSchema_output.json)
           check-jsonschema --schemafile https://raw.githubusercontent.com/canonical/test-submission-schema/refs/heads/main/test_submission_schema/schemas/v${version}.json ~/snap/${{ inputs.NAME }}/common/yarf-outdir/TestSubmissionSchema_output.json
 
       - if: failure()
