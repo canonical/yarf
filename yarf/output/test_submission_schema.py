@@ -158,7 +158,6 @@ class TestSubmissionSchema(OutputConverterBase):
                 "name": current_yarf_info["name"],
                 "version": current_yarf_info["version"],
                 "revision": current_yarf_info["revision"],
-                "date": current_yarf_info["date"],
             }
         else:
             origin["version"] = metadata.version("yarf")
