@@ -186,14 +186,14 @@ class OutputConverterBase(abc.ABC, metaclass=OutputConverterMeta):
         if "SNAP" not in os.environ:
             return None
 
-        yarf_snap_info = {
-            "name": os.environ.get("SNAP_NAME"),
-            "version": os.environ.get("SNAP_VERSION"),
-            "revision": os.environ.get("SNAP_REVISION"),
-        }
-
-        if any(v is None for v in yarf_snap_info.values()):
-            raise ValueError("Cannot get installed YARF information.")
+        try:
+            yarf_snap_info = {
+                "name": os.environ.get("SNAP_NAME"),
+                "version": os.environ.get("SNAP_VERSION"),
+                "revision": os.environ.get("SNAP_REVISION"),
+            }
+        except KeyError as exc:
+            raise ValueError("Cannot get installed YARF information.") from exc
 
         return yarf_snap_info  # type: ignore[return-value]
 
