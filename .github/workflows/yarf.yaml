@@ -75,7 +75,7 @@ jobs:
         # Avoid GNOME apps waiting for portals
         dbus-run-session -- gnome-calculator &
 
-        uv run yarf --platform Mir --output-format TestSubmissionSchema tests/basic_suite
+        uv run yarf --platform Mir --output-format TestSubmissionSchema tests/canary_test
 
     - name: Download test submission schema and validate
       run: |
