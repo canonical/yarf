@@ -107,7 +107,10 @@ jobs:
         run: |
           sudo apt update -qq
           sudo apt install -y \
-            git-lfs
+            git-lfs \
+            jq
+
+          pip install check-jsonschema
 
       - name: Check out tests
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
@@ -146,6 +149,11 @@ jobs:
           )"
 
           snap run yarf --platform="${{ matrix.platform }}" ${{ env.TEST_SUITE_PATH }}
+
+      - name: Download test submission schema and validate
+        run: |
+          version=$(jq -r '.version' /tmp/yarf-outdir/TestSubmissionSchema_output.json)
+          check-jsonschema --schemafile https://raw.githubusercontent.com/canonical/test-submission-schema/refs/heads/main/test_submission_schema/schemas/v${version}.json ~/snap/${{ inputs.NAME }}/common/yarf-outdir/TestSubmissionSchema_output.json
 
       - if: failure()
         name: Collect test results
