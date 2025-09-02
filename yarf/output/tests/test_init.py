@@ -1,7 +1,5 @@
 import os
-import subprocess
 from pathlib import Path
-from textwrap import dedent
 from typing import Any
 from unittest.mock import ANY, MagicMock, Mock, call, patch, sentinel
 
@@ -55,110 +53,39 @@ class TestOutputConverterBase:
         with pytest.raises(TypeError):
             TestModule()
 
-    @patch("yarf.output.subprocess.run")
-    def test_get_yarf_snap_info(
-        self,
-        mock_subprocess_run: MagicMock,
-    ) -> None:
+    def test_get_yarf_snap_info(self) -> None:
         """
         Test whether the "get_yarf_snap_info" method is callable and return
         results with expected fields.
         """
-        mock_subprocess_run.return_value.stdout = dedent(
-            """
-            name:      yarf
-            summary:   Yet Another Robot Framework
-            publisher: Canonical Certification Team (ce-certification-qa)
-            store-url: https://snapcraft.io/yarf
-            license:   unset
-            description: |
-              Yet Another Robot Framework (YARF) is an interface that
-              allows developers to build complex test scenarios and
-              bootstrap them locally, then work towards automated runs.
-            commands:
-              - yarf
-            snap-id:      zIV9E2VxqRgGhIuttHs8YkCyWGjIOiRm
-            tracking:     latest/beta
-            refresh-date: 3 days ago, at 16:40 GMT
-            channels:
-              latest/stable:    –
-              latest/candidate: –
-              latest/beta:      1.0.0 2024-12-03 (124) 206MB -
-              latest/edge:      1.0.0 2024-12-03 (124) 206MB -
-            installed:          1.0.0            (124) 206MB -
-            """
-        )
-
         expected_result = {
-            "channel": "latest/beta",
-            "version": "1.0.0",
-            "revision": "124",
-            "date": "2024-12-03",
+            "version": "2.0.0",
+            "revision": "300",
             "name": "yarf",
         }
-        with patch.dict(os.environ, {"SNAP": str(sentinel.snap_env)}):
+        with patch.dict(
+            os.environ,
+            {
+                "SNAP": str(sentinel.snap_env),
+                "SNAP_NAME": "yarf",
+                "SNAP_VERSION": "2.0.0",
+                "SNAP_REVISION": "300",
+            },
+        ):
             result = OutputConverterBase.get_yarf_snap_info()
         assert expected_result == result
 
-    @patch("yarf.output.subprocess.run")
-    def test_get_yarf_snap_info_runtime_error(
-        self,
-        mock_subprocess_run: MagicMock,
-    ) -> None:
-        """
-        Test whether the function get_yarf_snap_info raises runtime error when
-        subprocess.run raises a CalledProcessError exception.
-        """
-
-        mock_subprocess_run.side_effect = subprocess.CalledProcessError(
-            returncode=1,
-            cmd=["snap", "info", "yarf"],
-            output="Error: Could not find snap 'yarf'.",
-        )
-
-        with (
-            patch.dict(os.environ, {"SNAP": str(sentinel.snap_env)}),
-            pytest.raises(RuntimeError),
-        ):
-            OutputConverterBase.get_yarf_snap_info()
-
-    @patch("yarf.output.subprocess.run")
-    def test_get_yarf_snap_info_value_error(
-        self,
-        mock_subprocess_run: MagicMock,
-    ) -> None:
+    def test_get_yarf_snap_info_value_error(self) -> None:
         """
         Test whether the function get_yarf_snap_info raises value error when
         there is a mismatch between the installed YARF and the snap info.
         """
-
-        mock_subprocess_run.return_value.stdout = dedent(
-            """
-            name:      yarf
-            summary:   Yet Another Robot Framework
-            publisher: Canonical Certification Team (ce-certification-qa)
-            store-url: https://snapcraft.io/yarf
-            license:   unset
-            description: |
-              Yet Another Robot Framework (YARF) is an interface that
-              allows developers to build complex test scenarios and
-              bootstrap them locally, then work towards automated runs.
-            commands:
-              - yarf
-            snap-id:      zIV9E2VxqRgGhIuttHs8YkCyWGjIOiRm
-            tracking:     latest/beta
-            refresh-date: 3 days ago, at 16:40 GMT
-            channels:
-              latest/stable:    –
-              latest/candidate: –
-              latest/beta:      1.0.0 2024-12-03 (124) 206MB -
-              latest/edge:      1.0.0 2024-12-03 (124) 206MB -
-            installed:          9.9.9            (999) 206MB -
-            """
-        )
-
         with (
-            patch.dict(os.environ, {"SNAP": str(sentinel.snap_env)}),
+            patch.dict(
+                os.environ,
+                {"SNAP": str(sentinel.snap_env), "SNAP_NAME": "yarf"},
+                clear=True,
+            ),
             pytest.raises(ValueError),
         ):
             OutputConverterBase.get_yarf_snap_info()

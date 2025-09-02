@@ -6,6 +6,7 @@ Documentation       Keyword definitions for specialised functionality
 ...                 to be initialized using the Init keyword.
 ...                 The initialization is platform-specific.
 
+Library             Collections
 Library             Hid.py
 Library             VideoInput.py
 Variables           video_input_vars.py
@@ -142,11 +143,11 @@ Move Pointer To ${destination} In ${domain}
     ...    Return:
     ...    Absolute position of the pointer after the move, as a tuple (x, y)
     ...    of integers.
-    IF    ${{ isinstance(domain, dict) }}
-        ${sub_region}=          Set Variable            ${domain}
-    ELSE IF    ${{ isinstance(domain, str) }}
+    IF    ${{ isinstance($domain, dict) }}
+        ${target_region}=       Set Variable            ${domain}
+    ELSE IF    ${{ isinstance($domain, str) }}
         IF    ${{ os.path.exists($domain) }}
-            ${sub_regions}=         Match                   ${domain}
+            ${sub_regions}=         PlatformVideoInput.Match                        ${domain}
             ${sub_region}=          Set Variable            ${sub_regions}[0]
         ELSE
             Fail                    Template ${domain} doesn't exist!
@@ -158,12 +159,12 @@ Move Pointer To ${destination} In ${domain}
     IF    ${{ os.path.exists($destination) }}
         ${regions}=             Match
         ...                     template=${destination}
-        ...                     region=${sub_region}
+        ...                     region=${target_region}
         ${position}=            Get Center Of ${regions}[0]
     ELSE
         ${position}=            Get Text Position
         ...                     text=${destination}
-        ...                     region=${sub_region}
+        ...                     region=${target_region}
     END
 
     Pointer Move To Absolute                        ${position}[0]          ${position}[1]
