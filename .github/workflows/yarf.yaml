@@ -44,6 +44,7 @@ jobs:
       run: uv sync
 
   test-noble:
+    # We use github-hosted runner here because Pa11y requires a working Chrome support
     runs-on: ubuntu-24.04
     steps:
     - name: Install dependencies
