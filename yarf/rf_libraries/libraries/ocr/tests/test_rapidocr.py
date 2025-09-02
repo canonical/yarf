@@ -133,3 +133,78 @@ class TestRapidOCR:
         )
 
         assert result == []
+
+    @pytest.mark.parametrize(
+        "input_text, result_text",
+        [
+            ("Trash", ["Trash", "Move to Trash"]),
+            ("Move", ["Move to Trash", "Move to ..."]),
+        ],
+    )
+    def test_substring_match(self, mock_reader, input_text, result_text):
+        "Substrings match 100% to longer results"
+        items = [
+            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Trash", 0.9),
+            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to Trash", 0.9),
+            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to ...", 0.9),
+        ]
+        result = RapidOCRReader.get_matches(
+            mock_reader, items, input_text, 0.8, 80, True
+        )
+        for text in result_text:
+            assert {
+                "text": text,
+                "region": Region(0, 0, 1, 1),
+                "confidence": 100,
+            } in result
+
+    @pytest.mark.parametrize(
+        "input_text, result_text",
+        [("Move to Trash", "Move to Trash"), ("Move to ..", "Move to ...")],
+    )
+    def test_asimetric_match(self, mock_reader, input_text, result_text):
+        """
+        Long queries don't match with shorter results:
+
+        - "Trash"             matches         "Move to Trash".
+        - "Move to Trash"  does not match     "Trash"        .
+        """
+        items = [
+            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Trash", 0.9),
+            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to Trash", 0.9),
+            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to ...", 0.9),
+        ]
+        result = RapidOCRReader.get_matches(
+            mock_reader, items, input_text, 0.8, 90, True
+        )
+        assert len(result) == 1
+        assert result == [
+            {
+                "text": result_text,
+                "region": Region(0, 0, 1, 1),
+                "confidence": 100,
+            }
+        ]
+
+    def test_asimetric_long_match(self, mock_reader):
+        items = [
+            OCRResult(
+                [[0, 0], [1, 0], [1, 1], [0, 1]], "Trash a set of files", 0.9
+            ),
+            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to Trash", 0.9),
+            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "!", 0.9),
+            OCRResult(
+                [[0, 0], [1, 0], [1, 1], [0, 1]],
+                "Move to Downloads",
+                0.9,
+            ),
+        ]
+        result = RapidOCRReader.get_matches(
+            mock_reader, items, "Move to Trash!", 0.8, 80, True
+        )
+
+        assert result[0]["text"] == "Move to Trash"
+        assert result[0]["region"] == Region(0, 0, 1, 1)
+        assert result[0]["confidence"] >= 90
+
+        assert len(result) == 1
