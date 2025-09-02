@@ -31,9 +31,9 @@ jobs:
       - name: Instal yarf and yarf-example-plugin
         run: |
           pip install .
-          pip install tests/yarf-example-plugin
+          pip install examples/yarf-example-plugin
       - name: Run plugin integration tests
-        working-directory: tests/yarf-example-plugin
+        working-directory: examples/yarf-example-plugin
         run: |
           yarf --platform Example plugin_suite
 

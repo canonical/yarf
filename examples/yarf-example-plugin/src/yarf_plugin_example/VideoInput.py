@@ -15,12 +15,30 @@ class VideoInput(VideoInputBase):
 
     @keyword
     async def grab_screenshot(self) -> str:
+        """
+        Grab a screenshot.
+
+        Returns:
+            A string indicating a screenshot has been taken.
+        """
         return "SCREENSHOT"
 
     @keyword
     async def stop_video_input(self) -> str:
+        """
+        Stop video input.
+
+        Returns:
+            A string indicating the video input has stopped.
+        """
         return "STOPPED"
 
     @keyword
     async def start_video_input(self) -> str:
+        """
+        Start video input.
+
+        Returns:
+            A string indicating the video input has started.
+        """
         return "STARTED"
