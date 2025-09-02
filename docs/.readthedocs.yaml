@@ -7,10 +7,10 @@ version: 2
 
 # Set the version of Python and other tools you might need
 build:
-  os: ubuntu-22.04
+  os: ubuntu-24.04
   apt_packages:
     - git-lfs
-    - libxkbcommon-dev
+    - libxkbcommon-dev   # YARF deps require xkbcommon>=1.4.1, Ubuntu-22.04 only has 1.4.0
   tools:
     python: "3.12"
   jobs:
