@@ -77,8 +77,8 @@ caption: Truncated result of using the commands `libs` and `keywords`
 < Keywords of library HID
    Click Pointer Button  Press and release the specified pointer button.
    Keys Combo    Press and release a combination of keys. :param combo: list of keys to press at the same time.
-   Pointer Move To Absolute      Move the virtual pointer to an absolute position within the output.
-   Pointer Move To Proportional  Move the virtual pointer to a position proportional to the size of the output.
+   Move Pointer To Absolute      Move the virtual pointer to an absolute position within the output.
+   Move Pointer To Proportional  Move the virtual pointer to a position proportional to the size of the output.
    ...
 < Keywords of library RobotDebug
    ...
