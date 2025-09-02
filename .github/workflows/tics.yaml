@@ -39,7 +39,8 @@ jobs:
 
       - name: Install TICS dependencies
         run: |
-          uv tool install flake8 pylint
+          uv tool install pylint
+          uv tool install flake8
 
       - name: Install YARF
         run: |
