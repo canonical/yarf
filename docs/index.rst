@@ -2,7 +2,6 @@
 
 .. _home:
 
-.. class:: vale-ignore
 
 Yet Another Robot Framework (YARF)
 ==================================
