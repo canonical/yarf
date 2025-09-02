@@ -13,17 +13,6 @@ jobs:
   TICS:
     runs-on: [self-hosted, linux, amd64, tiobe, noble]
     steps:
-      - name: Checkout repo (main branch)
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
-        with:
-          ref: main
-          lfs: true
-
-      - name: Set up Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
-        with:
-          python-version: "3.12"
-
       - name: Install dependencies
         run: |
             sudo apt update -qq
@@ -35,10 +24,20 @@ jobs:
             clang \
             python3-tk
 
-            pip install uv
+      - name: Checkout repo (main branch)
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          ref: main
+          lfs: true
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
 
       - name: Install YARF and TICS dependencies
         run: |
+          pip install uv
           uv sync --extra develop
           source .venv/bin/activate
           uv pip install pylint flake8
