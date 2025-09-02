@@ -63,7 +63,7 @@ class HidBase(ABC):
 
     @abstractmethod
     @keyword
-    async def pointer_press_button(self, button: str) -> None:
+    async def press_pointer_button(self, button: str) -> None:
         """
         Press the specified pointer button.
 
@@ -73,7 +73,7 @@ class HidBase(ABC):
 
     @abstractmethod
     @keyword
-    async def pointer_release_button(self, button: str) -> None:
+    async def release_pointer_button(self, button: str) -> None:
         """
         Release the specified pointer button.
 
@@ -83,7 +83,7 @@ class HidBase(ABC):
 
     @abstractmethod
     @keyword
-    async def pointer_click_button(self, button: str) -> None:
+    async def click_pointer_button(self, button: str) -> None:
         """
         Press and release the specified pointer button.
 
@@ -93,7 +93,7 @@ class HidBase(ABC):
 
     @abstractmethod
     @keyword
-    async def pointer_release_buttons(self) -> None:
+    async def release_pointer_buttons(self) -> None:
         """
         Release all pointer buttons.
         """
@@ -117,7 +117,7 @@ class HidBase(ABC):
         """
 
     @abstractmethod
-    async def _pointer_move(self, x: float, y: float) -> None:
+    async def _move_pointer(self, x: float, y: float) -> None:
         """
         Platform implementation of the pointer move.
 
@@ -127,7 +127,7 @@ class HidBase(ABC):
         """
 
     @keyword
-    async def pointer_move_to_proportional(self, x: float, y: float) -> None:
+    async def move_pointer_to_proportional(self, x: float, y: float) -> None:
         """
         Move the virtual pointer to a position proportional to the size of the
         output.
@@ -143,11 +143,11 @@ class HidBase(ABC):
         assert 0 <= x <= 1, "x not in range 0..1"
         assert 0 <= y <= 1, "y not in range 0..1"
 
-        await self._pointer_move(x, y)
+        await self._move_pointer(x, y)
         self._pointer_position = PointerPosition(x, y)
 
     @keyword
-    async def pointer_move_to_absolute(self, x: int, y: int) -> None:
+    async def move_pointer_to_absolute(self, x: int, y: int) -> None:
         """
         Move the virtual pointer to an absolute position within the output.
 
@@ -168,11 +168,11 @@ class HidBase(ABC):
         assert 0 <= y <= display_size.height, "Y coordinate outside of screen"
 
         proportional = (x / display_size.width, y / display_size.height)
-        await self._pointer_move(*proportional)
+        await self._move_pointer(*proportional)
         self._pointer_position = PointerPosition(*proportional)
 
     @keyword
-    async def pointer_walk_to_absolute(
+    async def walk_pointer_to_absolute(
         self,
         x: int,
         y: int,
@@ -202,14 +202,14 @@ class HidBase(ABC):
         assert 0 <= y <= display_size.height, "Y coordinate outside of screen"
 
         proportional = (x / display_size.width, y / display_size.height)
-        await self.pointer_walk_to_proportional(
+        await self.walk_pointer_to_proportional(
             *proportional,
             step_distance,
             delay,
         )
 
     @keyword
-    async def pointer_walk_to_proportional(
+    async def walk_pointer_to_proportional(
         self, x: float, y: float, step_distance: float, delay: float
     ) -> None:
         """
@@ -235,7 +235,7 @@ class HidBase(ABC):
             step_x = min(abs(dist_x), step_distance) * (dist_x < 0 and -1 or 1)
             step_y = min(abs(dist_y), step_distance) * (dist_y < 0 and -1 or 1)
 
-            await self.pointer_move_to_proportional(
+            await self.move_pointer_to_proportional(
                 self._pointer_position.x + step_x,
                 self._pointer_position.y + step_y,
             )
