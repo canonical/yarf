@@ -3,6 +3,7 @@ name: TICS Code Quality Analysis
 on:
   schedule:
     - cron: '00 19 * * *'
+  pull_request:
   workflow_dispatch:
 
 permissions:
