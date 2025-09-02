@@ -24,8 +24,6 @@ jobs:
             clang \
             python3-tk
 
-            pip install uv
-
       - name: Checkout repo (main branch)
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
@@ -39,6 +37,7 @@ jobs:
 
       - name: Install YARF and TICS dependencies
         run: |
+          pip install uv
           uv sync --extra develop
           uv pip install flake8 pylint
           source .venv/bin/activate
