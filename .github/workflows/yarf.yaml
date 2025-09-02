@@ -44,7 +44,8 @@ jobs:
       run: uv sync
 
   test-noble:
-    runs-on: [self-hosted, linux, noble, x64, large]
+    # We use GitHub hosted runners for this job as Pa11y needs working Chrom support
+    runs-on: ubuntu-24.04
     steps:
     - name: Install dependencies
       run: |
@@ -53,9 +54,6 @@ jobs:
           git-lfs \
           libgl1 \
           libxkbcommon-dev \
-          libatk1.0-0t64 \
-          libatk-bridge2.0-0 \
-          libcups2 \
           jq \
           clang \
           python3-tk
