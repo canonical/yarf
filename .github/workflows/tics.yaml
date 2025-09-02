@@ -37,16 +37,12 @@ jobs:
 
             pip install uv
 
-      - name: Install TICS dependencies
-        run: |
-          uv tool install pylint
-          uv tool install flake8
-
-      - name: Install YARF
+      - name: Install YARF and TICS dependencies
         run: |
           uv sync --extra develop
           source .venv/bin/activate
-          export PATH="$PATH:~/.local/bin"
+          uv tool install pylint
+          uv tool install flake8
           echo PATH=$PATH >> $GITHUB_ENV
 
       - name: Run test and coverage
