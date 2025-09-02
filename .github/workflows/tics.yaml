@@ -22,7 +22,9 @@ jobs:
             libxkbcommon-dev \
             jq \
             clang \
-            python3-tk
+            python3-tk \
+            python3-flake8 \
+            pylint
 
       - name: Checkout repo (main branch)
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
@@ -40,7 +42,6 @@ jobs:
           pip install uv
           uv sync --extra develop
           source .venv/bin/activate
-          uv pip install pylint flake8
           echo PATH=$PATH >> $GITHUB_ENV
 
       - name: Run test and coverage
