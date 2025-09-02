@@ -33,7 +33,7 @@ jobs:
             libxkbcommon-dev \
             jq \
             clang \
-            python3-tk \
+            python3-tk
 
             pip install uv
 
@@ -41,8 +41,7 @@ jobs:
         run: |
           uv sync --extra develop
           source .venv/bin/activate
-          uv tool install pylint
-          uv tool install flake8
+          uv pip install pylint flake8
           echo PATH=$PATH >> $GITHUB_ENV
 
       - name: Run test and coverage
