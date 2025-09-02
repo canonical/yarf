@@ -40,7 +40,7 @@ Press Combo And Match
     END
 
     FOR    ${index}    IN RANGE    ${tentatives}
-        Keys Combo              ${keys-combo}
+        Hid.Keys Combo          ${keys-combo}
         ${match}=               Run Keyword And Return Status
         ...                     Match                   ${template}             ${timeout}              ${tolerance}
         IF    ${match}    BREAK
@@ -91,7 +91,7 @@ Move Pointer To (${x}, ${y})
     ...    Embedded arguments:
     ...    - ${x}: Integer absolute x-coordinate to move the pointer to.
     ...    - ${y}: Integer absolute y-coordinate to move the pointer to.
-    Pointer Move To Absolute                        ${x}                    ${y}
+    Hid.Move Pointer To Absolute                    ${x}                    ${y}
 
 Move Pointer To ${destination}
     [Documentation]    Move the pointer to an absolute position or image
@@ -122,7 +122,7 @@ Move Pointer To ${destination}
         ${position}=            Get Text Position       text=${destination}
     END
 
-    Pointer Move To Absolute                        ${position}[0]          ${position}[1]
+    Hid.Move Pointer To Absolute                    ${position}[0]          ${position}[1]
     RETURN                  ${position}
 
 Move Pointer To ${destination} In ${domain}
@@ -147,8 +147,9 @@ Move Pointer To ${destination} In ${domain}
         ${target_region}=       Set Variable            ${domain}
     ELSE IF    ${{ isinstance($domain, str) }}
         IF    ${{ os.path.exists($domain) }}
-            ${sub_regions}=         PlatformVideoInput.Match                        ${domain}
-            ${sub_region}=          Set Variable            ${sub_regions}[0]
+            ${sub_regions}=         Match                   ${domain}
+            ${target_region}=       Set Variable            ${sub_regions}[0]
+            Remove From Dictionary                          ${target_region}        path
         ELSE
             Fail                    Template ${domain} doesn't exist!
         END
@@ -167,7 +168,7 @@ Move Pointer To ${destination} In ${domain}
         ...                     region=${target_region}
     END
 
-    Pointer Move To Absolute                        ${position}[0]          ${position}[1]
+    Hid.Move Pointer To Absolute                    ${position}[0]          ${position}[1]
     RETURN                  ${position}
 
 Move Pointer To Proportional (${x}, ${y})
@@ -185,7 +186,7 @@ Move Pointer To Proportional (${x}, ${y})
     ...    Return:
     ...    Absolute position of the pointer after the move, as a tuple (x, y)
     ...    of integers.
-    ${position}=            Pointer Move To Proportional                    ${x}                    ${y}
+    ${position}=            Hid.Move Pointer To Proportional                ${x}                    ${y}
     RETURN                  ${position}
 
 Walk Pointer To (${x}, ${y})
@@ -200,7 +201,7 @@ Walk Pointer To (${x}, ${y})
     ...    - ${delay} (optional): Time to sleep after each step, in seconds.
     ...    Default is 0.01.
     [Arguments]             ${step_distance}=16     ${delay}=0.01
-    Pointer Walk To Absolute
+    Hid.Walk Pointer To Absolute
     ...                     ${x}
     ...                     ${y}
     ...                     ${step_distance}
@@ -232,7 +233,7 @@ Walk Pointer To ${destination}
     ELSE
         ${position}=            Set Variable            ${destination}
     END
-    Pointer Walk To Absolute
+    Hid.Walk Pointer To Absolute
     ...                     ${position}[0]
     ...                     ${position}[1]
     ...                     ${step_distance}
@@ -260,7 +261,7 @@ Walk Pointer To Proportional (${x}, ${y})
     ...    Absolute position of the pointer after the walk, as a tuple (x, y)
     ...    of integers.
     [Arguments]             ${step_distance}=16     ${delay}=0.01
-    ${position}=            Pointer Walk To Proportional
+    ${position}=            Hid.Walk Pointer To Proportional
     ...                     ${x}
     ...                     ${y}
     ...                     ${step_distance}
@@ -272,21 +273,21 @@ Press ${button} Button
     ...
     ...    Embedded arguments:
     ...    - ${button}: Button to press (LEFT|RIGHT|MIDDLE).
-    Pointer Press Button    ${button}
+    Hid.Press Pointer Button                        ${button}
 
 Release ${button} Button
     [Documentation]    Release a button on the virtual pointer.
     ...
     ...    Embedded arguments:
     ...    - ${button}: Button to release (LEFT|RIGHT|MIDDLE).
-    Pointer Release Button                          ${button}
+    Hid.Release Pointer Button                      ${button}
 
 Click ${button} Button
     [Documentation]    Click a button on the virtual pointer.
     ...
     ...    Embedded arguments:
     ...    - ${button}: Button to click (LEFT|RIGHT|MIDDLE).
-    Pointer Click Button    ${button}
+    Hid.Click Pointer Button                        ${button}
 
 Click ${button} Button On ${destination}
     [Documentation]    Move the virtual pointer to the destination and click the button.
@@ -301,7 +302,7 @@ Click ${button} Button On ${destination}
 
 Release Buttons
     [Documentation]    Release all buttons on the virtual pointer.
-    Pointer Release Buttons
+    Hid.Release Pointer Buttons
 
 Ensure ${destination} Does Not Match
     [Documentation]    Ensure a given template or string doesn't match within a given timeout and
