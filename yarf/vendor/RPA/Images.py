@@ -21,7 +21,7 @@ import logging
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Generator
+from typing import List
 
 from PIL import Image
 from PIL import ImageDraw
@@ -98,7 +98,7 @@ class TemplateMatcher:
         return self._tolerance
 
     @tolerance.setter
-    def tolerance(self, value) -> None:
+    def tolerance(self, value) -> float:
         self._tolerance = clamp(0.10, value, 1.00)
 
     def match(self, image, template, limit=None, tolerance=None) -> List[Region]:
@@ -144,7 +144,7 @@ class TemplateMatcher:
 
         return matches
 
-    def _iter_matches(self, image, template) -> Generator[Region, None, None]:
+    def _iter_matches(self, image, template) -> Region:
         """Brute-force search for template image in larger image.
 
         Use optimized string search for finding the first row and then
@@ -162,7 +162,7 @@ class TemplateMatcher:
         image_rows = chunks(tuple(image.getdata()), image_width)
 
         for image_y, image_row in enumerate(image_rows[: -len(template_rows)]):
-            for image_x in self._search_string(image_row, template_rows[0]): # type: ignore[attr-defined]
+            for image_x in self._search_string(image_row, template_rows[0]):
                 match = True
                 for match_y, template_row in enumerate(template_rows[1:], image_y):
                     match_row = image_rows[match_y][image_x : image_x + template_width]
@@ -175,7 +175,7 @@ class TemplateMatcher:
                         image_x, image_y, template_width, template_height
                     )
 
-    def _search_string(self, text, pattern) -> Generator[int, None, None]:
+    def _search_string(self, text, pattern) -> int:
         """Python implementation of Knuth-Morris-Pratt string search algorithm."""
         pattern_len = len(pattern)
 

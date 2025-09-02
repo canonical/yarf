@@ -24,7 +24,7 @@ from typing import Any
 from PIL import Image
 
 
-def to_image(obj: Any) -> Image.Image | None:
+def to_image(obj: Any) -> Image.Image:
     """Convert `obj` to instance of Pillow's Image class."""
     if obj is None or isinstance(obj, Image.Image):
         return obj

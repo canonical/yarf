@@ -36,7 +36,7 @@ from . import core
 from . import recognition
 
 # Expose commonly used classes at package level
-from .Images import Images, Region, to_image, ImageNotFoundError # type: ignore[no-redef]
+from .Images import Images, Region, to_image, ImageNotFoundError
 from .core.geometry import Region, to_region
 
 __version__ = "29.0.0-vendored"

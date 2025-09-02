@@ -20,7 +20,7 @@ import logging
 from collections import defaultdict
 from difflib import SequenceMatcher
 from pathlib import Path
-from typing import Union, Dict, List, Generator, Optional, Any
+from typing import Union, Dict, List, Generator, Optional
 
 import pytesseract
 from pytesseract import TesseractNotFoundError
@@ -56,7 +56,7 @@ def read(
     This is passed directly to the pytesseract lib in the config parameter.
      See https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html
     """
-    image = to_image(image) # type: ignore[assignment]
+    image = to_image(image)
 
     try:
         return pytesseract.image_to_string(image, lang=language, config=configuration).strip()
@@ -83,7 +83,7 @@ def find(
      This is passed directly to the pytesseract lib in the lang parameter.
      See https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html#using-one-language
     """  # noqa: E501
-    image = to_image(image) # type: ignore[assignment]
+    image = to_image(image)
     confidence = clamp(1, float(confidence), 100)
 
     text = str(text).strip()
@@ -92,7 +92,7 @@ def find(
 
     if region is not None:
         region = geometry.to_region(region)
-        image = image.crop(region.as_tuple()) # type: ignore[union-attr]
+        image = image.crop(region.as_tuple())
 
     params = {}
     if language:
@@ -153,7 +153,7 @@ def _match_lines(lines: List[Dict], text: str, confidence: float) -> List[Dict]:
     """
     matches = []
     for line in lines:
-        match: dict[str, Any] = {}
+        match = {}
 
         for window in range(1, len(line) + 1):
             for index in range(len(line) - window + 1):

@@ -57,8 +57,8 @@ def find(
     :raises ImageNotFoundError: No match was found
     """
     # Ensure images are in Pillow format
-    image = to_image(image) # type: ignore[assignment]
-    template = to_image(template) # type: ignore[assignment]
+    image = to_image(image)
+    template = to_image(template)
 
     # Convert confidence value to tolerance
     tolerance = _to_tolerance(confidence)
@@ -66,15 +66,15 @@ def find(
     # Crop image if requested
     if region is not None:
         region = geometry.to_region(region)
-        image = image.crop(region.as_tuple()) # type: ignore[union-attr]
+        image = image.crop(region.as_tuple())
 
     # Verify template still fits in image
-    if template.size[0] > image.size[0] or template.size[1] > image.size[1]: # type: ignore[union-attr]
+    if template.size[0] > image.size[0] or template.size[1] > image.size[1]:
         raise ValueError("Template is larger than search region")
 
     # Do the actual search
     matches: List[Region] = []
-    for match in _match_template(image, template, tolerance): # type: ignore[arg-type]
+    for match in _match_template(image, template, tolerance):
         matches.append(match)
         if limit is not None and len(matches) >= int(limit):
             break
@@ -119,17 +119,17 @@ def _match_template(
     if template.mode == "RGBA":
         template = template.convert("RGB")
 
-    image = numpy.array(image) # type: ignore[assignment]
-    template = numpy.array(template) # type: ignore[assignment]
+    image = numpy.array(image)
+    template = numpy.array(template)
 
     # pylint: disable=no-member
-    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR) # type: ignore[call-overload]
-    template = cv2.cvtColor(template, cv2.COLOR_RGB2BGR) # type: ignore[call-overload]
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    template = cv2.cvtColor(template, cv2.COLOR_RGB2BGR)
 
     # Template matching result is a single channel array of shape:
     # Width:  Image width  - template width  + 1
     # Height: Image height - template height + 1
-    coefficients = cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED) # type: ignore[call-overload]
+    coefficients = cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED)
     coeff_height, coeff_width = coefficients.shape
 
     while True:
@@ -145,6 +145,6 @@ def _match_template(
         right = clamp(0, match_x + template_width // 2, coeff_width)
         bottom = clamp(0, match_y + template_height // 2, coeff_height)
 
-        coefficients[top:bottom, left:right] = 0 # type: ignore[misc]
+        coefficients[top:bottom, left:right] = 0
 
         yield Region.from_size(match_x, match_y, template_width, template_height)
