@@ -69,7 +69,7 @@ class RapidOCRReader:
         Returns:
             Text found in image.
         """
-        image = to_image(image)
+        image = to_image(image)  # type: ignore[assignment]
         result, _ = self.reader(np.array(image))
 
         if not result:
@@ -105,7 +105,7 @@ class RapidOCRReader:
         """
         image_obj = to_image(image)
         if region is not None:
-            image_obj = image_obj.crop(region.as_tuple())
+            image_obj = image_obj.crop(region.as_tuple())  # type: ignore[union-attr]
 
         text = text.strip()
         if not text:
