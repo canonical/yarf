@@ -149,6 +149,11 @@ INFO:root:Scanned image in 0.07 seconds
 >                                                                                                           # ΔT: 0.005s
 ```
 
+```{caution}
+Sometimes, the keywords name clashes and Robot Framework cannot identify the correct keyword.
+In this case, we need to explicitly specify the library name. For example: `Hid.Move Pointer To Absolute  x=0  y=0`.
+```
+
 In the meantime, we should see the simple counter inside the Mir server has the following changes:
 
 ```{figure} ./images/changes_of_simple_counter.png
