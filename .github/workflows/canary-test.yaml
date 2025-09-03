@@ -163,6 +163,10 @@ jobs:
 
       - name: Pin YARF to the requested version in pyproject.toml
         run: |
+          # We pin the YARF version this way because snapcraft runs pip install
+          # and does not use uv automatically, so uv add <dep> will not work because
+          # pip will not look into tool.uv.sources.
+
           set -euo pipefail
           f=examples/yarf-example-plugin/pyproject.toml
 
