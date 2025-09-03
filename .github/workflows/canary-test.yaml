@@ -161,15 +161,15 @@ jobs:
           version=$(jq -r '.version' ~/snap/${{ inputs.NAME }}/common/yarf-outdir/TestSubmissionSchema_output.json)
           check-jsonschema --schemafile https://raw.githubusercontent.com/canonical/test-submission-schema/refs/heads/main/test_submission_schema/schemas/v${version}.json ~/snap/${{ inputs.NAME }}/common/yarf-outdir/TestSubmissionSchema_output.json
 
-      - name: Pin yarf to the requested version in pyproject.toml
-        env:
-          VER: ${{ inputs.VER }}
+      - name: Pin YARF to the requested version in pyproject.toml
         run: |
           set -euo pipefail
           f=examples/yarf-example-plugin/pyproject.toml
+
           # remove any bare "yarf"
           sed -i '/"yarf"\s*,\?$/d' "$f"
-          # append the pinned URL dep
+
+          # prepend the pinned YARF dep
           awk -v ver="${{ inputs.VER }}" '
             BEGIN{added=0}
             {print}
