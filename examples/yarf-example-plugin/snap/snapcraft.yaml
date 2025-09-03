@@ -20,6 +20,8 @@ parts:
     source: .
     python-packages:
       - .
+    build-packages:
+      - git
     stage-packages:
       - bash
     override-build: |
