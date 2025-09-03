@@ -24,6 +24,7 @@ parts:
       - git
       - pkg-config
       - libxkbcommon-dev
+      - libwayland-dev
     stage-packages:
       - libxkbcommon0
       - bash
