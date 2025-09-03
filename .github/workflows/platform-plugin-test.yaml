@@ -59,9 +59,10 @@ jobs:
 
       - name: Instal yarf
         run: |
+          uv version "${{ steps.nv.outputs.version }}" --frozen
           pip install .
 
-      - name: Install yarf-example-plugin
+      - name: Install YARF and yarf-example-plugin
         run: |
           uv add --project=examples/yarf-example-plugin --frozen "yarf @ git+https://github.com/canonical/yarf.git@${{ steps.nv.outputs.version }}"
           pip install examples/yarf-example-plugin
