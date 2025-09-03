@@ -69,12 +69,12 @@ jobs:
           # remove any bare "yarf"
           sed -i '/"yarf"\s*,\?$/d' "$f"
           # append the pinned URL dep
-          awk -v ver="${{ steps.nv.outputs.version }}" '
+          awk -v sha="${{ steps.gv.outputs.sha }}" '
             BEGIN{added=0}
             {print}
             /^\[project\]/{inproj=1}
             inproj && /^\s*dependencies\s*=\s*\[/{
-              print "    \"yarf @ git+https://github.com/canonical/yarf.git@" ver "\","
+              print "    \"yarf @ git+https://github.com/canonical/yarf.git@" sha "\","
               inproj=0; added=1
             }
             END{if(!added) exit 0}
