@@ -15,6 +15,10 @@ on:
         description: 'The snap channel to promote from (e.g., stable, candidate, beta, edge)'
         type: string
         required: true
+      VER:
+        description: 'The version of the snap to promote'
+        type: string
+        required: true
       REV:
         description: 'The revision number of the snap to promote'
         type: string
@@ -100,6 +104,7 @@ jobs:
 
     env:
       TEST_SUITE_PATH: tests
+      EXAMPLE_PATH: examples
 
     steps:
       - name: Install workflow dependencies
@@ -119,6 +124,7 @@ jobs:
           fetch-depth: 1
           sparse-checkout: |
             ${{ env.TEST_SUITE_PATH }}
+            ${{ env.EXAMPLE_PATH }}
           sparse-checkout-cone-mode: false
 
       - name: Install YARF from channel
@@ -127,16 +133,23 @@ jobs:
           set -euo pipefail
           sudo snap install "${{ inputs.NAME }}" --channel="${{ inputs.TRACK }}/${{ inputs.CHANNEL }}"
 
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Add YARF dependency to yarf-example-plugin
+        run: |
+          uv add --project=examples/yarf-example-plugin --frozen "yarf @ git+https://github.com/canonical/yarf.git@${{ inputs.VER }}"
+
       - name: Build yarf-example-plugin snap
         uses: snapcore/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
         with:
-          path: tests/yarf-example-plugin
+          path: examples/yarf-example-plugin
 
       - name: Install yarf-example-plugin snap
         shell: bash
         run: |
           set -euo pipefail
-          sudo snap install tests/yarf-example-plugin/*.snap --dangerous
+          sudo snap install examples/yarf-example-plugin/*.snap --dangerous
 
       - name: Connect platform plugin interface
         run: |
@@ -148,7 +161,7 @@ jobs:
 
       - name: Run plugin tests
         run: |
-          snap run yarf --platform Example tests/yarf-example-plugin/plugin_suite
+          snap run yarf --platform Example tests/plugin_suite
 
       - name: Install platform ${{ matrix.platform }} dependencies
         shell: bash
