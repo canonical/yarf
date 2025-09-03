@@ -133,6 +133,34 @@ jobs:
           set -euo pipefail
           sudo snap install "${{ inputs.NAME }}" --channel="${{ inputs.TRACK }}/${{ inputs.CHANNEL }}"
 
+      - name: Install platform ${{ matrix.platform }} dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          eval "$(
+          cat <<'SCRIPT'
+          ${{ matrix.install-platform-deps-cmds }}
+          SCRIPT
+          )"
+
+      - name: Run canary test
+        id: test
+        shell: bash
+        run: |
+          set -euo pipefail
+          eval "$(
+          cat <<'SCRIPT'
+          ${{ matrix.prepare-platform-cmds }}
+          SCRIPT
+          )"
+
+          snap run yarf --platform=${{ matrix.platform }} --output-format=TestSubmissionSchema ${{ env.TEST_SUITE_PATH }}/canary_test
+
+      - name: Download test submission schema and validate
+        run: |
+          version=$(jq -r '.version' ~/snap/${{ inputs.NAME }}/common/yarf-outdir/TestSubmissionSchema_output.json)
+          check-jsonschema --schemafile https://raw.githubusercontent.com/canonical/test-submission-schema/refs/heads/main/test_submission_schema/schemas/v${version}.json ~/snap/${{ inputs.NAME }}/common/yarf-outdir/TestSubmissionSchema_output.json
+
       - name: Setup uv
         uses: astral-sh/setup-uv@v3
 
@@ -162,34 +190,6 @@ jobs:
       - name: Run plugin tests
         run: |
           snap run yarf --platform Example tests/plugin_suite
-
-      - name: Install platform ${{ matrix.platform }} dependencies
-        shell: bash
-        run: |
-          set -euo pipefail
-          eval "$(
-          cat <<'SCRIPT'
-          ${{ matrix.install-platform-deps-cmds }}
-          SCRIPT
-          )"
-
-      - name: Run canary test
-        id: test
-        shell: bash
-        run: |
-          set -euo pipefail
-          eval "$(
-          cat <<'SCRIPT'
-          ${{ matrix.prepare-platform-cmds }}
-          SCRIPT
-          )"
-
-          snap run yarf --platform=${{ matrix.platform }} --output-format=TestSubmissionSchema ${{ env.TEST_SUITE_PATH }}/canary_test
-
-      - name: Download test submission schema and validate
-        run: |
-          version=$(jq -r '.version' ~/snap/${{ inputs.NAME }}/common/yarf-outdir/TestSubmissionSchema_output.json)
-          check-jsonschema --schemafile https://raw.githubusercontent.com/canonical/test-submission-schema/refs/heads/main/test_submission_schema/schemas/v${version}.json ~/snap/${{ inputs.NAME }}/common/yarf-outdir/TestSubmissionSchema_output.json
 
       - if: failure()
         name: Collect test results
