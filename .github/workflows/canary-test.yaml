@@ -113,7 +113,6 @@ jobs:
           sudo apt update -qq
           sudo apt install -y \
             git-lfs \
-            libxkbcommon-dev \
             jq
 
           pip install check-jsonschema

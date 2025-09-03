@@ -22,7 +22,10 @@ parts:
       - .
     build-packages:
       - git
+      - pkg-config
+      - libxkbcommon-dev
     stage-packages:
+      - libxkbcommon0
       - bash
     override-build: |
       craftctl default
