@@ -33,16 +33,6 @@ jobs:
         with:
           python-version: "3.12"
 
-      - uses: gittools/actions/gitversion/setup@v4
-        with:
-          versionSpec: '6.4'
-
-      - name: Evaluate semantic version
-        id: gv
-        uses: gittools/actions/gitversion/execute@v4
-        with:
-          configFilePath: GitVersion.yaml
-
       - name: Pin YARF to the requested version in yarf-example-plugin pyproject.toml
         run: |
           # YARF dependency is pinned this way because pip does not use uv automatically
@@ -52,7 +42,7 @@ jobs:
           # remove any bare "yarf"
           sed -i '/"yarf"\s*,\?$/d' "$f"
           # append the pinned URL dep
-          awk -v sha="${{ steps.gv.outputs.sha }}" '
+          awk -v sha="$GITHUB_SHA" '
             BEGIN{added=0}
             {print}
             /^\[project\]/{inproj=1}
