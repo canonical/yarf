@@ -43,28 +43,28 @@ jobs:
         with:
           configFilePath: GitVersion.yaml
 
-      - uses: astral-sh/setup-uv@v3
-
-      - name: Normalize version to comply with PEP 440
-        id: nv
+      - name: Pin YARF to the requested version in yarf-example-plugin pyproject.toml
         run: |
-          if [[ "${{ github.ref_name }}" == "main" ]]; then
-            VERSION="${{ steps.gv.outputs.semVer }}"
-          else
-            VERSION="${{ steps.gv.outputs.informationalVersion }}"
-          fi
-          VERSION_PEP440=$(uv tool run --with packaging python -c "from packaging.version import Version; print(Version('$VERSION'))")
-          echo "Normalized YARF PEP 440 version: $VERSION_PEP440"
-          echo "version=$VERSION_PEP440" >> "$GITHUB_OUTPUT"
-
-      - name: Instal yarf
-        run: |
-          uv version "${{ steps.nv.outputs.version }}" --frozen
-          pip install .
+          # YARF dependency is pinned this way because pip does not use uv automatically
+          # so uv add <dep> will not work because pip will not look into tool.uv.sources.
+          set -euo pipefail
+          f=examples/yarf-example-plugin/pyproject.toml
+          # remove any bare "yarf"
+          sed -i '/"yarf"\s*,\?$/d' "$f"
+          # append the pinned URL dep
+          awk -v sha="${{ steps.gv.outputs.sha }}" '
+            BEGIN{added=0}
+            {print}
+            /^\[project\]/{inproj=1}
+            inproj && /^\s*dependencies\s*=\s*\[/{
+              print "    \"yarf @ git+https://github.com/canonical/yarf.git@" sha "\","
+              inproj=0; added=1
+            }
+            END{if(!added) exit 0}
+          ' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
 
       - name: Install YARF and yarf-example-plugin
         run: |
-          uv add --project=examples/yarf-example-plugin --frozen "yarf @ git+https://github.com/canonical/yarf.git@${{ steps.nv.outputs.version }}"
           pip install examples/yarf-example-plugin
 
       - name: Run plugin integration tests
