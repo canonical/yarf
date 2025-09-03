@@ -13,7 +13,11 @@ This tutorial is divided into the following sections:
 
 ## Setup
 
+<!-- vale off -->
+
 ### Installing YARF and dependencies
+
+<!-- vale on -->
 
 First of all, we will install YARF, we can simply run:
 
@@ -129,7 +133,11 @@ alt: The mir-test-tools window with the calculator running.
 The `mir-test-tools` window with the calculator running.
 ```
 
+<!-- vale off -->
+
 ## Exploring YARF
+
+<!-- vale on -->
 
 After setup, we can start exploring YARF. In YARF we can control the pointer and keyboard using different functions called `keywords`, and we provided an interactive mode for users to test out different commands.
 

@@ -1,10 +1,14 @@
-# Using The VNC Backend
+<!-- vale off -->
+
+# Using the VNC backend
+
+<!-- vale on -->
 
 Using the VNC backend means that at the point you begin to run `yarf`, you will need to have a VM running with a VNC server.
 
 You can do this with QEMU/MIR and other backends.
 
-## Appropriate QEMU Args
+## Appropriate QEMU args
 
 To spawn a QEMU VM with an appropriate VNC server, you can use something along the lines of the following command (this example is for an Ubuntu Desktop live ISO):
 
@@ -18,7 +22,11 @@ If you want to allow multiple VNC clients (i.e. if you want to use a VNC viewer)
 
 If you want to spin up a VM and instantly open the SDL display, you can replace `-vnc :0` with `-vnc :0 -display sdl`.
 
-## Using An Existing VM With A VNC Server With Yarf
+<!-- vale off -->
+
+## Using an existing VM with a VNC server with YARF
+
+<!-- vale on -->
 
 You can then connect to the running VM with `yarf` like so:
 

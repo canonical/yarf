@@ -2,8 +2,10 @@
 
 .. _home:
 
+
 Yet Another Robot Framework (YARF)
 ==================================
+
 
 YARF is a tool built upon the `Robot Framework <https://robotframework.org/>`_
 that allows developers to build complex visual test scenarios and bootstrap them
