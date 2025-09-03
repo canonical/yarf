@@ -1,0 +1,77 @@
+name: Install and Test Plugin
+
+on:
+  merge_group:
+    types: [checks_requested]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test-plugin:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt update -qq
+          sudo apt install -y \
+            git-lfs \
+            libgl1 \
+            libxkbcommon-dev \
+            jq \
+            clang \
+            python3-tk
+
+      - name: Checkout repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          lfs: true
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+
+      - uses: gittools/actions/gitversion/setup@v4
+        with:
+          versionSpec: '6.x'
+
+      - name: Evaluate semantic version
+        id: gv
+        uses: gittools/actions/gitversion/execute@v4
+        with:
+          configFilePath: GitVersion.yaml
+
+      - uses: astral-sh/setup-uv@v3
+
+      - name: Normalize version to comply with PEP 440
+        id: nv
+        run: |
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            VERSION="${{ steps.gv.outputs.semVer }}"
+          else
+            VERSION="${{ steps.gv.outputs.informationalVersion }}"
+          fi
+          VERSION_PEP440=$(uv tool run --with packaging python -c "from packaging.version import Version; print(Version('$VERSION'))")
+          echo "Normalized YARF PEP 440 version: $VERSION_PEP440"
+          echo "version=$VERSION_PEP440" >> "$GITHUB_OUTPUT"
+
+      - name: Instal yarf
+        run: |
+          pip install .
+
+      - name: Install yarf-example-plugin
+        run: |
+          uv add --project=examples/yarf-example-plugin --frozen "yarf @ git+https://github.com/canonical/yarf.git@${{ steps.nv.outputs.version }}"
+          pip install examples/yarf-example-plugin
+
+      - name: Run plugin integration tests
+        run: |
+          yarf --platform Example tests/plugin_suite
+
+      - if: failure() && runner.debug
+        name: Setup upterm session (restart with "Enable debug logging" to activate)
+        uses: canonical/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48
+        with:
+          limit-access-to-actor: true

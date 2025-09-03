@@ -7,9 +7,11 @@ import json
 import logging
 import os
 import re
+import urllib.parse
 from enum import Enum
 from pathlib import Path
 from textwrap import dedent
+from bs4 import BeautifulSoup
 from generate_library_libdoc import generate_libdoc_for_abstract_libraries
 from robot.libdoc import libdoc
 
@@ -59,7 +61,7 @@ def convert_json_to_markdown(json_file, markdown_file):
             raise ValueError("Title not found in JSON data") from exc
 
         content = [f"# {title}\n\n"]
-        description = data.get("doc", "").strip()
+        description = fix_link_anchors(data.get("doc", "").strip())
         if description:
             content.append(f"{description}\n\n")
 
@@ -82,7 +84,9 @@ def convert_json_to_markdown(json_file, markdown_file):
                 # Write section title
                 # h2 title in contents panel
                 content.append(f"### {keyword['name']}\n\n")
-                content.append(f"{keyword['doc']}\n\n")
+                # Write keyword description and fix URL-encoded anchors
+                keyword_doc = fix_link_anchors(keyword['doc'])
+                content.append(f"{keyword_doc}\n\n")
 
                 if (
                     "returnType" in keyword
@@ -131,6 +135,26 @@ def convert_json_to_markdown(json_file, markdown_file):
                 md.write("".join(content))
                 if i < len(data["keywords"]) - 1:
                     md.write("<hr style=\"border:1px solid grey\">\n\n")
+
+
+def fix_link_anchors(html_text):
+    """
+    Replace special characters in the URL anchors in the given HTML text with dashes
+    """
+    soup = BeautifulSoup(html_text, 'html.parser')
+    for link in soup.find_all('a', href=True):
+        href = link['href']
+        if '#' in href:
+            # Split anchor part in URL and clean up decoded text
+            parts = href.rsplit('#', 1)
+            if len(parts) == 2:
+                url_part, anchor_part = parts
+                if anchor_part.strip():
+                    decoded = urllib.parse.unquote(anchor_part)
+                    clean = re.sub(r'[^a-zA-Z0-9]+', '-', decoded.lower()).strip('-')
+                    if clean:
+                        link['href'] = f'{url_part}#{clean}' if url_part else f'#{clean}'
+    return str(soup)
 
 
 def generate_libdoc(file: Path, output_file: Path):
@@ -239,7 +263,7 @@ def main():
                 os.makedirs(target_dir)
             
             if target is RobotFile.LIBRARY and not (target_dir / "index.md").exists():
-                with open(target_dir / "index.md", "w") as index_file:
+                with open(target_dir / "index.md", "w", encoding="utf-8") as index_file:
                     platform_name = re.sub(r'_+', ' ', target_dir.stem.strip('_'))
                     if platform_name == "libraries":
                         platform_name = "base"

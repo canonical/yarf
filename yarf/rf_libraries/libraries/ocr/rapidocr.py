@@ -69,7 +69,7 @@ class RapidOCRReader:
         Returns:
             Text found in image.
         """
-        image = to_image(image)
+        image = to_image(image)  # type: ignore[assignment]
         result, _ = self.reader(np.array(image))
 
         if not result:
@@ -105,7 +105,7 @@ class RapidOCRReader:
         """
         image_obj = to_image(image)
         if region is not None:
-            image_obj = image_obj.crop(region.as_tuple())
+            image_obj = image_obj.crop(region.as_tuple())  # type: ignore[union-attr]
 
         text = text.strip()
         if not text:
@@ -148,10 +148,40 @@ class RapidOCRReader:
         Returns:
             List of OCR matches containing the text.
         """
+
+        def directional_ratio(q: str, text: str) -> float:
+            """
+            Return an asymmetric similarity score between two strings.
+
+            Args:
+                q: Query string.
+                text: text string.
+
+            Returns:
+                Similarity score as a float.
+
+            Examples:
+            >>> directional_ratio("readme", "project_readme.md")
+            100.0
+            >>> directional_ratio("project_readme.md", "readme")
+            48.0
+            """
+            if q == text:  # 100% coincidence
+                return 100
+
+            # If the query is shorter than the text, we use partial matching
+            # to match only a substring of the text.
+            if len(q) <= len(text):
+                return rapidfuzz.fuzz.partial_ratio(q, text)
+
+            # If the query is longer than the text, we use regular matching, so
+            # we don't match against a substring of the query
+            return rapidfuzz.fuzz.ratio(q, text)
+
         matches = []
         for item in result:
             ratio = (
-                rapidfuzz.fuzz.partial_ratio(item.text, match_text)
+                directional_ratio(match_text, item.text)
                 if partial
                 else rapidfuzz.fuzz.ratio(item.text, match_text)
             )
