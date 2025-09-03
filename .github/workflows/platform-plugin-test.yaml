@@ -57,11 +57,11 @@ jobs:
           echo "Normalized YARF PEP 440 version: $VERSION_PEP440"
           echo "version=$VERSION_PEP440" >> "$GITHUB_OUTPUT"
 
-      - name: Instal yarf
-        run: |
-          pip install .
+      # - name: Instal yarf
+      #   run: |
+      #     pip install .
 
-      - name: Install yarf-example-plugin
+      - name: Install YARF and yarf-example-plugin
         run: |
           uv add --project=examples/yarf-example-plugin --frozen "yarf @ git+https://github.com/canonical/yarf.git@${{ steps.nv.outputs.version }}"
           pip install examples/yarf-example-plugin
