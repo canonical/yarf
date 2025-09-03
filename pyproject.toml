@@ -50,7 +50,6 @@ develop = [
     "pytest-cov",
     "pytest-xdist",
     "tox",
-    "types-python-dateutil",
 ]
 
 [project.scripts]
