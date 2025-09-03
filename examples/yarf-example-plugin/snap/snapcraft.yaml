@@ -20,7 +20,13 @@ parts:
     source: .
     python-packages:
       - .
+    build-packages:
+      - git
+      - pkg-config
+      - libxkbcommon-dev
+      - libwayland-dev
     stage-packages:
+      - libxkbcommon0
       - bash
     override-build: |
       craftctl default
