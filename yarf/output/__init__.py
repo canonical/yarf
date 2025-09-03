@@ -3,7 +3,6 @@ import importlib
 import json
 import logging
 import os
-import subprocess
 import tempfile
 from pathlib import Path
 from typing import Any, Callable, Optional
@@ -179,7 +178,6 @@ class OutputConverterBase(abc.ABC, metaclass=OutputConverterMeta):
         date.
 
         Raises:
-            RuntimeError: When the subprocess failed to run
             ValueError: When match installed YARF information cannot match with YARF snap info
 
         Returns:
@@ -189,58 +187,15 @@ class OutputConverterBase(abc.ABC, metaclass=OutputConverterMeta):
             return None
 
         try:
-            # Run `snap info` command
-            result = subprocess.run(
-                ["snap", "info", "yarf"],
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-            output = result.stdout
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError("Subprocess execution failed.") from e
+            yarf_snap_info = {
+                "name": os.environ["SNAP_NAME"],
+                "version": os.environ["SNAP_VERSION"],
+                "revision": os.environ["SNAP_REVISION"],
+            }
+        except KeyError as exc:
+            raise ValueError("Cannot get installed YARF information.") from exc
 
-        # Get the installed snap info
-        installed_yarf_info = {}
-        channels = {}
-        for line in output.splitlines():
-            if line.strip().startswith("name:"):
-                parts = line.split()
-                installed_yarf_info["name"] = parts[1]
-
-            elif line.strip().startswith("latest/"):
-                parts = line.split()
-                channel = parts[0].rstrip(":")
-                version = parts[1]
-                date = parts[2] if len(parts) > 2 else "Unknown"
-                revision = parts[3] if len(parts) > 3 else "Unknown"
-                channels[channel] = {
-                    "channel": channel,
-                    "version": version,
-                    "revision": revision.strip("()"),
-                    "date": date,
-                }
-
-            elif line.strip().startswith("installed:"):
-                parts = line.split()
-                installed_yarf_info["version"] = parts[1]
-                installed_yarf_info["revision"] = parts[2].strip("()")
-
-            elif line.strip().startswith("tracking:"):
-                parts = line.split()
-                installed_yarf_info["channel"] = parts[1]
-
-        for channel, info in channels.items():
-            if (
-                info["channel"] == installed_yarf_info["channel"]
-                and info["revision"] == installed_yarf_info["revision"]
-                and info["version"] == installed_yarf_info["version"]
-            ):
-                return channels[channel] | installed_yarf_info
-
-        raise ValueError(
-            "Cannot match installed YARF information with YARF snap info."
-        )
+        return yarf_snap_info  # type: ignore[return-value]
 
 
 def import_supported_formats() -> None:

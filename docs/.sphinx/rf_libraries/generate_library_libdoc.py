@@ -75,7 +75,8 @@ def create_mock_class(
         setattr(MockClass, method_name, lambda *args, **kwargs: None)
 
     class_name = concrete_class_name
-    class_source = extract_imports(module_path)
+    class_source = f"from __future__ import annotations\n"
+    class_source += extract_imports(module_path)
     class_source += f"from {module_name} import {abstract_class.__name__}\n"
     class_source += f"class {class_name}({abstract_class.__name__}):\n"
 
@@ -94,7 +95,7 @@ def create_mock_class(
     return class_source
 
 
-def generate_libdoc_for_libraries(module_path: Path, outfile: Path):
+def generate_libdoc_for_abstract_libraries(module_path: Path, outfile: Path):
     """
     Take a Robot abstract module library path and generate via
     libdoc a documentation file.

@@ -16,9 +16,11 @@ YARF extends Robot Framework with custom Python libraries:
 
 ```{toctree}
 ---
-glob:
 maxdepth: 1
+glob: true
 ---
-rf_libraries/library-*
-rf_libraries/interactive_console-*
+rf_libraries/libraries/index.md
+rf_libraries/libraries/mir/index.md
+rf_libraries/libraries/vnc/index.md
+rf_libraries/interactive_console/index.md
 ```

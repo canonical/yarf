@@ -5,5 +5,8 @@
     ]
   },
   "reporter": "cli",
-  "standard": "WCAG2AA"
+  "standard": "WCAG2AA",
+  "hideElements": [
+    "div.highlight pre"
+  ]
 }

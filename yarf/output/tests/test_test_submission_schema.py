@@ -297,10 +297,8 @@ class TestTestSubmissionSchema:
         converter = TestSubmissionSchema()
         converter.get_yarf_snap_info = Mock(
             return_value={
-                "channel": "latest/beta",
                 "version": "1.0.0",
                 "revision": "124",
-                "date": "2024-12-03",
                 "name": "yarf",
             }
         )
@@ -312,7 +310,6 @@ class TestTestSubmissionSchema:
                 "name": "yarf",
                 "version": "1.0.0",
                 "revision": "124",
-                "date": "2024-12-03",
             },
         }
 

@@ -13,6 +13,7 @@
 /*env*/
 __pycache__
 coverage_html_report
+coverage.xml
 out/
 output.xml
 log.html

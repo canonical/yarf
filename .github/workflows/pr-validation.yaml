@@ -1,0 +1,68 @@
+name: PR Validation
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - edited
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: pr-validation-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate_title:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checking the presence of the traceability tag in the PR title
+      env:
+        PR_TITLE: ${{ github.event.pull_request.title }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        REPO: ${{ github.repository }}
+      run: |
+        set -euo pipefail
+
+        # Trim leading/trailing whitespace from the PR title and update if necessary
+        TRIMMED_TITLE=$(printf '%s' "$PR_TITLE" | awk '{$1=$1; print}')
+        if [ "$TRIMMED_TITLE" != "$PR_TITLE" ]; then
+          echo "Updating PR title to: '$TRIMMED_TITLE'"
+          curl -sS -X PATCH \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER" \
+            -d "$(jq -n --arg title "$TRIMMED_TITLE" '{title:$title}')"
+        else
+          echo "PR title already normalized."
+        fi
+
+        error_msg() {
+            title=$(printf '%s' "$TRIMMED_TITLE" | sed -E \
+                -e 's/\[[^]]*\]?[[:space:]]*//g' \
+                -e 's/(^|[[:space:]])[^[:space:]]*\][[:space:]]*/\1/g' \
+                -e 's/\][[:space:]]*//g' \
+                -e 's/[[:space:]]+/ /g' \
+                -e 's/^[[:space:]]+//; s/[[:space:]]+$//')
+            echo "No recognized traceability tag / there are multiple tags"
+            echo "Please start the PR title with one of the following tags: [New], [Breaking], [Infra], [BugFix]"
+            echo "e.g. [New] $title"
+        }
+
+        if echo "$TRIMMED_TITLE" | grep -Eq '^\[(New|Breaking|Infra|BugFix)\]'; then
+            count=$(grep -o '\[[^]]\+\]' <<< "$TRIMMED_TITLE" | wc -l)
+            if [ "$count" -eq 1 ]; then
+                echo "Traceability tag found."
+                exit 0
+            else
+                error_msg
+                exit 1
+            fi
+        else
+            error_msg
+            exit 1
+        fi
