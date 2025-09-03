@@ -43,10 +43,6 @@ jobs:
         with:
           configFilePath: GitVersion.yaml
 
-      - name: Show semantic version metadata
-        run: |
-          echo "${{ toJson(steps.gv.outputs) }}"
-
       - uses: astral-sh/setup-uv@v3
 
       - name: Normalize version to comply with PEP 440
@@ -58,10 +54,10 @@ jobs:
             VERSION="${{ steps.gv.outputs.informationalVersion }}"
           fi
           VERSION_PEP440=$(uv tool run --with packaging python -c "from packaging.version import Version; print(Version('$VERSION'))")
-          echo "Normalized PEP 440 version: $VERSION_PEP440"
+          echo "Normalized YARF PEP 440 version: $VERSION_PEP440"
           echo "version=$VERSION_PEP440" >> "$GITHUB_OUTPUT"
 
-      - name: Instal yarf and yarf-example-plugin
+      - name: Instal yarf
         run: |
           pip install .
 
