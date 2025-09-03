@@ -162,7 +162,8 @@ jobs:
 
       - name: Promote ${{ matrix.track }}/${{ matrix.from }} to ${{ matrix.track }}/${{ matrix.to }} for ${{ matrix.arch }}
         env:
-          SNAPCRAFT_HAS_TTY: "true" # this is necessary because snapcraft will not allow --yes for promotions of the edge channel
+          # this is necessary because snapcraft will not allow --yes for promotions of the edge channel
+          SNAPCRAFT_HAS_TTY: "true"
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT }}
         run: |
           # Note: using `yes |` instead of `--yes` because snapcraft will
