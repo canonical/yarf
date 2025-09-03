@@ -62,9 +62,26 @@ jobs:
           uv version "${{ steps.nv.outputs.version }}" --frozen
           pip install .
 
+      - name: Pin YARF to the requested version in yarf-example-plugin pyproject.toml
+        run: |
+          set -euo pipefail
+          f=examples/yarf-example-plugin/pyproject.toml
+          # remove any bare "yarf"
+          sed -i '/"yarf"\s*,\?$/d' "$f"
+          # append the pinned URL dep
+          awk -v ver="${{ steps.nv.outputs.version }}" '
+            BEGIN{added=0}
+            {print}
+            /^\[project\]/{inproj=1}
+            inproj && /^\s*dependencies\s*=\s*\[/{
+              print "    \"yarf @ git+https://github.com/canonical/yarf.git@" ver "\","
+              inproj=0; added=1
+            }
+            END{if(!added) exit 0}
+          ' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+
       - name: Install YARF and yarf-example-plugin
         run: |
-          uv add --project=examples/yarf-example-plugin --frozen "yarf @ git+https://github.com/canonical/yarf.git@${{ steps.nv.outputs.version }}"
           pip install examples/yarf-example-plugin
 
       - name: Run plugin integration tests
