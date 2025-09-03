@@ -9,5 +9,8 @@ branches:
     increment: Patch
     is-main-branch: true
 
+  pull-request:
+    increment: Patch            # Avoid Inherit, should be removed when `git-version` is merged to main
+
 # PEP440 is not compatible with Semantic Versioning 🥹, therefore for non-main branches version will be set from InformationalVersion
 assembly-informational-format: '{Major}.{Minor}.{Patch}+{BranchName}.{ShortSha}'
