@@ -361,7 +361,7 @@ Drag ${target} And Drop On ${destination}
     RETURN                  ${end_position}
 
 Drag And Drop On ${destination}
-    [Documentation]    drag and drop the current target (where the pointer is) on a destination.
+    [Documentation]    Drag and drop the current target (where the pointer is) on a destination.
     ...
     ...    Embedded arguments:
     ...    - ${destination}: Can be a string, or the path of an image template file representing
