@@ -355,9 +355,7 @@ Drag ${target} And Drop On ${destination}
     [Arguments]             ${step_distance}=16     ${delay}=0.01
 
     Move Pointer To ${target}
-    Press LEFT Button
-    ${end_position}=        Walk Pointer To ${destination}                  ${step_distance}        ${delay}
-    Release LEFT Button
+    ${end_position}=        Drag And Drop On ${destination}                 ${step_distance}        ${delay}
     RETURN                  ${end_position}
 
 Drag And Drop On ${destination}
