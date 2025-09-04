@@ -33,8 +33,9 @@ repos:
   rev: v1.15.0
   hooks:
   - id: mypy
-    language: system
     pass_filenames: false
+    additional_dependencies:
+    - types-python-dateutil
     args:
     - --check-untyped-defs
     - --ignore-missing-imports  # Ref.: https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-library-stubs-or-py-typed-marker
@@ -123,6 +124,44 @@ repos:
   hooks:
     - id: licensecheck
       name: licensecheck
-      entry: uv tool run licensecheck --zero --show-only-failing --requirements-paths=pyproject.toml
+      entry: licensecheck --zero --show-only-failing --requirements-paths=pyproject.toml
+      language: python
+      types: [python]
+      pass_filenames: false
+      additional_dependencies:
+      - licensecheck
+
+    - id: docs-spelling
+      name: Docs spell check
+      files: ^docs/
+      entry: make -C docs spelling
+      language: system
+      pass_filenames: false
+
+    - id: docs-linkcheck
+      name: Docs link check
+      files: ^docs/
+      entry: make -C docs linkcheck
+      language: system
+      pass_filenames: false
+
+    - id: docs-woke
+      name: Docs inclusive language check
+      files: ^docs/
+      entry: make -C docs woke
+      language: system
+      pass_filenames: false
+
+    - id: docs-vale
+      name: Docs style guide compliance check
+      files: ^docs/
+      entry: make -C docs vale
+      language: system
+      pass_filenames: false
+
+    - id: docs-pa11y
+      name: Docs accessibility check
+      files: ^docs/
+      entry: make -C docs pa11y
       language: system
       pass_filenames: false

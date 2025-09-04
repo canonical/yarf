@@ -1,12 +1,15 @@
-# Platform Plugins
+# Platform plugins
 
 YARF allows platforms to be added as plugins. In this guide, we will walk through how to write a platform plugin and how to make it available in YARF.
 
-## Writing a Platform Plugin
+## Writing a platform plugin
 
 In YARF, all platforms are delivered as a package and must implement the `PlatformBase` class in an `__init__.py`, this extends to the platform plugins. For example:
 
 ```{code-block} bash
+---
+caption: An example of a simplest platform plugin module named Platform A
+---
 yarf-platform-A
 ├── pyproject.toml
 └── src
@@ -15,11 +18,12 @@ yarf-platform-A
         └── __init__.py
 ```
 
-<u><center>Code Snippet: An example of a simplest platform plugin module named Platform A</center></u>
-
 An example of `pyproject.toml` is:
 
 ```{code-block} toml
+---
+caption: An example of `pyproject.toml`
+---
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -47,6 +51,9 @@ packages = ["src/yarf_plugin_platform_A"]
 In the `__init__.py`:
 
 ```{code-block} python
+---
+caption: `__init__.py` for Platform A
+---
 from yarf.rf_libraries.libraries import PlatformBase
 
 
@@ -59,8 +66,6 @@ class PlatformA(PlatformBase):
         return str(Path(__file__).parent)
 ```
 
-<u><center>Code Snippet: `__init__.py` for Platform A</center></u>
-
 By implementing the `PlatformBase` class, Platform A will be auto-registered to YARF's supported platforms when imported.
 
 ```{note}
@@ -70,6 +75,9 @@ All YARF platform plugins' package directory name has to be prefixed by `yarf_pl
 We can also make use of the base classes in `yarf/rf_libraries/libraries` to implement classes like `VideoInput` and `Hid` if we found these useful for Platform A. If we choose to do so, we will have a module structured like:
 
 ```{code-block} bash
+---
+caption: An example of plugin Platform A with Hid and VideoInput
+---
 yarf-platform-A
 ├── pyproject.toml
 └── src
@@ -80,11 +88,12 @@ yarf-platform-A
         └── VideoInput.py
 ```
 
-<u><center>Code Snippet: An example of plugin Platform A with Hid and VideoInput</center></u>
-
 Take example of `Hid.py`, we can have something like:
 
 ```{code-block} python
+---
+caption: An example of Hid implementation in Platform A
+---
 from yarf.rf_libraries.libraries.hid_base import HidBase
 from yarf_plugin_platform_A import PlatformA
 
@@ -105,9 +114,7 @@ class Hid(HidBase):
     ...
 ```
 
-<u><center>Code Snippet: An example of Hid implementation in Platform A</center></u>
-
-## Managing Plugin Platforms in YARF
+## Managing plugin platforms in YARF
 
 There are two ways to manage platform plugins in YARF:
 
@@ -124,13 +131,14 @@ There are two ways to manage platform plugins in YARF:
 1. Snap: The YARF snap provides a `platform-plugins` interface to receive a plugin. In the plugin snap, we can just add a plug so that the snap can share the plugin's location to YARF. For example:
 
    ```{code-block} yaml
+   ---
+   caption: An example plug `write-yarf-platform-plugins` that shares a plugin
+   ---
    plugs:
        write-yarf-platform-plugins:
        interface: content
        target: $SNAP_COMMON/platform-to-plug
    ```
-
-   <u><center>Code Snippet: An example plug `write-yarf-platform-plugins` that shares a plugin</center></u>
 
    Then we can connect the snap with the plugin with YARF:
 

@@ -40,7 +40,7 @@ Optionally, enable pre-commit checks, so your contribution will pass all the che
 we run on the code:
 
 ```shell
-uvx --from 'pre-commit<4.0.0' pre-commit install
+uvx pre-commit install
 ```
 
 We can start working on the repository here.

@@ -44,7 +44,8 @@ jobs:
       run: uv sync
 
   test-noble:
-    runs-on: [self-hosted, linux, noble, x64, large]
+    # We use GitHub hosted runners for this job as Pa11y needs working Chrom support
+    runs-on: ubuntu-24.04
     steps:
     - name: Install dependencies
       run: |
@@ -59,7 +60,7 @@ jobs:
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         lfs: true
-        ref: ${{ inputs.ref }}
+        fetch-depth: 0
     - name: Set up Python
       uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
       with:
