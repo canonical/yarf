@@ -96,7 +96,7 @@ class TestHidBase:
         position given in proportional coordinates.
         """
         await stub_hid.move_pointer_to_proportional(0.15, 0.35)
-        await stub_hid.walk_pointer_to_proportional(0.5, 0.5, 0.05, 0.2)
+        await stub_hid.walk_pointer_to_proportional(0.5, 0.5, 0.05, 0.05, 0.2)
 
         stub_hid._move_pointer.assert_has_calls(
             (
@@ -119,17 +119,16 @@ class TestHidBase:
         position given in absolute coordinates.
         """
         await stub_hid.move_pointer_to_proportional(0.15, 0.35)
-        await stub_hid.walk_pointer_to_absolute(100, 200, 0.05, 0.2)
+        await stub_hid.walk_pointer_to_absolute(100, 200, 100, 0.2)
 
         stub_hid._move_pointer.assert_has_calls(
             (
-                call(pytest.approx(0.1), pytest.approx(0.3)),
                 call(pytest.approx(0.1), pytest.approx(0.25)),
                 call(pytest.approx(0.1), pytest.approx(0.2)),
             )
         )
 
-        mock_sleep.assert_has_calls(3 * [call(0.2)])
+        mock_sleep.assert_has_calls(2 * [call(0.2)])
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
