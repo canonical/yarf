@@ -233,10 +233,10 @@ Walk Pointer To ${destination}
     ...    Absolute position of the pointer after the walk, as a tuple (x, y)
     ...    of integers.
     [Arguments]             ${step_distance}=16     ${delay}=0.01
-    IF    ${{isinstance($destination, str)}}
+    IF    ${{ os.path.exists($destination) }}
         ${regions}=             PlatformVideoInput.Match                        ${destination}
         ${position}=            Get Center Of ${regions}[0]
-    ELSE
+    ELSE IF    ${{ isinstance($destination, tuple) }}
         ${position}=            Set Variable            ${destination}
     END
     PlatformHid.Walk Pointer To Absolute
@@ -340,3 +340,22 @@ Ensure ${destination} Does Not Match
     IF    ${match}
         Fail                    Found ${destination} where it wasn't intended or expected
     END
+
+Drag ${target} And Drop On ${destination}
+    [Documentation]    Drag an item represented by a template or string and drop it on another template or string.
+    ...
+    ...    Embedded arguments:
+    ...    - ${target}: Can be a string, or the path of an image template file representing
+    ...    the item to drag or a coordinate tuple (x, y) of integers representing the
+    ...    absolute position to drag from. For details please see `Move Pointer to ${destination}`.
+    ...    - ${destination}: Can be a string, or the path of an image template file representing
+    ...    the target location to drop on, or a coordinate tuple (x, y) of integers representing the
+    ...    absolute position to drop on. For details please see `Walk Pointer To ${destination}`.
+    ...
+    [Arguments]             ${step_distance}=16     ${delay}=0.01
+
+    Move Pointer To ${target}
+    Press LEFT Button
+    ${end_position}=        Walk Pointer To ${destination}                  ${step_distance}        ${delay}
+    Release LEFT Button
+    RETURN                  ${end_position}
