@@ -3,7 +3,6 @@ on:
   schedule:
     - cron: '00 19 * * *'
   workflow_dispatch:
-  pull_request:
 
 permissions:
   contents: read
