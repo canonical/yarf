@@ -342,7 +342,7 @@ Ensure ${destination} Does Not Match
     END
 
 Drag ${target} And Drop On ${destination}
-    [Documentation]    Drag an item represented by a template or string and drop it on another template or string.
+    [Documentation]    Drag a target and drop it on a destination.
     ...
     ...    Embedded arguments:
     ...    - ${target}: Can be a string, or the path of an image template file representing
