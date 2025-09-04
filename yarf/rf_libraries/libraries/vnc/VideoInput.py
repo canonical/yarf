@@ -5,9 +5,9 @@ from PIL import Image
 from robot.api import logger
 from robot.api.deco import keyword, library
 
-from yarf.lib.asyncvnc import connect
 from yarf.rf_libraries.libraries.video_input_base import VideoInputBase
 from yarf.rf_libraries.libraries.vnc import Vnc
+from yarf.vendor.asyncvnc import connect
 
 
 @library

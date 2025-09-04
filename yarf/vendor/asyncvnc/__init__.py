@@ -5,10 +5,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 from fractions import Fraction
 from itertools import product
+from keysymdef import keysymdef
 from os import urandom
 from typing import Callable, Dict, List, Optional, Set, Tuple
 from zlib import decompressobj
-import keysymdef
 
 import numpy as np
 
