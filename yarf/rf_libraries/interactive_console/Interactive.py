@@ -52,7 +52,7 @@ class Interactive:
         Raises:
             ValueError: If the screenshot could not be grabbed.
         """
-        platform_video_input = self._get_lib_instance("PlatformVideoInput")
+        platform_video_input = self._get_lib_instance("VideoInput")
         if (image := await platform_video_input.grab_screenshot()) is None:
             raise ValueError("Failed to grab screenshot.")
 
