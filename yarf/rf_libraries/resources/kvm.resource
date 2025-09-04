@@ -233,13 +233,11 @@ Walk Pointer To ${destination}
     ...    Absolute position of the pointer after the walk, as a tuple (x, y)
     ...    of integers.
     [Arguments]             ${step_distance}=16     ${delay}=0.01
-    IF    ${{ isinstance($destination, tuple) }}
-        ${position}=            Set Variable            ${destination}
-    ELSE IF    ${{ os.path.exists($destination) }}
+    IF    ${{isinstance($destination, str)}}
         ${regions}=             PlatformVideoInput.Match                        ${destination}
         ${position}=            Get Center Of ${regions}[0]
     ELSE
-        Fail                    Destination must be a tuple or a valid template path
+        ${position}=            Set Variable            ${destination}
     END
     PlatformHid.Walk Pointer To Absolute
     ...                     ${position}[0]
