@@ -238,6 +238,8 @@ class HidBase(ABC):
         """
         assert 0 <= x <= 1, "x not in range 0..1"
         assert 0 <= y <= 1, "y not in range 0..1"
+        assert 0 < step_distance_x <= 1, "step_distance_x not in range 0..1"
+        assert 0 < step_distance_y <= 1, "step_distance_y not in range 0..1"
 
         while self._pointer_position != (x, y):
             dist_x = x - self._pointer_position.x
