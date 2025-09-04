@@ -4,9 +4,9 @@ from typing import Sequence
 
 from robot.api.deco import keyword, library
 
+from yarf.lib.asyncvnc import connect
 from yarf.rf_libraries.libraries.hid_base import HidBase, Size
 from yarf.rf_libraries.libraries.vnc import Vnc
-from yarf.lib.asyncvnc import connect
 
 
 class MouseTranslation(IntEnum):
