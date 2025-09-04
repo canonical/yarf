@@ -202,15 +202,24 @@ class HidBase(ABC):
         assert 0 <= y <= display_size.height, "Y coordinate outside of screen"
 
         proportional = (x / display_size.width, y / display_size.height)
+        proportional_step_distance = (
+            step_distance / display_size.width,
+            step_distance / display_size.height,
+        )
         await self.walk_pointer_to_proportional(
             *proportional,
-            step_distance,
+            *proportional_step_distance,
             delay,
         )
 
     @keyword
     async def walk_pointer_to_proportional(
-        self, x: float, y: float, step_distance: float, delay: float
+        self,
+        x: float,
+        y: float,
+        step_distance_x: float,
+        step_distance_y: float,
+        delay: float,
     ) -> None:
         """
         Walk the virtual pointer to a position proportional to the size of the
@@ -220,7 +229,8 @@ class HidBase(ABC):
         Args:
             x: horizontal coordinate, 0 <= x <= 1
             y: vertical coordinate, 0 <= y <= 1
-            step_distance: maximum distance to move per step
+            step_distance_x: maximum distance to move per step horizontally, 0 < step_distance_x <= 1
+            step_distance_y: maximum distance to move per step vertically, 0 < step_distance_y <= 1
             delay: delay between steps in seconds
 
         Raises:
@@ -228,15 +238,14 @@ class HidBase(ABC):
         """
         assert 0 <= x <= 1, "x not in range 0..1"
         assert 0 <= y <= 1, "y not in range 0..1"
-        display_size = await self._get_display_size()
 
         while self._pointer_position != (x, y):
             dist_x = x - self._pointer_position.x
             dist_y = y - self._pointer_position.y
-            step_x = min(abs(dist_x), step_distance / display_size.width) * (
+            step_x = min(abs(dist_x), step_distance_x) * (
                 dist_x < 0 and -1 or 1
             )
-            step_y = min(abs(dist_y), step_distance / display_size.height) * (
+            step_y = min(abs(dist_y), step_distance_y) * (
                 dist_y < 0 and -1 or 1
             )
 
