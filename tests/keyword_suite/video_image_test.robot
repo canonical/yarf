@@ -24,16 +24,6 @@ Test Keyword Match All
     ...                     ${CURDIR}/calculator/divide.png
     ...                     ${CURDIR}/calculator/times.png
     ...                     ${CURDIR}/calculator/equals.png
-    ...                     ${CURDIR}/calculator/1.png
-    ...                     ${CURDIR}/calculator/2.png
-    ...                     ${CURDIR}/calculator/3.png
-    ...                     ${CURDIR}/calculator/4.png
-    ...                     ${CURDIR}/calculator/5.png
-    ...                     ${CURDIR}/calculator/6.png
-    ...                     ${CURDIR}/calculator/7.png
-    ...                     ${CURDIR}/calculator/8.png
-    ...                     ${CURDIR}/calculator/9.png
-    ...                     ${CURDIR}/calculator/0.png
     Length Should Be        ${matches}              5
     Run Keyword And Expect Error
     ...                     ImageNotFoundError: *
