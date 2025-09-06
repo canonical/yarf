@@ -61,7 +61,7 @@ Test Keyword Find Text
     FOR    ${match}    IN    @{matched_text}
         ${text}=                Set Variable            ${match['text']}
         IF    '${text}' in ${expected_text}
-            Set Variable            ${count}                ${count_+_1}
+            ${count}=               Evaluate                ${count} + 1
         END
     END
     Should Be Equal As Integers                     ${count}                3
@@ -92,7 +92,7 @@ Test Keyword Match Text
     FOR    ${match}    IN    @{MATCHED_TEXT}
         ${text}=                Set Variable            ${match['text']}
         IF    '${text}' in ${expected_text}
-            Set Variable            ${count}                ${count_+_1}
+            ${count}=               Evaluate                ${count} + 1
         END
     END
     Should Be Equal As Integers                     ${count}                3
