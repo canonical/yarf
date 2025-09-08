@@ -2,9 +2,9 @@
 Documentation       Keyword definitions for specialised functionality
 ...                 for Keyboard, Mouse and Video-based manipulation.
 ...
-...                 These keywords rely on VideoInput and Hid libraries
-...                 to be initialized using the Init keyword.
-...                 The initialization is platform-specific.
+...                 These keywords rely on PlatformVideoInput library to be initialized
+...                 using the PlatformVideoInput.Init keyword. The initialization is
+...                 platform-specific.
 
 Library             Collections
 Library             Hid.py    AS    PlatformHid
@@ -33,16 +33,22 @@ Press Combo And Match
     ...                     ${tolerance}=${DEFAULT_TEMPLATE_MATCHING_TOLERANCE}
 
     ${match}=               Run Keyword And Return Status
-    ...                     Match                   ${template}             ${timeout}              ${tolerance}
+    ...                     PlatformVideoInput.Match
+    ...                     ${template}
+    ...                     ${timeout}
+    ...                     ${tolerance}
     IF    ${match}
         Log                     Template is already matching.                   html=true               console=true
         RETURN
     END
 
     FOR    ${index}    IN RANGE    ${tentatives}
-        Hid.Keys Combo          ${keys-combo}
+        PlatformHid.Keys Combo                          ${keys-combo}
         ${match}=               Run Keyword And Return Status
-        ...                     Match                   ${template}             ${timeout}              ${tolerance}
+        ...                     PlatformVideoInput.Match
+        ...                     ${template}
+        ...                     ${timeout}
+        ...                     ${tolerance}
         IF    ${match}    BREAK
     END
 
@@ -56,7 +62,7 @@ Press And Wait For Match
     ...                     ${tolerance}=${DEFAULT_TEMPLATE_MATCHING_TOLERANCE}
 
     Keys Combo              ${keys-combo}
-    Match                   ${template}             ${timeout}              ${tolerance}
+    PlatformVideoInput.Match                        ${template}             ${timeout}              ${tolerance}
 
 Get Center Of ${region}
     [Documentation]    Get the center point of a region.
@@ -91,7 +97,7 @@ Move Pointer To (${x}, ${y})
     ...    Embedded arguments:
     ...    - ${x}: Integer absolute x-coordinate to move the pointer to.
     ...    - ${y}: Integer absolute y-coordinate to move the pointer to.
-    Hid.Move Pointer To Absolute                    ${x}                    ${y}
+    PlatformHid.Move Pointer To Absolute            ${x}                    ${y}
 
 Move Pointer To ${destination}
     [Documentation]    Move the pointer to an absolute position or image
@@ -110,7 +116,7 @@ Move Pointer To ${destination}
     ...    Absolute position of the pointer after the move, as a tuple (x, y)
     ...    of integers.
     IF    ${{ os.path.exists($destination) }}
-        ${regions}=             Match                   ${destination}
+        ${regions}=             PlatformVideoInput.Match                        ${destination}
         ${position}=            Get Center Of ${regions}[0]
     ELSE IF    ${{ isinstance($destination, tuple) }}
         ${position}=            Set Variable            ${destination}
@@ -119,10 +125,10 @@ Move Pointer To ${destination}
         ...                     Assuming ${destination} is a string as it isn't a file which exists.
         ...                     html=true
         ...                     console=true
-        ${position}=            Get Text Position       text=${destination}
+        ${position}=            PlatformVideoInput.Get Text Position            text=${destination}
     END
 
-    Hid.Move Pointer To Absolute                    ${position}[0]          ${position}[1]
+    PlatformHid.Move Pointer To Absolute            ${position}[0]          ${position}[1]
     RETURN                  ${position}
 
 Move Pointer To ${destination} In ${domain}
@@ -158,17 +164,17 @@ Move Pointer To ${destination} In ${domain}
     END
 
     IF    ${{ os.path.exists($destination) }}
-        ${regions}=             Match
+        ${regions}=             PlatformVideoInput.Match
         ...                     template=${destination}
         ...                     region=${target_region}
         ${position}=            Get Center Of ${regions}[0]
     ELSE
-        ${position}=            Get Text Position
+        ${position}=            PlatformVideoInput.Get Text Position
         ...                     text=${destination}
         ...                     region=${target_region}
     END
 
-    Hid.Move Pointer To Absolute                    ${position}[0]          ${position}[1]
+    PlatformHid.Move Pointer To Absolute            ${position}[0]          ${position}[1]
     RETURN                  ${position}
 
 Move Pointer To Proportional (${x}, ${y})
@@ -186,7 +192,7 @@ Move Pointer To Proportional (${x}, ${y})
     ...    Return:
     ...    Absolute position of the pointer after the move, as a tuple (x, y)
     ...    of integers.
-    ${position}=            Hid.Move Pointer To Proportional                ${x}                    ${y}
+    ${position}=            PlatformHid.Move Pointer To Proportional        ${x}                    ${y}
     RETURN                  ${position}
 
 Walk Pointer To (${x}, ${y})
@@ -201,7 +207,7 @@ Walk Pointer To (${x}, ${y})
     ...    - ${delay} (optional): Time to sleep after each step, in seconds.
     ...    Default is 0.01.
     [Arguments]             ${step_distance}=16     ${delay}=0.01
-    Hid.Walk Pointer To Absolute
+    PlatformHid.Walk Pointer To Absolute
     ...                     ${x}
     ...                     ${y}
     ...                     ${step_distance}
@@ -228,12 +234,12 @@ Walk Pointer To ${destination}
     ...    of integers.
     [Arguments]             ${step_distance}=16     ${delay}=0.01
     IF    ${{isinstance($destination, str)}}
-        ${regions}=             Match                   ${destination}
+        ${regions}=             PlatformVideoInput.Match                        ${destination}
         ${position}=            Get Center Of ${regions}[0]
     ELSE
         ${position}=            Set Variable            ${destination}
     END
-    Hid.Walk Pointer To Absolute
+    PlatformHid.Walk Pointer To Absolute
     ...                     ${position}[0]
     ...                     ${position}[1]
     ...                     ${step_distance}
@@ -261,7 +267,7 @@ Walk Pointer To Proportional (${x}, ${y})
     ...    Absolute position of the pointer after the walk, as a tuple (x, y)
     ...    of integers.
     [Arguments]             ${step_distance}=16     ${delay}=0.01
-    ${position}=            Hid.Walk Pointer To Proportional
+    ${position}=            PlatformHid.Walk Pointer To Proportional
     ...                     ${x}
     ...                     ${y}
     ...                     ${step_distance}
@@ -273,21 +279,21 @@ Press ${button} Button
     ...
     ...    Embedded arguments:
     ...    - ${button}: Button to press (LEFT|RIGHT|MIDDLE).
-    Hid.Press Pointer Button                        ${button}
+    PlatformHid.Press Pointer Button                ${button}
 
 Release ${button} Button
     [Documentation]    Release a button on the virtual pointer.
     ...
     ...    Embedded arguments:
     ...    - ${button}: Button to release (LEFT|RIGHT|MIDDLE).
-    Hid.Release Pointer Button                      ${button}
+    PlatformHid.Release Pointer Button              ${button}
 
 Click ${button} Button
     [Documentation]    Click a button on the virtual pointer.
     ...
     ...    Embedded arguments:
     ...    - ${button}: Button to click (LEFT|RIGHT|MIDDLE).
-    Hid.Click Pointer Button                        ${button}
+    PlatformHid.Click Pointer Button                ${button}
 
 Click ${button} Button On ${destination}
     [Documentation]    Move the virtual pointer to the destination and click the button.
@@ -302,7 +308,7 @@ Click ${button} Button On ${destination}
 
 Release Buttons
     [Documentation]    Release all buttons on the virtual pointer.
-    Hid.Release Pointer Buttons
+    PlatformHid.Release Pointer Buttons
 
 Ensure ${destination} Does Not Match
     [Documentation]    Ensure a given template or string doesn't match within a given timeout and
@@ -318,14 +324,18 @@ Ensure ${destination} Does Not Match
 
     IF    ${{ os.path.exists($destination) }}
         ${match}=               Run Keyword And Return Status
-        ...                     Match                   ${destination}          timeout=${timeout}
+        ...                     PlatformVideoInput.Match
+        ...                     ${destination}
+        ...                     timeout=${timeout}
     ELSE
         Log
         ...                     Assuming ${destination} is a string as it isn't a file which exists.
         ...                     html=true
         ...                     console=true
         ${match}=               Run Keyword And Return Status
-        ...                     Match Text              ${destination}          timeout=${timeout}
+        ...                     PlatformVideoInput.Match Text
+        ...                     ${destination}
+        ...                     timeout=${timeout}
     END
     IF    ${match}
         Fail                    Found ${destination} where it wasn't intended or expected
