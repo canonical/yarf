@@ -78,7 +78,7 @@ class Hid(HidBase):
         """
         self._virtual_pointer.move_to_proportional(x, y)
 
-    @keyword
+    @keyword(name=getattr(HidBase.press_pointer_button, "robot_name"))
     async def press_pointer_button(self, button: str) -> None:
         """
         Press pointer button.
@@ -88,7 +88,7 @@ class Hid(HidBase):
         """
         self._virtual_pointer.button(Button[button], True)
 
-    @keyword
+    @keyword(name=getattr(HidBase.release_pointer_button, "robot_name"))
     async def release_pointer_button(self, button: str) -> None:
         """
         Release pointer button.
@@ -98,7 +98,7 @@ class Hid(HidBase):
         """
         self._virtual_pointer.button(Button[button], False)
 
-    @keyword
+    @keyword(name=getattr(HidBase.click_pointer_button, "robot_name"))
     async def click_pointer_button(self, button: str) -> None:
         """
         Click pointer button.
@@ -109,7 +109,7 @@ class Hid(HidBase):
         self._virtual_pointer.button(Button[button], True)
         self._virtual_pointer.button(Button[button], False)
 
-    @keyword
+    @keyword(name=getattr(HidBase.release_pointer_buttons, "robot_name"))
     async def release_pointer_buttons(self) -> None:
         """
         Release all pointer buttons.

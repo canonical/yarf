@@ -58,7 +58,7 @@ class Hid(HidBase):
                 client.keyboard.write(character)
                 sleep(self.type_string_delay)
 
-    @keyword
+    @keyword(name=getattr(HidBase.click_pointer_button, "robot_name"))
     async def click_pointer_button(self, button: str) -> None:
         """
         Press and release the specified pointer button.
@@ -79,7 +79,7 @@ class Hid(HidBase):
             with client.mouse.hold(MouseTranslation[button]):
                 sleep(0.005)
 
-    @keyword
+    @keyword(name=getattr(HidBase.press_pointer_button, "robot_name"))
     async def press_pointer_button(self, button: str) -> None:
         """
         Press the specified pointer button.
@@ -93,7 +93,7 @@ class Hid(HidBase):
             client.mouse.buttons |= mask
             client.mouse._write()
 
-    @keyword
+    @keyword(name=getattr(HidBase.release_pointer_button, "robot_name"))
     async def release_pointer_button(self, button: str) -> None:
         """
         Release the specified pointer button.
@@ -107,7 +107,7 @@ class Hid(HidBase):
             client.mouse.buttons &= ~mask
             client.mouse._write()
 
-    @keyword
+    @keyword(name=getattr(HidBase.release_pointer_buttons, "robot_name"))
     async def release_pointer_buttons(self) -> None:
         """
         Release all pointer buttons.
