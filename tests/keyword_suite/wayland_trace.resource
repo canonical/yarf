@@ -81,7 +81,6 @@ Assert Keys Combo Events
     ...    wl_display#*.sync(new id wl_callback#*)
     [Arguments]             ${key_ints}
 
-    ${sync_pattern}=        Set Variable            ^.*wl_display#\\d+\\.sync\\(new id wl_callback#\\d+\\)$
     ${trace}=               Get Trace
     ${n}=                   Get Length              ${trace}
     ${start}=               Set Variable            0
@@ -112,5 +111,24 @@ Assert Keys Combo Events
                 Should Be True          ${jdx} - ${mid_start} == 0
                 ${mid_start}=           Evaluate                ${jdx} + 1
             END
+        END
+    END
+
+    ${sync_pattern}=        Set Variable            ^.*wl_display#\\d+\\.sync\\(new id wl_callback#\\d+\\)$
+    ${steps}=               Create List
+    ...                     ${start}
+    ...                     ${mid_start}
+    FOR    ${position}    IN    @{steps}
+        ${jdx}=                 Find Next Matching Line
+        ...                     ${trace}
+        ...                     ${position}
+        ...                     ${sync_pattern}
+        Should Be True          ${jdx} < ${n}
+        IF    ${position} < ${mid}
+            Should Be True          ${jdx} - ${start} == 0
+            ${start}=               Evaluate                ${jdx} + 1
+        ELSE
+            Should Be True          ${jdx} - ${mid_start} == 0
+            ${mid_start}=           Evaluate                ${jdx} + 1
         END
     END
