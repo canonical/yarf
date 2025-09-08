@@ -25,7 +25,7 @@ Decrease the counter and assert count
 Toggle theme and assert the theme changed
     [Tags]                  yarf:certification_status: blocker
     Click LEFT Button on ${CURDIR}/buttons/toggle_theme.png
-    Hid.Move Pointer To Absolute                    x=0                     y=0
+    PlatformHid.Move Pointer To Absolute            x=0                     y=0
     Match                   ${CURDIR}/simple_counter_toggled.png
 
 Close the simple counter

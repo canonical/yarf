@@ -21,7 +21,7 @@ class TestInteractive:
         )
         await interactive.grab_templates(sentinel.template_names)
 
-        mock_get_lib_instance.assert_called_once_with("VideoInput")
+        mock_get_lib_instance.assert_called_once_with("PlatformVideoInput")
         sentinel.platform_video_input.grab_screenshot.assert_called_once()
         mock_ROISelector.assert_called_once_with(
             sentinel.image, sentinel.template_names
