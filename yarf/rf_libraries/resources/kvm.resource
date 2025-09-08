@@ -58,6 +58,17 @@ Press And Wait For Match
     Keys Combo              ${keys-combo}
     Match                   ${template}             ${timeout}              ${tolerance}
 
+Click ${button} Button On ${destination}
+    [Documentation]    Move the virtual pointer to the destination and click the button.
+    ...
+    ...    See `Move Pointer to ${destination}` for details.
+    ...
+    ...    Embedded arguments:
+    ...    - ${button}: Button to click (LEFT|RIGHT|MIDDLE).
+    ...    - ${destination}: The template or location to click on.
+    Move Pointer To ${destination}
+    Click ${button} Button
+
 Get Center Of ${region}
     [Documentation]    Get the center point of a region.
     ...
@@ -85,14 +96,6 @@ Displace ${point} By (${x}, ${y})
     ${point}=               Evaluate                (int(${point}[0] + ${x}), int(${point}[1] + ${y}))
     RETURN                  ${point}
 
-Move Pointer To (${x}, ${y})
-    [Documentation]    Move the pointer to an absolute position.
-    ...
-    ...    Embedded arguments:
-    ...    - ${x}: Integer absolute x-coordinate to move the pointer to.
-    ...    - ${y}: Integer absolute y-coordinate to move the pointer to.
-    Hid.Move Pointer To Absolute                    ${x}                    ${y}
-
 Move Pointer To ${destination}
     [Documentation]    Move the pointer to an absolute position or image
     ...    template.
@@ -109,20 +112,24 @@ Move Pointer To ${destination}
     ...    Return:
     ...    Absolute position of the pointer after the move, as a tuple (x, y)
     ...    of integers.
-    IF    ${{ os.path.exists($destination) }}
-        ${regions}=             Match                   ${destination}
-        ${position}=            Get Center Of ${regions}[0]
-    ELSE IF    ${{ isinstance($destination, tuple) }}
+    IF    ${{ isinstance($destination, tuple) }}
         ${position}=            Set Variable            ${destination}
+    ELSE IF    ${{ isinstance($destination, str) }}
+        IF    ${{ os.path.exists($destination) }}
+            ${regions}=             Match                   ${destination}
+            ${position}=            Get Center Of ${regions}[0]
+        ELSE
+            Log
+            ...                     Assuming ${destination} is a string as it isn't a file which exists.
+            ...                     html=true
+            ...                     console=true
+            ${position}=            Get Text Position       text=${destination}
+        END
     ELSE
-        Log
-        ...                     Assuming ${destination} is a string as it isn't a file which exists.
-        ...                     html=true
-        ...                     console=true
-        ${position}=            Get Text Position       text=${destination}
+        Fail                    Unsupported destination type
     END
 
-    Hid.Move Pointer To Absolute                    ${position}[0]          ${position}[1]
+    Hid.Move Pointer To (${position}[0], ${position}[1])
     RETURN                  ${position}
 
 Move Pointer To ${destination} In ${domain}
@@ -168,25 +175,7 @@ Move Pointer To ${destination} In ${domain}
         ...                     region=${target_region}
     END
 
-    Hid.Move Pointer To Absolute                    ${position}[0]          ${position}[1]
-    RETURN                  ${position}
-
-Move Pointer To Proportional (${x}, ${y})
-    [Documentation]    Move the pointer to a destination position given as
-    ...    proportions to the size of the display output.
-    ...
-    ...    Embedded arguments:
-    ...    - ${x}: Output-relative x-coordinate to move the pointer to.
-    ...    It must be in the range 0..1, where 0 represents the left edge,
-    ...    and 1 represents the right edge of the output.
-    ...    - ${y}: Output-relative y-coordinate to move the pointer to.
-    ...    It must be in the range 0..1, where 0 represents the top edge,
-    ...    and 1 represents the bottom edge of the output.
-    ...
-    ...    Return:
-    ...    Absolute position of the pointer after the move, as a tuple (x, y)
-    ...    of integers.
-    ${position}=            Hid.Move Pointer To Proportional                ${x}                    ${y}
+    Hid.Move Pointer To (${position}[0], ${position}[1])
     RETURN                  ${position}
 
 Walk Pointer To (${x}, ${y})
@@ -227,12 +216,23 @@ Walk Pointer To ${destination}
     ...    Absolute position of the pointer after the walk, as a tuple (x, y)
     ...    of integers.
     [Arguments]             ${step_distance}=16     ${delay}=0.01
-    IF    ${{isinstance($destination, str)}}
-        ${regions}=             Match                   ${destination}
-        ${position}=            Get Center Of ${regions}[0]
-    ELSE
+    IF    ${{ isinstance($destination, tuple) }}
         ${position}=            Set Variable            ${destination}
+    ELSE IF    ${{ isinstance($destination, str) }}
+        IF    ${{ os.path.exists($destination) }}
+            ${regions}=             Match                   ${destination}
+            ${position}=            Get Center Of ${regions}[0]
+        ELSE
+            Log
+            ...                     Assuming ${destination} is a string as it isn't a file which exists.
+            ...                     html=true
+            ...                     console=true
+            ${position}=            Get Text Position       text=${destination}
+        END
+    ELSE
+        Fail                    Unsupported destination type
     END
+
     Hid.Walk Pointer To Absolute
     ...                     ${position}[0]
     ...                     ${position}[1]
@@ -267,42 +267,6 @@ Walk Pointer To Proportional (${x}, ${y})
     ...                     ${step_distance}
     ...                     ${delay}
     RETURN                  ${position}
-
-Press ${button} Button
-    [Documentation]    Press a button on the virtual pointer.
-    ...
-    ...    Embedded arguments:
-    ...    - ${button}: Button to press (LEFT|RIGHT|MIDDLE).
-    Hid.Press Pointer Button                        ${button}
-
-Release ${button} Button
-    [Documentation]    Release a button on the virtual pointer.
-    ...
-    ...    Embedded arguments:
-    ...    - ${button}: Button to release (LEFT|RIGHT|MIDDLE).
-    Hid.Release Pointer Button                      ${button}
-
-Click ${button} Button
-    [Documentation]    Click a button on the virtual pointer.
-    ...
-    ...    Embedded arguments:
-    ...    - ${button}: Button to click (LEFT|RIGHT|MIDDLE).
-    Hid.Click Pointer Button                        ${button}
-
-Click ${button} Button On ${destination}
-    [Documentation]    Move the virtual pointer to the destination and click the button.
-    ...
-    ...    See `Move Pointer to ${destination}` for details.
-    ...
-    ...    Embedded arguments:
-    ...    - ${button}: Button to click (LEFT|RIGHT|MIDDLE).
-    ...    - ${destination}: The template or location to click on.
-    Move Pointer To ${destination}
-    Click ${button} Button
-
-Release Buttons
-    [Documentation]    Release all buttons on the virtual pointer.
-    Hid.Release Pointer Buttons
 
 Ensure ${destination} Does Not Match
     [Documentation]    Ensure a given template or string doesn't match within a given timeout and
