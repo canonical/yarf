@@ -266,7 +266,7 @@ Walk Pointer To Proportional (${x}, ${y})
     ...    Return:
     ...    Absolute position of the pointer after the walk, as a tuple (x, y)
     ...    of integers.
-    [Arguments]             ${step_distance}=16     ${delay}=0.01
+    [Arguments]             ${step_distance}=0.01                           ${delay}=0.01
     ${position}=            PlatformHid.Walk Pointer To Proportional
     ...                     ${x}
     ...                     ${y}
