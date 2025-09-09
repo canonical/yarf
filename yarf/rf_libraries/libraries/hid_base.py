@@ -204,7 +204,7 @@ class HidBase(ABC):
         proportional = (x / display_size.width, y / display_size.height)
         await self.walk_pointer_to_proportional(
             *proportional,
-            *proportional_step_distance,
+            step_distance,
             delay,
         )
 
@@ -220,8 +220,7 @@ class HidBase(ABC):
         Args:
             x: horizontal coordinate, 0 <= x <= 1
             y: vertical coordinate, 0 <= y <= 1
-            step_distance_x: maximum distance to move per step horizontally, 0 < step_distance_x <= 1
-            step_distance_y: maximum distance to move per step vertically, 0 < step_distance_y <= 1
+            step_distance: maximum distance to move per step
             delay: delay between steps in seconds
 
         Raises:
@@ -229,18 +228,12 @@ class HidBase(ABC):
         """
         assert 0 <= x <= 1, "x not in range 0..1"
         assert 0 <= y <= 1, "y not in range 0..1"
-        assert 0 < step_distance_x <= 1, "step_distance_x not in range 0..1"
-        assert 0 < step_distance_y <= 1, "step_distance_y not in range 0..1"
 
         while self._pointer_position != (x, y):
             dist_x = x - self._pointer_position.x
             dist_y = y - self._pointer_position.y
-            step_x = min(abs(dist_x), step_distance_x) * (
-                dist_x < 0 and -1 or 1
-            )
-            step_y = min(abs(dist_y), step_distance_y) * (
-                dist_y < 0 and -1 or 1
-            )
+            step_x = min(abs(dist_x), step_distance) * (dist_x < 0 and -1 or 1)
+            step_y = min(abs(dist_y), step_distance) * (dist_y < 0 and -1 or 1)
 
             await self.move_pointer_to_proportional(
                 self._pointer_position.x + step_x,
