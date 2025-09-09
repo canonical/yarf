@@ -67,6 +67,7 @@ Assert Type String Events
         END
         ${idx}=                 Evaluate                ${idx} + 2
     END
+    RETURN                  ${idx}
 
 Assert Keys Combo Events
     [Documentation]    This function asserts that the following calls are present in the Wayland trace for every key in the combo:
@@ -132,3 +133,4 @@ Assert Keys Combo Events
             ${mid_start}=           Evaluate                ${jdx} + 1
         END
     END
+    RETURN                  ${mid_start}
