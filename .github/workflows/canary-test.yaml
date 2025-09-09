@@ -114,7 +114,6 @@ jobs:
           sudo apt install -y \
             git-lfs \
             jq
-
           pip install check-jsonschema
 
       - name: Check out tests
