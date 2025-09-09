@@ -30,25 +30,20 @@ from yarf.tests.fixtures import fs  # noqa: F401
 
 
 class TestMain:
-    def test_version_is_development_placeholder(self) -> None:
-        """
-        Test that the version in the repository is the development placeholder
-        0.0.0.
-
-        The actual version will be set by CI during the build process.
-        """
-        assert str(YARF_VERSION) == "0.0.0", (
-            f"Expected development version 0.0.0, but got {YARF_VERSION}"
-        )
-
     @pytest.mark.parametrize(
         "version_tag,expected",
         [
-            ("yarf:version: >= 0.0.0", True),
+            ("yarf:version: > 0.0.0", True),
             ("yarf:version: > 10000000.0.0", False),
+            ("yarf:version: >= 0.0.0", True),
+            ("yarf:version: >= 10000000.0.0", False),
             ("yarf:version: < 10000000.0.0", True),
-            ("yarf:version: == 0.0.0", True),
+            ("yarf:version: < 0.0.0", False),
+            ("yarf:version: <= 10000000.0.0", True),
+            ("yarf:version: <= 0.0.0", False),
             (f"yarf:version: == {YARF_VERSION}", True),
+            ("yarf:version: == 0.0.0", False),
+            ("yarf:version: != 0.0.0", True),
             (f"yarf:version: != {YARF_VERSION}", False),
         ],
     )
