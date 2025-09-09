@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock, call, patch
+from unittest.mock import AsyncMock, call, patch
 
 import pytest
 
@@ -123,12 +123,13 @@ class TestHidBase:
 
         stub_hid._move_pointer.assert_has_calls(
             (
+                call(pytest.approx(0.1), pytest.approx(0.3)),
                 call(pytest.approx(0.1), pytest.approx(0.25)),
                 call(pytest.approx(0.1), pytest.approx(0.2)),
             )
         )
 
-        mock_sleep.assert_has_calls(2 * [call(0.2)])
+        mock_sleep.assert_has_calls(3 * [call(0.2)])
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(

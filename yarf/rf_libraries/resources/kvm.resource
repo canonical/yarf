@@ -341,23 +341,6 @@ Ensure ${destination} Does Not Match
         Fail                    Found ${destination} where it wasn't intended or expected
     END
 
-Drag ${target} And Drop On ${destination}
-    [Documentation]    Move the pointer to a target, drag and drop it on a destination.
-    ...
-    ...    Embedded arguments:
-    ...    - ${target}: Can be a string, or the path of an image template file representing
-    ...    the item to drag or a coordinate tuple (x, y) of integers representing the
-    ...    absolute position to drag from. For details please see `Move Pointer to ${destination}`.
-    ...    - ${destination}: Can be a string, or the path of an image template file representing
-    ...    the target location to drop on, or a coordinate tuple (x, y) of integers representing the
-    ...    absolute position to drop on. For details please see `Walk Pointer To ${destination}`.
-    ...
-    [Arguments]             ${step_distance}=16     ${delay}=0.01
-
-    Move Pointer To ${target}
-    ${end_position}=        Drag And Drop On ${destination}                 ${step_distance}        ${delay}
-    RETURN                  ${end_position}
-
 Drag And Drop On ${destination}
     [Documentation]    Drag and drop the current target (where the pointer is) on a destination.
     ...
