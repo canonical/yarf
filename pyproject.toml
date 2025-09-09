@@ -28,7 +28,7 @@ dependencies = [
     "pywayland",
     "rapidfuzz>=3.12.1",
     "rapidocr-onnxruntime>=1.4.4",
-    "robotframework~=6.1.1",
+    "robotframework~=7.3.2",
     "robotframework-debug~=4.5.0",
     "robotframework-sshlibrary~=3.8.0",
     "robotframework-stacktrace==0.4.1",
