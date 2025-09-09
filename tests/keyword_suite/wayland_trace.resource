@@ -134,3 +134,96 @@ Assert Keys Combo Events
         END
     END
     RETURN                  ${mid_start}
+
+Assert Pointer Button Events
+    [Documentation]    This function asserts that the following calls are present
+    ...    in the Wayland trace for every button:
+    ...    Press:
+    ...    zwlr_virtual_pointer_v1#*.button(*, ${button_int}, 1)
+    ...    Release:
+    ...    zwlr_virtual_pointer_v1#*.button(*, ${button_int}, 0)
+    ...    And for either Press or Release:
+    ...    zwlr_virtual_pointer_v1#*.frame()
+    ...    wl_display#*.sync(new id wl_callback#*)
+    [Arguments]             ${actions}
+
+    ${trace}=               Get Trace
+    ${n}=                   Get Length              ${trace}
+    ${idx}=                 Set Variable            0
+
+    FOR    ${button_int}    ${action}    IN    &{actions}
+        ${button_down_pattern}=                         Set Variable
+        ...                     ^.*zwlr_virtual_pointer_v1#\\d+\\.button\\(\\d+, ${button_int}, 1\\)$
+        ${button_up_pattern}=                           Set Variable
+        ...                     ^.*zwlr_virtual_pointer_v1#\\d+\\.button\\(\\d+, ${button_int}, 0\\)$
+        ${frame_pattern}=       Set Variable            ^.*zwlr_virtual_pointer_v1#\\d+\\.frame\\(\\)$
+        ${sync_pattern}=        Set Variable            ^.*wl_display#\\d+\\.sync\\(new id wl_callback#\\d+\\)$
+        IF    '${action}' == 'press'
+            ${steps}=               Create List
+            ...                     ${button_down_pattern}
+            ...                     ${frame_pattern}
+            ...                     ${sync_pattern}
+        ELSE IF    '${action}' == 'release'
+            ${steps}=               Create List
+            ...                     ${button_up_pattern}
+            ...                     ${frame_pattern}
+            ...                     ${sync_pattern}
+        ELSE IF    '${action}' == 'click'
+            ${steps}=               Create List
+            ...                     ${button_down_pattern}
+            ...                     ${frame_pattern}
+            ...                     ${sync_pattern}
+            ...                     ${button_up_pattern}
+            ...                     ${frame_pattern}
+            ...                     ${sync_pattern}
+        END
+        FOR    ${step}    IN    @{steps}
+            ${jdx}=                 Find Next Matching Line
+            ...                     ${trace}
+            ...                     ${idx}
+            ...                     ${step}
+            Should Be True          ${jdx} < ${n}
+            Should Be True          ${jdx} - ${idx} == 0
+            ${idx}=                 Evaluate                ${jdx} + 1
+            IF    ${{ $step == $sync_pattern }}
+                ${idx}=                 Evaluate                ${idx} + 2
+            END
+        END
+    END
+    RETURN                  ${idx}
+
+Assert Pointer Movement Events
+    [Documentation]    This function asserts that the following calls are present in the Wayland trace for a pointer move:
+    ...    zwlr_virtual_pointer_v1#*.motion_absolute(*, ${x}, ${y}, *, *)
+    ...    zwlr_virtual_pointer_v1#*.frame()
+    ...    wl_display#*.sync(new id wl_callback#*)
+    [Arguments]             ${movements}
+
+    ${trace}=               Get Trace
+    ${n}=                   Get Length              ${trace}
+    ${idx}=                 Set Variable            0
+
+    FOR    ${movement}    IN    @{movements}
+        ${x}                    ${y}=                   Evaluate                $movement
+        ${motion_pattern}=      Set Variable
+        ...                     ^.*zwlr_virtual_pointer_v1#\\d+\\.motion_absolute\\(\\d+, ${x}, ${y}, \\d+, \\d+\\)$
+        ${frame_pattern}=       Set Variable            ^.*zwlr_virtual_pointer_v1#\\d+\\.frame\\(\\)$
+        ${sync_pattern}=        Set Variable            ^.*wl_display#\\d+\\.sync\\(new id wl_callback#\\d+\\)$
+        ${steps}=               Create List
+        ...                     ${motion_pattern}
+        ...                     ${frame_pattern}
+        ...                     ${sync_pattern}
+        FOR    ${step}    IN    @{steps}
+            ${jdx}=                 Find Next Matching Line
+            ...                     ${trace}
+            ...                     ${idx}
+            ...                     ${step}
+            Should Be True          ${jdx} < ${n}
+            Should Be True          ${jdx} - ${idx} == 0
+            ${idx}=                 Evaluate                ${jdx} + 1
+            IF    ${{ $step == $sync_pattern }}
+                ${idx}=                 Evaluate                ${idx} + 2
+            END
+        END
+    END
+    RETURN                  ${idx}
