@@ -29,14 +29,14 @@ Test Keyword Match All
 
     ${templates}=           Create List
     ...                     ${CURDIR}/calculator/equals.png
-    ...                     ${CURDIR}/calculator/cloud.png
+    ...                     ${CURDIR}/images/cloud.png
     Run Keyword And Expect Error                    ImageNotFoundError: *
     ...                     Match All               ${templates}
 
 Test Keyword Match Any
     [Tags]                  yarf:certification_status: blocker
     ${templates}=           Create List
-    ...                     ${CURDIR}/images/equals.png
+    ...                     ${CURDIR}/calculator/equals.png
     ...                     ${CURDIR}/images/cloud.png
     ${match}=               Match Any               ${templates}
     Length Should Be        ${match}                1
