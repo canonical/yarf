@@ -4,5 +4,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-commit-message:
-  prefix: "[Infra] "
+
+    commit-message:
+      prefix: "[Infra] "
