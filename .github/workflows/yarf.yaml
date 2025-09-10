@@ -138,6 +138,11 @@ jobs:
         dbus-run-session -- uv --project=$(pwd)/examples/yarf-example-simple-counter run simple-counter --theme light &
         uv run yarf --platform Mir --variant light examples/yarf-example-simple-counter/yarf_tests
 
+    - name: Install keyword suite dependencies
+      run: |
+        sudo apt-get --yes --no-install-recommends install \
+          eog
+
     - name: Run Keyword tests - VideoInput imaging
       run: |
         export WAYLAND_DISPLAY=wayland-1
