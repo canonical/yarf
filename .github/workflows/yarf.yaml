@@ -56,7 +56,9 @@ jobs:
           libxkbcommon-dev \
           jq \
           clang \
-          python3-tk
+          python3-tk \
+          tesseract-ocr
+
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         lfs: true
