@@ -56,32 +56,32 @@ Test Button Actions
 Test Keyword Move Pointer
     [Tags]                  yarf:certification_status: blocker
     Clear Trace File
-    Hid.Move Pointer To Absolute                    100                     100
-    Hid.Move Pointer To Proportional                0.1                     0.1
-    Hid.Move Pointer To Proportional                1                       1
-    Hid.Move Pointer To Absolute                    0                       0
+    PlatformHid.Move Pointer To Absolute            100                     100
+    PlatformHid.Move Pointer To Proportional        0.1                     0.1
+    PlatformHid.Move Pointer To Proportional        1                       1
+    PlatformHid.Move Pointer To Absolute            0                       0
     ${movements}=           Evaluate                [(100,100), (128,102), (1280,1024), (0,0)]
     Assert Pointer Movement Events                  ${movements}
 
 Test Keyword Walk Pointer
     [Tags]                  yarf:certification_status: blocker
     Clear Trace File
-    Hid.Walk Pointer To Absolute
+    PlatformHid.Walk Pointer To Absolute
     ...                     100
     ...                     100
     ...                     20
     ...                     0.01
-    Hid.Walk Pointer To Proportional
+    PlatformHid.Walk Pointer To Proportional
     ...                     0.1
     ...                     0.1
     ...                     0.01
     ...                     0.01
-    Hid.Walk Pointer To Proportional
+    PlatformHid.Walk Pointer To Proportional
     ...                     1
     ...                     1
     ...                     0.1
     ...                     0.01
-    Hid.Walk Pointer To Absolute
+    PlatformHid.Walk Pointer To Absolute
     ...                     0
     ...                     0
     ...                     200
