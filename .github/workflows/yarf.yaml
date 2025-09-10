@@ -177,6 +177,7 @@ jobs:
     - name: Run Keyword tests - Hid keyboard
       run: |
         export WAYLAND_DISPLAY=wayland-3
+        export WAYLAND_DEBUG=client
 
         # Start Mir on a virtual display (doesn't require graphics hardware)
         mir-test-tools.demo-server \
@@ -187,11 +188,12 @@ jobs:
         # Wait for the compositor to start
         inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-3\$" $XDG_RUNTIME_DIR
 
-        uv run yarf --platform Mir tests/keyword_suite -- --suite hid_keyboard_test
+        uv run yarf --platform Mir tests/keyword_suite -- --suite hid_keyboard_test 2> ~/wayland.trace
 
     - name: Run Keyword tests - Hid pointer
       run: |
         export WAYLAND_DISPLAY=wayland-4
+        export WAYLAND_DEBUG=client
 
         # Start Mir on a virtual display (doesn't require graphics hardware)
         mir-test-tools.demo-server \
@@ -202,7 +204,7 @@ jobs:
         # Wait for the compositor to start
         inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-4\$" $XDG_RUNTIME_DIR
 
-        uv run yarf --platform Mir tests/keyword_suite -- --suite hid_pointer_test
+        uv run yarf --platform Mir tests/keyword_suite -- --suite hid_pointer_test 2> ~/wayland.trace
 
     - if: failure()
       name: Collect test results

@@ -51,4 +51,5 @@ Test Keyword Match Any
 Test Keyword Restart Video Input
     [Tags]                  yarf:certification_status: blocker
     Restart Video Input
+    Sleep                   2s
     Match                   ${CURDIR}/calculator/01_calculator.png
