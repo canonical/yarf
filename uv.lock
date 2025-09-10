@@ -1583,7 +1583,7 @@ requires-dist = [
     { name = "pywayland" },
     { name = "rapidfuzz", specifier = ">=3.12.1" },
     { name = "rapidocr-onnxruntime", specifier = ">=1.4.4" },
-    { name = "robotframework", specifier = "~=7.3.2" },
+    { name = "robotframework", specifier = "~=6.1.1" },
     { name = "robotframework-debug", specifier = "~=4.5.0" },
     { name = "robotframework-sshlibrary", specifier = "~=3.8.0" },
     { name = "robotframework-stacktrace", specifier = "==0.4.1" },
