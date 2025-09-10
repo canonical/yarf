@@ -3,7 +3,6 @@ Documentation       This suite tests Hid keyboard related keywords.
 
 Resource            kvm.resource
 Resource            wayland_trace.resource
-Resource            Collections
 
 Task Tags
 ...    robot:stop-on-failure

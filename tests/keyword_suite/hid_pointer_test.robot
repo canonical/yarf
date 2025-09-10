@@ -3,7 +3,6 @@ Documentation       This suite tests Hid pointer related keywords.
 
 Resource            kvm.resource
 Resource            wayland_trace.resource
-Resource            Collections
 
 Task Tags
 ...    robot:stop-on-failure
