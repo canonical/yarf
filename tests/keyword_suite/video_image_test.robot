@@ -18,32 +18,35 @@ Test Keyword Match
 
 Test Keyword Match All
     [Tags]                  yarf:certification_status: blocker
-    ${matches}=             Match All
+    ${templates}=           Create List
     ...                     ${CURDIR}/calculator/plus.png
     ...                     ${CURDIR}/calculator/minus.png
     ...                     ${CURDIR}/calculator/divide.png
     ...                     ${CURDIR}/calculator/times.png
     ...                     ${CURDIR}/calculator/equals.png
+    ${matches}=             Match All               ${templates}
     Length Should Be        ${matches}              5
-    Run Keyword And Expect Error
-    ...                     ImageNotFoundError: *
-    ...                     Match All
+
+    ${templates}=           Create List
     ...                     ${CURDIR}/calculator/equals.png
-    ...                     ${CURDIR}/images/cloud.png
+    ...                     ${CURDIR}/calculator/cloud.png
+    Run Keyword And Expect Error                    ImageNotFoundError: *
+    ...                     Match All               ${templates}
 
 Test Keyword Match Any
     [Tags]                  yarf:certification_status: blocker
-    ${match}=               Match Any
-    ...                     ${CURDIR}/calculator/equals.png
+    ${templates}=           Create List
+    ...                     ${CURDIR}/images/equals.png
     ...                     ${CURDIR}/images/cloud.png
+    ${match}=               Match Any               ${templates}
     Length Should Be        ${match}                1
     Should Be Equal As Strings                      ${match[0]['path']}     ${CURDIR}/calculator/equals.png
 
-    Run Keyword And Expect Error
-    ...                     ImageNotFoundError: *
-    ...                     Match Any
+    ${templates}=           Create List
     ...                     ${CURDIR}/images/tree.png
     ...                     ${CURDIR}/images/cloud.png
+    Run Keyword And Expect Error                    ImageNotFoundError: *
+    ...                     Match Any               ${templates}
 
 Test Keyword Restart Video Input
     [Tags]                  yarf:certification_status: blocker
