@@ -266,6 +266,9 @@ class TestSubmissionSchema(OutputConverterBase):
                         parse(status_tag.attrib["endtime"]).timestamp()
                         - parse(status_tag.attrib["starttime"]).timestamp()
                     )
+                    if "endtime" in status_tag.attrib
+                    and "starttime" in status_tag.attrib
+                    else status_tag.attrib["elapsed"]
                 ),
             }
 
@@ -306,7 +309,11 @@ class TestSubmissionSchema(OutputConverterBase):
             curr.append(f"Keyword: {keyword_chain}\n")
 
         elif node.tag == "msg":
-            timestamp = node.attrib["timestamp"]
+            timestamp = (
+                node.attrib["time"]
+                if "time" in node.attrib
+                else node.attrib["timestamp"]
+            )
             msg_level = node.attrib["level"]
             msg_text = node.text.strip() if node.text else ""
             curr.append(f"[{timestamp} - {msg_level}] {msg_text}\n")
