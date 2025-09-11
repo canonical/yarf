@@ -1,18 +1,16 @@
-name: "Build YARF snap: Evaluate Version"
+name: "(1) Evaluate Version & Trigger Snap Build"
 
 on:
-  # schedule:
-  #   - cron: "0 8 * * *"   # 08:00 UTC daily
   workflow_dispatch:
   push:
-    branches: [git-version]
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  TARGET_WORKFLOW: snap-dry-run.yaml
+  TARGET_WORKFLOW: snap.yaml
 
 jobs:
   evaluate-version-and-trigger-snap-build:

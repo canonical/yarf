@@ -1,13 +1,21 @@
-workflow: TrunkBased/preview1
-commit-message-incrementing: Enabled
-major-version-bump-message: '^(?i:(\[Breaking\]|Breaking:))'
-minor-version-bump-message: '^(?i:(feat:|\[New\]|Add:))'
-# patch-version-bump-message: '^(?i:(\[BugFix\]|Fix:|\[Infra\]))'
+workflow: GitHubFlow/v1
+mode: ContinuousDeployment
+major-version-bump-message: '^(?i:\[Breaking\])'
+minor-version-bump-message: '^(?i:\[New\])'
+# Left commented for reference
+# patch-version-bump-message: '^(?i:(\[BugFix\]|\[Infra\]))'
+strategies:
+  - Mainline
 branches:
   main:
-    regex: ^main$         # Place your branch name here to emulate main branch behavior.
+    regex: ^(main)$          # Place your branch name here to emulate main branch behavior.
     increment: Patch
     is-main-branch: true
+
+  pull-request:
+    increment: Patch
+
+  feature:
 
 # PEP440 is not compatible with Semantic Versioning 🥹, therefore for non-main branches version will be set from InformationalVersion
 assembly-informational-format: '{Major}.{Minor}.{Patch}+{BranchName}.{ShortSha}'
