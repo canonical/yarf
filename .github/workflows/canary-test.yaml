@@ -3,20 +3,12 @@ name: Canary test
 on:
   workflow_call:
     inputs:
-      NAME:
-        description: 'The name of the snap to promote'
-        type: string
-        required: true
       TRACK:
         description: 'The snap track to promote within (e.g., latest)'
         type: string
         required: true
       CHANNEL:
         description: 'The snap channel to promote from (e.g., stable, candidate, beta, edge)'
-        type: string
-        required: true
-      VER:
-        description: 'The version of the snap to promote'
         type: string
         required: true
       REV:
@@ -27,7 +19,7 @@ on:
         description: 'The architecture of the snap to promote (e.g., amd64, arm64)'
         type: string
         required: true
-      MACHINE_TYPE:
+      RUNNER:
         description: 'The type of machine to run the canary test on'
         type: string
         required: true
@@ -43,8 +35,8 @@ concurrency:
 
 jobs:
   canary-test:
-    name: ${{ matrix.platform }} - Canary test ${{ inputs.NAME }} snap at channel ${{ inputs.TRACK }}/${{ inputs.CHANNEL }} (rev. ${{ inputs.REV }})
-    runs-on: ${{ inputs.MACHINE_TYPE }}
+    name: ${{ matrix.platform }} - Canary test yarf snap at channel ${{ inputs.TRACK }}/${{ inputs.CHANNEL }} (rev. ${{ inputs.REV }})
+    runs-on: ${{ inputs.RUNNER }}
     strategy:
       fail-fast: false
       matrix:
@@ -128,7 +120,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sudo snap install "${{ inputs.NAME }}" --channel="${{ inputs.TRACK }}/${{ inputs.CHANNEL }}"
+          sudo snap install yarf --channel="${{ inputs.TRACK }}/${{ inputs.CHANNEL }}"
 
       - name: Install platform ${{ matrix.platform }} dependencies
         shell: bash
@@ -158,8 +150,8 @@ jobs:
 
       - name: Download test submission schema and validate
         run: |
-          version=$(jq -r '.version' ~/snap/${{ inputs.NAME }}/common/yarf-outdir/TestSubmissionSchema_output.json)
-          check-jsonschema --schemafile https://raw.githubusercontent.com/canonical/test-submission-schema/refs/heads/main/test_submission_schema/schemas/v${version}.json ~/snap/${{ inputs.NAME }}/common/yarf-outdir/TestSubmissionSchema_output.json
+          version=$(jq -r '.version' ~/snap/yarf/common/yarf-outdir/TestSubmissionSchema_output.json)
+          check-jsonschema --schemafile https://raw.githubusercontent.com/canonical/test-submission-schema/refs/heads/main/test_submission_schema/schemas/v${version}.json ~/snap/yarf/common/yarf-outdir/TestSubmissionSchema_output.json
 
       - name: Pin YARF to the requested version in pyproject.toml
         run: |
@@ -269,7 +261,7 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: yarf-canary-output-${{ matrix.platform }}-${{ inputs.ARCH }}
-          path: ~/snap/${{ inputs.NAME }}/common/yarf-outdir/*
+          path: ~/snap/yarf/common/yarf-outdir/*
           retention-days: 5
 
       - if: failure() && runner.debug

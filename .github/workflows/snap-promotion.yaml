@@ -132,13 +132,11 @@ jobs:
 
     uses: ./.github/workflows/canary-test.yaml
     with:
-      NAME:    yarf
       TRACK:   ${{ matrix.track }}
       CHANNEL: ${{ matrix.from }}
-      VER:     ${{ needs.check-versions.outputs.from_version }}
       REV:     ${{ needs.check-versions.outputs.from_revision }}
       ARCH:    ${{ matrix.arch }}
-      MACHINE_TYPE: ${{ matrix.runs_on }}
+      RUNNER:  ${{ matrix.runs_on }}
 
   promote:
     name: Promote — ${{ matrix.track }} / ${{ matrix.from }} to ${{ matrix.to }} ( ${{ matrix.arch }} )
