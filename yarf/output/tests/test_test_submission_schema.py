@@ -2,6 +2,7 @@ import xml.etree.ElementTree as ET
 from importlib import metadata
 from pathlib import Path
 from textwrap import dedent
+from typing import Any
 from unittest.mock import ANY, MagicMock, Mock, patch, sentinel
 from xml.etree.ElementTree import Element
 
@@ -33,7 +34,6 @@ class TestTestSubmissionSchema:
                     """
                     *** Settings ***
                     Resource        kvm.resource
-                    Library         Hid.py    AS    PlatformHid
 
 
                     *** Test Cases ***
@@ -47,7 +47,7 @@ class TestTestSubmissionSchema:
 
                     Task3
                         [Tags]                  yarf:certification_status: non-blocker        yarf:category_id: com.canonical.category::categoryC
-                        PlatformHid.Type String     1234567890
+                        Type String     1234567890
                     """
                 ),
                 "com.canonical.yarf",
@@ -67,7 +67,6 @@ class TestTestSubmissionSchema:
                     """
                     *** Settings ***
                     Resource        kvm.resource
-                    Library         Hid.py    AS    PlatformHid
 
 
                     *** Test Cases ***
@@ -81,7 +80,7 @@ class TestTestSubmissionSchema:
 
                     Task3
                         [Tags]                  yarf:certification_status: non-blocker        yarf:category_id: com.canonical.category::categoryC
-                        PlatformHid.Type String     1234567890
+                        Type String     1234567890
                     """
                 ),
                 "com.sample.space",
@@ -124,7 +123,6 @@ class TestTestSubmissionSchema:
                     """
                     *** Settings ***
                     Resource        kvm.resource
-                    Library         Hid.py    AS    PlatformHid
 
 
                     *** Test Cases ***
@@ -150,7 +148,6 @@ class TestTestSubmissionSchema:
                     f"""
                     *** Settings ***
                     Resource        kvm.resource
-                    Library         Hid.py    AS    PlatformHid
 
 
                     *** Test Cases ***
@@ -177,7 +174,6 @@ class TestTestSubmissionSchema:
                     """
                     *** Settings ***
                     Resource        kvm.resource
-                    Library         Hid.py    AS    PlatformHid
 
 
                     *** Test Cases ***
@@ -203,7 +199,6 @@ class TestTestSubmissionSchema:
                     """
                     *** Settings ***
                     Resource        kvm.resource
-                    Library         Hid.py    AS    PlatformHid
 
 
                     *** Test Cases ***
@@ -229,7 +224,6 @@ class TestTestSubmissionSchema:
                     """
                     *** Settings ***
                     Resource        kvm.resource
-                    Library         Hid.py    AS    PlatformHid
 
 
                     *** Test Cases ***
@@ -404,93 +398,183 @@ class TestTestSubmissionSchema:
         converter.get_tests_results_from_suite.assert_not_called()
         assert output == []
 
-    def test_get_tests_results_from_suite(self) -> None:
+    @pytest.mark.parametrize(
+        "xml_string,expected_result",
+        [
+            (
+                dedent(
+                    """
+                    <suite id="s1-s1" name="TestA" source="/tmp/tmpv7ethbc6/test.robot">
+                        <test id="s1-s1-t1" name="TaskA" line="7">
+                            <kw name="KeywordA" library="LibA" sourcename="TemplateA">
+                                <arg>/tmp/tmpv7ethbc6/testA.png</arg>
+                                <doc>This is task A.</doc>
+                                <msg timestamp="20241205 20:58:33.537" level="PASS"></msg>
+                                <status status="PASS" starttime="20241205 20:58:33.524" endtime="20241205 20:58:33.539"/>
+                            </kw>
+                            <tag>yarf:category_id: com.canonical.category::categoryA</tag>
+                            <tag>yarf:certification_status: non-blocker</tag>
+                            <tag>yarf:test_group_id: com.canonical.group::testGroupA</tag>
+                            <status status="PASS" starttime="20241205 20:58:33.523" endtime="20241205 20:58:33.540">
+                            </status>
+                        </test>
+                        <test id="s1-s1-t2" name="TaskB" line="12">
+                            <kw name="KeywordB" library="LibB">
+                                <arg>/tmp/tmpv7ethbc6/testB.png</arg>
+                                <doc>This is task B.</doc>
+                                <msg timestamp="20241205 20:58:33.537" level="FAIL">
+                                    Full Error Message
+                                </msg>
+                                <status status="FAIL" starttime="20241205 20:59:33.524" endtime="20241205 20:59:33.539"/>
+                            </kw>
+                            <tag>yarf:category_id: com.canonical.category::categoryB</tag>
+                            <tag>yarf:certification_status: non-blocker</tag>
+                            <status status="FAIL" starttime="20241205 20:59:33.523" endtime="20241205 20:59:33.540">
+                                Full Error Message
+                            </status>
+                        </test>
+                        <test id="s1-s1-t2" name="TaskC" line="12">
+                            <kw name="KeywordC" library="LibC">
+                                <arg>/tmp/tmpv7ethbc6/testC.png</arg>
+                                <doc>This is task C.</doc>
+                                <msg timestamp="20241205 21:00:33.537" level="NOT RUN">
+                                </msg>
+                                <status status="NOT RUN" starttime="20241205 21:00:33.524" endtime="20241205 21:00:33.539"/>
+                            </kw>
+                            <tag>yarf:category_id: com.canonical.category::categoryC</tag>
+                            <tag>yarf:certification_status: non-blocker</tag>
+                            <status status="NOT RUN" starttime="20241205 21:00:33.523" endtime="20241205 21:00:33.540">
+                            </status>
+                        </test>
+                    </suite>
+                    """
+                ),
+                [
+                    {
+                        "id": "com.canonical.yarf::TestA/TaskA",
+                        "test_description": "",
+                        "certification_status": "non-blocker",
+                        "category_id": "com.canonical.category::categoryA",
+                        "outcome": "passed",
+                        "comments": "",
+                        "io_log": "io_logA",
+                        "duration": 0.01699995994567871,
+                        "test_group_id": "com.canonical.group::testGroupA",
+                    },
+                    {
+                        "id": "com.canonical.yarf::TestA/TaskB",
+                        "test_description": "",
+                        "certification_status": "non-blocker",
+                        "category_id": "com.canonical.category::categoryB",
+                        "outcome": "failed",
+                        "comments": "",
+                        "io_log": "io_logB",
+                        "duration": 0.01699995994567871,
+                    },
+                    {
+                        "id": "com.canonical.yarf::TestA/TaskC",
+                        "test_description": "",
+                        "certification_status": "non-blocker",
+                        "category_id": "com.canonical.category::categoryC",
+                        "outcome": "skipped",
+                        "comments": "",
+                        "io_log": "io_logC",
+                        "duration": 0.01699995994567871,
+                    },
+                ],
+            ),
+            # Robot Framework v7
+            (
+                dedent(
+                    """
+                    <suite id="s1-s1" name="TestA" source="/tmp/tmpv7ethbc6/test.robot">
+                        <test id="s1-s1-t1" name="TaskA" line="7">
+                            <kw name="KeywordA" library="LibA" sourcename="TemplateA">
+                                <arg>/tmp/tmpv7ethbc6/testA.png</arg>
+                                <doc>This is task A.</doc>
+                                <msg time="20241205T20:58:33.537" level="PASS"></msg>
+                                <status status="PASS" start="20241205T20:58:33.524126" elapsed="0.015"/>
+                            </kw>
+                            <tag>yarf:category_id: com.canonical.category::categoryA</tag>
+                            <tag>yarf:certification_status: non-blocker</tag>
+                            <tag>yarf:test_group_id: com.canonical.group::testGroupA</tag>
+                            <status status="PASS" start="20241205T20:58:33.523157" elapsed="0.02">
+                            </status>
+                        </test>
+                        <test id="s1-s1-t2" name="TaskB" line="12">
+                            <kw name="KeywordB" library="LibB">
+                                <arg>/tmp/tmpv7ethbc6/testB.png</arg>
+                                <doc>This is task B.</doc>
+                                <msg time="20241205T20:58:33.537" level="FAIL">
+                                    Full Error Message
+                                </msg>
+                                <status status="FAIL" start="20241205T20:59:33.524236" elapsed="0.015"/>
+                            </kw>
+                            <tag>yarf:category_id: com.canonical.category::categoryB</tag>
+                            <tag>yarf:certification_status: non-blocker</tag>
+                            <status status="FAIL" start="20241205T20:59:33.523123" elapsed="0.015">
+                                Full Error Message
+                            </status>
+                        </test>
+                        <test id="s1-s1-t2" name="TaskC" line="12">
+                            <kw name="KeywordC" library="LibC">
+                                <arg>/tmp/tmpv7ethbc6/testC.png</arg>
+                                <doc>This is task C.</doc>
+                                <msg time="20241205T21:00:33.537" level="NOT RUN">
+                                </msg>
+                                <status status="NOT RUN" start="20241205T21:00:33.524" elapsed="0.017"/>
+                            </kw>
+                            <tag>yarf:category_id: com.canonical.category::categoryC</tag>
+                            <tag>yarf:certification_status: non-blocker</tag>
+                            <status status="NOT RUN" starttime="20241205T21:00:33.523789" elapsed="0.017">
+                            </status>
+                        </test>
+                    </suite>
+                    """
+                ),
+                [
+                    {
+                        "id": "com.canonical.yarf::TestA/TaskA",
+                        "test_description": "",
+                        "certification_status": "non-blocker",
+                        "category_id": "com.canonical.category::categoryA",
+                        "outcome": "passed",
+                        "comments": "",
+                        "io_log": "io_logA",
+                        "duration": 0.02,
+                        "test_group_id": "com.canonical.group::testGroupA",
+                    },
+                    {
+                        "id": "com.canonical.yarf::TestA/TaskB",
+                        "test_description": "",
+                        "certification_status": "non-blocker",
+                        "category_id": "com.canonical.category::categoryB",
+                        "outcome": "failed",
+                        "comments": "",
+                        "io_log": "io_logB",
+                        "duration": 0.015,
+                    },
+                    {
+                        "id": "com.canonical.yarf::TestA/TaskC",
+                        "test_description": "",
+                        "certification_status": "non-blocker",
+                        "category_id": "com.canonical.category::categoryC",
+                        "outcome": "skipped",
+                        "comments": "",
+                        "io_log": "io_logC",
+                        "duration": 0.017,
+                    },
+                ],
+            ),
+        ],
+    )
+    def test_get_tests_results_from_suite(
+        self, xml_string: str, expected_result: list[dict[str, Any]]
+    ) -> None:
         """
         Test whether the function get_tests_results_from_suite returns expected
         list of test results with expected fields.
         """
-        xml_string = dedent(
-            """
-            <suite id="s1-s1" name="TestA" source="/tmp/tmpv7ethbc6/test.robot">
-                <test id="s1-s1-t1" name="TaskA" line="7">
-                    <kw name="KeywordA" library="LibA" sourcename="TemplateA">
-                        <arg>/tmp/tmpv7ethbc6/testA.png</arg>
-                        <doc>This is task A.</doc>
-                        <msg timestamp="20241205 20:58:33.537" level="PASS"></msg>
-                        <status status="PASS" starttime="20241205 20:58:33.524" endtime="20241205 20:58:33.539"/>
-                    </kw>
-                    <tag>yarf:category_id: com.canonical.category::categoryA</tag>
-                    <tag>yarf:certification_status: non-blocker</tag>
-                    <tag>yarf:test_group_id: com.canonical.group::testGroupA</tag>
-                    <status status="PASS" starttime="20241205 20:58:33.523" endtime="20241205 20:58:33.540">
-                    </status>
-                </test>
-                <test id="s1-s1-t2" name="TaskB" line="12">
-                    <kw name="KeywordB" library="LibB">
-                        <arg>/tmp/tmpv7ethbc6/testB.png</arg>
-                        <doc>This is task B.</doc>
-                        <msg timestamp="20241205 20:58:33.537" level="FAIL">
-                            Full Error Message
-                        </msg>
-                        <status status="FAIL" starttime="20241205 20:59:33.524" endtime="20241205 20:59:33.539"/>
-                    </kw>
-                    <tag>yarf:category_id: com.canonical.category::categoryB</tag>
-                    <tag>yarf:certification_status: non-blocker</tag>
-                    <status status="FAIL" starttime="20241205 20:59:33.523" endtime="20241205 20:59:33.540">
-                        Full Error Message
-                    </status>
-                </test>
-                <test id="s1-s1-t2" name="TaskC" line="12">
-                    <kw name="KeywordC" library="LibC">
-                        <arg>/tmp/tmpv7ethbc6/testC.png</arg>
-                        <doc>This is task C.</doc>
-                        <msg timestamp="20241205 21:00:33.537" level="NOT RUN">
-                        </msg>
-                        <status status="NOT RUN" starttime="20241205 21:00:33.524" endtime="20241205 21:00:33.539"/>
-                    </kw>
-                    <tag>yarf:category_id: com.canonical.category::categoryC</tag>
-                    <tag>yarf:certification_status: non-blocker</tag>
-                    <status status="NOT RUN" starttime="20241205 21:00:33.523" endtime="20241205 21:00:33.540">
-                    </status>
-                </test>
-            </suite>
-            """
-        )
-
-        expected_result = [
-            {
-                "id": "com.canonical.yarf::TestA/TaskA",
-                "test_description": "",
-                "certification_status": "non-blocker",
-                "category_id": "com.canonical.category::categoryA",
-                "outcome": "passed",
-                "comments": "",
-                "io_log": "io_logA",
-                "duration": 0.01699995994567871,
-                "test_group_id": "com.canonical.group::testGroupA",
-            },
-            {
-                "id": "com.canonical.yarf::TestA/TaskB",
-                "test_description": "",
-                "certification_status": "non-blocker",
-                "category_id": "com.canonical.category::categoryB",
-                "outcome": "failed",
-                "comments": "",
-                "io_log": "io_logB",
-                "duration": 0.01699995994567871,
-            },
-            {
-                "id": "com.canonical.yarf::TestA/TaskC",
-                "test_description": "",
-                "certification_status": "non-blocker",
-                "category_id": "com.canonical.category::categoryC",
-                "outcome": "skipped",
-                "comments": "",
-                "io_log": "io_logC",
-                "duration": 0.01699995994567871,
-            },
-        ]
-
         converter = TestSubmissionSchema()
         converter.get_io_log = Mock(
             side_effect=[
@@ -766,6 +850,46 @@ class TestTestSubmissionSchema:
                     "Keyword: KeywordA -> KeywordB -> KeywordC\n",
                     "[20241128 14:05:15.543 - INFO] Finished in in 0.07 seconds\n",
                     '[20241128 14:05:15.544 - INFO] ${result} = ["A", "B", "C"]\n',
+                    "\n",
+                    "\n",
+                    "\n",
+                ],
+            ),
+            # Robot Framework v7
+            (
+                dedent(
+                    """
+                    <kw name="KeywordA" library="LibA" sourcename="TemplateA">
+                        <doc>DocA.</doc>
+                        <kw name="KeywordB" library="LibB" sourcename="TemplateB">
+                            <doc>DocB.</doc>
+                            <kw name="KeywordC" library="LibC">
+                                <var>varC</var>
+                                <arg>argC</arg>
+                                <doc>DocC.</doc>
+                                <msg time="20241128T14:05:15.543159" level="INFO">
+                                    Finished in in 0.07 seconds
+                                </msg>
+                                <msg time="20241128T14:05:15.544138" level="INFO">
+                                    ${result} = ["A", "B", "C"]
+                                </msg>
+                                <status status="PASS" start="20241128 14:05:15.451" elapsed="0.09"/>
+                            </kw>
+                            <status status="PASS" start="20241128 14:05:15.451" elapsed="0.09"/>
+                        </kw>
+                        <status status="PASS" start="20241128 14:05:15.451" elapsed="0.09"/>
+                    </kw>
+                    """
+                ),
+                [
+                    "================================================================================\n",
+                    "Keyword: KeywordA\n",
+                    "================================================================================\n",
+                    "Keyword: KeywordA -> KeywordB\n",
+                    "================================================================================\n",
+                    "Keyword: KeywordA -> KeywordB -> KeywordC\n",
+                    "[20241128T14:05:15.543159 - INFO] Finished in in 0.07 seconds\n",
+                    '[20241128T14:05:15.544138 - INFO] ${result} = ["A", "B", "C"]\n',
                     "\n",
                     "\n",
                     "\n",
