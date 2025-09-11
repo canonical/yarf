@@ -22,8 +22,7 @@ yarf-example-plugin
         └── VideoInput.py
 ```
 
-![NOTE]
-
+> [!NOTE]
 > All YARF platform plugins’ package directory name has to be prefixed by `yarf_plugin_`.
 
 1. `src`: Contains the source code for the example plugin.
