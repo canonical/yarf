@@ -58,10 +58,12 @@ jobs:
               ffmpeg \
               inotify-tools \
               wayvnc \
-              gnome-calculator
+              gnome-calculator \
+              eog
 
             prepare-platform-cmds: |
               export WAYLAND_DISPLAY=wayland-99
+              export WAYLAND_DEBUG=client
 
               # Start Mir on a virtual display (doesn't require graphics hardware)
               mir-test-tools.demo-server \
@@ -75,9 +77,6 @@ jobs:
               # Start vnc session
               wayvnc &
 
-              # Avoid GNOME apps waiting for portals
-              dbus-run-session -- gnome-calculator &
-
           - platform: Mir
             install-platform-deps-cmds: |
               sudo snap install mir-test-tools
@@ -89,6 +88,7 @@ jobs:
 
             prepare-platform-cmds: |
               export WAYLAND_DISPLAY=wayland-99
+              export WAYLAND_DEBUG=client
 
               # Start Mir on a virtual display (doesn't require graphics hardware)
               mir-test-tools.demo-server \
@@ -98,9 +98,6 @@ jobs:
 
               # Wait for the compositor to start
               inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-99\$" $XDG_RUNTIME_DIR
-
-              # Avoid GNOME apps waiting for portals
-              dbus-run-session -- gnome-calculator &
 
     env:
       TEST_SUITE_PATH: tests
@@ -153,6 +150,9 @@ jobs:
           ${{ matrix.prepare-platform-cmds }}
           SCRIPT
           )"
+
+          # Avoid GNOME apps waiting for portals
+          dbus-run-session -- gnome-calculator &
 
           snap run yarf --platform=${{ matrix.platform }} --output-format=TestSubmissionSchema ${{ env.TEST_SUITE_PATH }}/canary_test
 
@@ -207,6 +207,62 @@ jobs:
       - name: Run plugin tests
         run: |
           snap run yarf --platform Example tests/plugin_suite
+
+      # - name: Run Keyword tests - VideoInput imaging
+      #   run: |
+      #     set -euo pipefail
+      #     eval "$(
+      #     cat <<'SCRIPT'
+      #     ${{ matrix.prepare-platform-cmds }}
+      #     SCRIPT
+      #     )"
+
+      #     # Avoid GNOME apps waiting for portals
+      #     dbus-run-session -- gnome-calculator &
+
+      #     snap run yarf --platform Mir tests/keyword_suite -- --suite video_image_test
+
+      # - name: Run Keyword tests - VideoInput text
+      #   run: |
+      #     set -euo pipefail
+      #     eval "$(
+      #     cat <<'SCRIPT'
+      #     ${{ matrix.prepare-platform-cmds }}
+      #     SCRIPT
+      #     )"
+
+      #     # Avoid GNOME apps waiting for portals
+      #     dbus-run-session -- eog -f tests/keyword_suite/text/text.png &
+
+      #     snap run yarf --platform Mir tests/keyword_suite -- --suite video_text_test
+
+      # - name: Run Keyword tests - Hid keyboard
+      #   run: |
+      #     set -euo pipefail
+      #     eval "$(
+      #     cat <<'SCRIPT'
+      #     ${{ matrix.prepare-platform-cmds }}
+      #     SCRIPT
+      #     )"
+
+      #     # Wait for the compositor to start
+      #     inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-3\$" $XDG_RUNTIME_DIR
+
+      #     snap run yarf --platform Mir tests/keyword_suite -- --suite hid_keyboard_test 2> ~/wayland.trace
+
+      # - name: Run Keyword tests - Hid pointer
+      #   run: |
+      #     set -euo pipefail
+      #     eval "$(
+      #     cat <<'SCRIPT'
+      #     ${{ matrix.prepare-platform-cmds }}
+      #     SCRIPT
+      #     )"
+
+      #     # Wait for the compositor to start
+      #     inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-4\$" $XDG_RUNTIME_DIR
+
+      #     snap run yarf --platform Mir tests/keyword_suite -- --suite hid_pointer_test 2> ~/wayland.trace
 
       - if: failure()
         name: Collect test results
