@@ -1528,7 +1528,7 @@ develop = [
 
 [package.metadata]
 requires-dist = [
-    { name = "keysymdef", specifier = ">=1.2.0" },
+    { name = "keysymdef", specifier = "~=1.2.0" },
     { name = "licensecheck", marker = "extra == 'develop'" },
     { name = "mypy", marker = "extra == 'develop'" },
     { name = "numpy", specifier = "~=2.2.6" },
