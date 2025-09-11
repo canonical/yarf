@@ -142,7 +142,7 @@ Move Pointer To ${destination}
     ...    Absolute position of the pointer after the move, as a tuple (x, y)
     ...    of integers.
     ${position}=            Get Position From ${destination}
-    PlatformHid.Move Pointer To Absolute            ${position}[0]          ${position}[1]
+    Hid.Move Pointer To Absolute                    ${position}[0]          ${position}[1]
     RETURN                  ${position}
 
 Move Pointer To ${destination} In ${domain}
@@ -250,7 +250,7 @@ Walk Pointer To ${destination}
     ...    of integers.
     [Arguments]             ${step_distance}=16     ${delay}=0.01
     ${position}=            Get Position From ${destination}
-    PlatformHid.Walk Pointer To Absolute
+    Hid.Walk Pointer To Absolute
     ...                     ${position}[0]
     ...                     ${position}[1]
     ...                     ${step_distance}
