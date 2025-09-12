@@ -9,12 +9,12 @@ The original AsyncVNC is licensed under the GNU General Public License v3.0.
 A copy of this license should be included in the LICENSE file in this directory.
 
 MODIFICATIONS:
-- Fixed shifted keys issue in VNC with QEMU (commit aed4758)
+- Fixed shifted keys issue in VNC with QEMU
   * Replaced key_codes dictionary with key_sequences dictionary
   * Added proper handling for shifted characters (uppercase letters, symbols)
   * Added key aliases (Ctrl for Control, Enter for Return)
   * Implemented proper key sequence handling for QEMU VNC compatibility
-- Re-worked message handling with struct (commit 428c5ba)
+- Re-worked message handling with struct
   * Replaced int.to_bytes concatenation with struct.pack for better performance
   * Added clipboard_struct, keyboard_struct, and mouse_struct for message formatting
   * Improved message handling efficiency and readability
