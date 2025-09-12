@@ -1,0 +1,136 @@
+name: Release YARF
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      from_tag:
+        description: "Start boundary tag"
+        type: string
+        required: true
+      to_tag:
+        description: "End boundary tag. PRs up to and including this tag will be included."
+        type: string
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  release-notes:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          ref: main
+          lfs: true
+          fetch-depth: 0
+
+      - name: Ensure tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq gh
+
+      - name: Resolve & validate tags
+        id: tags
+        env:
+          FROM_TAG: ${{ github.event.inputs.from_tag }}
+          TO_TAG:   ${{ github.event.inputs.to_tag }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+
+          for t in "${FROM_TAG}" "${TO_TAG}"; do
+            if ! git rev-parse -q --verify "refs/tags/${t}" >/dev/null; then
+              echo "Tag '${t}' not found in repository." >&2
+              exit 1
+            fi
+          done
+
+          echo "from=${FROM_TAG}" >> "$GITHUB_OUTPUT"
+          echo "to=${TO_TAG}"     >> "$GITHUB_OUTPUT"
+
+      - name: Compute time window from ${{steps.tags.outputs.from }} to ${{ steps.tags.outputs.to }}
+        id: window
+        run: |
+          set -euo pipefail
+          FROM="${{ steps.tags.outputs.from }}"
+          TO="${{ steps.tags.outputs.to }}"
+
+          SINCE="$(git log -1 --format=%cI "${FROM}")"
+          UNTIL="$(git log -1 --format=%cI "${TO}")"
+
+          if [ "$(date -u -d "$SINCE" +%s)" -ge "$(date -u -d "$UNTIL" +%s)" ]; then
+            echo "from_tag (${FROM}) is not older than to_tag (${TO}). Nothing to collect." >&2
+          fi
+
+          echo "since=${SINCE}" >> "$GITHUB_OUTPUT"
+          echo "until=${UNTIL}" >> "$GITHUB_OUTPUT"
+
+      - name: Collect merged PRs from ${{ steps.window.outputs.since }} to ${{ steps.window.outputs.until }}
+        id: prs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          SINCE="${{ steps.window.outputs.since }}"
+          UNTIL="${{ steps.window.outputs.until }}"
+
+          gh pr list --state merged \
+            --search "merged:>${SINCE} merged:<=${UNTIL}" \
+            --limit 200 \
+            --json number,title,labels,mergedAt \
+          | jq -r '
+              sort_by(.mergedAt) | reverse
+              | map("- " + .title + " (#\(.number))")
+              | .[]' \
+          > pr_lines.txt || true
+
+          if [ ! -s pr_lines.txt ]; then
+            echo "- No pull requests found in this range." > pr_lines.txt
+          fi
+
+      - name: Build release body
+        id: body
+        run: |
+          awk '
+            BEGIN{breaking="";new="";bugfix="";infra="";other=""}
+            /^- /{
+              line=$0
+              if (line ~ /^\- *\[Breaking\]/i) breaking=breaking line ORS; else
+              if (line ~ /^\- *\[New\]/i)      new=new line ORS; else
+              if (line ~ /^\- *\[BugFix\]/i)   bugfix=bugfix line ORS; else
+              if (line ~ /^\- *\[Infra\]/i)    infra=infra line ORS; else
+                                                other=other line ORS
+            }
+            END{
+              print "## Changes"
+              if (breaking) {print "\n### Breaking Changes"; print breaking}
+              if (new)      {print "\n### New";               print new}
+              if (bugfix)   {print "\n### Bug Fixes";        print bugfix}
+              if (infra)    {print "\n### Infra";            print infra}
+            }' pr_lines.txt > sections.md
+
+          {
+            echo "# Release ${{ steps.tags.outputs.to }}"
+            echo
+            echo "> Changes merged after \`${{ steps.tags.outputs.from }}\` and up to and including \`${{ steps.tags.outputs.to }}\`."
+            echo
+            cat sections.md
+          } > release_body.md
+
+          cat release_body.md
+          echo "path=release_body.md" >> "$GITHUB_OUTPUT"
+
+      - name: Create or update GitHub Release (to_tag)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.tags.outputs.to }}"
+          NOTES_FILE="${{ steps.body.outputs.path }}"
+
+          # gh release create "${TAG}" --title "${TAG}" --notes-file "${NOTES_FILE}" || \
+          # gh release edit   "${TAG}" --notes-file "${NOTES_FILE}"
