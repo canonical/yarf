@@ -93,32 +93,6 @@ jobs:
           echo "from_kind=${FROM_KIND}" >> "$GITHUB_OUTPUT"
           echo "to=${TO_TAG}"           >> "$GITHUB_OUTPUT"
 
-      - name: Compute time window from ${{ steps.tags.outputs.from }} to ${{ steps.tags.outputs.to }}
-        id: window
-        run: |
-          set -euo pipefail
-          FROM="${{ steps.tags.outputs.from }}"
-          FROM_KIND="${{ steps.tags.outputs.from_kind }}"
-          TO="${{ steps.tags.outputs.to }}"
-
-          if [ "${FROM_KIND}" = "tag" ]; then
-            SINCE="$(git log -1 --format=%cI "${FROM}")"
-            NOTE_FROM="\\\`${FROM}\\\`"
-          else
-            ROOT="$(git rev-list --max-parents=0 HEAD | tail -n1)"
-            SINCE="$(git log -1 --format=%cI "${ROOT}")"
-            NOTE_FROM="repository start"
-          fi
-          UNTIL="$(git log -1 --format=%cI "${TO}")"
-
-          if [ "$(date -u -d "$SINCE" +%s)" -ge "$(date -u -d "$UNTIL" +%s)" ]; then
-            echo "Warning: from boundary is not earlier than to boundary; notes may be empty." >&2
-          fi
-
-          echo "since=${SINCE}"     >> "$GITHUB_OUTPUT"
-          echo "until=${UNTIL}"     >> "$GITHUB_OUTPUT"
-          echo "note_from=${NOTE_FROM}" >> "$GITHUB_OUTPUT"
-
       - name: Collect commits between tags
         id: commits
         env:
@@ -217,10 +191,16 @@ jobs:
             + section("Infrastructure";    "Infra")
           ' commits.json > sections.md
 
+          if [ "${{ steps.tags.outputs.from_kind }}" = "tag" ]; then
+            NOTE_FROM="\\\`${{ steps.tags.outputs.from }}\\\`"
+          else
+            NOTE_FROM="repository start"
+          fi
+
           {
             echo "# Release ${{ steps.tags.outputs.to }}"
             echo
-            echo "> Changes merged after ${{ steps.window.outputs.note_from }} and up to and including \`${{ steps.tags.outputs.to }}\`."
+            echo "> Changes merged after ${NOTE_FROM} and up to and including \`${{ steps.tags.outputs.to }}\`."
             echo
             cat sections.md
           } > release_body.md
