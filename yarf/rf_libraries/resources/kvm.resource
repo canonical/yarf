@@ -85,7 +85,7 @@ Displace ${point} By (${x}, ${y})
     ${point}=               Evaluate                (int(${point}[0] + ${x}), int(${point}[1] + ${y}))
     RETURN                  ${point}
 
-Get Position From ${target}
+Get Position Of ${target}
     [Documentation]    Get a position from an absolute coordinate, image
     ...    template, or string.
     ...
@@ -141,7 +141,7 @@ Move Pointer To ${destination}
     ...    Return:
     ...    Absolute position of the pointer after the move, as a tuple (x, y)
     ...    of integers.
-    ${position}=            Get Position From ${destination}
+    ${position}=            Get Position Of ${destination}
     Hid.Move Pointer To Absolute                    ${position}[0]          ${position}[1]
     RETURN                  ${position}
 
@@ -249,7 +249,7 @@ Walk Pointer To ${destination}
     ...    Absolute position of the pointer after the walk, as a tuple (x, y)
     ...    of integers.
     [Arguments]             ${step_distance}=16     ${delay}=0.01
-    ${position}=            Get Position From ${destination}
+    ${position}=            Get Position Of ${destination}
     Hid.Walk Pointer To Absolute
     ...                     ${position}[0]
     ...                     ${position}[1]
