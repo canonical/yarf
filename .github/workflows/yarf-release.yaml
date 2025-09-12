@@ -119,8 +119,7 @@ jobs:
           echo "until=${UNTIL}"     >> "$GITHUB_OUTPUT"
           echo "note_from=${NOTE_FROM}" >> "$GITHUB_OUTPUT"
 
-      # === COMMITS (not PRs) ===
-      - name: Collect commits between tags (lower exclusive, upper inclusive)
+      - name: Collect commits between tags
         id: commits
         env:
           GH_TOKEN: ${{ github.token }}
@@ -129,45 +128,52 @@ jobs:
           FROM_KIND="${{ steps.tags.outputs.from_kind }}"
           FROM="${{ steps.tags.outputs.from }}"
           TO="${{ steps.tags.outputs.to }}"
+          REPO="${GITHUB_REPOSITORY}"
+
+          # URL-encode tags for safe API paths
+          FROM_ESC=$(printf '%s' "$FROM" | jq -sRr @uri)
+          TO_ESC=$(printf  '%s' "$TO"   | jq -sRr @uri)
 
           if [ "${FROM_KIND}" = "tag" ]; then
-            # Use compare API: base...head == FROM..TO (exclusive lower, inclusive upper)
-            gh api "repos/canonical/yarf/compare/${FROM}...${TO}" \
-              --jq '.commits
-                    | map({
-                        sha: .sha,
-                        short: (.sha[0:7]),
-                        url: .html_url,
-                        title: (.commit.message | split("\n")[0]),
-                        author_login: (.author.login // null),
-                        author_name:  (.commit.author.name // null),
-                        committedAt:  .commit.author.date
-                      })
-                    | sort_by(.committedAt) | reverse' > commits.json
+            # Use compare API: base...head == FROM..TO (exclusive, inclusive)
+            gh api "repos/${REPO}/compare/${FROM_ESC}...${TO_ESC}" \
+            | jq --arg repo "$REPO" '
+                .commits
+                | map({
+                    sha: .sha,
+                    short: (.sha[0:7]),
+                    url: ("https://github.com/" + $repo + "/commit/" + .sha),
+                    title: (.commit.message | split("\n")[0]),
+                    author_login: (.author.login // null),
+                    author_name:  (.commit.author.name // null),
+                    committedAt:  .commit.author.date
+                  })
+                | sort_by(.committedAt) | reverse
+              ' > commits.json
           else
-            # Only one tag exists: get all commits reachable by TO (paginate)
-            : > pages.json
+            # Only one tag exists -> gather all commits reachable by TO (paginate)
+            : > rows.ndjson
             PAGE=1
-            while true; do
-              RESP="$(mktemp)"
-              gh api "repos/canonical/yarf/commits" -F sha="${TO}" -F per_page=100 -F page="${PAGE}" > "$RESP"
-              COUNT=$(jq 'length' "$RESP")
-              if [ "$COUNT" -eq 0 ]; then rm -f "$RESP"; break; fi
-              jq -r 'map({
-                        sha: .sha,
-                        short: (.sha[0:7]),
-                        url: .html_url,
-                        title: (.commit.message | split("\n")[0]),
-                        author_login: (.author.login // null),
-                        author_name:  (.commit.author.name // null),
-                        committedAt:  .commit.author.date
-                      })' "$RESP" >> pages.json
-              rm -f "$RESP"
+            while :; do
+              RESP="$(gh api "repos/${REPO}/commits?sha=${TO_ESC}&per_page=100&page=${PAGE}")"
+              COUNT="$(jq 'length' <<<"$RESP")"
+              if [ "$COUNT" -eq 0 ]; then break; fi
+              jq -c --arg repo "$REPO" '
+                map({
+                  sha: .sha,
+                  short: (.sha[0:7]),
+                  url: ("https://github.com/" + $repo + "/commit/" + .sha),
+                  title: (.commit.message | split("\n")[0]),
+                  author_login: (.author.login // null),
+                  author_name:  (.commit.author.name // null),
+                  committedAt:  .commit.author.date
+                }) | .[]
+              ' <<<"$RESP" >> rows.ndjson
               PAGE=$((PAGE+1))
             done
-            # Merge arrays and sort newest first
-            if [ -s pages.json ]; then
-              jq -s 'add | sort_by(.committedAt) | reverse' pages.json > commits.json
+
+            if [ -s rows.ndjson ]; then
+              jq -s 'sort_by(.committedAt) | reverse' rows.ndjson > commits.json
             else
               echo "[]" > commits.json
             fi
