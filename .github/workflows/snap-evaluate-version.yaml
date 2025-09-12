@@ -11,13 +11,15 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  TARGET_WORKFLOW: snap.yaml
+
 jobs:
-  evaluate-version:
+  evaluate-version-and-trigger-snap-build:
     runs-on: ubuntu-24.04
-    outputs:
-      version: ${{ steps.nv.outputs.version }}
-      commit_sha: ${{ steps.gv.outputs.sha }}
-      commit_short_sha: ${{ steps.gv.outputs.shortSha }}
+    permissions:
+      actions: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -53,10 +55,23 @@ jobs:
 
           echo "version=$VERSION_PEP440" >> "$GITHUB_OUTPUT"
 
-  trigger-snap-build:
-    needs: [evaluate-version]
-    uses: ./.github/workflows/snap.yaml
-    with:
-      version: ${{ needs.evaluate-version.outputs.version }}
-      commit_sha: ${{ needs.evaluate-version.outputs.commit_sha }}
-      commit_short_sha: ${{ needs.evaluate-version.outputs.commit_short_sha }}
+      - name: Trigger snap build
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = "${{ steps.nv.outputs.version }}";
+            const sha = "${{ steps.gv.outputs.sha }}";
+            const short_sha = "${{ steps.gv.outputs.shortSha }}";
+            const response = await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: process.env.TARGET_WORKFLOW,
+              ref: context.ref,
+              inputs: {
+                version: version,
+                commit_sha: sha,
+                commit_short_sha: short_sha
+              }
+            });
+
+            core.notice(`Triggered snap build for ${version} (${sha})`);
