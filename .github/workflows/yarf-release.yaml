@@ -175,7 +175,7 @@ jobs:
               elif .author_name then .author_name
               else "unknown" end;
             def line:
-              "- " + (clean_title) + " ([" + .short + "](" + .url + ")) by " + (author);
+              "- [" + (clean_title) + "](" + .url + ") by " + (author);
 
             . as $all
             | def section($label; $key):
