@@ -1,17 +1,18 @@
-name: Release YARF
+name: Release Notes (manual)
 
 on:
-  pull_request:
   workflow_dispatch:
     inputs:
       from_tag:
-        description: "Start boundary tag"
+        description: "Start boundary tag. Leave empty to use the previous tag before 'to_tag' (or repo start if only one tag exists)."
         type: string
-        required: true
+        required: false
+        default: ""
       to_tag:
-        description: "End boundary tag. PRs up to and including this tag will be included."
+        description: "End boundary tag (release to update). Leave empty to use the latest tag."
         type: string
-        required: true
+        required: false
+        default: "2.0.1"
 
 permissions:
   contents: write
@@ -20,7 +21,6 @@ permissions:
 jobs:
   release-notes:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
@@ -37,38 +37,88 @@ jobs:
       - name: Resolve & validate tags
         id: tags
         env:
-          FROM_TAG: ${{ github.event.inputs.from_tag }}
-          TO_TAG:   ${{ github.event.inputs.to_tag }}
+          IN_FROM: ${{ github.event.inputs.from_tag }}
+          IN_TO:   ${{ github.event.inputs.to_tag }}
         run: |
           set -euo pipefail
+
           git fetch --tags --force
 
-          for t in "${FROM_TAG}" "${TO_TAG}"; do
-            if ! git rev-parse -q --verify "refs/tags/${t}" >/dev/null; then
-              echo "Tag '${t}' not found in repository." >&2
+          # Helper: latest tag by creation date
+          latest_tag() {
+            git for-each-ref --sort=-creatordate --format='%(refname:strip=2)' refs/tags | head -n1
+          }
+
+          # Determine TO_TAG default (latest tag if empty)
+          if [ -n "${IN_TO:-}" ]; then
+            TO_TAG="${IN_TO}"
+          else
+            TO_TAG="$(latest_tag || true)"
+            if [ -z "${TO_TAG:-}" ]; then
+              echo "No tags found in the repository to use as 'to_tag'." >&2
               exit 1
             fi
-          done
+          fi
 
-          echo "from=${FROM_TAG}" >> "$GITHUB_OUTPUT"
-          echo "to=${TO_TAG}"     >> "$GITHUB_OUTPUT"
+          # Verify TO_TAG exists
+          git rev-parse -q --verify "refs/tags/${TO_TAG}" >/dev/null || { echo "Tag '${TO_TAG}' not found."; exit 1; }
 
-      - name: Compute time window from ${{steps.tags.outputs.from }} to ${{ steps.tags.outputs.to }}
+          # Determine FROM_TAG default:
+          # - If provided, use it (and verify)
+          # - Else use the previous tag (by creation date) before TO_TAG
+          # - If there is no previous tag (only one tag exists), mark as ROOT
+          if [ -n "${IN_FROM:-}" ]; then
+            FROM_TAG="${IN_FROM}"
+            git rev-parse -q --verify "refs/tags/${FROM_TAG}" >/dev/null || { echo "Tag '${FROM_TAG}' not found."; exit 1; }
+            FROM_KIND="tag"
+          else
+            # Build ascending list by creation date
+            mapfile -t TAGS_ASC < <(git for-each-ref --sort=creatordate --format='%(refname:strip=2)' refs/tags)
+            PREV=""
+            for i in "${!TAGS_ASC[@]}"; do
+              if [ "${TAGS_ASC[$i]}" = "${TO_TAG}" ]; then
+                if [ "$i" -gt 0 ]; then PREV="${TAGS_ASC[$((i-1))]}"; fi
+                break
+              fi
+            done
+            if [ -n "${PREV}" ]; then
+              FROM_TAG="${PREV}"
+              FROM_KIND="tag"
+            else
+              FROM_TAG=""   # special: repo start
+              FROM_KIND="root"
+            fi
+          fi
+
+          echo "from=${FROM_TAG}"   >> "$GITHUB_OUTPUT"
+          echo "from_kind=${FROM_KIND}" >> "$GITHUB_OUTPUT"
+          echo "to=${TO_TAG}"       >> "$GITHUB_OUTPUT"
+
+      - name: Compute time window ((SINCE, UNTIL] with root fallback)
         id: window
         run: |
           set -euo pipefail
           FROM="${{ steps.tags.outputs.from }}"
+          FROM_KIND="${{ steps.tags.outputs.from_kind }}"
           TO="${{ steps.tags.outputs.to }}"
 
-          SINCE="$(git log -1 --format=%cI "${FROM}")"
+          if [ "${FROM_KIND}" = "tag" ]; then
+            SINCE="$(git log -1 --format=%cI "${FROM}")"
+            NOTE_FROM="\\\`${FROM}\\\`"
+          else
+            ROOT="$(git rev-list --max-parents=0 HEAD | tail -n1)"
+            SINCE="$(git log -1 --format=%cI "${ROOT}")"
+            NOTE_FROM="repository start"
+          fi
           UNTIL="$(git log -1 --format=%cI "${TO}")"
 
           if [ "$(date -u -d "$SINCE" +%s)" -ge "$(date -u -d "$UNTIL" +%s)" ]; then
-            echo "from_tag (${FROM}) is not older than to_tag (${TO}). Nothing to collect." >&2
+            echo "Warning: from boundary is not earlier than to boundary; notes may be empty." >&2
           fi
 
           echo "since=${SINCE}" >> "$GITHUB_OUTPUT"
           echo "until=${UNTIL}" >> "$GITHUB_OUTPUT"
+          echo "note_from=${NOTE_FROM}" >> "$GITHUB_OUTPUT"
 
       - name: Collect merged PRs from ${{ steps.window.outputs.since }} to ${{ steps.window.outputs.until }}
         id: prs
@@ -97,27 +147,26 @@ jobs:
         id: body
         run: |
           awk '
-            BEGIN{breaking="";new="";bugfix="";infra="";other=""}
+            BEGIN{breaking="";new="";bugfix="";infra=""}
             /^- /{
               line=$0
               if (line ~ /^\- *\[Breaking\]/i) breaking=breaking line ORS; else
               if (line ~ /^\- *\[New\]/i)      new=new line ORS; else
               if (line ~ /^\- *\[BugFix\]/i)   bugfix=bugfix line ORS; else
-              if (line ~ /^\- *\[Infra\]/i)    infra=infra line ORS; else
-                                                other=other line ORS
+              if (line ~ /^\- *\[Infra\]/i)    infra=infra line ORS
             }
             END{
               print "## Changes"
-              if (breaking) {print "\n### Breaking Changes"; print breaking}
-              if (new)      {print "\n### New";               print new}
-              if (bugfix)   {print "\n### Bug Fixes";        print bugfix}
-              if (infra)    {print "\n### Infra";            print infra}
+              if (breaking) {print "\n### Breaking Changes";      print breaking}
+              if (new)      {print "\n### New";                   print new}
+              if (bugfix)   {print "\n### Bug Fixes";             print bugfix}
+              if (infra)    {print "\n### Infrastrual Changes";   print infra}
             }' pr_lines.txt > sections.md
 
           {
             echo "# Release ${{ steps.tags.outputs.to }}"
             echo
-            echo "> Changes merged after \`${{ steps.tags.outputs.from }}\` and up to and including \`${{ steps.tags.outputs.to }}\`."
+            echo "> Changes merged after ${{ steps.window.outputs.note_from }} and up to and including \`${{ steps.tags.outputs.to }}\`."
             echo
             cat sections.md
           } > release_body.md
@@ -131,6 +180,5 @@ jobs:
         run: |
           TAG="${{ steps.tags.outputs.to }}"
           NOTES_FILE="${{ steps.body.outputs.path }}"
-
           # gh release create "${TAG}" --title "${TAG}" --notes-file "${NOTES_FILE}" || \
           # gh release edit   "${TAG}" --notes-file "${NOTES_FILE}"
