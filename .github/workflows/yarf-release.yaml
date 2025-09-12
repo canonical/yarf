@@ -120,101 +120,72 @@ jobs:
           echo "until=${UNTIL}" >> "$GITHUB_OUTPUT"
           echo "note_from=${NOTE_FROM}" >> "$GITHUB_OUTPUT"
 
-      - name: Collect commits between tags
+      - name: Collect commits between tags (lower exclusive, upper inclusive)
         id: commits
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           FROM_KIND="${{ steps.tags.outputs.from_kind }}"
           FROM="${{ steps.tags.outputs.from }}"
           TO="${{ steps.tags.outputs.to }}"
-          REPO="${GITHUB_REPOSITORY}"
 
-          if [ "${FROM_KIND}" = "tag" ]; then
-            gh api "repos/${REPO}/compare/${FROM}...${TO}" \
-              --jq '.commits
-                    | map({
-                        sha: .sha,
-                        short: (.sha[0:7]),
-                        url: .html_url,
-                        title: (.commit.message | split("\n")[0]),
-                        author_login: (.author.login // null),
-                        author_name:  (.commit.author.name // null),
-                        committedAt:  .commit.author.date
-                      })
-                    | sort_by(.committedAt) | reverse' > commits.json
+          if [ "${FROM_KIND}" = "tag" ] && [ -n "${FROM}" ]; then
+            RANGE="${FROM}..${TO}"
           else
-            # Only one tag exists: get all commits reachable by TO (paginate)
-            : > pages.json
-            PAGE=1
-            while true; do
-              RESP="$(mktemp)"
-              gh api "repos/${REPO}/commits" -F sha="${TO}" -F per_page=100 -F page="${PAGE}" > "$RESP"
-              COUNT=$(jq 'length' "$RESP")
-              if [ "$COUNT" -eq 0 ]; then rm -f "$RESP"; break; fi
-              jq -r 'map({
-                        sha: .sha,
-                        short: (.sha[0:7]),
-                        url: .html_url,
-                        title: (.commit.message | split("\n")[0]),
-                        author_login: (.author.login // null),
-                        author_name:  (.commit.author.name // null),
-                        committedAt:  .commit.author.date
-                      })' "$RESP" >> pages.json
-              rm -f "$RESP"
-              PAGE=$((PAGE+1))
-            done
-            # Merge arrays and sort newest first
-            if [ -s pages.json ]; then
-              jq -s 'add | sort_by(.committedAt) | reverse' pages.json > commits.json
-            else
-              echo "[]" > commits.json
-            fi
+            # Only one tag exists: take full history reachable from TO
+            RANGE="${TO}"
           fi
 
-          if [ ! -s commits.json ]; then echo "[]" > commits.json; fi
+          # Fields: fullSHA<TAB>shortSHA<TAB>authorName<TAB>subject
+          git log --pretty=format:'%H%x09%h%x09%an%x09%s' ${RANGE} > commits.tsv || true
 
-      - name: Build release body (strip prefixes, link + author)
+          # Ensure file exists even if empty
+          [ -s commits.tsv ] || : > commits.tsv
+
+      - name: Build release body
         id: body
+        env:
+          REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          jq -r '
-            def has_prefix:
-              (.title | test("^\\[(Breaking|New|BugFix|Infra)\\]"; "i"));
-            def category:
-              if (.title|test("^\\[Breaking\\]";"i")) then "Breaking"
-              elif (.title|test("^\\[New\\]";"i")) then "New"
-              elif (.title|test("^\\[BugFix\\]";"i")) then "BugFix"
-              elif (.title|test("^\\[Infra\\]";"i")) then "Infra"
-              else null end;
-            def clean_title:
-              .title | sub("^\\[(Breaking|New|BugFix|Infra)\\]\\s*"; "");
-            def author:
-              if .author_login then "@" + .author_login
-              elif .author_name then .author_name
-              else "unknown" end;
-            def line:
-              "- " + (clean_title) + " ([" + .short + "](" + .url + ")) by " + (author);
+          awk -F '\t' -v REPO="$REPO" '
+            BEGIN{
+              breaking=""; new=""; bugfix=""; infra="";
+            }
+            {
+              sha=$1; short=$2; author=$3; title=$4;
 
-            . as $all
-            | def section($label; $key):
-                ([$all[] | select(category == $key) | line]) as $lines
-                | if ($lines|length) > 0
-                  then "\n### " + $label + "\n" + ($lines | join("\n"))
-                  else "" end;
+              # Determine category by prefix (case-insensitive)
+              low=title; gsub(/[A-Z]/, "", low); # quick lowercase copy is messy in awk; match case-insensitively instead
+              cat="";
+              if (title ~ /^\[Breaking\]/i) cat="breaking";
+              else if (title ~ /^\[New\]/i) cat="new";
+              else if (title ~ /^\[BugFix\]/i) cat="bugfix";
+              else if (title ~ /^\[Infra\]/i) cat="infra";
+              else next;  # ignore lines without one of the four prefixes (add an "Other" section if you want)
 
-            "## Changes"
-            + section("Breaking Changes";  "Breaking")
-            + section("New";               "New")
-            + section("Bug Fixes";         "BugFix")
-            + section("Infrastructure";    "Infra")
-          ' commits.json > sections.md
+              # Strip the prefix for display
+              gsub(/^\[(Breaking|New|BugFix|Infra)\][[:space:]]*/,"",title);
+
+              line="- " title " ([" short "](https://github.com/" REPO "/commit/" sha ")) by " author;
+
+              if (cat=="breaking") breaking=breaking line ORS;
+              else if (cat=="new") new=new line ORS;
+              else if (cat=="bugfix") bugfix=bugfix line ORS;
+              else if (cat=="infra") infra=infra line ORS;
+            }
+            END{
+              print "## Changes";
+              if (breaking!="") { print "\n### Breaking Changes";      printf "%s", breaking; }
+              if (new!="")      { print "\n### New";                   printf "%s", new; }
+              if (bugfix!="")   { print "\n### Bug Fixes";             printf "%s", bugfix; }
+              if (infra!="")    { print "\n### Infrastructure";        printf "%s", infra; }
+            }
+          ' commits.tsv > sections.md
 
           {
             echo "# Release ${{ steps.tags.outputs.to }}"
             echo
-            echo "> Changes merged after ${{ steps.window.outputs.note_from }} and up to and including \`${{ steps.tags.outputs.to }}\`."
+            echo "> Changes after ${{ steps.window.outputs.note_from }} and up to and including \`${{ steps.tags.outputs.to }}\`."
             echo
             cat sections.md
           } > release_body.md
