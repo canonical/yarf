@@ -1,6 +1,7 @@
 name: Release Notes (manual)
 
 on:
+  pull_request:
   workflow_dispatch:
     inputs:
       from_tag:
