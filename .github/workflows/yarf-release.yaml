@@ -73,7 +73,6 @@ jobs:
             git rev-parse -q --verify "refs/tags/${FROM_TAG}" >/dev/null || { echo "Tag '${FROM_TAG}' not found."; exit 1; }
             FROM_KIND="tag"
           else
-            # Build ascending list by creation date
             mapfile -t TAGS_ASC < <(git for-each-ref --sort=creatordate --format='%(refname:strip=2)' refs/tags)
             PREV=""
             for i in "${!TAGS_ASC[@]}"; do
@@ -91,9 +90,9 @@ jobs:
             fi
           fi
 
-          echo "from=${FROM_TAG}"   >> "$GITHUB_OUTPUT"
+          echo "from=${FROM_TAG}"      >> "$GITHUB_OUTPUT"
           echo "from_kind=${FROM_KIND}" >> "$GITHUB_OUTPUT"
-          echo "to=${TO_TAG}"       >> "$GITHUB_OUTPUT"
+          echo "to=${TO_TAG}"          >> "$GITHUB_OUTPUT"
 
       - name: Compute time window from ${{ steps.tags.outputs.from }} to ${{ steps.tags.outputs.to }}
         id: window
@@ -121,68 +120,96 @@ jobs:
           echo "until=${UNTIL}" >> "$GITHUB_OUTPUT"
           echo "note_from=${NOTE_FROM}" >> "$GITHUB_OUTPUT"
 
-      - name: Collect merged PRs from ${{ steps.window.outputs.since }} to ${{ steps.window.outputs.until }}
-        id: prs
+      - name: Collect commits between tags
+        id: commits
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          SINCE="${{ steps.window.outputs.since }}"
-          UNTIL="${{ steps.window.outputs.until }}"
+          FROM_KIND="${{ steps.tags.outputs.from_kind }}"
+          FROM="${{ steps.tags.outputs.from }}"
+          TO="${{ steps.tags.outputs.to }}"
+          REPO="${GITHUB_REPOSITORY}"
 
-          # Grab PRs merged in (SINCE, UNTIL] with fields we need
-          gh pr list --state merged \
-            --search "merged:>${SINCE} merged:<=${UNTIL}" \
-            --limit 200 \
-            --json number,title,mergedAt,author,url \
-          | jq 'map({
-                number,
-                title,
-                mergedAt,
-                author: (.author.login // "unknown"),
-                url
-              })
-              | sort_by(.mergedAt) | reverse' \
-          > prs.json
-
-          if [ ! -s prs.json ] || [ "$(jq length prs.json)" -eq 0 ]; then
-            echo '[]' > prs.json
+          if [ "${FROM_KIND}" = "tag" ]; then
+            gh api "repos/${REPO}/compare/${FROM}...${TO}" \
+              --jq '.commits
+                    | map({
+                        sha: .sha,
+                        short: (.sha[0:7]),
+                        url: .html_url,
+                        title: (.commit.message | split("\n")[0]),
+                        author_login: (.author.login // null),
+                        author_name:  (.commit.author.name // null),
+                        committedAt:  .commit.author.date
+                      })
+                    | sort_by(.committedAt) | reverse' > commits.json
+          else
+            # Only one tag exists: get all commits reachable by TO (paginate)
+            : > pages.json
+            PAGE=1
+            while true; do
+              RESP="$(mktemp)"
+              gh api "repos/${REPO}/commits" -F sha="${TO}" -F per_page=100 -F page="${PAGE}" > "$RESP"
+              COUNT=$(jq 'length' "$RESP")
+              if [ "$COUNT" -eq 0 ]; then rm -f "$RESP"; break; fi
+              jq -r 'map({
+                        sha: .sha,
+                        short: (.sha[0:7]),
+                        url: .html_url,
+                        title: (.commit.message | split("\n")[0]),
+                        author_login: (.author.login // null),
+                        author_name:  (.commit.author.name // null),
+                        committedAt:  .commit.author.date
+                      })' "$RESP" >> pages.json
+              rm -f "$RESP"
+              PAGE=$((PAGE+1))
+            done
+            # Merge arrays and sort newest first
+            if [ -s pages.json ]; then
+              jq -s 'add | sort_by(.committedAt) | reverse' pages.json > commits.json
+            else
+              echo "[]" > commits.json
+            fi
           fi
 
-      - name: Build release body
+          if [ ! -s commits.json ]; then echo "[]" > commits.json; fi
+
+      - name: Build release body (strip prefixes, link + author)
         id: body
         run: |
           set -euo pipefail
           jq -r '
-            def cat:
-              if (.title|test("^\\[Breaking\\]"; "i")) then "Breaking"
-              elif (.title|test("^\\[New\\]"; "i")) then "New"
-              elif (.title|test("^\\[BugFix\\]"; "i")) then "BugFix"
-              elif (.title|test("^\\[Infra\\]"; "i")) then "Infra"
+            def has_prefix:
+              (.title | test("^\\[(Breaking|New|BugFix|Infra)\\]"; "i"));
+            def category:
+              if (.title|test("^\\[Breaking\\]";"i")) then "Breaking"
+              elif (.title|test("^\\[New\\]";"i")) then "New"
+              elif (.title|test("^\\[BugFix\\]";"i")) then "BugFix"
+              elif (.title|test("^\\[Infra\\]";"i")) then "Infra"
               else null end;
-
             def clean_title:
-              .title
-              | sub("^\\[(Breaking|New|BugFix|Infra)\\]\\s*"; "");
-
+              .title | sub("^\\[(Breaking|New|BugFix|Infra)\\]\\s*"; "");
+            def author:
+              if .author_login then "@" + .author_login
+              elif .author_name then .author_name
+              else "unknown" end;
             def line:
-              "- " + (clean_title)
-              + " ([#" + (.number|tostring) + "](" + .url + "))"
-              + " by @" + .author;
+              "- " + (clean_title) + " ([" + .short + "](" + .url + ")) by " + (author);
 
             . as $all
             | def section($label; $key):
-                ([$all[] | select(cat == $key) | line]) as $lines
+                ([$all[] | select(category == $key) | line]) as $lines
                 | if ($lines|length) > 0
                   then "\n### " + $label + "\n" + ($lines | join("\n"))
                   else "" end;
 
             "## Changes"
-            + section("Breaking Changes";           "Breaking")
-            + section("New";                        "New")
-            + section("Bug Fixes";                  "BugFix")
-            + section("Infrastructural Changes";    "Infra")
-          ' prs.json > sections.md
+            + section("Breaking Changes";  "Breaking")
+            + section("New";               "New")
+            + section("Bug Fixes";         "BugFix")
+            + section("Infrastructure";    "Infra")
+          ' commits.json > sections.md
 
           {
             echo "# Release ${{ steps.tags.outputs.to }}"
@@ -192,12 +219,13 @@ jobs:
             cat sections.md
           } > release_body.md
 
+          cat release_body.md
           echo "path=release_body.md" >> "$GITHUB_OUTPUT"
 
       - name: Write release body to job summary
         run: |
           {
-            echo "## Release Notes Preview"
+            echo "# Release Notes Preview"
             echo
             echo "**From:** ${{ steps.window.outputs.note_from }}  "
             echo "**To:** \`${{ steps.tags.outputs.to }}\`"
@@ -205,7 +233,8 @@ jobs:
             cat release_body.md
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Create or update GitHub Release for ${{ steps.tags.outputs.to }}
+      - name: Create or update GitHub Release ${{ steps.tags.outputs.to }}
+        if: ${{ github.event_name == 'workflow_dispatch' }}  # prevent on PR runs, adjust as you like
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
