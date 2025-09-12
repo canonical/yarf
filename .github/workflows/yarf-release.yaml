@@ -1,4 +1,4 @@
-name: Release Notes
+name: Release YARF
 
 on:
   pull_request:
@@ -20,7 +20,7 @@ permissions:
   pull-requests: read
 
 jobs:
-  release-notes:
+  release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
