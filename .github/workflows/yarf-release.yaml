@@ -195,7 +195,7 @@ jobs:
           cat release_body.md
           echo "path=release_body.md" >> "$GITHUB_OUTPUT"
 
-      - name: Create or update GitHub Release (to_tag)
+      - name: Create or update GitHub Release for ${{ steps.tags.outputs.to }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
