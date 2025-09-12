@@ -1,7 +1,7 @@
 name: "(2) Build & Publish YARF Snap"
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       version:
         description: 'PEP 440 compliant version string'
@@ -57,12 +57,12 @@ jobs:
       with:
         name: yarf-amd64
         path: ${{ steps.snapcraft.outputs.snap }}
-    - uses: canonical/action-publish@214b86e5ca036ead1668c79afb81e550e6c54d40
-      env:
-        SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT }}
-      with:
-        snap: ${{ steps.snapcraft.outputs.snap }}
-        release: edge
+    # - uses: canonical/action-publish@214b86e5ca036ead1668c79afb81e550e6c54d40
+    #   env:
+    #     SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT }}
+    #   with:
+    #     snap: ${{ steps.snapcraft.outputs.snap }}
+    #     release: edge
 
   build_and_publish_arm64:
     needs: [set-version]
@@ -83,9 +83,9 @@ jobs:
       with:
         name: yarf-arm64
         path: ${{ steps.snapcraft.outputs.snap }}
-    - uses: canonical/action-publish@214b86e5ca036ead1668c79afb81e550e6c54d40
-      env:
-        SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT }}
-      with:
-        snap: ${{ steps.snapcraft.outputs.snap }}
-        release: edge
+    # - uses: canonical/action-publish@214b86e5ca036ead1668c79afb81e550e6c54d40
+    #   env:
+    #     SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT }}
+    #   with:
+    #     snap: ${{ steps.snapcraft.outputs.snap }}
+    #     release: edge
