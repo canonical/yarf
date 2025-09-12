@@ -192,8 +192,18 @@ jobs:
             cat sections.md
           } > release_body.md
 
-          cat release_body.md
           echo "path=release_body.md" >> "$GITHUB_OUTPUT"
+
+      - name: Write release body to job summary
+        run: |
+          {
+            echo "## Release Notes Preview"
+            echo
+            echo "**From:** ${{ steps.window.outputs.note_from }}  "
+            echo "**To:** \`${{ steps.tags.outputs.to }}\`"
+            echo
+            cat release_body.md
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create or update GitHub Release for ${{ steps.tags.outputs.to }}
         env:
