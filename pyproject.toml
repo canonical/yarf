@@ -80,7 +80,7 @@ extend-exclude = [
 
 [tool.pytest.ini_options]
 addopts = "--doctest-modules --ignore=docs/ --ignore=hatch_build.py"
-asyncio_default_fixture_loop_scope = "auto"
+asyncio_default_fixture_loop_scope = "function"
 markers = [
     "output_size",
     "start_suite",
