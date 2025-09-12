@@ -206,6 +206,7 @@ jobs:
           } > release_body.md
 
           cat release_body.md
+          echo "note_from=${NOTE_FROM}" >> "$GITHUB_OUTPUT"
           echo "path=release_body.md" >> "$GITHUB_OUTPUT"
 
       - name: Write release body to job summary
@@ -213,7 +214,7 @@ jobs:
           {
             echo "# Release Notes Preview"
             echo
-            echo "**From:** ${{ steps.window.outputs.note_from }}  "
+            echo "**From:** ${{ steps.body.outputs.note_from }}  "
             echo "**To:** \`${{ steps.tags.outputs.to }}\`"
             echo
             cat release_body.md
