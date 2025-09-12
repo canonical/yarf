@@ -1,4 +1,4 @@
-name: Release Notes (manual)
+name: Release Notes
 
 on:
   pull_request:
@@ -95,7 +95,7 @@ jobs:
           echo "from_kind=${FROM_KIND}" >> "$GITHUB_OUTPUT"
           echo "to=${TO_TAG}"       >> "$GITHUB_OUTPUT"
 
-      - name: Compute time window ((SINCE, UNTIL] with root fallback)
+      - name: Compute time window from ${{ steps.tags.outputs.from }} to ${{ steps.tags.outputs.to }}
         id: window
         run: |
           set -euo pipefail
@@ -130,39 +130,59 @@ jobs:
           SINCE="${{ steps.window.outputs.since }}"
           UNTIL="${{ steps.window.outputs.until }}"
 
+          # Grab PRs merged in (SINCE, UNTIL] with fields we need
           gh pr list --state merged \
             --search "merged:>${SINCE} merged:<=${UNTIL}" \
             --limit 200 \
-            --json number,title,labels,mergedAt \
-          | jq -r '
-              sort_by(.mergedAt) | reverse
-              | map("- " + .title + " (#\(.number))")
-              | .[]' \
-          > pr_lines.txt || true
+            --json number,title,mergedAt,author,url \
+          | jq 'map({
+                number,
+                title,
+                mergedAt,
+                author: (.author.login // "unknown"),
+                url
+              })
+              | sort_by(.mergedAt) | reverse' \
+          > prs.json
 
-          if [ ! -s pr_lines.txt ]; then
-            echo "- No pull requests found in this range." > pr_lines.txt
+          if [ ! -s prs.json ] || [ "$(jq length prs.json)" -eq 0 ]; then
+            echo '[]' > prs.json
           fi
 
       - name: Build release body
         id: body
         run: |
-          awk '
-            BEGIN{breaking="";new="";bugfix="";infra=""}
-            /^- /{
-              line=$0
-              if (line ~ /^\- *\[Breaking\]/i) breaking=breaking line ORS; else
-              if (line ~ /^\- *\[New\]/i)      new=new line ORS; else
-              if (line ~ /^\- *\[BugFix\]/i)   bugfix=bugfix line ORS; else
-              if (line ~ /^\- *\[Infra\]/i)    infra=infra line ORS
-            }
-            END{
-              print "## Changes"
-              if (breaking) {print "\n### Breaking Changes";      print breaking}
-              if (new)      {print "\n### New";                   print new}
-              if (bugfix)   {print "\n### Bug Fixes";             print bugfix}
-              if (infra)    {print "\n### Infrastrual Changes";   print infra}
-            }' pr_lines.txt > sections.md
+          set -euo pipefail
+          jq -r '
+            def cat:
+              if (.title|test("^\\[Breaking\\]"; "i")) then "Breaking"
+              elif (.title|test("^\\[New\\]"; "i")) then "New"
+              elif (.title|test("^\\[BugFix\\]"; "i")) then "BugFix"
+              elif (.title|test("^\\[Infra\\]"; "i")) then "Infra"
+              else null end;
+
+            def clean_title:
+              .title
+              | sub("^\\[(Breaking|New|BugFix|Infra)\\]\\s*"; "");
+
+            def line:
+              "- " + (clean_title)
+              + " ([#" + (.number|tostring) + "](" + .url + "))"
+              + " by @" + .author;
+
+            . as $all
+            | def section($label; $key):
+                ([$all[] | select(cat == $key) | line]) as $lines
+                | if ($lines|length) > 0
+                  then "\n### " + $label + "\n" + ($lines | join("\n"))
+                  else "" end;
+
+            "## Changes"
+            + section("Breaking Changes";           "Breaking")
+            + section("New";                        "New")
+            + section("Bug Fixes";                  "BugFix")
+            + section("Infrastructural Changes";    "Infra")
+          ' prs.json > sections.md
 
           {
             echo "# Release ${{ steps.tags.outputs.to }}"
