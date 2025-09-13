@@ -277,7 +277,7 @@ Walk Pointer To Proportional (${x}, ${y})
     ...    Return:
     ...    Absolute position of the pointer after the walk, as a tuple (x, y)
     ...    of integers.
-    [Arguments]             ${step_distance}=16     ${delay}=0.01
+    [Arguments]             ${step_distance}=0.01                           ${delay}=0.01
     ${position}=            Hid.Walk Pointer To Proportional
     ...                     ${x}
     ...                     ${y}
@@ -347,3 +347,18 @@ Ensure ${destination} Does Not Match
     IF    ${match}
         Fail                    Found ${destination} where it wasn't intended or expected
     END
+
+Drag And Drop On ${destination}
+    [Documentation]    Drag and drop the current target (where the pointer is) on a destination.
+    ...
+    ...    Embedded arguments:
+    ...    - ${destination}: Can be a string, or the path of an image template file representing
+    ...    the target location to drop on, or a coordinate tuple (x, y) of integers representing the
+    ...    absolute position to drop on. For details please see `Walk Pointer To ${destination}`.
+    ...
+    [Arguments]             ${step_distance}=16     ${delay}=0.01
+
+    Press LEFT Button
+    ${end_position}=        Walk Pointer To ${destination}                  ${step_distance}        ${delay}
+    Release LEFT Button
+    RETURN                  ${end_position}
