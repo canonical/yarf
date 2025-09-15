@@ -55,7 +55,7 @@ jobs:
           echo "version=$VERSION_PEP440" >> "$GITHUB_OUTPUT"
 
       - name: Trigger snap build
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const version = "${{ steps.nv.outputs.version }}";
