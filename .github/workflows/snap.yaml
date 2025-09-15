@@ -47,7 +47,7 @@ jobs:
         ref: ${{ inputs.commit_sha }}
 
     - name: Download updated project files
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: updated-project-files
         path: .
@@ -73,7 +73,7 @@ jobs:
         ref: ${{ inputs.commit_sha }}
 
     - name: Download updated project files
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: updated-project-files
         path: .
