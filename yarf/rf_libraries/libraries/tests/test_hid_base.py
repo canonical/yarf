@@ -96,7 +96,7 @@ class TestHidBase:
         position given in proportional coordinates.
         """
         await stub_hid.move_pointer_to_proportional(0.15, 0.35)
-        await stub_hid.walk_pointer_to_proportional(0.5, 0.5, 0.05, 0.05, 0.2)
+        await stub_hid.walk_pointer_to_proportional(0.5, 0.5, 0.05, 0.2)
 
         stub_hid._move_pointer.assert_has_calls(
             (
@@ -114,12 +114,11 @@ class TestHidBase:
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
-        "x,y,step_distance_x,step_distance_y",
+        "x,y,step_distance",
         [
-            (1.1, 0, 0, 0),
-            (0, 1.1, 0, 0),
-            (0, 0, 1.1, 0),
-            (0, 0, 0, 1.1),
+            (1.1, 0, 0),
+            (0, 1.1, 0),
+            (0, 0, 1.1),
         ],
     )
     async def test_walk_pointer_to_proportional_raises(
@@ -127,8 +126,7 @@ class TestHidBase:
         stub_hid: MagicMock,
         x: float,
         y: float,
-        step_distance_x: float,
-        step_distance_y: float,
+        step_distance: float,
     ):
         """
         Test the function raises an exception if the target position or step
@@ -136,7 +134,7 @@ class TestHidBase:
         """
         with pytest.raises(AssertionError):
             await stub_hid.walk_pointer_to_proportional(
-                x, y, step_distance_x, step_distance_y, 0.2
+                x, y, step_distance, 0.2
             )
 
     @pytest.mark.asyncio
