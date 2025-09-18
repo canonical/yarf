@@ -112,7 +112,7 @@ jobs:
     - name: Install tutorial dependencies
       run: |
         sudo apt-get --yes --no-install-recommends install \
-          python3-gi \
+          libgirepository-2.0-dev \
           gir1.2-gtk-4.0 \
           libadwaita-1-dev \
           gir1.2-adw-1
@@ -130,7 +130,7 @@ jobs:
         # Wait for the compositor to start
         inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-0\$" $XDG_RUNTIME_DIR
 
-        uv venv --python=/usr/bin/python3 --system-site-packages --project=$(pwd)/examples/yarf-example-simple-counter
+        uv sync --project=$(pwd)/examples/yarf-example-simple-counter
         dbus-run-session -- uv --project=$(pwd)/examples/yarf-example-simple-counter run simple-counter &
 
         uv run yarf --platform Mir examples/yarf-example-simple-counter/yarf_tests

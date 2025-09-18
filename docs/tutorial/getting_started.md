@@ -54,7 +54,7 @@ caption: Command for installing simple-counter dependencies.
 ---
 sudo apt update
 sudo apt install \
-    python3-gi \
+    libgirepository-2.0-dev \
     gir1.2-gtk-4.0 \
     libadwaita-1-dev \
     gir1.2-adw-1

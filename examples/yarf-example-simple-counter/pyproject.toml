@@ -9,6 +9,9 @@ description = "A simple GUI counter"
 authors = [{ name = "Hou Nam Chiang", email = "douglas.chiang@canonical.com" }]
 readme = "README.md"
 requires-python = ">=3.12"
+dependencies = [
+    "pygobject"
+]
 
 [project.scripts]
 simple-counter = "simple_counter.main:main"
