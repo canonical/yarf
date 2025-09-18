@@ -46,11 +46,18 @@ jobs:
       - name: Collect commits between tags
         id: commits
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN:  ${{ github.token }}
+          FROM_KIND: ${{ steps.tags.outputs.from_kind }}
+          FROM:      ${{ steps.tags.outputs.from }}
+          TO:        ${{ steps.tags.outputs.to }}
         run: bash .github/workflows/scripts/collect_commits.sh
 
       - name: Build release notes body
         id: body
+        env:
+          FROM_KIND:   ${{ steps.tags.outputs.from_kind }}
+          FROM:        ${{ steps.tags.outputs.from }}
+          TO:          ${{ steps.tags.outputs.to }}
         run: bash .github/workflows/scripts/build_release_notes_body.sh
 
       - name: Create or update GitHub Release

@@ -9,7 +9,7 @@ set -euo pipefail
 
 : "${GITHUB_OUTPUT:=}"
 : "${GITHUB_REPOSITORY:?GITHUB_REPOSITORY is required}"
-: "${TO:?TO tag is required (e.g. from resolve-tags step)}"
+: "${TO:?TO tag is required}"
 : "${FROM_KIND:?FROM_KIND is required (tag|root)}"
 : "${FROM:=}"  # may be empty when FROM_KIND=root
 
