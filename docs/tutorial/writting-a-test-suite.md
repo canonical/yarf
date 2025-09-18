@@ -34,15 +34,29 @@ To do this, we will go through the following steps:
 
 ## Setup
 
-First, we start the Mir server up as described in the [getting started tutorial][getting-started]. Then we install `uv` following the [official installation guide][uv-installation-guide].
-After that we run the `simple-counter`:
+First, we start the Mir server up as described in the [getting started tutorial][getting-started].
+Then, we install some dependencies that the `simple-counter` required:
+
+```{code-block} bash
+---
+caption: Command for installing simple-counter dependencies.
+---
+sudo apt update
+sudo apt install \
+    python3-gi \
+    gir1.2-gtk-4.0 \
+    libadwaita-1-dev \
+    gir1.2-adw-1
+```
+
+After that, we install `uv` following the [official installation guide][uv-installation-guide] and run the `simple-counter`:
 
 ```{code-block} bash
 ---
 caption: The commands that starts a virtual environment and running the 
   simple-counter app inside it.
 ---
-uv venv --python=/usr/bin/python3 --system-site-packages --project=$(pwd)/examples/yarf-example-simple-counter
+uv --no-managed-python venv --system-site-packages --project=$(pwd)/examples/yarf-example-simple-counter
 uv --project=$(pwd)/examples/yarf-example-simple-counter run simple-counter &
 ```
 
