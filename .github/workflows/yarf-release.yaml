@@ -60,8 +60,18 @@ jobs:
           TO:          ${{ steps.tags.outputs.to }}
         run: bash .github/workflows/scripts/build_release_notes_body.sh
 
+      - name: Write release body to job summary
+        run: |
+          {
+            echo "## Release Notes Preview"
+            echo
+            echo "**From:** ${{ steps.body.outputs.note_from }}  "
+            echo "**To:** \`${{ steps.tags.outputs.to }}\`"
+            echo
+            cat ${{ steps.body.outputs.path }}
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Create or update GitHub Release
-        if: ${{ github.event_name == 'workflow_dispatch' }}  # prevent on PR runs, adjust as you like
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
