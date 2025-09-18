@@ -40,17 +40,17 @@ jobs:
         env:
           IN_FROM: ${{ github.event.inputs.from_tag }}
           IN_TO:   ${{ github.event.inputs.to_tag }}
-        uses: ./scripts/resolve_git_tags.sh
+        run: ./scripts/resolve_git_tags.sh
 
       - name: Collect commits between tags
         id: commits
         env:
           GH_TOKEN: ${{ github.token }}
-        uses: ./scripts/collect_commits.sh
+        run: ./scripts/collect_commits.sh
 
       - name: Build release notes body
         id: body
-        uses: ./scripts/build_release_notes_body.sh
+        run: ./scripts/build_release_notes_body.sh
 
       - name: Create or update GitHub Release
         if: ${{ github.event_name == 'workflow_dispatch' }}  # prevent on PR runs, adjust as you like
