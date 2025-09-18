@@ -35,190 +35,22 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y jq gh
 
-      - name: Resolve & validate tags
+      - name: Resolve tags
         id: tags
         env:
           IN_FROM: ${{ github.event.inputs.from_tag }}
           IN_TO:   ${{ github.event.inputs.to_tag }}
-        run: |
-          set -euo pipefail
-
-          git fetch --tags --force
-
-          # Helper: latest tag by creation date
-          latest_tag() {
-            git for-each-ref --sort=-creatordate --format='%(refname:strip=2)' refs/tags | head -n1
-          }
-
-          # Determine TO_TAG default (latest tag if empty)
-          if [ -n "${IN_TO:-}" ]; then
-            TO_TAG="${IN_TO}"
-          else
-            TO_TAG="$(latest_tag || true)"
-            if [ -z "${TO_TAG:-}" ]; then
-              echo "No tags found in the repository to use as 'to_tag'." >&2
-              exit 1
-            fi
-          fi
-
-          git rev-parse -q --verify "refs/tags/${TO_TAG}" >/dev/null || { echo "Tag '${TO_TAG}' not found."; exit 1; }
-
-          # Determine FROM_TAG default:
-          # - If provided, use it (and verify)
-          # - Else use the previous tag (by creation date) before TO_TAG
-          # - If there is no previous tag (only one tag exists), mark as ROOT
-          if [ -n "${IN_FROM:-}" ]; then
-            FROM_TAG="${IN_FROM}"
-            git rev-parse -q --verify "refs/tags/${FROM_TAG}" >/dev/null || { echo "Tag '${FROM_TAG}' not found."; exit 1; }
-            FROM_KIND="tag"
-          else
-            mapfile -t TAGS_ASC < <(git for-each-ref --sort=creatordate --format='%(refname:strip=2)' refs/tags)
-            PREV=""
-            for i in "${!TAGS_ASC[@]}"; do
-              if [ "${TAGS_ASC[$i]}" = "${TO_TAG}" ]; then
-                if [ "$i" -gt 0 ]; then PREV="${TAGS_ASC[$((i-1))]}"; fi
-                break
-              fi
-            done
-            if [ -n "${PREV}" ]; then
-              FROM_TAG="${PREV}"
-              FROM_KIND="tag"
-            else
-              FROM_TAG=""   # special: repo start
-              FROM_KIND="root"
-            fi
-          fi
-
-          echo "from=${FROM_TAG}"       >> "$GITHUB_OUTPUT"
-          echo "from_kind=${FROM_KIND}" >> "$GITHUB_OUTPUT"
-          echo "to=${TO_TAG}"           >> "$GITHUB_OUTPUT"
+        uses: ./scripts/resolve_git_tags.sh
 
       - name: Collect commits between tags
         id: commits
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          FROM_KIND="${{ steps.tags.outputs.from_kind }}"
-          FROM="${{ steps.tags.outputs.from }}"
-          TO="${{ steps.tags.outputs.to }}"
-          REPO="${GITHUB_REPOSITORY}"
+        uses: ./scripts/collect_commits.sh
 
-          # URL-encode tags for safe API paths
-          FROM_ESC=$(printf '%s' "$FROM" | jq -sRr @uri)
-          TO_ESC=$(printf  '%s' "$TO"   | jq -sRr @uri)
-
-          if [ "${FROM_KIND}" = "tag" ]; then
-            # Use compare API: base...head == FROM..TO (exclusive, inclusive)
-            gh api "repos/${REPO}/compare/${FROM_ESC}...${TO_ESC}" \
-            | jq --arg repo "$REPO" '
-                .commits
-                | map({
-                    sha: .sha,
-                    short: (.sha[0:7]),
-                    url: ("https://github.com/" + $repo + "/commit/" + .sha),
-                    title: (.commit.message | split("\n")[0]),
-                    author_login: (.author.login // null),
-                    author_name:  (.commit.author.name // null),
-                    committedAt:  .commit.author.date
-                  })
-                | sort_by(.committedAt) | reverse
-              ' > commits.json
-          else
-            # Only one tag exists -> gather all commits reachable by TO (paginate)
-            : > rows.ndjson
-            PAGE=1
-            while :; do
-              RESP="$(gh api "repos/${REPO}/commits?sha=${TO_ESC}&per_page=100&page=${PAGE}")"
-              COUNT="$(jq 'length' <<<"$RESP")"
-              if [ "$COUNT" -eq 0 ]; then break; fi
-              jq -c --arg repo "$REPO" '
-                map({
-                  sha: .sha,
-                  short: (.sha[0:7]),
-                  url: ("https://github.com/" + $repo + "/commit/" + .sha),
-                  title: (.commit.message | split("\n")[0]),
-                  author_login: (.author.login // null),
-                  author_name:  (.commit.author.name // null),
-                  committedAt:  .commit.author.date
-                }) | .[]
-              ' <<<"$RESP" >> rows.ndjson
-              PAGE=$((PAGE+1))
-            done
-
-            if [ -s rows.ndjson ]; then
-              jq -s 'sort_by(.committedAt) | reverse' rows.ndjson > commits.json
-            else
-              echo "[]" > commits.json
-            fi
-          fi
-
-          if [ ! -s commits.json ]; then echo "[]" > commits.json; fi
-
-      - name: Build release body
+      - name: Build release notes body
         id: body
-        run: |
-          set -euo pipefail
-          jq -r '
-            def has_prefix:
-              (.title | test("^\\[(Breaking|New|BugFix|Infra)\\]"; "i"));
-            def category:
-              if (.title|test("^\\[Breaking\\]";"i")) then "Breaking"
-              elif (.title|test("^\\[New\\]";"i")) then "New"
-              elif (.title|test("^\\[BugFix\\]";"i")) then "BugFix"
-              elif (.title|test("^\\[Infra\\]";"i")) then "Infra"
-              else null end;
-            def clean_title:
-              .title | sub("^\\[(Breaking|New|BugFix|Infra)\\]\\s*"; "");
-            def author:
-              if .author_login then "@" + .author_login
-              elif .author_name then .author_name
-              else "unknown" end;
-            def line:
-              "- [" + (clean_title) + "](" + .url + ") by " + (author);
-
-            . as $all
-            | def section($label; $key):
-                ([$all[] | select(category == $key) | line]) as $lines
-                | if ($lines|length) > 0
-                  then "\n### " + $label + "\n" + ($lines | join("\n"))
-                  else "" end;
-
-            "## Changes"
-            + section("Breaking Changes"; "Breaking")
-            + section("New";               "New")
-            + section("Bug Fixes";         "BugFix")
-            + section("Infrastructure";    "Infra")
-          ' commits.json > sections.md
-
-          if [ "${{ steps.tags.outputs.from_kind }}" = "tag" ]; then
-            NOTE_FROM="\\\`${{ steps.tags.outputs.from }}\\\`"
-          else
-            NOTE_FROM="repository start"
-          fi
-
-          {
-            echo "# Release ${{ steps.tags.outputs.to }}"
-            echo
-            echo "> Changes merged after ${NOTE_FROM} and up to and including \`${{ steps.tags.outputs.to }}\`."
-            echo
-            cat sections.md
-          } > release_body.md
-
-          cat release_body.md
-          echo "note_from=${NOTE_FROM}" >> "$GITHUB_OUTPUT"
-          echo "path=release_body.md" >> "$GITHUB_OUTPUT"
-
-      - name: Write release body to job summary
-        run: |
-          {
-            echo "# Release Notes Preview"
-            echo
-            echo "**From:** ${{ steps.body.outputs.note_from }}  "
-            echo "**To:** \`${{ steps.tags.outputs.to }}\`"
-            echo
-            cat release_body.md
-          } >> "$GITHUB_STEP_SUMMARY"
+        uses: ./scripts/build_release_notes_body.sh
 
       - name: Create or update GitHub Release
         if: ${{ github.event_name == 'workflow_dispatch' }}  # prevent on PR runs, adjust as you like
