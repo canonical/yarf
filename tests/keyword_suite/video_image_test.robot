@@ -48,6 +48,7 @@ Test Keyword Match Any
     Run Keyword And Expect Error                    ImageNotFoundError: *
     ...                     Match Any               ${templates}
 
+# Pending on issue: https://warthogs.atlassian.net/browse/YARF-57
 # Test Keyword Restart Video Input
 #    [Tags]    yarf:certification_status: blocker
 #    Restart Video Input
