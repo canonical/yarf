@@ -30,19 +30,3 @@ parts:
     stage-packages:
       - libxkbcommon0
       - bash
-    # We use an override-build step to copy the onboard-plugin script
-    # to $SNAP_PART_INSTALL/bin so that it ends up in $SNAP/bin
-    override-build: |
-      craftctl default
-      mkdir -p $CRAFT_PART_INSTALL/bin
-      cp bin/onboard-plugin $CRAFT_PART_INSTALL/bin/onboard-plugin
-
-apps:
-  # the onboard-plugin app runs the onboard-plugin script
-  # so that the example plugin will be copied to the shared
-  # platform-plugins directory, where YARF can find it
-  # when it is run.
-  onboard-plugin:
-    command: bin/onboard-plugin
-    plugs:
-      - platform-plugins

@@ -11,9 +11,9 @@ yarf-example-plugin
 ├── README.md
 ├── .gitignore
 ├── pyproject.toml
-├── bin
-|   └── onboard-plugin
 ├── snap
+|   ├── hooks
+|   |   └── configure
 |   └── snapcraft.yaml
 └── src
     └── yarf_plugin_example
@@ -31,9 +31,7 @@ yarf-example-plugin
    - `Hid.py`: Contains the `Hid` class, which implements the necessary functions of YARF `HidBase` class for this example plugin.
    - `VideoInput.py`: Contains the `VideoInput` class, which implements the necessary functions of YARF `VideoInputBase` class for this example plugin.
 
-1. `snap`: Contains the snapcraft YAML file, which describes the information and necessary items and steps to build this example plugin as a snap.
-
-1. `bin`: Contains a script `onboard-plugin`, which copies the example plugin to `$SNAP_COMMON/platform_plugins/` directory, this location will be shared with YARF so that YARF can recognize this platform. This file is only useful in a snap.
+1. `snap`: Contains the snapcraft YAML file, which describes the information and necessary items and steps to build this example plugin as a snap. The file `snap/hooks/configure` copies the example plugin to `$SNAP_COMMON/platform_plugins/` directory, this location will be shared with YARF so that YARF can recognize this platform.
 
 1. `pyproject.toml`: Contains the information for this plugin, along with the build system and dependencies.
 

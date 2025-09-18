@@ -1,6 +1,7 @@
 #!/bin/sh
 set -e
 
+# This configure file copies the example plugin to $SNAP_COMMON/platform_plugins/ when the snap is installed
 SRC="$SNAP/lib/python3.12/site-packages/yarf_plugin_example"
 DEST="$SNAP_COMMON/platform_plugins/yarf_plugin_example"
 
