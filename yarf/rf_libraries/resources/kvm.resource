@@ -85,6 +85,38 @@ Displace ${point} By (${x}, ${y})
     ${point}=               Evaluate                (int(${point}[0] + ${x}), int(${point}[1] + ${y}))
     RETURN                  ${point}
 
+Get Position Of ${target}
+    [Documentation]    Get a position from an absolute coordinate, image
+    ...    template, or string.
+    ...
+    ...    Embedded arguments:
+    ...    - ${target}: If ${target} is a tuple (x, y) of integers,
+    ...    the position will be the absolute position given by the tuple.
+    ...    Otherwise, if ${target} is the path of an image template file,
+    ...    the position will be the center of the first matching template region.
+    ...    ${target} can also be a string, and the position will be the
+    ...    center of the found text.
+    ...
+    ...    Return:
+    ...    Absolute position as a tuple (x, y) of integers.
+    IF    ${{ isinstance($target, tuple) }}
+        ${position}=            Set Variable            ${target}
+    ELSE IF    ${{ isinstance($target, str) }}
+        IF    ${{ os.path.exists($target) }}
+            ${regions}=             Match                   ${target}
+            ${position}=            Get Center Of ${regions}[0]
+        ELSE
+            Log
+            ...                     Assuming ${target} is a string as it isn't a file which exists.
+            ...                     html=true
+            ...                     console=true
+            ${position}=            Get Text Position       text=${target}
+        END
+    ELSE
+        Fail                    Unsupported target type
+    END
+    RETURN                  ${position}
+
 Move Pointer To (${x}, ${y})
     [Documentation]    Move the pointer to an absolute position.
     ...
@@ -109,19 +141,7 @@ Move Pointer To ${destination}
     ...    Return:
     ...    Absolute position of the pointer after the move, as a tuple (x, y)
     ...    of integers.
-    IF    ${{ os.path.exists($destination) }}
-        ${regions}=             Match                   ${destination}
-        ${position}=            Get Center Of ${regions}[0]
-    ELSE IF    ${{ isinstance($destination, tuple) }}
-        ${position}=            Set Variable            ${destination}
-    ELSE
-        Log
-        ...                     Assuming ${destination} is a string as it isn't a file which exists.
-        ...                     html=true
-        ...                     console=true
-        ${position}=            Get Text Position       text=${destination}
-    END
-
+    ${position}=            Get Position Of ${destination}
     Hid.Move Pointer To Absolute                    ${position}[0]          ${position}[1]
     RETURN                  ${position}
 
@@ -218,6 +238,8 @@ Walk Pointer To ${destination}
     ...    absolute position given by the tuple. Otherwise, if
     ...    ${destination} is the path of an image template file, the pointer
     ...    will walk to the center of the first matching template region.
+    ...    ${destination} can also be a string, and the pointer will move to the
+    ...    center of the found text.
     ...    - ${step_distance} (optional): Size of each step, in pixels.
     ...    Default is 16.
     ...    - ${delay} (optional): Time to sleep after each step, in seconds.
@@ -227,12 +249,7 @@ Walk Pointer To ${destination}
     ...    Absolute position of the pointer after the walk, as a tuple (x, y)
     ...    of integers.
     [Arguments]             ${step_distance}=16     ${delay}=0.01
-    IF    ${{isinstance($destination, str)}}
-        ${regions}=             Match                   ${destination}
-        ${position}=            Get Center Of ${regions}[0]
-    ELSE
-        ${position}=            Set Variable            ${destination}
-    END
+    ${position}=            Get Position Of ${destination}
     Hid.Walk Pointer To Absolute
     ...                     ${position}[0]
     ...                     ${position}[1]

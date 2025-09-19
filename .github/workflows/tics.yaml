@@ -59,7 +59,7 @@ jobs:
           mv ./coverage.xml ./coverage/cobertura.xml
 
       - name: TICS GitHub Action
-        uses: tiobe/tics-github-action@v3
+        uses: tiobe/tics-github-action@009979693978bfefad2ad15c1020066694968dc7
         with:
           mode: qserver
           project: yarf
