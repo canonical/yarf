@@ -2,7 +2,7 @@
 
 **YARF** is a tool built upon [Robot Framework][robot-framework] that allows developers to build complex visual test scenarios and bootstrap them locally, and then work towards automated runs in continuous integration (CI) and use of platforms/fixtures with minimal effort. In YARF, we support the Mir as one of our default platform.
 
-**Mir** is a display server that is suitable for local development and continuous integration. In this tutorial, we will use Mir to display an application called `simple-counter` and then use YARF to perform actions and run tests on it. For details please visit [here][mir-docs].
+**Mir** is a display server that is suitable for local development and continuous integration. In this tutorial, we will use Mir to display the calcualtor and then use YARF to perform actions and run tests on it. For details please visit [here][mir-docs].
 
 In this tutorial, we will go through the process of setting up YARF and a Mir server, then we will start a calculator app inside the Mir server and use YARF to do some simple calculations.
 
@@ -44,20 +44,6 @@ Next, we need to install [`mir-test-tools`][mir-tests-tools], a snap that provid
 caption: The command to install mir-test-tools
 ---
 sudo snap install mir-test-tools
-```
-
-After that, we will install some dependencies that the `simple-counter` required:
-
-```{code-block} bash
----
-caption: Command for installing simple-counter dependencies.
----
-sudo apt update
-sudo apt install \
-    python3-gi \
-    gir1.2-gtk-4.0 \
-    libadwaita-1-dev \
-    gir1.2-adw-1
 ```
 
 ### Starting the Mir server
@@ -115,7 +101,7 @@ The mir test tools window
 
 ### Starting the calculator app
 
-Now, we can start our `simple-counter` by running under the same terminal:
+Now, we can start our calculator by running under the same terminal:
 
 ```{code-block} bash
 ---
