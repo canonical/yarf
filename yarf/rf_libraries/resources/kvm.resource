@@ -269,8 +269,7 @@ Walk Pointer To Proportional (${x}, ${y})
     ...    - ${y}: Output-relative y-coordinate to move the pointer to.
     ...    It must be in the range 0..1, where 0 represents the top edge,
     ...    and 1 represents the bottom edge of the output.
-    ...    - ${step_distance} (optional): Size of each step, in pixels.
-    ...    Default is 16.
+    ...    - ${step_distance} (optional): maximum distance to move per step horizontally, 0 < step_distance <= 1
     ...    - ${delay} (optional): Time to sleep after each step, in seconds.
     ...    Default is 0.01.
     ...
