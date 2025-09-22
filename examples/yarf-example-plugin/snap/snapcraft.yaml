@@ -1,0 +1,32 @@
+name: yarf-example-plugin
+base: core24
+version: '0.0.1'
+summary: YARF example plugin library
+description: |
+  A Python library providing a YARF-compatible example plugin,
+  shared via a content interface.
+
+grade: stable
+confinement: strict
+
+plugs:
+  # The example plugin requires this plug to share
+  # the content of platform plugins directory with YARF
+  platform-plugins:
+    interface: content
+    target: $SNAP_COMMON/platform_plugins
+
+parts:
+  yarf-example:
+    plugin: python
+    source: .
+    python-packages:
+      - .
+    build-packages:
+      - git
+      - pkg-config
+      - libxkbcommon-dev
+      - libwayland-dev
+    stage-packages:
+      - libxkbcommon0
+      - bash

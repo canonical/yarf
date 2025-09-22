@@ -128,7 +128,7 @@ There are two ways to manage platform plugins in YARF:
    pip uninstall yarf_plugin_platform_A
    ```
 
-1. Snap: The YARF snap provides a `platform-plugins` interface to receive a plugin. In the plugin snap, we can just add a plug so that the snap can share the plugin's location to YARF. For example:
+1. Snap: The YARF snap provides a `platform-plugins` interface to receive a plugin. In the plugin snap, we can add a plug so that the snap can share the plugin's location to YARF. For example:
 
    ```{code-block} yaml
    ---
@@ -145,3 +145,7 @@ There are two ways to manage platform plugins in YARF:
    ```{code-block} bash
    sudo snap connect snap-with-plugin:write-yarf-platform-plugins yarf:platform-plugins
    ```
+
+   After that, we will need to move `yarf_plugin_platform_A` to `$SNAP_COMMON/platform-to-plug`.
+
+A working example of a platform plugin can be found in `examples/yarf-example-plugin` of the YARF repository.
