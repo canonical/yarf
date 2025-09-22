@@ -1,0 +1,70 @@
+name: TICS Code Quality Analysis
+on:
+  schedule:
+    - cron: '00 19 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  TICS:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo (main branch)
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          ref: main
+          lfs: true
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+            sudo apt update -qq
+            sudo apt install -y \
+            git-lfs \
+            libgl1 \
+            libxkbcommon-dev \
+            jq \
+            clang \
+            python3-tk
+
+            pip install uv
+
+      - name: Install TICS dependencies
+        run: |
+          pip install \
+          flake8 \
+          pylint
+
+      - name: Install YARF
+        run: |
+          uv venv
+          source .venv/bin/activate
+          echo PATH=$PATH >> $GITHUB_ENV
+          pip install .
+          pip install .[develop]
+
+      - name: Run test and coverage
+        run: |
+          uvx tox
+
+      - name: Rename coverage report for TICS
+        run: |
+          mkdir ./coverage
+          mv ./coverage.xml ./coverage/cobertura.xml
+
+      - name: TICS GitHub Action
+        uses: tiobe/tics-github-action@009979693978bfefad2ad15c1020066694968dc7
+        with:
+          mode: qserver
+          project: yarf
+          viewerUrl: https://canonical.tiobe.com/tiobeweb/TICS/api/cfg?name=default
+          branchdir: ${{ github.workspace }}
+          ticsAuthToken: ${{ secrets.TICSAUTHTOKEN }}
+          installTics: true
+          calc: ALL

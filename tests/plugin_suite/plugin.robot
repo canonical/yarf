@@ -9,24 +9,24 @@ Task Tags
 
 *** Test Cases ***
 Verify Video Input Keywords
-    ${result}=              PlatformVideoInput.Start Video Input
+    ${result}=              Start Video Input
     Should Be Equal         ${result}               STARTED
 
-    ${result}=              PlatformVideoInput.Grab Screenshot
+    ${result}=              Grab Screenshot
     Should Be Equal         ${result}               SCREENSHOT
 
-    ${result}=              PlatformVideoInput.Stop Video Input
+    ${result}=              Stop Video Input
     Should Be Equal         ${result}               STOPPED
 
 Verify HID Keywords
-    ${result}=              PlatformHid.Type String                         Hello, World!
+    ${result}=              Type String             Hello, World!
     Should Be Equal         ${result}               Hello, World!
 
-    ${result}=              PlatformHid.Click Pointer Button                left
+    ${result}=              Hid.Click Pointer Button                        left
     Should Be Equal         ${result}               left
 
-    ${result}=              PlatformHid.Press Pointer Button                right
+    ${result}=              Hid.Press Pointer Button                        right
     Should Be Equal         ${result}               right
 
-    ${result}=              PlatformHid.Release Pointer Button              middle
+    ${result}=              Hid.Release Pointer Button                      middle
     Should Be Equal         ${result}               middle

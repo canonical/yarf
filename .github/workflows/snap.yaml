@@ -1,16 +1,56 @@
-name: Build YARF snap and publish to the store
+name: "(2) Build & Publish YARF Snap"
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'PEP 440 compliant version string'
+        required: true
+        type: string
+      commit_sha:
+        description: 'Commit SHA to build from'
+        required: true
+        type: string
+      commit_short_sha:
+        description: 'Commit short SHA for run name visualization'
+        required: true
+        type: string
+
+run-name: "Build version: ${{ inputs.version }} (${{ inputs.commit_short_sha }})"
 
 jobs:
+  set-version:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          ref: ${{ inputs.commit_sha }}
+
+      - uses: astral-sh/setup-uv@b75a909f75acd358c2196fb9a5f1299a9a8868a4
+
+      - name: Set version
+        run: uv version "${{ inputs.version }}" --frozen
+
+      - name: Upload updated project files
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: updated-project-files
+          path: |
+            pyproject.toml
+
   build_and_publish_amd64:
+    needs: [set-version]
     runs-on: [self-hosted, linux, noble, x64, large]
     steps:
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      with:
+        ref: ${{ inputs.commit_sha }}
+
+    - name: Download updated project files
+      uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+      with:
+        name: updated-project-files
+        path: .
     - uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
       id: snapcraft
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -25,9 +65,18 @@ jobs:
         release: edge
 
   build_and_publish_arm64:
+    needs: [set-version]
     runs-on: [self-hosted, linux, noble, arm64, large]
     steps:
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      with:
+        ref: ${{ inputs.commit_sha }}
+
+    - name: Download updated project files
+      uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+      with:
+        name: updated-project-files
+        path: .
     - uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
       id: snapcraft
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

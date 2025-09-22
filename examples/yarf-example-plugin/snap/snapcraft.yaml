@@ -10,6 +10,8 @@ grade: stable
 confinement: strict
 
 plugs:
+  # The example plugin requires this plug to share
+  # the content of platform plugins directory with YARF
   platform-plugins:
     interface: content
     target: $SNAP_COMMON/platform_plugins
@@ -28,13 +30,3 @@ parts:
     stage-packages:
       - libxkbcommon0
       - bash
-    override-build: |
-      craftctl default
-      mkdir -p $CRAFT_PART_INSTALL/bin
-      cp bin/onboard-plugin $CRAFT_PART_INSTALL/bin/onboard-plugin
-
-apps:
-  onboard-plugin:
-    command: bin/onboard-plugin
-    plugs:
-      - platform-plugins

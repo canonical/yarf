@@ -26,6 +26,7 @@ We can install YARF along with the dependencies specified in
 `pyproject.toml` in the virtual environment using the command:
 
 ```shell
+uv --no-managed-python venv --system-site-packages
 uv sync
 uv pip install .[develop]
 ```
@@ -40,7 +41,7 @@ Optionally, enable pre-commit checks, so your contribution will pass all the che
 we run on the code:
 
 ```shell
-uvx --from 'pre-commit<4.0.0' pre-commit install
+uvx pre-commit install
 ```
 
 We can start working on the repository here.
