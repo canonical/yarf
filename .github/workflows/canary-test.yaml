@@ -4,15 +4,15 @@ on:
   workflow_call:
     inputs:
       TRACK:
-        description: 'The snap track to promote within (e.g., latest)'
+        description: 'YARF track to promote within (e.g., latest)'
         type: string
         required: true
       CHANNEL:
-        description: 'The snap channel to promote from (e.g., stable, candidate, beta, edge)'
+        description: 'YARF channel to promote from (e.g., stable, candidate, beta, edge)'
         type: string
         required: true
-      REV:
-        description: 'The revision number of the snap to promote'
+      VER:
+        description: 'The version of YARF'
         type: string
         required: true
       ARCH:
@@ -35,7 +35,7 @@ concurrency:
 
 jobs:
   canary-test:
-    name: ${{ matrix.platform }} - Canary test yarf snap at channel ${{ inputs.TRACK }}/${{ inputs.CHANNEL }} (rev. ${{ inputs.REV }})
+    name: ${{ matrix.platform }} - Canary test yarf snap at channel ${{ inputs.TRACK }}/${{ inputs.CHANNEL }}
     runs-on: ${{ inputs.RUNNER }}
     strategy:
       fail-fast: false
@@ -191,10 +191,6 @@ jobs:
       - name: Connect platform plugin interface
         run: |
           sudo snap connect yarf-example-plugin:platform-plugins yarf:platform-plugins
-
-      - name: Onboard plugin
-        run: |
-          sudo snap run yarf-example-plugin.onboard-plugin
 
       - name: Run plugin tests
         run: |

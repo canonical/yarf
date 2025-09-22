@@ -63,7 +63,6 @@ jobs:
     outputs:
       should_continue: ${{ steps.versions.outputs.should_continue }}
       from_version:    ${{ steps.versions.outputs.from_version }}
-      from_revision:   ${{ steps.versions.outputs.from_revision }}
       from_channel:    ${{ steps.versions.outputs.from_channel }}
       lane:            ${{ matrix.lane }}
 
@@ -114,7 +113,6 @@ jobs:
             echo "${{ matrix.from }} revision is $FROM_REV"
             echo "should_continue=true" >> "$GITHUB_OUTPUT"
             echo "from_version=$FROM_VER" >> "$GITHUB_OUTPUT"
-            echo "from_revision=$FROM_REV" >> "$GITHUB_OUTPUT"
             echo "from_channel=${{ matrix.track }}/${{ matrix.from }}" >> "$GITHUB_OUTPUT"
           fi
 
@@ -134,7 +132,7 @@ jobs:
     with:
       TRACK:   ${{ matrix.track }}
       CHANNEL: ${{ matrix.from }}
-      REV:     ${{ needs.check-versions.outputs.from_revision }}
+      VER:     ${{ needs.check-versions.outputs.from_version }}
       ARCH:    ${{ matrix.arch }}
       RUNNER:  ${{ matrix.runs_on }}
 
