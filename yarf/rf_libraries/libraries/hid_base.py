@@ -4,6 +4,7 @@ This module provides the Robot interface for HID interactions.
 
 import asyncio
 from abc import ABC, abstractmethod
+from math import sqrt
 from typing import NamedTuple, Sequence
 
 from robot.api.deco import keyword
@@ -202,15 +203,22 @@ class HidBase(ABC):
         assert 0 <= y <= display_size.height, "Y coordinate outside of screen"
 
         proportional = (x / display_size.width, y / display_size.height)
+        proportional_step_distance = step_distance / sqrt(
+            display_size.width * display_size.height
+        )
         await self.walk_pointer_to_proportional(
             *proportional,
-            step_distance,
+            proportional_step_distance,
             delay,
         )
 
     @keyword
     async def walk_pointer_to_proportional(
-        self, x: float, y: float, step_distance: float, delay: float
+        self,
+        x: float,
+        y: float,
+        step_distance: float,
+        delay: float,
     ) -> None:
         """
         Walk the virtual pointer to a position proportional to the size of the
@@ -220,7 +228,7 @@ class HidBase(ABC):
         Args:
             x: horizontal coordinate, 0 <= x <= 1
             y: vertical coordinate, 0 <= y <= 1
-            step_distance: maximum distance to move per step
+            step_distance: maximum distance to move per step horizontally, 0 < step_distance <= 1
             delay: delay between steps in seconds
 
         Raises:
@@ -228,6 +236,7 @@ class HidBase(ABC):
         """
         assert 0 <= x <= 1, "x not in range 0..1"
         assert 0 <= y <= 1, "y not in range 0..1"
+        assert 0 < step_distance <= 1, "step_distance_x not in range 0..1"
 
         while self._pointer_position != (x, y):
             dist_x = x - self._pointer_position.x
