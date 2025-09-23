@@ -12,7 +12,7 @@ on:
 
 jobs:
   install-jammy:
-    runs-on: [self-hosted, linux, jammy, x64, large]
+    runs-on: ubuntu-22.04
     steps:
     - name: Install dependencies
       run: |
