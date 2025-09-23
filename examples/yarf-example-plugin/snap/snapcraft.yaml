@@ -14,7 +14,6 @@ plugs:
   # the content of platform plugins directory with YARF
   platform-plugins:
     interface: content
-    content: platform-plugins
     target: $SNAP_COMMON/platform_plugins
 
 parts:
