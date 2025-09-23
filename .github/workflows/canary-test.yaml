@@ -193,8 +193,6 @@ jobs:
       - name: Connect platform plugin interface
         run: |
           sudo snap connect yarf-example-plugin:platform-plugins yarf:platform-plugins
-          # install again to get the plugin in place
-          sudo snap install examples/yarf-example-plugin/*.snap --dangerous
 
       - name: Run plugin tests
         run: |
