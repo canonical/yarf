@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - commit-sha-in-snap
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
