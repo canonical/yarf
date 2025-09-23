@@ -7,6 +7,9 @@ import pytest
 from yarf.lib.wayland.protocols import WlOutput as wl_output
 from yarf.lib.wayland.protocols import WlShm as wl_shm
 from yarf.lib.wayland.protocols import (
+    ZwlrScreencopyFrameV1,
+)
+from yarf.lib.wayland.protocols import (
     ZwlrScreencopyManagerV1 as screencopy_manager,
 )
 from yarf.lib.wayland.screencopy import Screencopy
@@ -70,6 +73,7 @@ def screencopy(mock_pwc, mock_sleep, buffer_props, wl_client):  # noqa: F811
     def submit_buffer_and_frame(*args):
         nonlocal dispatcher
         dispatcher["buffer"](None, sentinel.format, *buffer_props)
+        dispatcher["flags"](None, 0)
         dispatcher["ready"](None, None, None, None)
 
     mock_sleep.side_effect = submit_buffer_and_frame
@@ -241,6 +245,13 @@ class TestScreencopy:
 
         mock_mmap.return_value.close.assert_called_once_with()
 
+    @pytest.mark.parametrize(
+        "inversion",
+        (
+            {"flags": ZwlrScreencopyFrameV1.flags(0), "args": (0,)},
+            {"flags": ZwlrScreencopyFrameV1.flags.y_invert, "args": (-1,)},
+        ),
+    )
     @pytest.mark.asyncio
     async def test_grab_screenshot(
         self,
@@ -250,6 +261,7 @@ class TestScreencopy:
         mock_mmap,
         screencopy,
         buffer_props,
+        inversion,
     ):
         """
         Binds to the screencopy interface and returns the image created from
@@ -276,6 +288,7 @@ class TestScreencopy:
 
             if (remaining := remaining - 1) <= 0:
                 dispatcher["buffer"](None, None, *buffer_props)
+                dispatcher["flags"](None, inversion["flags"])
                 dispatcher["ready"](None, None, None, None)
 
         mock_sleep.side_effect = assert_capture_and_submit_frame
@@ -299,7 +312,22 @@ class TestScreencopy:
             "raw",
             "BGRA",
             buffer_props.stride,
-            -1,
+            *inversion["args"],
+        )
+
+        # check that flags are only respected upon "ready"
+        dispatcher["flags"](None, ~inversion["flags"])
+
+        mock_image.reset_mock()
+        await screencopy.grab_screenshot()
+        mock_image.frombytes.assert_called_once_with(
+            "RGBA",
+            buffer_props[:2],
+            mock_mmap().read(),
+            "raw",
+            "BGRA",
+            buffer_props.stride,
+            *inversion["args"],
         )
 
     @pytest.mark.asyncio
@@ -332,6 +360,7 @@ class TestScreencopy:
         dispatcher = mock_pwc.zwlr_screencopy_manager_v1.capture_output.return_value.dispatcher
 
         def submits_frame(*args):
+            dispatcher["flags"](None, 0)
             dispatcher["ready"](None, None, None, None)
 
         mock_sleep.side_effect = submits_frame
