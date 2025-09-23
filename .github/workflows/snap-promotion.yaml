@@ -11,8 +11,8 @@ permissions:
   actions: write
 
 concurrency:
-  group: promote-yarf-${{ github.ref }}
-  cancel-in-progress: true
+  group: yarf-snap-ci-${{ github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
   define-matrix:

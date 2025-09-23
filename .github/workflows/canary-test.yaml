@@ -165,8 +165,10 @@ jobs:
           # remove any bare "yarf"
           sed -i '/"yarf"\s*,\?$/d' "$f"
 
-          # prepend the pinned YARF dep
-          awk -v ver="${{ inputs.VER }}" '
+          # Prepend the pinned YARF dep.
+          # We use main here because that is the same as what is on edge channel
+          # since we publish the YARF snap to snapstore on each merge to main.
+          awk -v ver="main" '
             BEGIN{added=0}
             {print}
             /^\[project\]/{inproj=1}
