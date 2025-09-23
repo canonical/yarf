@@ -23,9 +23,9 @@ jobs:
         arch: [amd64, arm64]
         include:
           - arch: amd64
-            runs_on: ubuntu-24.04
+            runs_on: [self-hosted, linux, noble, x64, large]
           - arch: arm64
-            runs_on: ubuntu-24.04-arm
+            runs_on: [self-hosted, linux, noble, arm64, large]
 
     runs-on: ${{ matrix.runs_on }}
     steps:
