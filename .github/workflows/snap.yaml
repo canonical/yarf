@@ -32,11 +32,7 @@ jobs:
         run: uv version "${{ inputs.version }}" --frozen
 
       - name: Add commit sha to the snap
-        run: |
-          cat > yarf/_commit_sha.py << EOF
-          COMMIT_SHA = "${{ inputs.commit_sha }}"
-          COMMIT_SHA_SHORT = "${{ inputs.commit_short_sha }}"
-          EOF
+        run: .github/scripts/snap/add-commit-sha.sh "${{ inputs.commit_sha }}" "${{ inputs.commit_short_sha }}"
 
       - name: Upload updated project files
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
