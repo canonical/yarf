@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - commit-sha-in-snap
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -44,33 +45,25 @@ jobs:
       - name: Normalize version to comply with PEP 440
         id: nv
         run: |
-          if [[ "${{ github.ref_name }}" == "main" ]]; then
-            VERSION="${{ steps.gv.outputs.semVer }}"
-          else
-            VERSION="${{ steps.gv.outputs.informationalVersion }}"
-          fi
-          VERSION_PEP440=$(uv tool run --with packaging python -c "from packaging.version import Version; print(Version('$VERSION'))")
-          echo "Normalized PEP 440 version: $VERSION_PEP440"
-
-          echo "version=$VERSION_PEP440" >> "$GITHUB_OUTPUT"
+          .github/scripts/snap-evaluate-version/normalize-version.sh \
+            "${{ github.ref_name }}" \
+            "${{ steps.gv.outputs.semVer }}" \
+            "${{ steps.gv.outputs.informationalVersion }}"
 
       - name: Trigger snap build
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
         with:
           script: |
-            const version = "${{ steps.nv.outputs.version }}";
-            const sha = "${{ steps.gv.outputs.sha }}";
-            const short_sha = "${{ steps.gv.outputs.shortSha }}";
             const response = await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: process.env.TARGET_WORKFLOW,
               ref: context.ref,
               inputs: {
-                version: version,
-                commit_sha: sha,
-                commit_short_sha: short_sha
+                version: "${{ steps.nv.outputs.version }}",
+                commit_sha: "${{ steps.gv.outputs.sha }}",
+                commit_short_sha: "${{ steps.gv.outputs.shortSha }}"
               }
             });
 
-            core.notice(`Triggered snap build for ${version} (${sha})`);
+            core.notice(`Triggered snap build for ${{ steps.nv.outputs.version }} (${{ steps.gv.outputs.sha }})`);

@@ -31,12 +31,16 @@ jobs:
       - name: Set version
         run: uv version "${{ inputs.version }}" --frozen
 
+      - name: Add commit sha to the snap
+        run: .github/scripts/snap/add-commit-sha.sh "${{ inputs.commit_sha }}" "${{ inputs.commit_short_sha }}"
+
       - name: Upload updated project files
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: updated-project-files
           path: |
             pyproject.toml
+            yarf/metadata.py
 
   build_and_publish_amd64:
     needs: [set-version]
@@ -57,12 +61,12 @@ jobs:
       with:
         name: yarf-amd64
         path: ${{ steps.snapcraft.outputs.snap }}
-    - uses: canonical/action-publish@214b86e5ca036ead1668c79afb81e550e6c54d40
-      env:
-        SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT }}
-      with:
-        snap: ${{ steps.snapcraft.outputs.snap }}
-        release: edge
+    # - uses: canonical/action-publish@214b86e5ca036ead1668c79afb81e550e6c54d40
+    #   env:
+    #     SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT }}
+    #   with:
+    #     snap: ${{ steps.snapcraft.outputs.snap }}
+    #     release: edge
 
   build_and_publish_arm64:
     needs: [set-version]
@@ -83,9 +87,9 @@ jobs:
       with:
         name: yarf-arm64
         path: ${{ steps.snapcraft.outputs.snap }}
-    - uses: canonical/action-publish@214b86e5ca036ead1668c79afb81e550e6c54d40
-      env:
-        SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT }}
-      with:
-        snap: ${{ steps.snapcraft.outputs.snap }}
-        release: edge
+    # - uses: canonical/action-publish@214b86e5ca036ead1668c79afb81e550e6c54d40
+    #   env:
+    #     SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT }}
+    #   with:
+    #     snap: ${{ steps.snapcraft.outputs.snap }}
+    #     release: edge
