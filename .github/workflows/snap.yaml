@@ -40,7 +40,7 @@ jobs:
           name: updated-project-files
           path: |
             pyproject.toml
-            yarf/_commit_sha.py
+            yarf/metadata.py
 
   build_and_publish_amd64:
     needs: [set-version]
