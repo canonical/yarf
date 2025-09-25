@@ -94,6 +94,7 @@ jobs:
     env:
       TEST_SUITE_PATH: tests
       EXAMPLE_PATH: examples
+      GITHUB_WORKFLOWS: .github
 
     steps:
       - name: Install workflow dependencies
@@ -114,6 +115,7 @@ jobs:
           sparse-checkout: |
             ${{ env.TEST_SUITE_PATH }}
             ${{ env.EXAMPLE_PATH }}
+            ${{ env.GITHUB_WORKFLOWS }}
           sparse-checkout-cone-mode: false
 
       - name: Install YARF from channel
