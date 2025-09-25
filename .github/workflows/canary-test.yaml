@@ -154,30 +154,7 @@ jobs:
           check-jsonschema --schemafile https://raw.githubusercontent.com/canonical/test-submission-schema/refs/heads/main/test_submission_schema/schemas/v${version}.json ~/snap/yarf/common/yarf-outdir/TestSubmissionSchema_output.json
 
       - name: Pin YARF to the requested version in pyproject.toml
-        run: |
-          # We pin the YARF version this way because snapcraft runs pip install
-          # and does not use uv automatically, so uv add <dep> will not work because
-          # pip will not look into tool.uv.sources.
-
-          set -euo pipefail
-          f=examples/yarf-example-plugin/pyproject.toml
-
-          # remove any bare "yarf"
-          sed -i '/"yarf"\s*,\?$/d' "$f"
-
-          # Prepend the pinned YARF dep.
-          # We use main here because that is the same as what is on edge channel
-          # since we publish the YARF snap to snapstore on each merge to main.
-          awk -v ver="main" '
-            BEGIN{added=0}
-            {print}
-            /^\[project\]/{inproj=1}
-            inproj && /^\s*dependencies\s*=\s*\[/{
-              print "    \"yarf @ git+https://github.com/canonical/yarf.git@" ver "\","
-              inproj=0; added=1
-            }
-            END{if(!added) exit 0}
-          ' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+        run: bash .github/scripts/canary-test/pin-yarf-version.sh
 
       - name: Build yarf-example-plugin snap
         uses: snapcore/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
