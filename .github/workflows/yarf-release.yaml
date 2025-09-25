@@ -41,7 +41,7 @@ jobs:
         env:
           IN_FROM: ${{ github.event.inputs.from_tag }}
           IN_TO:   ${{ github.event.inputs.to_tag }}
-        run: bash .github/workflows/scripts/resolve_git_tags.sh
+        run: bash .github/scripts/yarf-release/resolve_git_tags.sh
 
       - name: Collect commits between tags
         id: commits
@@ -50,7 +50,7 @@ jobs:
           FROM_KIND: ${{ steps.tags.outputs.from_kind }}
           FROM:      ${{ steps.tags.outputs.from }}
           TO:        ${{ steps.tags.outputs.to }}
-        run: bash .github/workflows/scripts/collect_commits.sh
+        run: bash .github/scripts/yarf-release/collect_commits.sh
 
       - name: Build release notes body
         id: body
@@ -58,7 +58,7 @@ jobs:
           FROM_KIND:   ${{ steps.tags.outputs.from_kind }}
           FROM:        ${{ steps.tags.outputs.from }}
           TO:          ${{ steps.tags.outputs.to }}
-        run: bash .github/workflows/scripts/build_release_notes_body.sh
+        run: bash .github/scripts/yarf-release/build_release_notes_body.sh
 
       - name: Write release body to job summary
         run: |
