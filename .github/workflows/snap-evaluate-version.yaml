@@ -20,18 +20,18 @@ jobs:
       actions: write
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           fetch-depth: 0
           fetch-tags: true
 
-      - uses: gittools/actions/gitversion/setup@v4
+      - uses: gittools/actions/gitversion/setup@b82e662a7199df56ac962118e506d9efb9830f82
         with:
           versionSpec: '6.x'
 
       - name: Evaluate semantic version
         id: gv
-        uses: gittools/actions/gitversion/execute@v4
+        uses: gittools/actions/gitversion/execute@b82e662a7199df56ac962118e506d9efb9830f82
         with:
           configFilePath: GitVersion.yaml
 
@@ -39,38 +39,30 @@ jobs:
         run: |
           echo "${{ toJson(steps.gv.outputs) }}"
 
-      - uses: astral-sh/setup-uv@v3
+      - uses: astral-sh/setup-uv@b75a909f75acd358c2196fb9a5f1299a9a8868a4
 
       - name: Normalize version to comply with PEP 440
         id: nv
         run: |
-          if [[ "${{ github.ref_name }}" == "main" ]]; then
-            VERSION="${{ steps.gv.outputs.semVer }}"
-          else
-            VERSION="${{ steps.gv.outputs.informationalVersion }}"
-          fi
-          VERSION_PEP440=$(uv tool run --with packaging python -c "from packaging.version import Version; print(Version('$VERSION'))")
-          echo "Normalized PEP 440 version: $VERSION_PEP440"
-
-          echo "version=$VERSION_PEP440" >> "$GITHUB_OUTPUT"
+          .github/scripts/snap-evaluate-version/normalize-version.sh \
+            "${{ github.ref_name }}" \
+            "${{ steps.gv.outputs.semVer }}" \
+            "${{ steps.gv.outputs.informationalVersion }}"
 
       - name: Trigger snap build
-        uses: actions/github-script@v7
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
         with:
           script: |
-            const version = "${{ steps.nv.outputs.version }}";
-            const sha = "${{ steps.gv.outputs.sha }}";
-            const short_sha = "${{ steps.gv.outputs.shortSha }}";
             const response = await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: process.env.TARGET_WORKFLOW,
               ref: context.ref,
               inputs: {
-                version: version,
-                commit_sha: sha,
-                commit_short_sha: short_sha
+                version: "${{ steps.nv.outputs.version }}",
+                commit_sha: "${{ steps.gv.outputs.sha }}",
+                commit_short_sha: "${{ steps.gv.outputs.shortSha }}"
               }
             });
 
-            core.notice(`Triggered snap build for ${version} (${sha})`);
+            core.notice(`Triggered snap build for ${{ steps.nv.outputs.version }} (${{ steps.gv.outputs.sha }})`);

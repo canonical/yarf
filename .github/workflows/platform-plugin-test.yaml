@@ -1,0 +1,68 @@
+name: Platform plugin test
+
+on:
+  merge_group:
+    types: [checks_requested]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test-plugin:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt update -qq
+          sudo apt install -y \
+            git-lfs \
+            libgl1 \
+            libxkbcommon-dev \
+            jq \
+            clang \
+            python3-tk
+
+      - name: Checkout repo
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          lfs: true
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Set up Python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
+        with:
+          python-version: "3.12"
+
+      - name: Pin YARF to the requested version in yarf-example-plugin pyproject.toml
+        run: |
+          # YARF dependency is pinned this way because pip does not use uv automatically
+          # so uv add <dep> will not work because pip will not look into tool.uv.sources.
+          set -euo pipefail
+          f=examples/yarf-example-plugin/pyproject.toml
+          # remove any bare "yarf"
+          sed -i '/"yarf"\s*,\?$/d' "$f"
+          # append the pinned URL dep
+          awk -v sha="$GITHUB_SHA" '
+            BEGIN{added=0}
+            {print}
+            /^\[project\]/{inproj=1}
+            inproj && /^\s*dependencies\s*=\s*\[/{
+              print "    \"yarf @ git+https://github.com/canonical/yarf.git@" sha "\","
+              inproj=0; added=1
+            }
+            END{if(!added) exit 0}
+          ' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+
+      - name: Install YARF and yarf-example-plugin
+        run: |
+          pip install examples/yarf-example-plugin
+
+      - name: Run plugin integration tests
+        run: |
+          yarf --platform Example tests/plugin_suite
+
+      - if: failure() && runner.debug
+        name: Setup upterm session (restart with "Enable debug logging" to activate)
+        uses: canonical/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48
+        with:
+          limit-access-to-actor: true

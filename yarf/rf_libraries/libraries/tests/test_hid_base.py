@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
 
@@ -113,23 +113,47 @@ class TestHidBase:
         mock_sleep.assert_has_calls(7 * [call(0.2)])
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "x,y,step_distance",
+        [
+            (1.1, 0, 0),
+            (0, 1.1, 0),
+            (0, 0, 1.1),
+        ],
+    )
+    async def test_walk_pointer_to_proportional_raises(
+        self,
+        stub_hid: MagicMock,
+        x: float,
+        y: float,
+        step_distance: float,
+    ):
+        """
+        Test the function raises an exception if the target position or step
+        distance are out of range.
+        """
+        with pytest.raises(AssertionError):
+            await stub_hid.walk_pointer_to_proportional(
+                x, y, step_distance, 0.2
+            )
+
+    @pytest.mark.asyncio
     async def test_walk_pointer_to_absolute(self, stub_hid, mock_sleep):
         """
         Test the function moves the pointer by the requested step to the target
         position given in absolute coordinates.
         """
         await stub_hid.move_pointer_to_proportional(0.15, 0.35)
-        await stub_hid.walk_pointer_to_absolute(100, 200, 0.05, 0.2)
+        await stub_hid.walk_pointer_to_absolute(100, 200, 100, 0.2)
 
         stub_hid._move_pointer.assert_has_calls(
             (
-                call(pytest.approx(0.1), pytest.approx(0.3)),
                 call(pytest.approx(0.1), pytest.approx(0.25)),
                 call(pytest.approx(0.1), pytest.approx(0.2)),
             )
         )
 
-        mock_sleep.assert_has_calls(3 * [call(0.2)])
+        mock_sleep.assert_has_calls(2 * [call(0.2)])
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
