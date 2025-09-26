@@ -18,6 +18,10 @@ on:
 
 run-name: "Build version: ${{ inputs.version }} (${{ inputs.commit_short_sha }})"
 
+concurrency:
+  group: yarf-snap-ci-${{ github.ref_name }}
+  cancel-in-progress: false
+
 jobs:
   set-version:
     runs-on: ubuntu-24.04
