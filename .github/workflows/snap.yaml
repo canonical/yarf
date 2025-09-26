@@ -46,11 +46,23 @@ jobs:
             pyproject.toml
             yarf/metadata.py
 
-  build_and_publish_amd64:
+  build_and_publish:
     needs: [set-version]
-    runs-on: [self-hosted, linux, noble, x64, large]
+    name: Build and publish YARF snap (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            runs_on: [self-hosted, linux, noble, x64, large]
+          - arch: arm64
+            runs_on: [self-hosted, linux, noble, arm64, large]
+
+    runs-on: ${{ matrix.runs_on }}
     steps:
-    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+    - name: Checkout Repo
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         ref: ${{ inputs.commit_sha }}
 
@@ -59,38 +71,17 @@ jobs:
       with:
         name: updated-project-files
         path: .
-    - uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
-      id: snapcraft
-    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-      with:
-        name: yarf-amd64
-        path: ${{ steps.snapcraft.outputs.snap }}
-    - uses: canonical/action-publish@214b86e5ca036ead1668c79afb81e550e6c54d40
-      env:
-        SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT }}
-      with:
-        snap: ${{ steps.snapcraft.outputs.snap }}
-        release: edge
 
-  build_and_publish_arm64:
-    needs: [set-version]
-    runs-on: [self-hosted, linux, noble, arm64, large]
-    steps:
-    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
-      with:
-        ref: ${{ inputs.commit_sha }}
-
-    - name: Download updated project files
-      uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
-      with:
-        name: updated-project-files
-        path: .
-    - uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
+    - name: Build YARF snap
+      uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
       id: snapcraft
-    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
       with:
-        name: yarf-arm64
+        name: yarf-${{ matrix.arch }}
         path: ${{ steps.snapcraft.outputs.snap }}
+
     - uses: canonical/action-publish@214b86e5ca036ead1668c79afb81e550e6c54d40
       env:
         SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT }}
