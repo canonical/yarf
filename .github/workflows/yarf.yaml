@@ -3,12 +3,6 @@ name: Testing and quality control for YARF codebase
 on:
   merge_group:
     types: [checks_requested]
-  workflow_call:
-    inputs:
-      ref:
-        description: 'Git reference to checkout'
-        required: true
-        type: string
   pull_request:
     paths-ignore:
       - 'docs/**'
@@ -30,10 +24,12 @@ jobs:
           jq \
           clang \
           python3-tk
-    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+
+    - name: Checkout Repository
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         lfs: true
-        ref: ${{ inputs.ref }}
+
     - name: Set up Python
       uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
       with:
@@ -67,19 +63,24 @@ jobs:
       uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
       with:
         python-version: "3.12"
+
     - name: Install uv and json schema
       run: pip install uv check-jsonschema
+
     - name: Check uv.lock file
       run: uv lock --check
+
     - name: Run tests
       run: |
         uv tool run tox
+
     - name: Upload Coverage Report
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
       with:
         name: coverage
         path: ./coverage.xml
         retention-days: 5
+
     - name: Install integration dependencies
       run: |
         sudo snap install mir-test-tools
@@ -104,7 +105,7 @@ jobs:
         # Avoid GNOME apps waiting for portals
         dbus-run-session -- gnome-calculator &
 
-        uv run yarf --platform Mir --output-format TestSubmissionSchema tests/basic_suite
+        uv run yarf --platform Mir --output-format TestSubmissionSchema tests/canary_test
 
     - name: Download test submission schema and validate
       run: |

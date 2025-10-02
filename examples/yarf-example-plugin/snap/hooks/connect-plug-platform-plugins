@@ -1,7 +1,10 @@
 #!/bin/sh
 set -e
 
-# This configure file copies the example plugin to $SNAP_COMMON/platform_plugins/ when the snap is installed
+# This hook copies the example plugin to $SNAP_COMMON/platform_plugins/
+# when we run the `platform-plugins` connection.
+# For details on how this hook work, please visit:
+# https://snapcraft.io/docs/interface-hooks
 SRC="$SNAP/lib/python3.12/site-packages/yarf_plugin_example"
 DEST="$SNAP_COMMON/platform_plugins/yarf_plugin_example"
 
