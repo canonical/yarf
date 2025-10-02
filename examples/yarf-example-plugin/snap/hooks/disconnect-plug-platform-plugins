@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+
+DEST="$SNAP_COMMON/platform_plugins/yarf_plugin_example"
+
+rm -rf "$DEST"
+
+echo "Removed plugin from $DEST"

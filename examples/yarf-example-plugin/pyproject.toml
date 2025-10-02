@@ -12,7 +12,7 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 dependencies = [
-    "robotframework~=6.1.1",
+    "robotframework",
     # A YARF dependency is required here. E.g.: "yarf @ git+https://github.com/canonical/yarf.git@2.0.1".
     # However we are not doing this here because we determine YARF version dynamically.
 ]
