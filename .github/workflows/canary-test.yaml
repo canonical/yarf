@@ -41,59 +41,12 @@ jobs:
       fail-fast: false
       matrix:
         platform: [Vnc, Mir]
-        include:
-          - platform: Vnc
-            install-platform-deps-cmds: |
-              sudo snap install mir-test-tools
-              sudo apt update -qq
-              sudo apt-get --yes --no-install-recommends install \
-              ffmpeg \
-              inotify-tools \
-              wayvnc \
-              gnome-calculator \
-              eog
-
-            prepare-platform-cmds: |
-              export WAYLAND_DEBUG=client
-
-              # Start Mir on a virtual display (doesn't require graphics hardware)
-              mir-test-tools.demo-server \
-                --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
-                --platform-display-libs mir:virtual \
-                --virtual-output 1280x1024 &
-
-              # Wait for the compositor to start
-              inotifywait --event create --include "^$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY\$" $XDG_RUNTIME_DIR
-
-              # Start vnc session
-              wayvnc &
-
-          - platform: Mir
-            install-platform-deps-cmds: |
-              sudo snap install mir-test-tools
-              sudo apt update -qq
-              sudo apt-get --yes --no-install-recommends install \
-                ffmpeg \
-                inotify-tools \
-                gnome-calculator \
-                eog
-
-            prepare-platform-cmds: |
-              export WAYLAND_DEBUG=client
-
-              # Start Mir on a virtual display (doesn't require graphics hardware)
-              mir-test-tools.demo-server \
-                --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
-                --platform-display-libs mir:virtual \
-                --virtual-output 1280x1024 &
-
-              # Wait for the compositor to start
-              inotifywait --event create --include "^$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY\$" $XDG_RUNTIME_DIR
 
     env:
       TEST_SUITE_PATH: tests
       EXAMPLE_PATH: examples
       GITHUB_WORKFLOWS: .github
+      PLATFORM: ${{ matrix.platform }}
 
     steps:
       - name: Install workflow dependencies
@@ -125,26 +78,15 @@ jobs:
 
       - name: Install platform ${{ matrix.platform }} dependencies
         shell: bash
-        run: |
-          set -euo pipefail
-          eval "$(
-          cat <<'SCRIPT'
-          ${{ matrix.install-platform-deps-cmds }}
-          SCRIPT
-          )"
+        run: bash .github/scripts/canary-test/install-platform-dependencies.sh
 
       - name: Run canary test
         id: test
         shell: bash
         run: |
           set -euo pipefail
-
           export WAYLAND_DISPLAY=wayland-99
-          eval "$(
-          cat <<'SCRIPT'
-          ${{ matrix.prepare-platform-cmds }}
-          SCRIPT
-          )"
+          bash .github/scripts/canary-test/prepare-platform.sh
 
           # Avoid GNOME apps waiting for portals
           dbus-run-session -- gnome-calculator &
@@ -183,11 +125,7 @@ jobs:
           set -euo pipefail
 
           export WAYLAND_DISPLAY=wayland-0
-          eval "$(
-          cat <<'SCRIPT'
-          ${{ matrix.prepare-platform-cmds }}
-          SCRIPT
-          )"
+          bash .github/scripts/canary-test/prepare-platform.sh
 
           # Avoid GNOME apps waiting for portals
           dbus-run-session -- gnome-calculator &
@@ -199,11 +137,7 @@ jobs:
           set -euo pipefail
 
           export WAYLAND_DISPLAY=wayland-1
-          eval "$(
-          cat <<'SCRIPT'
-          ${{ matrix.prepare-platform-cmds }}
-          SCRIPT
-          )"
+          bash .github/scripts/canary-test/prepare-platform.sh
 
           # Avoid GNOME apps waiting for portals
           dbus-run-session -- eog -f tests/keyword_suite/text/text.png &
@@ -215,11 +149,8 @@ jobs:
           set -euo pipefail
 
           export WAYLAND_DISPLAY=wayland-2
-          eval "$(
-          cat <<'SCRIPT'
-          ${{ matrix.prepare-platform-cmds }}
-          SCRIPT
-          )"
+          export WAYLAND_DEBUG=client
+          bash .github/scripts/canary-test/prepare-platform.sh
 
           snap run yarf --platform Mir tests/keyword_suite -- --suite hid_keyboard_test 2> ~/wayland.trace
 
@@ -228,11 +159,8 @@ jobs:
           set -euo pipefail
 
           export WAYLAND_DISPLAY=wayland-3
-          eval "$(
-          cat <<'SCRIPT'
-          ${{ matrix.prepare-platform-cmds }}
-          SCRIPT
-          )"
+          export WAYLAND_DEBUG=client
+          bash .github/scripts/canary-test/prepare-platform.sh
 
           snap run yarf --platform Mir tests/keyword_suite -- --suite hid_pointer_test 2> ~/wayland.trace
 
