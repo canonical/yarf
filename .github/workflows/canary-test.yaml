@@ -54,7 +54,18 @@ jobs:
               eog
 
             prepare-platform-cmds: |
-              export WAYLAND_DISPLAY=wayland-99
+              if [ -z "$WAYLAND_DISPLAY" ]; then
+                  export WAYLAND_DISPLAY=wayland-0
+
+              elif [[ "$WAYLAND_DISPLAY" =~ wayland-([0-9]+) ]]; then
+                  current_num="${BASH_REMATCH[1]}"
+                  next_num=$((current_num + 1))
+                  export WAYLAND_DISPLAY="wayland-${next_num}"
+
+              else
+                  echo "Warning: WAYLAND_DISPLAY is set to '$WAYLAND_DISPLAY', which is not the expected 'wayland-N' format. Resetting to default."
+                  export WAYLAND_DISPLAY="wayland-0"
+              fi
               export WAYLAND_DEBUG=client
 
               # Start Mir on a virtual display (doesn't require graphics hardware)
@@ -79,7 +90,18 @@ jobs:
                 gnome-calculator
 
             prepare-platform-cmds: |
-              export WAYLAND_DISPLAY=wayland-99
+              if [ -z "$WAYLAND_DISPLAY" ]; then
+                  export WAYLAND_DISPLAY=wayland-0
+
+              elif [[ "$WAYLAND_DISPLAY" =~ wayland-([0-9]+) ]]; then
+                  current_num="${BASH_REMATCH[1]}"
+                  next_num=$((current_num + 1))
+                  export WAYLAND_DISPLAY="wayland-${next_num}"
+
+              else
+                  echo "Warning: WAYLAND_DISPLAY is set to '$WAYLAND_DISPLAY', which is not the expected 'wayland-N' format. Resetting to default."
+                  export WAYLAND_DISPLAY="wayland-0"
+              fi
               export WAYLAND_DEBUG=client
 
               # Start Mir on a virtual display (doesn't require graphics hardware)
