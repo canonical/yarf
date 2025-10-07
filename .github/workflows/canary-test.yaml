@@ -75,7 +75,8 @@ jobs:
               sudo apt-get --yes --no-install-recommends install \
                 ffmpeg \
                 inotify-tools \
-                gnome-calculator
+                gnome-calculator \
+                eog
 
             prepare-platform-cmds: |
               export WAYLAND_DEBUG=client
