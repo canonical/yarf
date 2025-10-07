@@ -94,6 +94,7 @@ jobs:
     env:
       TEST_SUITE_PATH: tests
       EXAMPLE_PATH: examples
+      GITHUB_WORKFLOWS: .github
 
     steps:
       - name: Install workflow dependencies
@@ -114,6 +115,7 @@ jobs:
           sparse-checkout: |
             ${{ env.TEST_SUITE_PATH }}
             ${{ env.EXAMPLE_PATH }}
+            ${{ env.GITHUB_WORKFLOWS }}
           sparse-checkout-cone-mode: false
 
       - name: Install YARF from channel
@@ -154,28 +156,7 @@ jobs:
           check-jsonschema --schemafile https://raw.githubusercontent.com/canonical/test-submission-schema/refs/heads/main/test_submission_schema/schemas/v${version}.json ~/snap/yarf/common/yarf-outdir/TestSubmissionSchema_output.json
 
       - name: Pin YARF to the requested version in pyproject.toml
-        run: |
-          # We pin the YARF version this way because snapcraft runs pip install
-          # and does not use uv automatically, so uv add <dep> will not work because
-          # pip will not look into tool.uv.sources.
-
-          set -euo pipefail
-          f=examples/yarf-example-plugin/pyproject.toml
-
-          # remove any bare "yarf"
-          sed -i '/"yarf"\s*,\?$/d' "$f"
-
-          # prepend the pinned YARF dep
-          awk -v ver="${{ inputs.VER }}" '
-            BEGIN{added=0}
-            {print}
-            /^\[project\]/{inproj=1}
-            inproj && /^\s*dependencies\s*=\s*\[/{
-              print "    \"yarf @ git+https://github.com/canonical/yarf.git@" ver "\","
-              inproj=0; added=1
-            }
-            END{if(!added) exit 0}
-          ' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+        run: bash .github/scripts/canary-test/pin-yarf-version.sh
 
       - name: Build yarf-example-plugin snap
         uses: snapcore/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79

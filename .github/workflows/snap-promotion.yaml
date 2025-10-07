@@ -11,8 +11,8 @@ permissions:
   actions: write
 
 concurrency:
-  group: promote-yarf-${{ github.ref }}
-  cancel-in-progress: true
+  group: yarf-snap-ci-${{ github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
   define-matrix:
@@ -106,7 +106,8 @@ jobs:
             exit 1
           fi
 
-          if [[ -n "${TO_VER:-}" ]] && dpkg --compare-versions "$FROM_VER" lt "$TO_VER"; then
+          # Change back to `lt` after testing
+          if [[ -n "${TO_VER:-}" ]] && dpkg --compare-versions "$FROM_VER" le "$TO_VER"; then
             echo "Versions match ($FROM_VER) in ${{ matrix.track }} (${{ matrix.from }} vs ${{ matrix.to }}). Nothing to do."
             echo "should_continue=false" >> "$GITHUB_OUTPUT"
           else

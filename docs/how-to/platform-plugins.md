@@ -146,6 +146,11 @@ There are two ways to manage platform plugins in YARF:
    sudo snap connect snap-with-plugin:write-yarf-platform-plugins yarf:platform-plugins
    ```
 
+   ```{tip}
+   We recommend writing interface hooks for easy onboarding and removal of the plugin.
+   For details on how to write interface hooks, please visit [here](https://snapcraft.io/docs/interface-hooks).
+   ```
+
    After that, we will need to move `yarf_plugin_platform_A` to `$SNAP_COMMON/platform-to-plug`.
 
 A working example of a platform plugin can be found in `examples/yarf-example-plugin` of the YARF repository.
