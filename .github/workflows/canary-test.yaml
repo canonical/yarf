@@ -54,18 +54,6 @@ jobs:
               eog
 
             prepare-platform-cmds: |
-              WAYLAND_DISPLAY_VAL="${WAYLAND_DISPLAY:-}"
-              if [ -z "$WAYLAND_DISPLAY_VAL" ]; then
-                  export WAYLAND_DISPLAY="wayland-0"
-
-              elif [[ "$WAYLAND_DISPLAY_VAL" =~ wayland-([0-9]+) ]]; then
-                  current_num="${BASH_REMATCH[1]}"
-                  next_num=$((current_num + 1))
-                  export WAYLAND_DISPLAY="wayland-${next_num}"
-
-              else
-                  export WAYLAND_DISPLAY="wayland-0"
-              fi
               export WAYLAND_DEBUG=client
 
               # Start Mir on a virtual display (doesn't require graphics hardware)
@@ -90,18 +78,6 @@ jobs:
                 gnome-calculator
 
             prepare-platform-cmds: |
-              WAYLAND_DISPLAY_VAL="${WAYLAND_DISPLAY:-}"
-              if [ -z "$WAYLAND_DISPLAY_VAL" ]; then
-                  export WAYLAND_DISPLAY="wayland-0"
-
-              elif [[ "$WAYLAND_DISPLAY_VAL" =~ wayland-([0-9]+) ]]; then
-                  current_num="${BASH_REMATCH[1]}"
-                  next_num=$((current_num + 1))
-                  export WAYLAND_DISPLAY="wayland-${next_num}"
-
-              else
-                  export WAYLAND_DISPLAY="wayland-0"
-              fi
               export WAYLAND_DEBUG=client
 
               # Start Mir on a virtual display (doesn't require graphics hardware)
@@ -161,6 +137,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
+          export WAYLAND_DISPLAY=wayland-99
           eval "$(
           cat <<'SCRIPT'
           ${{ matrix.prepare-platform-cmds }}
@@ -202,6 +180,8 @@ jobs:
       - name: Run Keyword tests - VideoInput imaging
         run: |
           set -euo pipefail
+
+          export WAYLAND_DISPLAY=wayland-0
           eval "$(
           cat <<'SCRIPT'
           ${{ matrix.prepare-platform-cmds }}
@@ -216,6 +196,8 @@ jobs:
       - name: Run Keyword tests - VideoInput text
         run: |
           set -euo pipefail
+
+          export WAYLAND_DISPLAY=wayland-1
           eval "$(
           cat <<'SCRIPT'
           ${{ matrix.prepare-platform-cmds }}
@@ -230,6 +212,8 @@ jobs:
       - name: Run Keyword tests - Hid keyboard
         run: |
           set -euo pipefail
+
+          export WAYLAND_DISPLAY=wayland-2
           eval "$(
           cat <<'SCRIPT'
           ${{ matrix.prepare-platform-cmds }}
@@ -244,6 +228,8 @@ jobs:
       - name: Run Keyword tests - Hid pointer
         run: |
           set -euo pipefail
+
+          export WAYLAND_DISPLAY=wayland-3
           eval "$(
           cat <<'SCRIPT'
           ${{ matrix.prepare-platform-cmds }}
