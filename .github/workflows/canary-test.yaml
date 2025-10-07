@@ -62,9 +62,6 @@ jobs:
                 --platform-display-libs mir:virtual \
                 --virtual-output 1280x1024 &
 
-              # Wait for the compositor to start
-              inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-99\$" $XDG_RUNTIME_DIR
-
               # Start vnc session
               wayvnc &
 
@@ -85,9 +82,6 @@ jobs:
                 --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
                 --platform-display-libs mir:virtual \
                 --virtual-output 1280x1024 &
-
-              # Wait for the compositor to start
-              inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-99\$" $XDG_RUNTIME_DIR
 
     env:
       TEST_SUITE_PATH: tests
@@ -145,6 +139,9 @@ jobs:
           SCRIPT
           )"
 
+          # Wait for the compositor to start
+          inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-99\$" $XDG_RUNTIME_DIR
+
           # Avoid GNOME apps waiting for portals
           dbus-run-session -- gnome-calculator &
 
@@ -188,6 +185,9 @@ jobs:
           SCRIPT
           )"
 
+          # Wait for the compositor to start
+          inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-0\$" $XDG_RUNTIME_DIR
+
           # Avoid GNOME apps waiting for portals
           dbus-run-session -- gnome-calculator &
 
@@ -203,6 +203,9 @@ jobs:
           ${{ matrix.prepare-platform-cmds }}
           SCRIPT
           )"
+
+          # Wait for the compositor to start
+          inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-1\$" $XDG_RUNTIME_DIR
 
           # Avoid GNOME apps waiting for portals
           dbus-run-session -- eog -f tests/keyword_suite/text/text.png &
@@ -221,6 +224,9 @@ jobs:
           )"
 
           # Wait for the compositor to start
+          inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-2\$" $XDG_RUNTIME_DIR
+
+          # Wait for the compositor to start
           inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-3\$" $XDG_RUNTIME_DIR
 
           snap run yarf --platform Mir tests/keyword_suite -- --suite hid_keyboard_test 2> ~/wayland.trace
@@ -235,6 +241,9 @@ jobs:
           ${{ matrix.prepare-platform-cmds }}
           SCRIPT
           )"
+
+          # Wait for the compositor to start
+          inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-3\$" $XDG_RUNTIME_DIR
 
           # Wait for the compositor to start
           inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-4\$" $XDG_RUNTIME_DIR
