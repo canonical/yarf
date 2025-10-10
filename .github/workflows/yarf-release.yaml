@@ -1,7 +1,6 @@
 name: Release YARF
 
 on:
-  pull_request:
   workflow_dispatch:
     inputs:
       from_tag:
