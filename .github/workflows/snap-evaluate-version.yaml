@@ -6,6 +6,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read   # Required to check out repository code
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -15,15 +18,17 @@ env:
 
 jobs:
   evaluate-version-and-trigger-snap-build:
+    name: Evaluate version and trigger snap build
     runs-on: ubuntu-24.04
     permissions:
-      actions: write
-      contents: read
+      actions: write   # Required to trigger snap build workflow
+      contents: read   # Required to check out repository code
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           fetch-depth: 0
           fetch-tags: true
+          persist-credentials: false
 
       - uses: gittools/actions/gitversion/setup@b82e662a7199df56ac962118e506d9efb9830f82
         with:
@@ -36,8 +41,10 @@ jobs:
           configFilePath: GitVersion.yaml
 
       - name: Show semantic version metadata
+        env:
+          GV_OUTPUTS: ${{ toJson(steps.gv.outputs) }}
         run: |
-          echo "${{ toJson(steps.gv.outputs) }}"
+          echo "$GV_OUTPUTS"
 
       - uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41
 
@@ -45,12 +52,19 @@ jobs:
         id: nv
         run: |
           .github/scripts/snap-evaluate-version/normalize-version.sh \
-            "${{ github.ref_name }}" \
-            "${{ steps.gv.outputs.semVer }}" \
-            "${{ steps.gv.outputs.informationalVersion }}"
+            "${GITHUB_REF_NAME}" \
+            "${STEPS_GV_OUTPUTS_SEMVER}" \
+            "${STEPS_GV_OUTPUTS_INFORMATIONALVERSION}"
+        env:
+          STEPS_GV_OUTPUTS_SEMVER: ${{ steps.gv.outputs.semVer }}
+          STEPS_GV_OUTPUTS_INFORMATIONALVERSION: ${{ steps.gv.outputs.informationalVersion }}
 
       - name: Trigger snap build
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        env:
+          VERSION: ${{ steps.nv.outputs.version }}
+          COMMIT_SHA: ${{ steps.gv.outputs.sha }}
+          COMMIT_SHORT_SHA: ${{ steps.gv.outputs.shortSha }}
         with:
           script: |
             const response = await github.rest.actions.createWorkflowDispatch({
@@ -59,10 +73,10 @@ jobs:
               workflow_id: process.env.TARGET_WORKFLOW,
               ref: context.ref,
               inputs: {
-                version: "${{ steps.nv.outputs.version }}",
-                commit_sha: "${{ steps.gv.outputs.sha }}",
-                commit_short_sha: "${{ steps.gv.outputs.shortSha }}"
+                version: process.env.VERSION,
+                commit_sha: process.env.COMMIT_SHA,
+                commit_short_sha: process.env.COMMIT_SHORT_SHA
               }
             });
 
-            core.notice(`Triggered snap build for ${{ steps.nv.outputs.version }} (${{ steps.gv.outputs.sha }})`);
+            core.notice(`Triggered snap build for ${process.env.VERSION} (${process.env.COMMIT_SHA})`);

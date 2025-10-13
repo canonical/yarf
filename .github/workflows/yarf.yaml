@@ -10,8 +10,12 @@ on:
       - '.github/workflows/**'
       - '!.github/workflows/yarf.yaml'
 
+permissions:
+  contents: read  # Required to check out repository code
+
 jobs:
   install-jammy:
+    name: Install and test on Jammy
     runs-on: [self-hosted, linux, jammy, x64, large]
     steps:
     - name: Install dependencies
@@ -29,6 +33,7 @@ jobs:
       uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         lfs: true
+        persist-credentials: false
 
     - name: Set up Python
       uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
@@ -40,6 +45,7 @@ jobs:
       run: uv sync
 
   test-noble:
+    name: Test on Noble
     # We use GitHub hosted runners for this job as Pa11y needs working Chrom support
     runs-on: ubuntu-24.04
     steps:
@@ -57,6 +63,7 @@ jobs:
       with:
         lfs: true
         fetch-depth: 0
+        persist-credentials: false
     - name: Set up Python
       uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
       with:

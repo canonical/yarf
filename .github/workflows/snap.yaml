@@ -16,7 +16,12 @@ on:
         required: true
         type: string
 
-run-name: "Build version: ${{ inputs.version }} (${{ inputs.commit_short_sha }})"
+run-name: "Build version: ${{ inputs.version }} (${{ inputs.commit_short_sha }}"
+
+# Read access to repository; write access for artifacts
+permissions:
+  contents: read      # Required to check out repository code
+  actions: read       # Required to download artifacts between jobs
 
 concurrency:
   group: yarf-snap-ci-${{ github.ref_name }}
@@ -24,19 +29,26 @@ concurrency:
 
 jobs:
   set-version:
+    name: Set version
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           ref: ${{ inputs.commit_sha }}
+          persist-credentials: false
 
       - uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41
 
       - name: Set version
-        run: uv version "${{ inputs.version }}" --frozen
+        env:
+          VERSION: ${{ inputs.version }}
+        run: uv version "${VERSION}" --frozen
 
       - name: Add commit sha to the snap
-        run: .github/scripts/snap/add-commit-sha.sh "${{ inputs.commit_sha }}" "${{ inputs.commit_short_sha }}"
+        env:
+          COMMIT_SHA: ${{ inputs.commit_sha }}
+          COMMIT_SHORT_SHA: ${{ inputs.commit_short_sha }}
+        run: .github/scripts/snap/add-commit-sha.sh "${COMMIT_SHA}" "${COMMIT_SHORT_SHA}"
 
       - name: Upload updated project files
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
@@ -49,6 +61,8 @@ jobs:
   build_and_publish:
     needs: [set-version]
     name: Build and publish YARF snap (${{ matrix.arch }})
+    permissions:
+      id-token: write  # Required for snap store authentication
     strategy:
       fail-fast: false
       matrix:
@@ -65,6 +79,7 @@ jobs:
       uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         ref: ${{ inputs.commit_sha }}
+        persist-credentials: false
 
     - name: Download updated project files
       uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53

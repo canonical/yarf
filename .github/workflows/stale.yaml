@@ -9,14 +9,15 @@ on:
     - cron: '30 1 * * *'
 
 permissions:
-  contents: read
+  contents: read  # Required to check out repository code
 
 jobs:
   stale:
+    name: Mark and close stale PRs
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write
-      issues: write
+      pull-requests: write  # Required to mark PRs as stale and close them
+      issues: write         # Required to mark issues as stale and close them
     steps:
       - uses: actions/stale@5f858e3efba33a5ca4407a664cc011ad407f2008
         with:
