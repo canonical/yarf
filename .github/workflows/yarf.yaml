@@ -4,11 +4,12 @@ on:
   merge_group:
     types: [checks_requested]
   pull_request:
-    paths-ignore:
-      - 'docs/**'
-      - 'snap/**'
-      - '.github/workflows/**'
-      - '!.github/workflows/yarf.yaml'
+    paths:
+      - '**'
+      - '!docs/**'
+      - '!snap/**'
+      - '!.github/workflows/*'
+      - '.github/workflows/yarf.yaml'
 
 permissions:
   contents: read  # Required to check out repository code
