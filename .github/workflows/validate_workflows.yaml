@@ -17,11 +17,11 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
-      - name: Install action-validator with asdf
-        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6
-        with:
-          tool_versions: |
-            action-validator 0.6.0
+      - name: Install action-validator
+        run: |
+          curl -sSL https://github.com/mpalmer/action-validator/releases/download/v0.6.0/action-validator_linux_amd64 -o /tmp/action-validator
+          chmod +x /tmp/action-validator
+          sudo mv /tmp/action-validator /usr/local/bin/action-validator
       - name: Lint Actions
         run: |
           find .github/workflows -type f \( -iname \*.yaml -o -iname \*.yml \) \
