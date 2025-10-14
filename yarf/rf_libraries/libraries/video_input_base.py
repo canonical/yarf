@@ -97,7 +97,7 @@ class VideoInputBase(ABC):
         self._screenshots_dir = tempfile.TemporaryDirectory()
 
     def _end_suite(self, data, result) -> None:
-        if not result.passed or os.environ.get("YARF_LOG_VIDEO") == "1":
+        if result.failed or os.environ.get("YARF_LOG_VIDEO") == "1":
             if self._frame_count > 0:
                 assert self._screenshots_dir
                 video_path = f"{self._screenshots_dir.name}/video.webm"

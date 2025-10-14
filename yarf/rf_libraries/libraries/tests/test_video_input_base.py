@@ -177,7 +177,9 @@ class TestVideoInputBase:
 
         stub_videoinput.grab_screenshot.return_value.save.assert_called_once()
         stub_videoinput._log_video = Mock()
-        stub_videoinput._end_suite(None, Mock(passed=True))
+        stub_videoinput._end_suite(
+            None, Mock(passed=True, skipped=False, failed=False)
+        )
         stub_videoinput._log_video.assert_not_called()
         mock_run.assert_not_called()
 
