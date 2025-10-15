@@ -34,7 +34,7 @@ dependencies = [
     "robotframework-debug~=4.5.0",
     "robotframework-sshlibrary~=3.8.0",
     "robotframework-stacktrace==0.4.1",
-    "numpy~=2.2.6",  # latest to support 3.10
+    "numpy~=2.3.4",  # latest to support 3.10
     "xkbcommon<1.5",  # ubuntu jammy supports up to 1.4.0
     "pyte~=0.8.2",
     "pyserial>=3.5",
