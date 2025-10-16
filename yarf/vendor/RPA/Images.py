@@ -19,9 +19,9 @@
 
 import logging
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, astuple
 from pathlib import Path
-from typing import List
+from typing import List, Any, Optional
 
 from PIL import Image
 from PIL import ImageDraw
@@ -42,6 +42,13 @@ def to_image(obj):
         return obj
     return Image.open(obj)
 
+def to_RGB(obj: Any) -> Optional["RGB"]:
+    """Convert `obj` to instance of RGB."""
+    if obj is None or isinstance(obj, RGB):
+        return obj
+    if isinstance(obj, str):
+        obj = obj.split(",")
+    return RGB(*(int(i) for i in obj))
 
 def clamp(minimum, value, maximum):
     """Clamp value between given minimum and maximum."""
@@ -76,6 +83,9 @@ class RGB:
     def luminance(self) -> int:
         """Approximate (perceived) luminance for RGB value."""
         return (self.red * 2 + self.green * 3 + self.blue) // 6
+    
+    def as_tuple(self) -> tuple:
+        return astuple(self)
 
 
 class ImageNotFoundError(Exception):
