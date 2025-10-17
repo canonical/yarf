@@ -48,7 +48,8 @@ def to_RGB(obj: Any) -> Optional["RGB"]:
         return obj
     if isinstance(obj, str):
         obj = obj.split(",")
-    return RGB(*(int(i) for i in obj))
+        return RGB(red=obj[0], green=obj[1], blue=obj[2])
+    return None
 
 def clamp(minimum, value, maximum):
     """Clamp value between given minimum and maximum."""
