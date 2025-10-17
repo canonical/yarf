@@ -352,6 +352,8 @@ class VideoInputBase(ABC):
                 )
                 if text_matches:
                     return text_matches, cropped_image
+                else:
+                    logger.console("No color match.")
 
         log_image(cropped_image, "The image used for ocr was:")
         read_text = await self.read_text(cropped_image)
@@ -644,8 +646,13 @@ class VideoInputBase(ABC):
             True if colors are similar within tolerance, False otherwise
         """
         for i in (0, 2):  # ignoe saturation
-            max = int(color1[i] * (1.0 + tolerance / 100.0))
-            min = int(color1[i] * (1.0 - tolerance / 100.0))
+            max = int(color1[i] + (255.0 * tolerance / 100.0))
+            min = int(color1[i] - (255.0 * tolerance / 100.0))
+            logger.info(
+                "Checking if {}={} is between {} and {}".format(
+                    ("H" if i == 0 else "V"), color2[i], min, max
+                )
+            )
             if max > color2[i] and min < color2[i]:
                 # in the right scale
                 continue
@@ -654,14 +661,14 @@ class VideoInputBase(ABC):
 
         return True
 
-    def find_text_with_color(
+    async def find_text_with_color(
         self,
         image: Optional[Image.Image],
         text: str,
         color: Optional[RGB],
         color_tolerance: int,
         region: Optional[Union[Region, dict]] = None,
-    ):
+    ) -> bool:
         """
         Find text regions in an image that match a specific color.
 
@@ -677,9 +684,17 @@ class VideoInputBase(ABC):
         Returns:
             List of text region coordinates [(x1, y1, x2, y2), ...]
         """
+        if color is None:
+            return False
+
+        logger.info(
+            "Trying to match text with a specific color {}".format(
+                color.as_tuple()
+            )
+        )
         res = self.ocr.find(image, text, region=to_region(region))
         if res == [] or "region" not in res[0]:
-            print(f"Text '{text}' not found in the image.")
+            logger.info(f"Text '{text}' not found in the image.")
             return False
 
         subregion = res[0]["region"]
@@ -687,16 +702,19 @@ class VideoInputBase(ABC):
         hsv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2HSV)
 
         # mean color of the text strokes (not the outer background ring)
-        real_hsv = self.get_mean_text_color(
+        text_color_hsv = self.get_mean_text_color(
             hsv_image, subregion, pad_inside=2, pad_outside=0
         )
 
-        hsv_color = cv2.cvtColor(
-            np.array([[color]], dtype=np.uint8), cv2.COLOR_RGB2HSV
+        target_color_hsv = cv2.cvtColor(
+            np.array([[color.as_tuple()]], dtype=np.uint8), cv2.COLOR_RGB2HSV
         )[0, 0]
-        print(f"Expected color (HSV): {hsv_color}")
+        logger.info(f"Target color (HSV):   {target_color_hsv}")
+        logger.info(f"Detected color (HSV): {text_color_hsv}")
 
-        return self.is_hsv_color_similar(real_hsv, hsv_color, color_tolerance)
+        return self.is_hsv_color_similar(
+            text_color_hsv, target_color_hsv, color_tolerance
+        )
 
     def get_mean_text_color(
         self,
@@ -709,7 +727,7 @@ class VideoInputBase(ABC):
         Calculate the mean color of text regions in an image.
 
         This function analyzes the specified text regions in an image and computes
-        the average RGB color values of the pixels within those regions.
+        the average HSV color values of the pixels within those regions.
 
         Args:
             hsv_image: input image as a numpy array (typically in BGR or RGB format)
@@ -718,7 +736,7 @@ class VideoInputBase(ABC):
             pad_outside: padding outside the text
 
         Returns:
-            A tuple containing the mean RGB values (mean_r, mean_g, mean_b) of the text regions
+            A tuple containing the mean HSV values (mean_rh, mean_s, mean_v) of the text regions
         """
 
         left, top, right, bottom = region
