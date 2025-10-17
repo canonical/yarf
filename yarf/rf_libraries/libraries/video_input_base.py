@@ -335,8 +335,8 @@ class VideoInputBase(ABC):
                 else image
             )
 
-            # if no color was given, simply find any
             color_rgb = to_RGB(color)
+            # if no color was given, simply find any text
             if color_rgb is None:
                 text_matches = await self.find_text(
                     text, image=image, region=region
@@ -352,8 +352,6 @@ class VideoInputBase(ABC):
                 )
                 if text_matches:
                     return text_matches, cropped_image
-                else:
-                    logger.console("No color match.")
 
         log_image(cropped_image, "The image used for ocr was:")
         read_text = await self.read_text(cropped_image)

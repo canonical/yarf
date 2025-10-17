@@ -25,6 +25,7 @@ from yarf.rf_libraries.libraries.video_input_base import (
     log_image,
 )
 from yarf.vendor.RPA.core.geometry import Region
+from yarf.vendor.RPA.Images import RGB
 from yarf.vendor.RPA.recognition.templates import ImageNotFoundError
 
 
@@ -544,6 +545,64 @@ class TestVideoInputBase:
         stub_videoinput.find_text.return_value = result
         stub_videoinput.grab_screenshot.return_value = image
         assert await stub_videoinput.match_text("Hello") == (result, image)
+
+    @pytest.mark.asyncio
+    async def test_match_text_with_color_succeeds(
+        self, stub_videoinput, mock_time
+    ):
+        """
+        Test the function returns the matches of the text found.
+        """
+        image = AsyncMock()
+        mock_time.side_effect = [0, 1, 2]
+        stub_videoinput.find_text_with_color = AsyncMock()
+        result = [
+            {"text": "Hello", "region": Region(0, 0, 1, 1), "confidence": 0.9},
+        ]
+        stub_videoinput.find_text_with_color.return_value = result
+        stub_videoinput.grab_screenshot.return_value = image
+        assert await stub_videoinput.match_text(
+            "Hello", color=RGB(red=1, blue=1, green=1)
+        ) == (result, image)
+        # assert await stub_videoinput.match_text("Hello", color=(0,0,0)) == (result, image)
+
+    @pytest.mark.asyncio
+    async def test_find_text_with_color_none(self, stub_videoinput):
+        assert not (
+            await stub_videoinput.find_text_with_color(
+                image=None, text="oops", color=None, color_tolerance=1
+            )
+        )
+
+    @pytest.mark.asyncio
+    async def test_find_text_with_no_region(self, stub_videoinput):
+        image = AsyncMock()
+        color = RGB(red=1, green=1, blue=1)
+        stub_videoinput.ocr.find = Mock()
+        stub_videoinput.ocr.find.return_value = []
+        assert not (
+            await stub_videoinput.find_text_with_color(
+                image=image, text="oops", color=color, color_tolerance=1
+            )
+        )
+
+    @pytest.mark.asyncio
+    async def test_find_text_with_color(self, stub_videoinput):
+        image = AsyncMock()
+        color = RGB(red=1, green=1, blue=1)
+        stub_videoinput.ocr.find = Mock()
+        stub_videoinput.ocr.find.return_value = [
+            {"text": "Hello", "region": Region(0, 0, 1, 1), "confidence": 0.9},
+        ]
+        stub_videoinput.segmentation_tool.get_mean_text_color = Mock()
+        stub_videoinput.segmentation_tool.convert_rgb_to_hsv = Mock()
+        stub_videoinput.segmentation_tool.is_hsv_color_similar = Mock()
+        stub_videoinput.segmentation_tool.is_hsv_color_similar.return_value = (
+            True
+        )
+        assert await stub_videoinput.find_text_with_color(
+            image=image, text="oops", color=color, color_tolerance=1
+        )
 
     @pytest.mark.asyncio
     async def test_match_text_fails(self, stub_videoinput, mock_time):
