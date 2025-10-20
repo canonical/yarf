@@ -20,6 +20,10 @@ yarf --platform {Mir,Vnc}
 
 For more specific use-cases, refer to the [YARF how-to guides][how-to].
 
+## Run from source
+
+Refer to the [contributing section][contribution guide] to build and run YARF from source.
+
 ## Installation
 
 YARF is available on all major Linux distributions.
