@@ -11,11 +11,6 @@ class SegmentationTool:
     Class implementing segmentation tools used to match text with colors.
     """
 
-    # --- Constructor (optional) ---
-    def __init__(self):
-        # nothing
-        return
-
     def is_hsv_color_similar(
         self, color1: tuple[int], color2: tuple[int], tolerance: int
     ):
@@ -48,6 +43,24 @@ class SegmentationTool:
 
         return True
 
+    def roi(
+        self, input_image: np.ndarray, ot: int, ob: int, ol: int, or_: int
+    ):
+        """
+        This function returns a subimage object.
+
+        Returns:
+            a region of interest from the input image.
+
+        Args:
+            input_image: The input image as a numpy array
+            ot: top offset
+            ob: bottom offset
+            ol: left offset
+            or_: right offset
+        """
+        return input_image[ot:ob, ol:or_].copy()
+
     def get_mean_text_color(
         self,
         image: Image,
@@ -79,33 +92,34 @@ class SegmentationTool:
         # Outer box (optionally allows a bit of context; here default 0 to focus on text box)
         ot, ol = max(top - pad_outside, 0), max(left - pad_outside, 0)
         ob, or_ = min(bottom + pad_outside, h), min(right + pad_outside, w)
-        roi_hsv = hsv_image[ot:ob, ol:or_].copy()
+        roi_hsv = self.roi(hsv_image, ot, ob, ol, or_)
 
         # Inner crop to avoid borders/shadows inside the OCR box
         it = pad_inside
         il = pad_inside
         ib = max(roi_hsv.shape[0] - pad_inside, 0)
         ir = max(roi_hsv.shape[1] - pad_inside, 0)
-        roi_hsv_inner = roi_hsv[it:ib, il:ir].copy()
+
+        roi_hsv_inner = self.roi(roi_hsv, it, ib, il, ir)
 
         if roi_hsv_inner.size == 0:
             return cv2.mean(roi_hsv)[:3] if roi_hsv.size else (0.0, 0.0, 0.0)
 
         # Build text mask on inner ROI using color-based segmentation
         roi_bgr_inner = cv2.cvtColor(roi_hsv_inner, cv2.COLOR_HSV2BGR)
-        text_mask_inner = self._segment_text_mask(roi_bgr_inner)
+        text_mask_inner = self.segment_text_mask(roi_bgr_inner)
 
         # Safety fallback: if mask ended empty, treat darkest 30% as text
         if cv2.countNonZero(text_mask_inner) == 0:
             V = roi_hsv_inner[:, :, 2]
             thr = np.percentile(V, 30)
             text_mask_inner = (V <= thr).astype(np.uint8) * 255
-            text_mask_inner = self._postprocess_mask(text_mask_inner)
+            text_mask_inner = self.postprocess_mask(text_mask_inner)
 
         # Compute mean HSV only where mask=255
         return cv2.mean(roi_hsv_inner, mask=text_mask_inner)[:3]
 
-    def _postprocess_mask(
+    def postprocess_mask(
         self,
         mask: Image,
         min_area: int = 25,
@@ -147,7 +161,7 @@ class SegmentationTool:
                 keep[labels == i] = 255
         return keep
 
-    def _segment_text_mask(self, bgr_roi: np.ndarray):
+    def segment_text_mask(self, bgr_roi: np.ndarray):
         """
         Returns a binary mask (uint8 0/255) of likely text strokes within ROI.
 
@@ -190,8 +204,8 @@ class SegmentationTool:
 
         # heuristic: text is often darker OR more saturated/contrasty
         # we’ll compute edge-density score for each and pick the better one anyway.
-        mask_k0 = self._postprocess_mask(mask_k0)
-        mask_k1 = self._postprocess_mask(mask_k1)
+        mask_k0 = self.postprocess_mask(mask_k0)
+        mask_k1 = self.postprocess_mask(mask_k1)
 
         # --- Candidate B: contrast-based mask (dark text OR saturated colored text)
         # Otsu for dark text
@@ -205,7 +219,7 @@ class SegmentationTool:
         sat_text = (S > min(s_med + 20, 255)).astype(np.uint8) * 255
 
         mask_contrast = cv2.bitwise_or(dark_text, sat_text)
-        mask_contrast = self._postprocess_mask(mask_contrast)
+        mask_contrast = self.postprocess_mask(mask_contrast)
 
         # --- Score masks by edge density per area
         edges = cv2.Canny(gray, 50, 150)
