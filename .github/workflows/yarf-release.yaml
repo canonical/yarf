@@ -1,0 +1,83 @@
+name: Release YARF
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      from_tag:
+        description: "Start boundary tag. Leave empty to use the previous tag before 'to_tag' (or repo start if only one tag exists)."
+        type: string
+        required: false
+        default: ""
+      to_tag:
+        description: "End boundary tag (release to update). Leave empty to use the latest tag."
+        type: string
+        required: false
+        default: "2.0.1"
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          # Un comment when merge
+          # ref: main
+          lfs: true
+          fetch-depth: 0
+
+      - name: Ensure tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq gh
+
+      - name: Resolve tags
+        id: tags
+        env:
+          IN_FROM: ${{ github.event.inputs.from_tag }}
+          IN_TO:   ${{ github.event.inputs.to_tag }}
+        run: bash .github/scripts/yarf-release/resolve_git_tags.sh
+
+      - name: Collect commits between tags
+        id: commits
+        env:
+          GH_TOKEN:  ${{ github.token }}
+          FROM_KIND: ${{ steps.tags.outputs.from_kind }}
+          FROM:      ${{ steps.tags.outputs.from }}
+          TO:        ${{ steps.tags.outputs.to }}
+        run: bash .github/scripts/yarf-release/collect_commits.sh
+
+      - name: Build release notes body
+        id: body
+        env:
+          FROM_KIND:   ${{ steps.tags.outputs.from_kind }}
+          FROM:        ${{ steps.tags.outputs.from }}
+          TO:          ${{ steps.tags.outputs.to }}
+        run: bash .github/scripts/yarf-release/build_release_notes_body.sh
+
+      - name: Write release body to job summary
+        run: |
+          {
+            echo "## Release Notes Preview"
+            echo
+            echo "**From:** ${{ steps.body.outputs.note_from }}  "
+            echo "**To:** \`${{ steps.tags.outputs.to }}\`"
+            echo
+            cat ${{ steps.body.outputs.path }}
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.tags.outputs.to }}"
+          NOTES_FILE="${{ steps.body.outputs.path }}"
+          gh release create "${TAG}" --title "${TAG}" --notes-file "${NOTES_FILE}" || \
+          gh release edit   "${TAG}" --notes-file "${NOTES_FILE}"
