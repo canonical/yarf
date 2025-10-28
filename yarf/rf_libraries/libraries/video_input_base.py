@@ -320,6 +320,21 @@ class VideoInputBase(ABC):
         else:
             matched_text_regions = self.ocr.find(image, text, region=region)  # type: ignore[arg-type]
 
+        for region in matched_text_regions:
+            coincidence = f"{region['confidence']:.2f}"
+            if "ocr_confidence" in region:
+                # Only RapidOCR provides OCR confidence
+                confidence = f"{region['ocr_confidence']:.2f}"
+                logger.debug(
+                    f"Found text matching '{text}' with confidence {confidence}, coincidence {coincidence}: '{region['text']}'",
+                )
+                continue
+            # Tesseract does not provide OCR confidence, and "coincidence" is
+            #  named "confidence" in that case
+            logger.debug(
+                f"Found text matching '{text}' with confidence {coincidence}: '{region['text']}'",
+            )
+
         return matched_text_regions
 
     @keyword
