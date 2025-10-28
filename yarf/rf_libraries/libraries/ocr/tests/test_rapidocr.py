@@ -105,6 +105,7 @@ class TestRapidOCR:
                 "text": "Hello World",
                 "region": Region(0, 0, 1, 1),
                 "confidence": 100,
+                "ocr_confidence": 0.9,
             }
         ]
 
@@ -121,6 +122,7 @@ class TestRapidOCR:
                 "text": "Hello World",
                 "region": Region(0, 0, 1, 1),
                 "confidence": 100,
+                "ocr_confidence": 0.9,
             }
         ]
 
@@ -156,6 +158,7 @@ class TestRapidOCR:
                 "text": text,
                 "region": Region(0, 0, 1, 1),
                 "confidence": 100,
+                "ocr_confidence": 0.9,
             } in result
 
     @pytest.mark.parametrize(
@@ -183,6 +186,7 @@ class TestRapidOCR:
                 "text": result_text,
                 "region": Region(0, 0, 1, 1),
                 "confidence": 100,
+                "ocr_confidence": 0.9,
             }
         ]
 

@@ -196,6 +196,7 @@ class RapidOCRReader:
                         "text": item.text,
                         "region": item.position.to_region(),
                         "confidence": ratio,  # Using the ratio like tesseract
+                        "ocr_confidence": item.confidence,
                     }
                 )
         return sorted(matches, key=lambda x: x["confidence"], reverse=True)
