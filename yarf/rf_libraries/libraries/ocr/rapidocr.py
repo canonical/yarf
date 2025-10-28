@@ -80,8 +80,8 @@ class RapidOCRReader:
         self,
         image: Image.Image | Path,
         text: str,
-        confidence: float = DEFAULT_CONFIDENCE,
-        coincidence: float = DEFAULT_COINCIDENCE,
+        confidence: float | None = None,
+        coincidence: float | None = None,
         region: Region | None = None,
         partial: bool = True,
     ) -> list[dict]:
@@ -103,6 +103,11 @@ class RapidOCRReader:
         Raises:
             ValueError: Empty search string.
         """
+        if confidence is None:
+            confidence = self.DEFAULT_CONFIDENCE
+        if coincidence is None:
+            coincidence = self.DEFAULT_COINCIDENCE
+
         image_obj = to_image(image)
         if region is not None:
             image_obj = image_obj.crop(region.as_tuple())  # type: ignore[union-attr]
