@@ -294,6 +294,13 @@ class VideoInputBase(ABC):
         else:
             matched_text_regions = self.ocr.find(image, text, region=region)  # type: ignore[arg-type]
 
+        for region in matched_text_regions:
+            similarity = f"{region['similarity']:.2f}"
+            confidence = f"{region['confidence']:.2f}"
+            logger.debug(
+                f"Found text matching '{text}' with similarity {similarity}, confidence {confidence}: '{region['text']}'",
+            )
+
         return matched_text_regions
 
     @keyword
@@ -353,7 +360,6 @@ class VideoInputBase(ABC):
             if text_matches:
                 return text_matches, cropped_image
 
-        log_image(cropped_image, "The image used for ocr was:")
         read_text = await self.read_text(cropped_image)
         raise ValueError(
             f"Timed out looking for '{text}' after '{timeout}' seconds. "
