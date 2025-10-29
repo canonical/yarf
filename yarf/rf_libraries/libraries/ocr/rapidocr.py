@@ -10,6 +10,7 @@ import numpy as np
 import rapidfuzz
 from PIL import Image
 from rapidocr import RapidOCR
+from robot.api import logger
 
 from yarf.rf_libraries.libraries.geometry.quad import Quad
 from yarf.vendor.RPA.core.geometry import Region
@@ -50,10 +51,12 @@ class RapidOCRReader:
         DEFAULT_CONFIDENCE_THRESHOLD: Minumum confidence percentage (0-100) for
           text matching. If the confidence of the found text is below this
           threshold, the match is discarded.
+        SIMILARITY_LOG_THRESHOLD: Minimum similarity to log rejected matches.
     """
 
     DEFAULT_SIMILARITY_THRESHOLD: float = 80.0
     DEFAULT_CONFIDENCE_THRESHOLD: float = 70.0
+    SIMILARITY_LOG_THRESHOLD: float = 80.0
 
     def __new__(cls) -> "RapidOCRReader":
         if not hasattr(cls, "instance"):
@@ -218,5 +221,11 @@ class RapidOCRReader:
                         "similarity": similarity,
                         "confidence": item.confidence,
                     }
+                )
+            elif similarity >= self.SIMILARITY_LOG_THRESHOLD:
+                logger.debug(
+                    f"Rejected match for text '{match_text}' "
+                    f"with similarity {similarity} "
+                    f"and confidence {item.confidence}: '{item.text}'"
                 )
         return sorted(matches, key=lambda x: x["similarity"], reverse=True)
