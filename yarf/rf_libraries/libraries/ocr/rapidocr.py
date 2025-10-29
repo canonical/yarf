@@ -10,6 +10,7 @@ import numpy as np
 import rapidfuzz
 from PIL import Image
 from rapidocr_onnxruntime import RapidOCR
+from robot.api import logger
 
 from yarf.rf_libraries.libraries.geometry.quad import Quad
 from yarf.vendor.RPA.core.geometry import Region
@@ -44,10 +45,12 @@ class RapidOCRReader:
     Attributes:
         DEFAULT_CONFIDENCE: Default confidence for text detection.
         DEFAULT_COINCIDENCE: Default coincidence for text similarities.
+        COINCIDENCE_LOG_THRESHOLD: Minimum coincidence to log rejected matches.
     """
 
     DEFAULT_CONFIDENCE: float = 0.7
     DEFAULT_COINCIDENCE: float = 80.0
+    COINCIDENCE_LOG_THRESHOLD: float = 80.0
 
     def __new__(cls) -> "RapidOCRReader":
         if not hasattr(cls, "instance"):
@@ -198,5 +201,11 @@ class RapidOCRReader:
                         "confidence": ratio,  # Using the ratio like tesseract
                         "ocr_confidence": item.confidence,
                     }
+                )
+            elif ratio >= self.COINCIDENCE_LOG_THRESHOLD:
+                logger.debug(
+                    f"Rejected match for text '{match_text}' "
+                    f"with confidence {item.confidence} "
+                    f"and coincidence {ratio}: '{item.text}'"
                 )
         return sorted(matches, key=lambda x: x["confidence"], reverse=True)
