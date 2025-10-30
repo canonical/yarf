@@ -25,7 +25,7 @@ permissions:
 
 concurrency:
   group: yarf-snap-ci-${{ github.ref_name }}
-  cancel-in-progress: false
+  cancel-in-progress: false  # zizmor: ignore[concurrency-limits]
 
 jobs:
   set-version:

@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read  # Required to check out repository code
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   stale:
     name: Mark and close stale PRs

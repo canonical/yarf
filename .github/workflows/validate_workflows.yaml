@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read  # Required to check out repository code
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   workflow_validation:
     name: Workflow validation
@@ -38,7 +42,7 @@ jobs:
         uses: baptiste0928/cargo-install@91c5da15570085bcde6f4d7aed98cb82d6769fd3
         with:
           crate: zizmor
-          version: '1.14.2'
+          version: '1.16.1'
       - name: Scan all workflows
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
