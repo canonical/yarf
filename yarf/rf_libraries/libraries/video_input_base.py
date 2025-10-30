@@ -21,12 +21,13 @@ from robot.api.deco import keyword
 from robot.libraries.BuiltIn import BuiltIn
 
 from yarf import LABEL_PREFIX
+from yarf.rf_libraries.libraries.image.segmentation import SegmentationTool
 from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
 from yarf.rf_libraries.variables.video_input_vars import (
     DEFAULT_TEMPLATE_MATCHING_TOLERANCE,
 )
 from yarf.vendor.RPA.core.geometry import to_region
-from yarf.vendor.RPA.Images import Images, Region, to_image
+from yarf.vendor.RPA.Images import RGB, Images, Region, to_image, to_RGB
 from yarf.vendor.RPA.recognition import ocr as tesseract
 from yarf.vendor.RPA.recognition.templates import ImageNotFoundError
 
@@ -91,6 +92,7 @@ class VideoInputBase(ABC):
         self._frame_count: int = 0
         self._screenshots_dir: Optional[tempfile.TemporaryDirectory] = None
         self.ocr: RapidOCRReader | ModuleType = RapidOCRReader()
+        self.segmentation_tool: SegmentationTool = SegmentationTool()
 
     def _start_suite(self, data, result) -> None:
         self._frame_count = 0
@@ -298,6 +300,8 @@ class VideoInputBase(ABC):
         text: str,
         timeout: int = 10,
         region: Region | tuple[int] | None = None,
+        color: RGB | tuple[int] | None = None,
+        color_tolerance: int = 20,
     ) -> tuple[list[dict], Image.Image]:
         """
         Wait for specified text to appear on screen and get the position of the
@@ -309,6 +313,8 @@ class VideoInputBase(ABC):
                   if the text we want to find is a regex.
             timeout: Time to wait for the text to appear
             region: The region to search for the text
+            color: The color of the searched for the text
+            color_tolerance: The tolerance of the color of the searched text
         Returns:
             It returns a tuple with:
              - The list of matched text regions where the text was found,
@@ -329,11 +335,23 @@ class VideoInputBase(ABC):
                 else image
             )
 
-            text_matches = await self.find_text(
-                text, image=image, region=region
-            )
-            if text_matches:
-                return text_matches, cropped_image
+            color_rgb = to_RGB(color)
+            # if no color was given, simply find any text
+            if color_rgb is None:
+                text_matches = await self.find_text(
+                    text, image=image, region=region
+                )
+                if text_matches:
+                    return text_matches, cropped_image
+            else:  # a color was given.
+                text_matches = await self.find_text_with_color(
+                    image=image,
+                    text=text,
+                    color=color_rgb,
+                    color_tolerance=color_tolerance,
+                )
+                if text_matches:
+                    return text_matches, cropped_image
 
         log_image(cropped_image, "The image used for ocr was:")
         read_text = await self.read_text(cropped_image)
@@ -603,3 +621,55 @@ class VideoInputBase(ABC):
             )
 
         return displays
+
+    async def find_text_with_color(
+        self,
+        image: Optional[Image.Image],
+        text: str,
+        color: Optional[RGB],
+        color_tolerance: int,
+        region: Optional[Union[Region, dict]] = None,
+    ) -> bool:
+        """
+        Find text regions in an image that match a specific color.
+
+        Searches for text areas in the image that have colors similar to the target color.
+
+        Args:
+            image: Input image (BGR or RGB format)
+            text: target text to search
+            color: target color of the text. If set, matched text in the wrong color will be skipped.
+            color_tolerance: Color tolerance threshold in %
+            region: region to search for the text.
+
+        Returns:
+            List of text region coordinates [(x1, y1, x2, y2), ...]
+        """
+        if color is None or image is None:
+            return False
+
+        logger.info(
+            "Trying to match text with a specific color {}".format(
+                color.as_tuple()
+            )
+        )
+        res = self.ocr.find(image, text, region=to_region(region))
+        if res == [] or "region" not in res[0]:
+            logger.info(f"Text '{text}' not found in the image.")
+            return False
+
+        subregion = res[0]["region"]
+
+        # mean color of the text strokes (not the outer background ring)
+        text_color_hsv = self.segmentation_tool.get_mean_text_color(
+            image, subregion, pad_inside=2, pad_outside=0
+        )
+
+        target_color_hsv = self.segmentation_tool.convert_rgb_to_hsv(color)
+
+        logger.info(f"Target color (HSV):   {target_color_hsv}")
+        logger.info(f"Detected color (HSV): {text_color_hsv}")
+
+        return self.segmentation_tool.is_hsv_color_similar(
+            text_color_hsv, target_color_hsv, color_tolerance
+        )
