@@ -39,7 +39,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Install zizmor from crates.io
-        uses: baptiste0928/cargo-install@91c5da15570085bcde6f4d7aed98cb82d6769fd3
+        uses: baptiste0928/cargo-install@b687c656bda5733207e629b50a22bf68974a0305
         with:
           crate: zizmor
           version: '1.16.1'
