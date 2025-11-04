@@ -46,55 +46,6 @@ jobs:
       fail-fast: false
       matrix:
         platform: [Vnc, Mir]
-        include:
-          - platform: Vnc
-            install-platform-deps-cmds: |
-              sudo snap install mir-test-tools
-              sudo apt update -qq
-              sudo apt-get --yes --no-install-recommends install \
-              ffmpeg \
-              inotify-tools \
-              wayvnc \
-              gnome-calculator \
-              eog
-
-            prepare-platform-cmds: |
-              export WAYLAND_DISPLAY=wayland-99
-              export WAYLAND_DEBUG=client
-
-              # Start Mir on a virtual display (doesn't require graphics hardware)
-              mir-test-tools.demo-server \
-                --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
-                --platform-display-libs mir:virtual \
-                --virtual-output 1280x1024 &
-
-              # Wait for the compositor to start
-              inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-99\$" $XDG_RUNTIME_DIR
-
-              # Start vnc session
-              wayvnc &
-
-          - platform: Mir
-            install-platform-deps-cmds: |
-              sudo snap install mir-test-tools
-              sudo apt update -qq
-              sudo apt-get --yes --no-install-recommends install \
-                ffmpeg \
-                inotify-tools \
-                gnome-calculator
-
-            prepare-platform-cmds: |
-              export WAYLAND_DISPLAY=wayland-99
-              export WAYLAND_DEBUG=client
-
-              # Start Mir on a virtual display (doesn't require graphics hardware)
-              mir-test-tools.demo-server \
-                --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
-                --platform-display-libs mir:virtual \
-                --virtual-output 1280x1024 &
-
-              # Wait for the compositor to start
-              inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-99\$" $XDG_RUNTIME_DIR
 
     env:
       TEST_SUITE_PATH: tests
@@ -136,29 +87,17 @@ jobs:
       - name: Install platform ${{ matrix.platform }} dependencies
         shell: bash
         env:
-          INSTALL_PLATFORM_DEPS_CMDS: ${{ matrix.install-platform-deps-cmds }}
-        run: |
-          set -euo pipefail
-          eval "$(
-          cat <<'SCRIPT'
-          $INSTALL_PLATFORM_DEPS_CMDS
-          SCRIPT
-          )"
+          PLATFORM: ${{ matrix.platform }}
+        run: bash .github/scripts/canary-test/install-platform-dependencies.sh "$PLATFORM"
 
       - name: Run canary test
         id: test
         shell: bash
         env:
-          PREPARE_PLATFORM_CMDS: ${{ matrix.prepare-platform-cmds }}
           PLATFORM: ${{ matrix.platform }}
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
         run: |
-          set -euo pipefail
-          eval "$(
-          cat <<'SCRIPT'
-          $PREPARE_PLATFORM_CMDS
-          SCRIPT
-          )"
+          bash .github/scripts/canary-test/prepare-platform.sh "$PLATFORM"
 
           # Avoid GNOME apps waiting for portals
           dbus-run-session -- gnome-calculator &
