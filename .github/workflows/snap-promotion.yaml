@@ -1,9 +1,6 @@
 name: YARF snap promotion
 
 on:
-  pull_request:
-    branches:
-      - main
   schedule:
     - cron: '00 00 * * *'
   workflow_dispatch:
@@ -117,7 +114,7 @@ jobs:
             exit 1
           fi
 
-          if [[ -n "${TO_VER:-}" ]] && dpkg --compare-versions "$FROM_VER" lt "$TO_VER"; then
+          if [[ -n "${TO_VER:-}" ]] && dpkg --compare-versions "$FROM_VER" le "$TO_VER"; then
             echo "Versions match ($FROM_VER) in ${TRACK} (${FROM} vs ${TO}). Nothing to do."
             echo "should_continue=false" >> "$GITHUB_OUTPUT"
           else
@@ -183,4 +180,4 @@ jobs:
           # Note: using `yes |` instead of `--yes` because snapcraft will
           #       refuse to non-interactively promote a snap from the edge
           #       channel if it is done without any branch qualifiers
-          # yes | snapcraft promote yarf --from-channel "${TRACK}/${FROM}" --to-channel "${TRACK}/${TO}"
+          yes | snapcraft promote yarf --from-channel "${TRACK}/${FROM}" --to-channel "${TRACK}/${TO}"
