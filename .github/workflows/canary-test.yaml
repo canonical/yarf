@@ -88,16 +88,17 @@ jobs:
         shell: bash
         env:
           PLATFORM: ${{ matrix.platform }}
-        run: bash .github/scripts/canary-test/install-platform-dependencies.sh "$PLATFORM"
+        run: bash .github/scripts/canary-test/install-platform-dependencies.sh "${PLATFORM}"
 
       - name: Run canary test
         id: test
         shell: bash
         env:
           PLATFORM: ${{ matrix.platform }}
+          WAYLAND_DISPLAY: wayland-99
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
         run: |
-          bash .github/scripts/canary-test/prepare-platform.sh "$PLATFORM"
+          bash .github/scripts/canary-test/prepare-platform.sh "${PLATFORM}" "${WAYLAND_DISPLAY}"
 
           # Avoid GNOME apps waiting for portals
           dbus-run-session -- gnome-calculator &

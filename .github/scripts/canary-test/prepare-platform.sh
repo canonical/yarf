@@ -3,7 +3,7 @@ set -euo pipefail
 
 PLATFORM="$1"
 
-export WAYLAND_DISPLAY=wayland-99
+export WAYLAND_DISPLAY="$2"
 export WAYLAND_DEBUG=client
 
 # Start Mir on a virtual display (doesn't require graphics hardware)
@@ -13,7 +13,7 @@ mir-test-tools.demo-server \
 --virtual-output 1280x1024 &
 
 # Wait for the compositor to start
-inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-99\$" $XDG_RUNTIME_DIR
+inotifywait --event create --include "^$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY\$" $XDG_RUNTIME_DIR
 
 if [ "$PLATFORM" == "Vnc" ]; then
     # Start vnc session
