@@ -3,10 +3,10 @@ name: YARF snap promotion
 on:
   pull_request:
     branches:
-      - fix-snap-promotion
-  # schedule:
-  #   - cron: '00 00 * * *'
-  # workflow_dispatch:
+      - main
+  schedule:
+    - cron: '00 00 * * *'
+  workflow_dispatch:
 
 # Read access to repository contents
 permissions:
@@ -140,7 +140,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.define-matrix.outputs.matrix) }}
     permissions:
-      contents: write
+      contents: read
       actions: write  # Required to trigger canary test workflow
 
     uses: ./.github/workflows/canary-test.yaml
