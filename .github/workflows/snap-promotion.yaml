@@ -140,7 +140,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.define-matrix.outputs.matrix) }}
     permissions:
-      contents: read
+      contents: write
       actions: write  # Required to trigger canary test workflow
 
     uses: ./.github/workflows/canary-test.yaml
