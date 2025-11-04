@@ -4,9 +4,9 @@ on:
   pull_request:
     branches:
       - fix-snap-promotion
-  schedule:
-    - cron: '00 00 * * *'
-  workflow_dispatch:
+  # schedule:
+  #   - cron: '00 00 * * *'
+  # workflow_dispatch:
 
 # Read access to repository contents
 permissions:
