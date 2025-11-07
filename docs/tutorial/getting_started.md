@@ -55,7 +55,7 @@ Now, let's start the Mir server:
 caption: The command to start the mir-test-tools demo server with virtual 
   pointer.
 ---
-export WAYLAND_DISPLAY=wayland-0
+export WAYLAND_DISPLAY=wayland-99
 
 mir-test-tools.demo-server \
     --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 &
