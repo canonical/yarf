@@ -8,8 +8,7 @@ on:
       - edited
 
 permissions:
-  contents: read
-  pull-requests: write
+  contents: read  # Required to check out repository code
 
 concurrency:
   group: pr-validation-${{ github.event.pull_request.number }}
@@ -17,7 +16,10 @@ concurrency:
 
 jobs:
   validate_title:
+    name: Validate PR title
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write  # Required to update PR title if needed
     steps:
     - name: Checking the presence of the traceability tag in the PR title
       env:

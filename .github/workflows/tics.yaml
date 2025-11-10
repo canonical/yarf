@@ -5,10 +5,15 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: read  # Required to check out repository code
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   TICS:
+    name: Run TICS analysis
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo (main branch)
@@ -17,6 +22,7 @@ jobs:
           ref: main
           lfs: true
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
@@ -59,7 +65,7 @@ jobs:
           mv ./coverage.xml ./coverage/cobertura.xml
 
       - name: TICS GitHub Action
-        uses: tiobe/tics-github-action@b9861e16fd5d38624516fcd3e49e233c133ebaf3
+        uses: tiobe/tics-github-action@427ef84d84bf35e39235d61406f414811bb99ce9
         with:
           mode: qserver
           project: yarf

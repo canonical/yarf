@@ -7,17 +7,22 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read  # Required to check out repository code
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   PreCommit:
+    name: Run pre-commit hooks
     runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         fetch-depth: 0
+        persist-credentials: false
     - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
       with:
         python-version: "3.12"

@@ -29,6 +29,11 @@ on:
         description: 'Whether all matrix canary tests passed'
         value: ${{ jobs.summarize.outputs.passed }}
 
+# Read-only access to repository contents for checking out code and uploading test results
+permissions:
+  contents: read
+  actions: read   # Required to read workflow run data
+
 concurrency:
   group: canary-test-${{ github.ref }}-${{ inputs.TRACK }}-${{ inputs.CHANNEL }}-${{ inputs.ARCH }}
   cancel-in-progress: true
@@ -112,6 +117,7 @@ jobs:
         with:
           lfs: true
           fetch-depth: 1
+          persist-credentials: false
           sparse-checkout: |
             ${{ env.TEST_SUITE_PATH }}
             ${{ env.EXAMPLE_PATH }}
@@ -120,35 +126,44 @@ jobs:
 
       - name: Install YARF from channel
         shell: bash
+        env:
+          TRACK: ${{ inputs.TRACK }}
+          CHANNEL: ${{ inputs.CHANNEL }}
         run: |
           set -euo pipefail
-          sudo snap install yarf --channel="${{ inputs.TRACK }}/${{ inputs.CHANNEL }}"
+          sudo snap install yarf --channel="${TRACK}/${CHANNEL}"
 
       - name: Install platform ${{ matrix.platform }} dependencies
         shell: bash
+        env:
+          INSTALL_PLATFORM_DEPS_CMDS: ${{ matrix.install-platform-deps-cmds }}
         run: |
           set -euo pipefail
           eval "$(
           cat <<'SCRIPT'
-          ${{ matrix.install-platform-deps-cmds }}
+          $INSTALL_PLATFORM_DEPS_CMDS
           SCRIPT
           )"
 
       - name: Run canary test
         id: test
         shell: bash
+        env:
+          PREPARE_PLATFORM_CMDS: ${{ matrix.prepare-platform-cmds }}
+          PLATFORM: ${{ matrix.platform }}
+          TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
         run: |
           set -euo pipefail
           eval "$(
           cat <<'SCRIPT'
-          ${{ matrix.prepare-platform-cmds }}
+          $PREPARE_PLATFORM_CMDS
           SCRIPT
           )"
 
           # Avoid GNOME apps waiting for portals
           dbus-run-session -- gnome-calculator &
 
-          snap run yarf --platform=${{ matrix.platform }} --output-format=TestSubmissionSchema ${{ env.TEST_SUITE_PATH }}/canary_test
+          snap run yarf --platform="${PLATFORM}" --output-format=TestSubmissionSchema "${TEST_SUITE_PATH}/canary_test"
 
       - name: Download test submission schema and validate
         run: |
@@ -179,7 +194,7 @@ jobs:
 
       - if: failure()
         name: Collect test results
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
           name: yarf-canary-output-${{ matrix.platform }}-${{ inputs.ARCH }}
           path: ~/snap/yarf/common/yarf-outdir/*
@@ -187,19 +202,22 @@ jobs:
 
       - if: failure() && runner.debug
         name: Setup upterm session (restart with "Enable debug logging" to activate)
-        uses: canonical/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48
+        uses: canonical/action-tmate@a0e8caed3bba2ccb98901a274553bf1284ad96c2  # zizmor: ignore[stale-action-refs]
         with:
           limit-access-to-actor: true
 
   summarize:
+    name: Summarize test results
     needs: canary-test
     runs-on: ubuntu-latest
     outputs:
       passed: ${{ steps.set.outputs.passed }}
     steps:
       - id: set
+        env:
+          CANARY_TEST_RESULT: ${{ needs.canary-test.result }}
         run: |
-          if [[ "${{ needs.canary-test.result }}" == "success" ]]; then
+          if [[ "${CANARY_TEST_RESULT}" == "success" ]]; then
             echo "passed=true" >> "$GITHUB_OUTPUT"
           else
             echo "passed=false" >> "$GITHUB_OUTPUT"

@@ -33,6 +33,13 @@ sudo snap install yarf
 snap connect yarf:process-control
 ```
 
+To run YARF from source, clone the repository, navigate to the root, and run (requires the `uv` tool):
+
+```shell
+uv sync --extra develop
+uv run yarf
+```
+
 ## Documentation
 
 The YARF docs provide guidance and learning material about the robot libraries,
