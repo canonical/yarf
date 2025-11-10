@@ -21,6 +21,9 @@ jobs:
     name: Generate Changelog and Create Release
     runs-on: ubuntu-latest
     permissions:
+      # This permission is required to:
+      # 1. Create the GitHub Release
+      # 2. Upload release assets (if any)
       contents: write
 
     steps:
