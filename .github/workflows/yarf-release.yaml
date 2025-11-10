@@ -66,7 +66,7 @@ jobs:
             echo "**From:** \`${NOTE_FROM}\`"
             echo "**To:** \`${TO}\`"
             echo
-            cat $PATH
+            cat ${PATH}
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create or update GitHub Release
