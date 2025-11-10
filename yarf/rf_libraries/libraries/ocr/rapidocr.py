@@ -45,12 +45,12 @@ class RapidOCRReader:
     Attributes:
         DEFAULT_CONFIDENCE: Default confidence for text detection.
         DEFAULT_COINCIDENCE: Default coincidence for text similarities.
-        COINCIDENCE_LOG_THRESHOLD: Minimum coincidence to log rejected matches.
+        COINCIDENCE_LOG_MARGIN: Margin for logging rejected matches.
     """
 
     DEFAULT_CONFIDENCE: float = 0.7
     DEFAULT_COINCIDENCE: float = 80.0
-    COINCIDENCE_LOG_THRESHOLD: float = 80.0
+    COINCIDENCE_LOG_MARGIN: float = 10.0
 
     def __new__(cls) -> "RapidOCRReader":
         if not hasattr(cls, "instance"):
@@ -202,7 +202,7 @@ class RapidOCRReader:
                         "ocr_confidence": item.confidence,
                     }
                 )
-            elif ratio >= self.COINCIDENCE_LOG_THRESHOLD:
+            elif ratio >= coincidence - self.COINCIDENCE_LOG_MARGIN:
                 logger.debug(
                     f"Rejected match for text '{match_text}' "
                     f"with confidence {item.confidence} "

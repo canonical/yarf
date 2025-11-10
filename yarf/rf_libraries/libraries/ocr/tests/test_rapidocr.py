@@ -16,7 +16,7 @@ def mock_to_image():
 @pytest.fixture(autouse=True)
 def mock_reader():
     with patch("yarf.rf_libraries.libraries.ocr.rapidocr.RapidOCR") as p:
-        p.COINCIDENCE_LOG_THRESHOLD = RapidOCRReader.COINCIDENCE_LOG_THRESHOLD
+        p.COINCIDENCE_LOG_MARGIN = RapidOCRReader.COINCIDENCE_LOG_MARGIN
         yield p
 
 
