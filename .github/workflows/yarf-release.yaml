@@ -55,21 +55,25 @@ jobs:
         run: bash .github/scripts/yarf-release/build_release_notes_body.sh
 
       - name: Write release body to job summary
+        env:
+          NOTE_FROM:  ${{ steps.body.outputs.note_from }}
+          TO:         ${{ steps.tags.outputs.to }}
+          PATH:       ${{ steps.body.outputs.path }}
         run: |
           {
             echo "## Release Notes Preview"
             echo
-            echo "**From:** ${{ steps.body.outputs.note_from }}  "
-            echo "**To:** \`${{ steps.tags.outputs.to }}\`"
+            echo "**From:** \`${NOTE_FROM}\`"
+            echo "**To:** \`${TO}\`"
             echo
-            cat ${{ steps.body.outputs.path }}
+            cat $PATH
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create or update GitHub Release
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN:   ${{ github.token }}
+          TAG:        ${{ steps.tags.outputs.to }}
+          NOTES_FILE: ${{ steps.body.outputs.path }}
         run: |
-          TAG="${{ steps.tags.outputs.to }}"
-          NOTES_FILE="${{ steps.body.outputs.path }}"
           # gh release create "${TAG}" --title "${TAG}" --notes-file "${NOTES_FILE}" || \
           # gh release edit   "${TAG}" --notes-file "${NOTES_FILE}"
