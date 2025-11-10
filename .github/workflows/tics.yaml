@@ -13,6 +13,8 @@ concurrency:
 
 jobs:
   TICS:
+    permissions:
+      contents: read
     name: Run TICS analysis
     runs-on: ubuntu-latest
     steps:
