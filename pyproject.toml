@@ -31,9 +31,11 @@ dependencies = [
     "rapidfuzz>=3.12.1",
     "rapidocr-onnxruntime>=1.4.4",
     "robotframework~=7.3.2",
-    "robotframework-debug~=4.5.0",
     "robotframework-sshlibrary~=3.8.0",
     "robotframework-stacktrace==0.4.1",
+    "prompt-toolkit>=3.0.38",
+    "pygments>=2.14.0",
+    "pyperclip>=1.8.2",
     "numpy~=2.2.6",  # latest to support 3.10
     "xkbcommon<1.5",  # ubuntu jammy supports up to 1.4.0
     "pyte~=0.8.2",

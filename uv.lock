@@ -1202,21 +1202,6 @@ wheels = [
 ]
 
 [[package]]
-name = "robotframework-debug"
-version = "4.5.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "prompt-toolkit" },
-    { name = "pygments" },
-    { name = "pyperclip" },
-    { name = "robotframework" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/33/c9/80ca51bc6528c4255e3a62846879d5b14e305b2c68ad49bba75a7ac23a04/robotframework-debug-4.5.0.tar.gz", hash = "sha256:925d830cd7c17d578d9822bfb969147d153da057369e31a17e205144a368e8a4", size = 31006, upload-time = "2024-03-30T19:21:13.634Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/15/a9/26171e61d8e2315c8c59a12206b6a4e5a313fcb834f186b2c9c3267ba47c/robotframework_debug-4.5.0-py3-none-any.whl", hash = "sha256:7591c3418016a0356158c43e47548a9e9c4ca1ac51b33d7267fccf4153c0952e", size = 27496, upload-time = "2024-03-30T19:21:11.595Z" },
-]
-
-[[package]]
 name = "robotframework-sshlibrary"
 version = "3.8.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1487,6 +1472,9 @@ dependencies = [
     { name = "onnxruntime" },
     { name = "opencv-python" },
     { name = "pillow" },
+    { name = "prompt-toolkit" },
+    { name = "pygments" },
+    { name = "pyperclip" },
     { name = "pyserial" },
     { name = "pyte" },
     { name = "pytesseract" },
@@ -1495,7 +1483,6 @@ dependencies = [
     { name = "rapidfuzz" },
     { name = "rapidocr-onnxruntime" },
     { name = "robotframework" },
-    { name = "robotframework-debug" },
     { name = "robotframework-sshlibrary" },
     { name = "robotframework-stacktrace" },
     { name = "xkbcommon" },
@@ -1522,6 +1509,14 @@ requires-dist = [
     { name = "onnxruntime", specifier = "~=1.23.0" },
     { name = "opencv-python", specifier = "~=4.12.0.88" },
     { name = "pillow", specifier = "~=12.0.0" },
+<<<<<<< HEAD
+=======
+    { name = "pre-commit", marker = "extra == 'develop'", specifier = "<4.3.1" },
+    { name = "prompt-toolkit", specifier = ">=3.0.38" },
+    { name = "pyfakefs", marker = "extra == 'develop'" },
+    { name = "pygments", specifier = ">=2.14.0" },
+    { name = "pyperclip", specifier = ">=1.8.2" },
+>>>>>>> c220ba3 ([BugFix] Vendor-ized robotframework_debug)
     { name = "pyserial", specifier = ">=3.5" },
     { name = "pyte", specifier = "~=0.8.2" },
     { name = "pytesseract", specifier = "~=0.3.10" },
@@ -1530,7 +1525,6 @@ requires-dist = [
     { name = "rapidfuzz", specifier = ">=3.12.1" },
     { name = "rapidocr-onnxruntime", specifier = ">=1.4.4" },
     { name = "robotframework", specifier = "~=7.3.2" },
-    { name = "robotframework-debug", specifier = "~=4.5.0" },
     { name = "robotframework-sshlibrary", specifier = "~=3.8.0" },
     { name = "robotframework-stacktrace", specifier = "==0.4.1" },
     { name = "xkbcommon", specifier = "<1.5" },
