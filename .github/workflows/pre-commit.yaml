@@ -28,5 +28,11 @@ jobs:
         python-version: "3.12"
     - name: Install uv
       uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update --quiet
+        sudo apt-get install --yes \
+          libxkbcommon-dev \
+          libwayland-dev
     - name: Run prek
       run: uv run prek run --all-files --show-diff-on-failure
