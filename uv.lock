@@ -1376,6 +1376,21 @@ wheels = [
 ]
 
 [[package]]
+name = "tox-uv"
+version = "1.28.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
+    { name = "tox" },
+    { name = "uv" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f9/9a/f4b675ebcbd623854129891e87045f80c1d8e91b2957496f1fe6e463f291/tox_uv-1.28.0.tar.gz", hash = "sha256:a06ff909f73232b2b7965de19090d887b12b44e44eb0843b2c07266d2957ade2", size = 23265, upload-time = "2025-08-14T17:53:07.909Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1f/ac/b32555d190c4440b8d2779d4a19439e5fbd5a3950f7e5a17ead7c7d30cad/tox_uv-1.28.0-py3-none-any.whl", hash = "sha256:3fbe13fa6eb6961df5512e63fc4a5cc0c8d264872674ee09164649f441839053", size = 17225, upload-time = "2025-08-14T17:53:06.299Z" },
+]
+
+[[package]]
 name = "tqdm"
 version = "4.67.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1385,6 +1400,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/a8/4b/29b4ef32e036bb34e4ab51796dd745cdba7ed47ad142a9f4a1eb8e0c744d/tqdm-4.67.1.tar.gz", hash = "sha256:f8aef9c52c08c13a65f30ea34f4e5aac3fd1a34959879d7e59e63027286627f2", size = 169737, upload-time = "2024-11-24T20:12:22.481Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d0/30/dc54f88dd4a2b5dc8a0279bdd7270e735851848b762aeb1c1184ed1f6b14/tqdm-4.67.1-py3-none-any.whl", hash = "sha256:26445eca388f82e72884e0d580d5464cd801a3ea01e63e5601bdff9ba6a48de2", size = 78540, upload-time = "2024-11-24T20:12:19.698Z" },
+]
+
+[[package]]
+name = "types-python-dateutil"
+version = "2.9.0.20251108"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b0/42/18dff855130c3551d2b5159165bd24466f374dcb78670e5259d2ed51f55c/types_python_dateutil-2.9.0.20251108.tar.gz", hash = "sha256:d8a6687e197f2fa71779ce36176c666841f811368710ab8d274b876424ebfcaa", size = 16220, upload-time = "2025-11-08T02:55:53.393Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/25/dd/9fb1f5ef742cab1ea390582f407c967677704d2f5362b48c09de0d0dc8d4/types_python_dateutil-2.9.0.20251108-py3-none-any.whl", hash = "sha256:a4a537f0ea7126f8ccc2763eec9aa31ac8609e3c8e530eb2ddc5ee234b3cd764", size = 18127, upload-time = "2025-11-08T02:55:52.291Z" },
 ]
 
 [[package]]
@@ -1509,8 +1533,8 @@ dependencies = [
     { name = "xkbcommon" },
 ]
 
-[package.optional-dependencies]
-develop = [
+[package.dev-dependencies]
+dev = [
     { name = "licensecheck" },
     { name = "mypy" },
     { name = "pre-commit" },
@@ -1520,26 +1544,20 @@ develop = [
     { name = "pytest-cov" },
     { name = "pytest-xdist" },
     { name = "tox" },
+    { name = "tox-uv" },
+    { name = "types-python-dateutil" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "keysymdef", specifier = "~=1.2.0" },
-    { name = "licensecheck", marker = "extra == 'develop'" },
-    { name = "mypy", marker = "extra == 'develop'" },
     { name = "numpy", specifier = "~=2.2.6" },
     { name = "onnxruntime", specifier = "~=1.23.0" },
     { name = "opencv-python", specifier = "~=4.12.0.88" },
     { name = "pillow", specifier = "~=12.0.0" },
-    { name = "pre-commit", marker = "extra == 'develop'", specifier = "<4.3.1" },
-    { name = "pyfakefs", marker = "extra == 'develop'" },
     { name = "pyserial", specifier = ">=3.5" },
     { name = "pyte", specifier = "~=0.8.2" },
     { name = "pytesseract", specifier = "~=0.3.10" },
-    { name = "pytest", marker = "extra == 'develop'" },
-    { name = "pytest-asyncio", marker = "extra == 'develop'" },
-    { name = "pytest-cov", marker = "extra == 'develop'" },
-    { name = "pytest-xdist", marker = "extra == 'develop'" },
     { name = "python-dateutil", specifier = ">=2.9.0.post0" },
     { name = "pywayland" },
     { name = "rapidfuzz", specifier = ">=3.12.1" },
@@ -1548,7 +1566,20 @@ requires-dist = [
     { name = "robotframework-debug", specifier = "~=4.5.0" },
     { name = "robotframework-sshlibrary", specifier = "~=3.8.0" },
     { name = "robotframework-stacktrace", specifier = "==0.4.1" },
-    { name = "tox", marker = "extra == 'develop'" },
     { name = "xkbcommon", specifier = "<1.5" },
 ]
-provides-extras = ["develop"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "licensecheck" },
+    { name = "mypy" },
+    { name = "pre-commit", specifier = "<4.3.1" },
+    { name = "pyfakefs" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "pytest-xdist" },
+    { name = "tox" },
+    { name = "tox-uv" },
+    { name = "types-python-dateutil" },
+]
