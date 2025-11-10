@@ -1,4 +1,4 @@
-name: Release YARF
+name: Generate Changelog and Create Release
 
 on:
   push:
