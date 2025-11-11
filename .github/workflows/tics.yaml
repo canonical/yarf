@@ -35,6 +35,7 @@ jobs:
             pip install uv \
             flake8 \
             pylint \
+            pytest \
             --break-system-packages
 
       - name: Checkout repo (main branch)
@@ -55,7 +56,9 @@ jobs:
           uv venv
           source .venv/bin/activate
           pip install .
+
           pip install .[develop]
+
           echo PATH=$PATH >> $GITHUB_ENV
 
           # Check flake8, pylint and pytest installation
