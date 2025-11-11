@@ -49,7 +49,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup Chrome
-        uses: browser-actions/setup-chrome@v1
+        uses: browser-actions/setup-chrome@5f2f9dae94e061474cbfa44c9901c5faee86f8e9
         with:
           install-dependencies: true
 
