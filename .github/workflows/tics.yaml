@@ -16,11 +16,6 @@ jobs:
     name: Run TICS analysis
     runs-on: [self-hosted-linux-amd64-noble-tiobe]
     steps:
-      - name: Set up Python
-        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
-        with:
-          python-version: "3.12"
-
       - name: Install dependencies
         run: |
             sudo apt update -qq
