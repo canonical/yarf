@@ -58,6 +58,9 @@ jobs:
           pip install .[develop]
           echo PATH=$PATH >> $GITHUB_ENV
 
+          # Check flake8, pylint and pytest installation
+          pip show flake8 pylint pytest
+
       - name: Run test and coverage
         run: |
           uvx tox
