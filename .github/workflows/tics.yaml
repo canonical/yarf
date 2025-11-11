@@ -14,20 +14,13 @@ concurrency:
 jobs:
   TICS:
     name: Run TICS analysis
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted-linux-amd64-noble-tiobe]
     steps:
-      - name: Checkout repo (main branch)
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
-        with:
-          ref: main
-          lfs: true
-          fetch-depth: 0
-          persist-credentials: false
-
       - name: Set up Python
         uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
         with:
           python-version: "3.12"
+
       - name: Install dependencies
         run: |
             sudo apt update -qq
@@ -39,21 +32,39 @@ jobs:
             clang \
             python3-tk
 
-            pip install uv
+            pip install \
+            uv \
+            flake8 \
+            pylint \
+            pytest \
+            pyfakefs \
+            --break-system-packages
 
-      - name: Install TICS dependencies
-        run: |
-          pip install \
-          flake8 \
-          pylint
+      - name: Checkout repo (main branch)
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          ref: main
+          lfs: true
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@b94431e051d1c52dcbe9a7092a4f10f827795416
+        with:
+          install-dependencies: true
 
       - name: Install YARF
         run: |
           uv venv
           source .venv/bin/activate
-          echo PATH=$PATH >> $GITHUB_ENV
           pip install .
+
           pip install .[develop]
+
+          echo PATH=$PATH >> $GITHUB_ENV
+
+          # Check flake8, pylint and pytest installation
+          pip show flake8 pylint pytest
 
       - name: Run test and coverage
         run: |
