@@ -78,7 +78,7 @@ Test Keyword Find Text
     ${length}=              Get Length              ${matched_text}
     Should Be True          ${length} > 1
     Should Be Equal As Strings                      ${matched_text[0]['text']}                      AB123cd
-    Should Be Equal As Numbers                      ${matched_text[0]['confidence']}                100.0
+    Should Be Equal As Numbers                      ${matched_text[0]['similarity']}                100.0
 
     ${matched_text}=        Find Text               regex:${REGEX}          region=${REGEX_REGION}
     ${count}=               Set Variable            0

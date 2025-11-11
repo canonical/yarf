@@ -26,8 +26,8 @@ class TestRapidOCR:
 
     def test_read(self, mock_reader):
         reader_result = [
-            [[[0, 0], [0, 0], [0, 0], [0, 0]], "Hello", 0.9],
-            [[[0, 0], [0, 0], [0, 0], [0, 0]], "World", 0.8],
+            [[[0, 0], [0, 0], [0, 0], [0, 0]], "Hello", 90],
+            [[[0, 0], [0, 0], [0, 0], [0, 0]], "World", 80],
         ]
         mock_reader.reader.return_value = (reader_result, None)
         result = RapidOCRReader.read(mock_reader, None)
@@ -41,11 +41,16 @@ class TestRapidOCR:
 
     def test_find(self, mock_reader):
         mock_reader.reader.return_value = (
-            [[[[0, 0], [0, 0], [0, 0], [0, 0]], "Hello", 0.9]],
+            [[[[0, 0], [0, 0], [0, 0], [0, 0]], "Hello", 90]],
             None,
         )
         mock_reader.get_matches.return_value = [
-            {"text": "Hello", "region": Region(0, 0, 1, 1), "confidence": 100}
+            {
+                "text": "Hello",
+                "region": Region(0, 0, 1, 1),
+                "confidence": 90,
+                "similarity": 100,
+            }
         ]
         result = RapidOCRReader.find(mock_reader, None, "Hello")
 
@@ -53,7 +58,8 @@ class TestRapidOCR:
             {
                 "text": "Hello",
                 "region": Region(0, 0, 1, 1),
-                "confidence": 100,
+                "confidence": 90,
+                "similarity": 100,
             }
         ]
 
@@ -72,11 +78,16 @@ class TestRapidOCR:
     def test_find_in_region(self, mock_to_image, mock_reader):
         mock_to_image.return_value = MagicMock()
         mock_reader.reader.return_value = (
-            [[[[0, 0], [1, 0], [1, 1], [0, 1]], "Hello World", 0.9]],
+            [[[[0, 0], [1, 0], [1, 1], [0, 1]], "Hello World", 90]],
             None,
         )
         mock_reader.get_matches.return_value = [
-            {"text": "Hello", "region": Region(0, 0, 1, 1), "confidence": 100}
+            {
+                "text": "Hello",
+                "region": Region(0, 0, 1, 1),
+                "confidence": 90,
+                "similarity": 100,
+            }
         ]
         result = RapidOCRReader.find(
             mock_reader, None, "Hello", region=Region(0, 0, 1, 1)
@@ -86,50 +97,53 @@ class TestRapidOCR:
             {
                 "text": "Hello",
                 "region": Region(0, 0, 1, 1),
-                "confidence": 100,
+                "confidence": 90,
+                "similarity": 100,
             }
         ]
 
     def test_get_matches(self, mock_reader):
         items = [
             OCRResult(
-                Quad([[0, 0], [1, 0], [1, 1], [0, 1]]), "Hello World", 0.9
+                Quad([[0, 0], [1, 0], [1, 1], [0, 1]]), "Hello World", 90
             ),
         ]
         result = RapidOCRReader.get_matches(
-            mock_reader, items, "Hello World", 0.8, 80, False
+            mock_reader, items, "Hello World", 80, 80, False
         )
 
         assert result == [
             {
                 "text": "Hello World",
                 "region": Region(0, 0, 1, 1),
-                "confidence": 100,
+                "confidence": 90,
+                "similarity": 100,
             }
         ]
 
     def test_get_matches_partial(self, mock_reader):
         items = [
-            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Hello World", 0.9),
+            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Hello World", 90),
         ]
         result = RapidOCRReader.get_matches(
-            mock_reader, items, "Hello", 0.8, 80, True
+            mock_reader, items, "Hello", 80, 80, True
         )
 
         assert result == [
             {
                 "text": "Hello World",
                 "region": Region(0, 0, 1, 1),
-                "confidence": 100,
+                "confidence": 90,
+                "similarity": 100,
             }
         ]
 
     def test_get_matches_no_matches(self, mock_reader):
         items = [
-            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Hello World", 0.9),
+            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Hello World", 90),
         ]
         result = RapidOCRReader.get_matches(
-            mock_reader, items, "Hello", 0.8, 90, False
+            mock_reader, items, "Hello", 80, 90, False
         )
 
         assert result == []
@@ -144,18 +158,19 @@ class TestRapidOCR:
     def test_substring_match(self, mock_reader, input_text, result_text):
         "Substrings match 100% to longer results"
         items = [
-            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Trash", 0.9),
-            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to Trash", 0.9),
-            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to ...", 0.9),
+            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Trash", 90),
+            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to Trash", 90),
+            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to ...", 90),
         ]
         result = RapidOCRReader.get_matches(
-            mock_reader, items, input_text, 0.8, 80, True
+            mock_reader, items, input_text, 80, 80, True
         )
         for text in result_text:
             assert {
                 "text": text,
                 "region": Region(0, 0, 1, 1),
-                "confidence": 100,
+                "confidence": 90,
+                "similarity": 100,
             } in result
 
     @pytest.mark.parametrize(
@@ -170,37 +185,38 @@ class TestRapidOCR:
         - "Move to Trash"  does not match     "Trash"        .
         """
         items = [
-            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Trash", 0.9),
-            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to Trash", 0.9),
-            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to ...", 0.9),
+            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Trash", 90),
+            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to Trash", 90),
+            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to ...", 90),
         ]
         result = RapidOCRReader.get_matches(
-            mock_reader, items, input_text, 0.8, 90, True
+            mock_reader, items, input_text, 90, 80, True
         )
         assert len(result) == 1
         assert result == [
             {
                 "text": result_text,
                 "region": Region(0, 0, 1, 1),
-                "confidence": 100,
+                "similarity": 100,
+                "confidence": 90,
             }
         ]
 
     def test_asimetric_long_match(self, mock_reader):
         items = [
             OCRResult(
-                [[0, 0], [1, 0], [1, 1], [0, 1]], "Trash a set of files", 0.9
+                [[0, 0], [1, 0], [1, 1], [0, 1]], "Trash a set of files", 90
             ),
-            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to Trash", 0.9),
-            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "!", 0.9),
+            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to Trash", 90),
+            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "!", 90),
             OCRResult(
                 [[0, 0], [1, 0], [1, 1], [0, 1]],
                 "Move to Downloads",
-                0.9,
+                90,
             ),
         ]
         result = RapidOCRReader.get_matches(
-            mock_reader, items, "Move to Trash!", 0.8, 80, True
+            mock_reader, items, "Move to Trash!", 80, 80, True
         )
 
         assert result[0]["text"] == "Move to Trash"
