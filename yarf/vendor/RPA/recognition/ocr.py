@@ -134,8 +134,7 @@ def _dict_lines(data: Dict) -> List:
             word["left"], word["top"], word["width"], word["height"]
         )
 
-        # NOTE: Currently ignoring confidence in tesseract results
-        lines[key].append({"text": word["text"], "region": region})
+        lines[key].append({"text": word["text"], "region": region, "confidence": word["conf"]})
         assert len(lines[key]) == word["word_num"]
 
     return list(lines.values())
@@ -172,10 +171,14 @@ def _match_lines(lines: List[Dict], text: str, similarity_threshold: float) -> L
                     # We already have a better match
                     continue
 
+                # Use the lowest confidence among the words in the match
+                confidence = min(word["confidence"] for word in words if word["confidence"] != -1)
+
                 match = {
                     "text": sentence,
                     "region": Region.merge(regions),
                     "similarity": similarity,
+                    "confidence": confidence,
                 }
 
         if match:
