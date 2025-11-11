@@ -54,9 +54,9 @@ jobs:
         run: |
           uv venv
           source .venv/bin/activate
-          echo PATH=$PATH >> $GITHUB_ENV
           pip install .
           pip install .[develop]
+          echo PATH=$PATH >> $GITHUB_ENV
 
       - name: Run test and coverage
         run: |
