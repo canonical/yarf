@@ -280,8 +280,12 @@ def run_robot_suite(
         variables.extend(options.pop("variable"))
 
     selected_tests = options.pop("test", []) + options.pop("task", [])
+    if (targeted_suites := options.pop("suite", None)) is not None:
+        for idx, s in enumerate(targeted_suites):
+            targeted_suites[idx] = suite.name + "." + s
+
     suite.filter(
-        included_suites=options.pop("suite", None),
+        included_suites=targeted_suites,
         included_tests=selected_tests if len(selected_tests) > 0 else None,
         included_tags=options.pop("include", None),
         excluded_tags=options.pop("exclude", None),
