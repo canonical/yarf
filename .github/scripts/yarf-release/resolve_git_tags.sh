@@ -21,7 +21,19 @@ emit() {
   fi
 }
 
+validate_version_format() {
+  local version_to_check="$1"
+  local version_regex="^[0-9]+\.[0-9]+\.[0-9]+$"
+
+  if [[ ! $version_to_check =~ $version_regex ]]; then
+    echo "Error: '$version_to_check' is not in the required <major>.<minor>.<patch> format." >&2
+    exit 1
+  fi
+}
+
+
 TO_TAG="${IN_TO:-2.0.1}"
+validate_version_format "${TO_TAG}"
 
 git fetch --tags --force
 git rev-parse -q --verify "refs/tags/${TO_TAG}" >/dev/null || { echo "Tag '${TO_TAG}' not found." >&2; exit 1; }
@@ -35,6 +47,7 @@ PREV=""
 for i in "${!TAGS_ASC[@]}"; do
   if [[ "${TAGS_ASC[$i]}" == "${TO_TAG}" ]]; then
     if (( i > 0 )); then PREV="${TAGS_ASC[$((i-1))]}"; fi
+    validate_version_format "${PREV}"
     break
   fi
 done
