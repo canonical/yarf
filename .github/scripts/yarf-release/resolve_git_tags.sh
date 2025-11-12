@@ -21,7 +21,7 @@ emit() {
   fi
 }
 
-TO_TAG="${IN_TO:?Error: The IN_TO variable must be set.}"
+TO_TAG="${IN_TO:-}"
 
 git fetch --tags --force
 git rev-parse -q --verify "refs/tags/${TO_TAG}" >/dev/null || { echo "Tag '${TO_TAG}' not found." >&2; exit 1; }

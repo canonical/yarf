@@ -78,5 +78,5 @@ jobs:
           TAG:        ${{ steps.tags.outputs.to }}
           NOTES_FILE: ${{ steps.body.outputs.path }}
         run: |
-          gh release create "${TAG}" --title "${TAG}" --notes-file "${NOTES_FILE}" || \
-          gh release edit   "${TAG}" --notes-file "${NOTES_FILE}"
+          # gh release create "${TAG}" --title "${TAG}" --notes-file "${NOTES_FILE}" || \
+          # gh release edit   "${TAG}" --notes-file "${NOTES_FILE}"
