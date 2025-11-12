@@ -51,7 +51,6 @@ jobs:
       - name: Install YARF
         run: |
           uv venv
-          source .venv/bin/activate
           pip install .
 
           pip install .[develop]
@@ -63,6 +62,7 @@ jobs:
 
       - name: Run test and coverage
         run: |
+          source .venv/bin/activate
           pytest -n=auto --cov=yarf --cov-fail-under=100 --cov-report term-missing
           coverage xml
 
