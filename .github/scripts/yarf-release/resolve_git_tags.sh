@@ -33,7 +33,9 @@ validate_version_format() {
 
 
 TO_TAG="${IN_TO:-2.0.1}"
-validate_version_format "${TO_TAG}"
+if [[ -n "$TO_TAG" ]]; then
+  validate_version_format "${TO_TAG}"
+fi
 
 git fetch --tags --force
 git rev-parse -q --verify "refs/tags/${TO_TAG}" >/dev/null || { echo "Tag '${TO_TAG}' not found." >&2; exit 1; }
