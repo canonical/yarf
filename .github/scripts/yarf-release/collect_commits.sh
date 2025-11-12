@@ -13,8 +13,6 @@ set -euo pipefail
 : "${FROM_KIND:?FROM_KIND is required (tag|root)}"
 : "${FROM:=}"  # may be empty when FROM_KIND=root
 
-# quick tool checks (non-fatal hints)
-command -v gh >/dev/null 2>&1 || { echo "gh CLI not found" >&2; exit 127; }
 command -v jq >/dev/null 2>&1 || { echo "jq not found" >&2; exit 127; }
 
 # URL-encode tags for safe API paths
@@ -30,15 +28,21 @@ else
 fi
 
 git log "${GIT_RANGE}" \
-  --pretty=format:'{
-    %n  "sha": "%H",
-    %n  "short": "%h",
-    %n  "url": "https://github.com/${GITHUB_REPOSITORY}/commit/%H",
-    %n  "title": "%s",
-    %n  "author_name": "%an",
-    %n  "committedAt": "%aI"
-    %n
-  },' > commits.json
+  --pretty=format:'%H|%h|%s|%an|%aI' |
+awk -v repo="${GITHUB_REPOSITORY}" -F '|' '
+function tojson(str) {
+  gsub(/"/, "\\\"", str)
+  return "\"" str "\""
+}
+{
+  printf("{\"sha\": %s, \"short\": %s, \"url\": %s, \"title\": %s, \"author_name\": %s, \"committedAt\": %s}\n",
+    tojson($1),
+    tojson($2),
+    tojson("https://github.com/" repo "/commit/" $1),
+    tojson($3),
+    tojson($4),
+    tojson($5))
+}' | jq -s '.' > commits.json
 
 # Ensure non-empty file
 if [[ ! -s commits.json ]]; then echo "[]" > commits.json; fi
