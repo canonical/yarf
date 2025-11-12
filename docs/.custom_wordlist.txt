@@ -5,3 +5,5 @@ step_distance
 tentatives
 typename
 rapidocr
+Vnc
+yaml
