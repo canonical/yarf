@@ -48,11 +48,6 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Setup Chrome
-        uses: browser-actions/setup-chrome@b94431e051d1c52dcbe9a7092a4f10f827795416
-        with:
-          install-dependencies: true
-
       - name: Install YARF
         run: |
           uv venv
