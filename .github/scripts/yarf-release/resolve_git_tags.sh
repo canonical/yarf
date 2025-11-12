@@ -33,9 +33,7 @@ validate_version_format() {
 
 
 TO_TAG="${IN_TO:-2.0.1}"
-if [[ -n "$TO_TAG" ]]; then
-  validate_version_format "${TO_TAG}"
-fi
+validate_version_format "${TO_TAG}"
 
 git fetch --tags --force
 git rev-parse -q --verify "refs/tags/${TO_TAG}" >/dev/null || { echo "Tag '${TO_TAG}' not found." >&2; exit 1; }
@@ -48,8 +46,10 @@ mapfile -t TAGS_ASC < <(git for-each-ref --sort=creatordate --format='%(refname:
 PREV=""
 for i in "${!TAGS_ASC[@]}"; do
   if [[ "${TAGS_ASC[$i]}" == "${TO_TAG}" ]]; then
-    if (( i > 0 )); then PREV="${TAGS_ASC[$((i-1))]}"; fi
-    validate_version_format "${PREV}"
+    if (( i > 0 )); then
+      PREV="${TAGS_ASC[$((i-1))]}";
+      validate_version_format "${PREV}"
+    fi
     break
   fi
 done
