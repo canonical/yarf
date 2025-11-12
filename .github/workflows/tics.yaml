@@ -33,11 +33,12 @@ jobs:
             python3-tk
 
             pip install \
-            uv \
+            coverage \
             flake8 \
             pylint \
             pytest \
             pyfakefs \
+            uv \
             --break-system-packages
 
       - name: Checkout repo (main branch)
