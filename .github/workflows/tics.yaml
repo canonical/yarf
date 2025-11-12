@@ -68,7 +68,8 @@ jobs:
 
       - name: Run test and coverage
         run: |
-          uvx tox
+          pytest -n=auto --cov=yarf --cov-fail-under=100 --cov-report term-missing
+          coverage xml
 
       - name: Rename coverage report for TICS
         run: |
