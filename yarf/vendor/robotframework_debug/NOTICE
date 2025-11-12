@@ -1,0 +1,39 @@
+NOTICE: Vendored robotframework-debug Code
+
+This directory contains code vendored from the robotframework-debug project:
+- Original Repository: https://github.com/imbus/robotframework-debug
+- Original Version: 4.5.0
+- Original License: BSD-3-Clause (New BSD)
+- Original Copyright: Xie Yanbo (2010)
+- Maintained by: René Rohner
+
+The original robotframework-debug is licensed under the BSD-3-Clause License.
+A copy of this license is included in the LICENSE file in this directory.
+
+MODIFICATIONS:
+- Applied fix from PR #21 (https://github.com/imbus/robotframework-debug/pull/21)
+  * Fixed AttributeError in keywords command when KeywordDoc lacks shortdoc attribute
+  * Modified debugcmd.py to check for shortdoc existence before accessing it
+  * Added proper handling for keywords without documentation
+
+REASON FOR VENDORING:
+The upstream project is no longer actively maintained, and critical bug fixes
+(such as PR #21) are not being merged. This vendored version ensures the
+library remains functional for yarf's requirements.
+
+The vendored code includes all modules from the RobotDebug package:
+- cmdcompleter.py (command completion functionality)
+- debugcmd.py (debug commands and REPL functionality)
+- globals.py (global variables and state)
+- history_app.py (command history management)
+- lexer.py (syntax highlighting)
+- prompttoolkitcmd.py (prompt toolkit integration)
+- RobotDebug.py (main debug library interface)
+- robotkeyword.py (Robot Framework keyword handling)
+- robotlib.py (Robot Framework library utilities)
+- shell.py (shell interface)
+- sourcelines.py (source code display)
+- styles.py (styling configuration)
+- version.py (version information)
+
+All original copyright notices and attribution are preserved.

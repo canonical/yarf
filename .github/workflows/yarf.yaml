@@ -3,21 +3,24 @@ name: Testing and quality control for YARF codebase
 on:
   merge_group:
     types: [checks_requested]
-  workflow_call:
-    inputs:
-      ref:
-        description: 'Git reference to checkout'
-        required: true
-        type: string
   pull_request:
-    paths-ignore:
-      - 'docs/**'
-      - 'snap/**'
-      - '.github/workflows/**'
-      - '!.github/workflows/yarf.yaml'
+    paths:
+      - '**'
+      - '!docs/**'
+      - '!snap/**'
+      - '!.github/workflows/*'
+      - '.github/workflows/yarf.yaml'
+
+permissions:
+  contents: read  # Required to check out repository code
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   install-jammy:
+    name: Install and test on Jammy
     runs-on: [self-hosted, linux, jammy, x64, large]
     steps:
     - name: Install dependencies
@@ -30,10 +33,13 @@ jobs:
           jq \
           clang \
           python3-tk
-    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+
+    - name: Checkout Repository
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         lfs: true
-        ref: ${{ inputs.ref }}
+        persist-credentials: false
+
     - name: Set up Python
       uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
       with:
@@ -44,6 +50,7 @@ jobs:
       run: uv sync
 
   test-noble:
+    name: Test on Noble
     # We use GitHub hosted runners for this job as Pa11y needs working Chrom support
     runs-on: ubuntu-24.04
     steps:
@@ -61,23 +68,29 @@ jobs:
       with:
         lfs: true
         fetch-depth: 0
+        persist-credentials: false
     - name: Set up Python
       uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
       with:
         python-version: "3.12"
+
     - name: Install uv and json schema
       run: pip install uv check-jsonschema
+
     - name: Check uv.lock file
       run: uv lock --check
+
     - name: Run tests
       run: |
         uv tool run tox
+
     - name: Upload Coverage Report
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
       with:
         name: coverage
         path: ./coverage.xml
         retention-days: 5
+
     - name: Install integration dependencies
       run: |
         sudo snap install mir-test-tools
@@ -102,7 +115,7 @@ jobs:
         # Avoid GNOME apps waiting for portals
         dbus-run-session -- gnome-calculator &
 
-        uv run yarf --platform Mir --output-format TestSubmissionSchema tests/basic_suite
+        uv run yarf --platform Mir --output-format TestSubmissionSchema tests/canary_test
 
     - name: Download test submission schema and validate
       run: |
@@ -140,7 +153,7 @@ jobs:
 
     - if: failure()
       name: Collect test results
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
       with:
         name: yarf-output
         path: /tmp/yarf-outdir/*
@@ -148,6 +161,6 @@ jobs:
 
     - if: failure() && runner.debug
       name: Setup upterm session (restart with "Enable debug logging" to activate)
-      uses: canonical/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48
+      uses: canonical/action-tmate@a0e8caed3bba2ccb98901a274553bf1284ad96c2  # zizmor: ignore[stale-action-refs]
       with:
         limit-access-to-actor: true

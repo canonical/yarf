@@ -11,6 +11,7 @@ from .protocols.wayland.wl_buffer import WlBufferProxy
 from .protocols.wayland.wl_output import WlOutputProxy
 from .protocols.wayland.wl_shm import WlShmProxy
 from .protocols.wlr_screencopy_unstable_v1.zwlr_screencopy_frame_v1 import (
+    ZwlrScreencopyFrameV1,
     ZwlrScreencopyFrameV1Proxy,
 )
 from .protocols.wlr_screencopy_unstable_v1.zwlr_screencopy_manager_v1 import (
@@ -54,6 +55,8 @@ class Screencopy(WaylandClient):
         super().__init__(display_name)
         self._buffer: Optional[WlBufferProxy] = None
         self._frame: Optional[ZwlrScreencopyFrameV1Proxy] = None
+        self._pending_flags = ZwlrScreencopyFrameV1.flags(0)
+        self._flags = ZwlrScreencopyFrameV1.flags(0)
         self._output: Optional[WlOutputProxy] = None
         self._screencopy_manager: Optional[ZwlrScreencopyManagerV1Proxy] = None
         self._shm: Optional[WlShmProxy] = None
@@ -170,6 +173,13 @@ class Screencopy(WaylandClient):
         self._frame.copy(self._buffer)
         self.display.flush()
 
+    def _frame_flags(
+        self,
+        frame: ZwlrScreencopyFrameV1Proxy,
+        flags: int,
+    ) -> None:
+        self._pending_flags = ZwlrScreencopyFrameV1.flags(flags)
+
     def _frame_ready(
         self,
         frame: ZwlrScreencopyFrameV1Proxy,
@@ -189,6 +199,8 @@ class Screencopy(WaylandClient):
             tv_nsec: unused
         """
         self._frame_is_ready = True
+        self._flags = self._pending_flags
+        self._pending_flags = ZwlrScreencopyFrameV1.flags(0)
         if self.display is not None:
             self.display.flush()
 
@@ -212,6 +224,7 @@ class Screencopy(WaylandClient):
             0, self._output
         )
         frame.dispatcher["buffer"] = self._frame_buffer
+        frame.dispatcher["flags"] = self._frame_flags
         frame.dispatcher["ready"] = self._frame_ready
         self.display.roundtrip()
 
@@ -238,6 +251,14 @@ class Screencopy(WaylandClient):
         size = (self._buffer_data.width, self._buffer_data.height)
         assert all(dim > 0 for dim in size), "Not enough image data"
         stride = self._buffer_data.stride
-        image = Image.frombytes("RGBA", size, data, "raw", "BGRA", stride, -1)
+        image = Image.frombytes(
+            "RGBA",
+            size,
+            data,
+            "raw",
+            "BGRA",
+            stride,
+            ZwlrScreencopyFrameV1.flags.y_invert in self._flags and -1 or 0,
+        )
 
         return image

@@ -1,0 +1,183 @@
+name: YARF snap promotion
+
+on:
+  schedule:
+    - cron: '00 00 * * *'
+  workflow_dispatch:
+
+# Read access to repository contents
+permissions:
+  contents: read  # Required to read repository files
+
+concurrency:
+  group: yarf-snap-ci-${{ github.ref_name }}
+  cancel-in-progress: false  # zizmor: ignore[concurrency-limits]
+
+jobs:
+  define-matrix:
+    name: Define job matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.out.outputs.matrix }}
+    steps:
+      - name: Define matrix
+        id: out
+        shell: bash
+        run: |
+          cat > matrix.json <<'JSON'
+          {
+            "track": ["latest"],
+            "arch":  ["amd64","arm64"],
+            "lane":  ["edge_to_beta"],
+            "include": [
+              {
+                "arch": "amd64",
+                "runs_on": "ubuntu-24.04",
+              },
+              {
+                "arch": "arm64",
+                "runs_on": "ubuntu-24.04-arm",
+              },
+              {
+                "lane": "edge_to_beta",
+                "from": "edge",
+                "to":   "beta",
+              }
+            ]
+          }
+          JSON
+          {
+            echo "matrix<<EOF"
+            cat matrix.json
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+  check-versions:
+    name: ${{ matrix.track }} / ${{ matrix.from }} to ${{ matrix.to }} (${{ matrix.arch }})
+    needs: define-matrix
+    runs-on: ${{ matrix.runs_on }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.define-matrix.outputs.matrix) }}
+
+    outputs:
+      should_continue: ${{ steps.versions.outputs.should_continue }}
+      from_version:    ${{ steps.versions.outputs.from_version }}
+      from_channel:    ${{ steps.versions.outputs.from_channel }}
+      lane:            ${{ matrix.lane }}
+
+    steps:
+      - name: Context
+        shell: bash
+        env:
+          TRACK: ${{ matrix.track }}
+          ARCH: ${{ matrix.arch }}
+          FROM: ${{ matrix.from }}
+          TO: ${{ matrix.to }}
+        run: |
+          echo "Track: ${TRACK}"
+          echo "Arch:  ${ARCH}"
+          echo "Lane:  ${FROM} --> ${TO}"
+          echo "Tests: ${TEST_WORKFLOW}"
+
+      - name: Get versions in ${{ matrix.track }}/${{ matrix.from }} and ${{ matrix.track }}/${{ matrix.to }}
+        id: versions
+        shell: bash
+        env:
+          TRACK: ${{ matrix.track }}
+          FROM: ${{ matrix.from }}
+          TO: ${{ matrix.to }}
+        run: |
+          set -euo pipefail
+          echo "Fetching channel info for yarf..."
+
+          snap info yarf \
+          | awk '/^[[:space:]]*[[:alnum:].-]+\/(edge|beta|candidate|stable):/ {
+              gsub(":","",$1)
+              ver=$2
+              rev=""
+              if (match($0, /\(([0-9]+)\)/, m)) rev=m[1]
+              print $1, ver, rev
+            }' > channels.txt || true
+
+          echo "Channel map (channel version revision):"
+          cat channels.txt || true
+
+          FROM_VER=$(awk -v t="${TRACK}/${FROM}" '$1==t{print $2}' channels.txt || true)
+          TO_VER=$(awk -v t="${TRACK}/${TO}"   '$1==t{print $2}' channels.txt || true)
+
+          FROM_REV=$(awk -v t="${TRACK}/${FROM}" '$1==t{print $3}' channels.txt || true)
+          TO_REV=$(awk -v t="${TRACK}/${TO}"   '$1==t{print $3}' channels.txt || true)
+
+          if [[ -z "${FROM_VER:-}" ]]; then
+            echo "No version found in ${TRACK}/${FROM}."
+            exit 1
+          fi
+
+          if [[ -n "${TO_VER:-}" ]] && dpkg --compare-versions "$FROM_VER" le "$TO_VER"; then
+            echo "Versions match ($FROM_VER) in ${TRACK} (${FROM} vs ${TO}). Nothing to do."
+            echo "should_continue=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Version in ${FROM}=$FROM_VER (rev $FROM_REV) > ${TO}=$TO_VER (rev ${TO_REV:-none}) in ${TRACK}."
+            echo "${FROM} revision is $FROM_REV"
+            echo "should_continue=true" >> "$GITHUB_OUTPUT"
+            echo "from_version=$FROM_VER" >> "$GITHUB_OUTPUT"
+            echo "from_channel=${TRACK}/${FROM}" >> "$GITHUB_OUTPUT"
+          fi
+
+  canary:
+    name: Canary Test
+    needs:
+      - define-matrix
+      - check-versions
+    if: >
+      needs.check-versions.outputs.should_continue == 'true' &&
+      needs.check-versions.outputs.lane == 'edge_to_beta'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.define-matrix.outputs.matrix) }}
+    permissions:
+      contents: read
+      actions: write  # Required to trigger canary test workflow
+
+    uses: ./.github/workflows/canary-test.yaml
+    with:
+      TRACK:   ${{ matrix.track }}
+      CHANNEL: ${{ matrix.from }}
+      VER:     ${{ needs.check-versions.outputs.from_version }}
+      ARCH:    ${{ matrix.arch }}
+      RUNNER:  ${{ matrix.runs_on }}
+
+  promote:
+    name: Promote — ${{ matrix.track }} / ${{ matrix.from }} to ${{ matrix.to }} ( ${{ matrix.arch }} )
+    needs:
+      - define-matrix
+      - canary
+    if: needs.canary.outputs.passed == 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.define-matrix.outputs.matrix) }}
+    runs-on: ${{ matrix.runs_on }}
+
+    steps:
+      - name: Install snapcraft
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v snapcraft >/dev/null 2>&1; then
+            sudo snap install snapcraft --classic
+          fi
+
+      - name: Promote ${{ matrix.track }}/${{ matrix.from }} to ${{ matrix.track }}/${{ matrix.to }} for ${{ matrix.arch }}
+        env:
+          # this is necessary because snapcraft will not allow --yes for promotions of the edge channel
+          SNAPCRAFT_HAS_TTY: "true"
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT }}
+          TRACK: ${{ matrix.track }}
+          FROM: ${{ matrix.from }}
+          TO: ${{ matrix.to }}
+        run: |
+          # Note: using `yes |` instead of `--yes` because snapcraft will
+          #       refuse to non-interactively promote a snap from the edge
+          #       channel if it is done without any branch qualifiers
+          yes | snapcraft promote yarf --from-channel "${TRACK}/${FROM}" --to-channel "${TRACK}/${TO}"
