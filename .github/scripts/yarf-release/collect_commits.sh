@@ -22,49 +22,23 @@ FROM_ESC="$(printf '%s' "${FROM}" | jq -sRr @uri)"
 TO_ESC="$(printf '%s' "${TO}" | jq -sRr @uri)"
 
 if [[ "${FROM_KIND}" == "tag" ]]; then
-  # Compare API: base...head == FROM..TO
-  gh api "repos/${GITHUB_REPOSITORY}/compare/${FROM_ESC}...${TO_ESC}" \
-  | jq --arg repo "${GITHUB_REPOSITORY}" '
-      .commits
-      | map({
-          sha: .sha,
-          short: (.sha[0:7]),
-          url: ("https://github.com/" + $repo + "/commit/" + .sha),
-          title: (.commit.message | split("\n")[0]),
-          author_login: (.author.login // null),
-          author_name:  (.commit.author.name // null),
-          committedAt:  .commit.author.date
-        })
-      | sort_by(.committedAt) | reverse
-    ' > commits.json
+  # We have a start and end tag
+  GIT_RANGE="${FROM}..${TO}"
 else
-  # Only one tag exists -> gather all commits reachable by TO (paginate)
-  : > rows.ndjson
-  PAGE=1
-  while :; do
-    RESP="$(gh api "repos/${GITHUB_REPOSITORY}/commits?sha=${TO_ESC}&per_page=100&page=${PAGE}")"
-    COUNT="$(jq 'length' <<<"$RESP")"
-    if [[ "$COUNT" -eq 0 ]]; then break; fi
-    jq -c --arg repo "${GITHUB_REPOSITORY}" '
-      map({
-        sha: .sha,
-        short: (.sha[0:7]),
-        url: ("https://github.com/" + $repo + "/commit/" + .sha),
-        title: (.commit.message | split("\n")[0]),
-        author_login: (.author.login // null),
-        author_name:  (.commit.author.name // null),
-        committedAt:  .commit.author.date
-      }) | .[]
-    ' <<<"$RESP" >> rows.ndjson
-    PAGE=$((PAGE+1))
-  done
-
-  if [[ -s rows.ndjson ]]; then
-    jq -s 'sort_by(.committedAt) | reverse' rows.ndjson > commits.json
-  else
-    echo "[]" > commits.json
-  fi
+  # We only have an end tag
+  GIT_RANGE="${TO}"
 fi
+
+git log "${GIT_RANGE}" \
+  --pretty=format:'{
+    %n  "sha": "%H",
+    %n  "short": "%h",
+    %n  "url": "https://github.com/${GITHUB_REPOSITORY}/commit/%H",
+    %n  "title": "%s",
+    %n  "author_name": "%an",
+    %n  "committedAt": "%aI"
+    %n
+  },' > commits.json
 
 # Ensure non-empty file
 if [[ ! -s commits.json ]]; then echo "[]" > commits.json; fi

@@ -68,7 +68,7 @@ fi
 {
   echo "# Release ${TO}"
   echo
-  echo "> Changes merged after ${NOTE_FROM} and up to and including \`${TO}\`."
+  echo "> Changes merged after \`${NOTE_FROM}\` and up to and including \`${TO}\`."
   echo
   cat sections.md
 } > "${OUTPUT_PATH}"
