@@ -297,7 +297,8 @@ class VideoInputBase(ABC):
         for region in matched_text_regions:
             similarity = f"{region['similarity']:.2f}"
             confidence = f"{region['confidence']:.2f}"
-            logger.debug(
+            log_image(
+                image,
                 f"Found text matching '{text}' with similarity {similarity}, confidence {confidence}: '{region['text']}'",
             )
 
