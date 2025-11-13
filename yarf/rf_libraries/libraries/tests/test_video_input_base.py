@@ -434,8 +434,15 @@ class TestVideoInputBase:
         await stub_videoinput.read_text(image)
         stub_videoinput.ocr.read.assert_called_once_with(image)
 
+    @pytest.mark.parametrize(
+        "log_level",
+        [
+            "INFO",
+            "DEBUG",
+        ],
+    )
     @pytest.mark.asyncio
-    async def test_find_text(self, stub_videoinput):
+    async def test_find_text(self, stub_videoinput, log_level: str):
         """
         Test if the function grabs a new screenshot and finds the text
         position.
@@ -450,7 +457,18 @@ class TestVideoInputBase:
                 }
             ],
         )
-        await stub_videoinput.find_text("text")
+
+        with (
+            patch.dict(os.environ, {"YARF_LOG_LEVEL": log_level}),
+            patch(
+                "yarf.rf_libraries.libraries.video_input_base.log_image"
+            ) as mock_log_image,
+        ):
+            await stub_videoinput.find_text("text")
+            if log_level == "DEBUG":
+                mock_log_image.assert_called_once()
+            else:
+                mock_log_image.assert_not_called()
 
         stub_videoinput.ocr.find.assert_called_once_with(
             stub_videoinput.grab_screenshot.return_value, "text", region=None

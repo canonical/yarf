@@ -294,12 +294,18 @@ class VideoInputBase(ABC):
         else:
             matched_text_regions = self.ocr.find(image, text, region=region)  # type: ignore[arg-type]
 
-        for region in matched_text_regions:
-            similarity = f"{region['similarity']:.2f}"
-            confidence = f"{region['confidence']:.2f}"
-            logger.debug(
-                f"Found text matching '{text}' with similarity {similarity}, confidence {confidence}: '{region['text']}'",
-            )
+        # Log the image which we found the text on for debugging false positives
+        if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
+            for match in matched_text_regions:
+                similarity = f"{match['similarity']:.2f}"
+                confidence = f"{match['confidence']:.2f}"
+                matched_image = self._draw_region_on_image(
+                    image, match["region"]
+                )
+                log_image(
+                    matched_image,
+                    f"Found text matching '{text}' with similarity {similarity}, confidence {confidence}: '{match['text']}'",
+                )
 
         return matched_text_regions
 
