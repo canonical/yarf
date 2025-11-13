@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# .github/workflow/scripts/collect_commits.sh
+# .github/workflows/scripts/collect_commits.sh
 # Requires: gh, jq; uses GH_TOKEN for auth
 # Inputs (env): FROM_KIND, FROM, TO, GITHUB_REPOSITORY
 # Outputs (file): commits.json

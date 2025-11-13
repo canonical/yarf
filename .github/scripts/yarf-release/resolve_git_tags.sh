@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# .github/workflow/scripts/resolve_git_tags.sh
+# .github/workflows/scripts/resolve_git_tags.sh
 # Resolves FROM/TO tags for a diff range and emits step outputs:
 #   from, from_kind (tag|root), to
 #

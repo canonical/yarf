@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# .github/workflow/scripts/build-release-notes.sh
+# .github/workflows/scripts/build-release-notes.sh
 # Builds a Markdown release body from commits.json produced earlier.
 # Requires: jq
 #
@@ -68,7 +68,7 @@ fi
 {
   echo "# Release ${TO}"
   echo
-  echo "> Changes merged after \`${NOTE_FROM}\` and up to and including \`${TO}\`."
+  echo "> Changes merged from \`${NOTE_FROM}\` and up to and including \`${TO}\`."
   echo
   cat sections.md
 } > "${OUTPUT_PATH}"
