@@ -1,4 +1,4 @@
-name: 'Close stale PRs'
+name: 'Close stale Issues and PRs'
 on:
   pull_request:
     branches: [ main ]
@@ -6,10 +6,10 @@ on:
       - .github/workflows/stale.yaml
   workflow_dispatch:
   schedule:
-    - cron: '30 1 * * *'
+    - cron: '7 1 * * *'
 
 permissions:
-  contents: read  # Required to check out repository code
+  contents: read # Required to check out repository code
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -17,17 +17,19 @@ concurrency:
 
 jobs:
   stale:
-    name: Mark and close stale PRs
+    name: Mark/close stale Issues and PRs
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write  # Required to mark PRs as stale and close them
-      issues: write         # Required to mark issues as stale and close them
+      pull-requests: write # Used to mark as stale and close pull requests
+      issues: write # Used to mark as stale and close issues
     steps:
       - uses: actions/stale@5f858e3efba33a5ca4407a664cc011ad407f2008
         with:
           stale-pr-message: 'This PR is stale because it has been open 60 days with no activity. Remove stale label or comment or this will be closed in a week.'
           close-pr-message: 'This PR was closed because of inactivity. Feel free to re-open this once you want to work on it again!'
+          stale-issue-message: 'This issue is stale because it has been open for one year with no activity. Remove the stale label or comment or this will be closed in a week.'
+          close-issue-message: 'This issue was closed because of inactivity. Feel free to re-open this if you are still encountering this!'
           days-before-stale: 60
           days-before-close: 7
-          days-before-issue-stale: -1
-          days-before-issue-close: -1
+          days-before-issue-stale: 360
+          days-before-issue-close: 7
