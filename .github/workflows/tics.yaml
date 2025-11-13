@@ -33,11 +33,12 @@ jobs:
             python3-tk
 
             pip install \
-            uv \
+            coverage \
             flake8 \
             pylint \
             pytest \
             pyfakefs \
+            uv \
             --break-system-packages
 
       - name: Checkout repo (main branch)
@@ -48,32 +49,24 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Setup Chrome
-        uses: browser-actions/setup-chrome@b94431e051d1c52dcbe9a7092a4f10f827795416
-        with:
-          install-dependencies: true
-
       - name: Install YARF
         run: |
-          uv venv
-          source .venv/bin/activate
           pip install .
-
-          pip install .[develop]
-
-          echo PATH=$PATH >> $GITHUB_ENV
-
-          # Check flake8, pylint and pytest installation
-          pip show flake8 pylint pytest
 
       - name: Run test and coverage
         run: |
-          uvx tox
+          uv --no-managed-python venv --system-site-packages
+          uv sync
+          uv run pytest -n=auto --cov=yarf --cov-fail-under=100 --cov-report term-missing
+          coverage xml
 
       - name: Rename coverage report for TICS
         run: |
           mkdir ./coverage
           mv ./coverage.xml ./coverage/cobertura.xml
+
+      - name: Export PATH for TICS
+        run: echo PATH=$PATH >> $GITHUB_ENV
 
       - name: TICS GitHub Action
         uses: tiobe/tics-github-action@427ef84d84bf35e39235d61406f414811bb99ce9
