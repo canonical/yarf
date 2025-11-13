@@ -30,6 +30,17 @@ uv --no-managed-python venv --system-site-packages
 uv sync
 ```
 
+And finally you can run YARF from source:
+
+```
+yarf --platform {Mir,Vnc}
+
+# And run your first keyword
+> Log    Hello world!
+```
+
+YARF will require a platform backend to be running in parallel. Refer to the [VNC documentation][yarf-vnc] for an example.
+
 Optionally, enable pre-commit checks, so your contribution will pass all the checks
 we run on the code:
 
@@ -88,3 +99,4 @@ To submit changes to the documentation, please read the [documentation contribut
 [snapcraft]: https://snapcraft.io/snapcraft
 [tox]: https://tox.wiki/
 [uv]: https://docs.astral.sh/uv/
+[yarf-vnc]: https://canonical-yarf.readthedocs-hosted.com/latest/how-to/using-the-vnc-backend/
