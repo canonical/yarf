@@ -32,7 +32,7 @@ validate_version_format() {
 }
 
 
-TO_TAG="${IN_TO:-2.0.1}"
+TO_TAG="${IN_TO:?Error: IN_TO is required.}"
 validate_version_format "${TO_TAG}"
 
 git fetch --tags --force
