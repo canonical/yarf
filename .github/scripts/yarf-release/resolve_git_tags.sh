@@ -4,7 +4,6 @@
 #   from, from_kind (tag|root), to
 #
 # Inputs (env):
-#   IN_FROM
 #   IN_TO
 
 set -euo pipefail
