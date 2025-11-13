@@ -9,15 +9,19 @@ on:
     - cron: '7 1 * * *'
 
 permissions:
-  contents: read
+  contents: read # Required to check out repository code
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   stale:
     name: Mark/close stale Issues and PRs
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write
-      issues: write
+      pull-requests: write # Used to mark as stale and close pull requests
+      issues: write # Used to mark as stale and close issues
     steps:
       - uses: actions/stale@5f858e3efba33a5ca4407a664cc011ad407f2008
         with:
