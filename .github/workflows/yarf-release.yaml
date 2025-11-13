@@ -1,6 +1,9 @@
 name: Generate Changelog and Create Release
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     tags:
       - '[0-9]+.[0-9]+.[0-9]+'
@@ -23,7 +26,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
-          ref: main
+          # ref: main
           lfs: true
           fetch-depth: 0
           persist-credentials: false
@@ -35,6 +38,8 @@ jobs:
 
       - name: Resolve tags
         id: tags
+        env:
+          IN_TO:     ${{ github.ref_name }}
         run: bash .github/scripts/yarf-release/resolve_git_tags.sh
 
       - name: Collect commits between tags
@@ -75,5 +80,5 @@ jobs:
           TAG:        ${{ steps.tags.outputs.to }}
           NOTES_FILE: ${{ steps.body.outputs.path }}
         run: |
-          gh release create "${TAG}" --title "${TAG}" --notes-file "${NOTES_FILE}" || \
-          gh release edit   "${TAG}" --notes-file "${NOTES_FILE}"
+          # gh release create "${TAG}" --title "${TAG}" --notes-file "${NOTES_FILE}" || \
+          # gh release edit   "${TAG}" --notes-file "${NOTES_FILE}"
