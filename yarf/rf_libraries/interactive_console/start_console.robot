@@ -3,7 +3,7 @@ Documentation       Import all platform libraries and start an interactive mode
 
 Library             String
 Library             Interactive.py
-Library             RobotDebug    repl=${True}
+Library             yarf.vendor.robotframework_debug.RobotDebug    repl=${True}
 
 
 *** Variables ***

@@ -243,7 +243,7 @@ class VideoInputBase(ABC):
             text read from the image
         """
         if not image:
-            image = await self.grab_screenshot()
+            image = await self._grab_and_save_screenshot()
 
         return self.ocr.read(image)  # type: ignore[arg-type]
 
@@ -273,7 +273,7 @@ class VideoInputBase(ABC):
             region = Region(**region)
 
         if not image:
-            image = await self.grab_screenshot()
+            image = await self._grab_and_save_screenshot()
 
         matched_text_regions: list[dict] = []
         regex_prefix = "regex:"
@@ -321,7 +321,7 @@ class VideoInputBase(ABC):
         region = to_region(region)
         start_time = time.time()
         while time.time() - start_time < timeout:
-            image = await self.grab_screenshot()
+            image = await self._grab_and_save_screenshot()
             # Save the cropped image for debugging
             cropped_image = (
                 image.crop(region.as_tuple())
@@ -410,6 +410,18 @@ class VideoInputBase(ABC):
             screenshot as an Image object
         """
 
+    async def _grab_and_save_screenshot(self) -> Image.Image:
+        screenshot = await self.grab_screenshot()
+
+        if self._screenshots_dir is not None:
+            self._frame_count += 1
+            screenshot.save(  # type: ignore[union-attr]
+                f"{self._screenshots_dir.name}/{self._frame_count:010d}.png",
+                compress_level=1,
+            )
+
+        return screenshot
+
     async def _do_match(
         self,
         templates: Sequence[str],
@@ -452,17 +464,10 @@ class VideoInputBase(ABC):
         while (now := time.time()) < end_time:
             try:
                 screenshot = await asyncio.wait_for(
-                    self.grab_screenshot(), end_time - now
+                    self._grab_and_save_screenshot(), end_time - now
                 )
             except RuntimeError:
                 continue
-            else:
-                if self._screenshots_dir is not None:
-                    self._frame_count += 1
-                    screenshot.save(  # type: ignore[union-attr]
-                        f"{self._screenshots_dir.name}/{self._frame_count:010d}.png",
-                        compress_level=1,
-                    )
             matches = []
             for path, image in template_images.items():
                 try:

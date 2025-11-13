@@ -336,6 +336,7 @@ class TestMain:
         SUPPORTED_PLATFORMS["Vnc"] = Vnc
 
         mock_test_suite = Mock()
+        mock_test_suite.name = "MockSuite"
         mock_test_suite.run.return_value.return_code = 0
         mock_get_yarf_settings.return_value = {}
         mock_get_robot_reserved_settings.return_value = {}
@@ -349,7 +350,7 @@ class TestMain:
         assert rc == 0
         mock_get_yarf_settings.assert_called_once()
         mock_test_suite.filter.assert_called_once_with(
-            included_suites=["suiteA"],
+            included_suites=["MockSuite.suiteA"],
             included_tests=["testA", "taskA"],
             included_tags=["tagA"],
             excluded_tags=["tagB"],

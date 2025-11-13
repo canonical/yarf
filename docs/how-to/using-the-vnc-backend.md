@@ -8,7 +8,11 @@ Using the VNC backend means that at the point you begin to run `yarf`, you will 
 
 You can do this with QEMU/MIR and other backends.
 
+<!-- vale off -->
+
 ## Appropriate QEMU args
+
+<!-- vale on -->
 
 To spawn a QEMU VM with an appropriate VNC server, you can use something along the lines of the following command (this example is for an Ubuntu Desktop live ISO):
 
