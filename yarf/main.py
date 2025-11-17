@@ -291,6 +291,10 @@ def run_robot_suite(
         excluded_tags=options.pop("exclude", None),
     )
 
+    if len(suite.suites) <= 0:
+        _logger.error("No tests to run.")
+        return 252
+
     with robot_in_path(lib_cls.get_pkg_path()):
         result = suite.run(
             variable=variables,
