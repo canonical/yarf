@@ -35,7 +35,7 @@ class SegmentationTool:
                     ("H" if i == 0 else "V"), color2[i], min, max
                 )
             )
-            if max > color2[i] and min < color2[i]:
+            if min < color2[i] < max:
                 # in the right scale
                 continue
             else:
@@ -44,7 +44,12 @@ class SegmentationTool:
         return True
 
     def roi(
-        self, input_image: np.ndarray, ot: int, ob: int, ol: int, or_: int
+        self,
+        input_image: np.ndarray,
+        top_offset: int,
+        bot_offset: int,
+        left_offset: int,
+        right_offset: int,
     ):
         """
         This function returns a subimage object.
@@ -54,12 +59,14 @@ class SegmentationTool:
 
         Args:
             input_image: The input image as a numpy array
-            ot: top offset
-            ob: bottom offset
-            ol: left offset
-            or_: right offset
+            top_offset: top offset
+            bot_offset: bottom offset
+            left_offset: left offset
+            right_offset: right offset
         """
-        return input_image[ot:ob, ol:or_].copy()
+        return input_image[
+            top_offset:bot_offset, left_offset:right_offset
+        ].copy()
 
     def get_mean_text_color(
         self,
@@ -76,7 +83,7 @@ class SegmentationTool:
 
         Args:
             image: input image
-            region: region where the text is. Coordinates in the format (x1, y1, x2, y2)
+            region: region where the text is. Coordinates in the format (left, top, right, bottom)
             pad_inside: padding inside the text
             pad_outside: padding outside the text
 
@@ -90,9 +97,17 @@ class SegmentationTool:
         h, w = hsv_image.shape[:2]
 
         # Outer box (optionally allows a bit of context; here default 0 to focus on text box)
-        ot, ol = max(top - pad_outside, 0), max(left - pad_outside, 0)
-        ob, or_ = min(bottom + pad_outside, h), min(right + pad_outside, w)
-        roi_hsv = self.roi(hsv_image, ot, ob, ol, or_)
+        top_offset, left_offset = (
+            max(top - pad_outside, 0),
+            max(left - pad_outside, 0),
+        )
+        bot_offset, right_offset = (
+            min(bottom + pad_outside, h),
+            min(right + pad_outside, w),
+        )
+        roi_hsv = self.roi(
+            hsv_image, top_offset, bot_offset, left_offset, right_offset
+        )
 
         # Inner crop to avoid borders/shadows inside the OCR box
         it = pad_inside
@@ -131,9 +146,9 @@ class SegmentationTool:
 
         Args:
             mask: Input binary mask to be post-processed
-            min_area: WIP
-            open_ksize: WIP
-            close_ksize: WIP
+            min_area: minimum area to keep a connected component
+            open_ksize: kernel size for morphological opening
+            close_ksize: kernel size for morphological closing
 
         Returns:
             Cleaned and smoothed mask as numpy array

@@ -6,11 +6,6 @@ import numpy as np
 from yarf.rf_libraries.libraries.image.segmentation import SegmentationTool
 from yarf.vendor.RPA.Images import RGB
 
-# @pytest.fixture(autouse=True)
-# def mock_tool():
-#     with patch("yarf.rf_libraries.libraries.image.segmentation.SegmentationTool") as p:
-#         yield p
-
 
 class TestSegmentation:
     def test_is_hsv_color_similar(self):
