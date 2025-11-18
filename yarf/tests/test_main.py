@@ -337,6 +337,7 @@ class TestMain:
 
         mock_test_suite = Mock()
         mock_test_suite.name = "MockSuite"
+        mock_test_suite.suites.__len__ = Mock(return_value=1)
         mock_test_suite.run.return_value.return_code = 0
         mock_get_yarf_settings.return_value = {}
         mock_get_robot_reserved_settings.return_value = {}
@@ -367,6 +368,46 @@ class TestMain:
 
     @patch("yarf.main.get_robot_reserved_settings")
     @patch("yarf.main.get_yarf_settings")
+    def test_run_robot_suite_no_suite(
+        self,
+        mock_get_yarf_settings: MagicMock,
+        mock_get_robot_reserved_settings: MagicMock,
+    ) -> None:
+        """
+        Test if the function runs the robot suite with the specified variables
+        and output directory.
+        """
+        variables = ["VAR1:value1", "VAR2:value2"]
+        options = {
+            "variable": ["VAR3:value3"],
+            "extra_arg": "extra_value",
+            "suite": ["suiteA"],
+            "test": ["testA"],
+            "task": ["taskA"],
+            "include": ["tagA"],
+            "exclude": ["tagB"],
+        }
+        outdir = Path(tempfile.gettempdir()) / "yarf-outdir"
+        SUPPORTED_PLATFORMS.clear()
+        SUPPORTED_PLATFORMS["Vnc"] = Vnc
+
+        mock_test_suite = Mock()
+        mock_test_suite.name = "MockSuite"
+        mock_test_suite.suites.__len__ = Mock(return_value=0)
+        mock_get_yarf_settings.return_value = {}
+        mock_get_robot_reserved_settings.return_value = {}
+        rc = run_robot_suite(
+            mock_test_suite,
+            SUPPORTED_PLATFORMS["Vnc"],
+            variables,
+            outdir,
+            options,
+        )
+        assert rc == 252
+        mock_test_suite.run.assert_not_called()
+
+    @patch("yarf.main.get_robot_reserved_settings")
+    @patch("yarf.main.get_yarf_settings")
     @patch("yarf.main._logger")
     def test_run_robot_suite_with_errors(
         self,
@@ -388,6 +429,7 @@ class TestMain:
         mock_get_yarf_settings.return_value = {}
         mock_get_robot_reserved_settings.return_value = {}
         mock_test_suite = Mock()
+        mock_test_suite.suites.__len__ = Mock(return_value=1)
         mock_test_suite.run.return_value.return_code = 1
         mock_test_suite.run.return_value.errors.messages = [Mock()]
         with patch("yarf.main.robot_in_path"):
