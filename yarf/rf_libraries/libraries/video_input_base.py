@@ -341,8 +341,6 @@ class VideoInputBase(ABC):
                 text_matches = await self.find_text(
                     text, image=image, region=region
                 )
-                if text_matches:
-                    return text_matches, cropped_image
             else:  # a color was given.
                 text_matches = await self.find_text_with_color(
                     image=image,
@@ -350,8 +348,8 @@ class VideoInputBase(ABC):
                     color=color_rgb,
                     color_tolerance=color_tolerance,
                 )
-                if text_matches:
-                    return text_matches, cropped_image
+            if text_matches:
+                return text_matches, cropped_image
 
         log_image(cropped_image, "The image used for ocr was:")
         read_text = await self.read_text(cropped_image)
