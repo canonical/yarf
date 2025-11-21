@@ -237,7 +237,9 @@ jobs:
     - name: Check Keywords coverage
       env:
         KEYWORDS_COVERAGE_CHECKER: .github/scripts/yarf/check_unused_keywords.py
-      run: python3 ${KEYWORDS_COVERAGE_CHECKER}
+      run: |
+        pip install tabulate
+        python3 ${KEYWORDS_COVERAGE_CHECKER}
 
     - if: failure()
       name: Collect test results
