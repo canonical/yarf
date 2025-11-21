@@ -4,8 +4,7 @@ This script check any unused keywords and exit the program with code 1 else 0.
 
 import json
 import sys
-
-import Path
+from pathlib import Path
 
 UNUSED_FILE_PATH = Path("unused_keywords.json")
 
