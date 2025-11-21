@@ -15,6 +15,7 @@ from yarf import main
 from yarf.main import (
     YARF_VERSION,
     compare_version,
+    get_listeners,
     get_robot_reserved_settings,
     get_yarf_settings,
     parse_arguments,
@@ -303,6 +304,53 @@ class TestMain:
         test_suite = RobotSuite.from_file_system(test_path)
         additional_reserved_settings = get_robot_reserved_settings(test_suite)
         assert additional_reserved_settings["exitonerror"]
+
+    @pytest.mark.parametrize(
+        "additional_listener_paths, expected",
+        [
+            (
+                None,
+                {
+                    "MetadataListener": 1,
+                    "RobotStackTracer": 1,
+                },
+            ),
+            (
+                [
+                    Path(__file__).parent.parent.parent
+                    / ".github/scripts/yarf/keywords_listener.py"
+                ],
+                {
+                    "MetadataListener": 1,
+                    "RobotStackTracer": 1,
+                    "KeywordsListener": 1,
+                },
+            ),
+            (
+                [
+                    Path(__file__).parent.parent
+                    / "rf_libraries/libraries/metadata_listener.py"
+                ],
+                {
+                    "MetadataListener": 2,
+                    "RobotStackTracer": 1,
+                },
+            ),
+        ],
+    )
+    def test_get_listeners(
+        self, additional_listener_paths: list[str], expected: dict[str]
+    ) -> None:
+        lib_cls = Mock(get_pkg_path=Mock(return_value="cls_path"))
+        result = get_listeners(additional_listener_paths, lib_cls=lib_cls)
+        for cls in result:
+            cls_name = cls.__class__.__name__
+            if cls_name in expected:
+                expected[cls_name] -= 1
+                if expected[cls_name] == 0:
+                    del expected[cls_name]
+
+        assert len(expected) == 0
 
     @patch("yarf.main.RobotStackTracer")
     @patch("yarf.main.MetadataListener")
