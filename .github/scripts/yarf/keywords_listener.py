@@ -11,13 +11,14 @@ ENCODING = "utf-8"
 BASE_LIB_PATH = (
     Path(__file__).parent.parent.parent.parent / "yarf/rf_libraries/libraries"
 )
+UNUSED_FILE_PATH = Path("unused_keywords.json")
 
 
 class KeywordsListener:
     ROBOT_LISTENER_API_VERSION = 3
 
     def __init__(self, lib_path: str) -> None:
-        self.unused_file = Path("unused_keywords.json")
+        self.unused_file = UNUSED_FILE_PATH
         if self.unused_file.exists():
             with self.unused_file.open("r", encoding=ENCODING) as f:
                 self.keywords = json.load(f)
