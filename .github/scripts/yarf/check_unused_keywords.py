@@ -1,7 +1,13 @@
+"""
+This script check any unused keywords and exit the program with code 1 else 0.
+"""
+
 import json
 import sys
 
-from keywords_listener import UNUSED_FILE_PATH
+import Path
+
+UNUSED_FILE_PATH = Path("unused_keywords.json")
 
 if not UNUSED_FILE_PATH.exists():
     print("No unused_keywords.json found.")
