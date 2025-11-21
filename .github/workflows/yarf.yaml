@@ -159,6 +159,8 @@ jobs:
           eog
 
     - name: Run Keyword tests - VideoInput imaging
+      env:
+        KEYWORDS_LISTENER_PATH: $GITHUB_WORKSPACE/.github/scripts/yarf/keywords_listener.py
       run: |
         export WAYLAND_DISPLAY=wayland-1
 
@@ -174,9 +176,11 @@ jobs:
         # Avoid GNOME apps waiting for portals
         dbus-run-session -- gnome-calculator &
 
-        uv run yarf --platform Mir tests/keyword_suite -- --suite video_image_test
+        uv run yarf --platform Mir tests/keyword_suite -- --suite video_image_test --listener ${KEYWORDS_LISTENER_PATH}
 
     - name: Run Keyword tests - VideoInput text
+      env:
+        KEYWORDS_LISTENER_PATH: $GITHUB_WORKSPACE/.github/scripts/yarf/keywords_listener.py
       run: |
         export WAYLAND_DISPLAY=wayland-2
 
@@ -192,9 +196,11 @@ jobs:
         # Avoid GNOME apps waiting for portals
         dbus-run-session -- eog -f tests/keyword_suite/text/text.png &
 
-        uv run yarf --platform Mir tests/keyword_suite -- --suite video_text_test
+        uv run yarf --platform Mir tests/keyword_suite -- --suite video_text_test --listener ${KEYWORDS_LISTENER_PATH}
 
     - name: Run Keyword tests - Hid keyboard
+      env:
+        KEYWORDS_LISTENER_PATH: $GITHUB_WORKSPACE/.github/scripts/yarf/keywords_listener.py
       run: |
         export WAYLAND_DISPLAY=wayland-3
         export WAYLAND_DEBUG=client
@@ -208,9 +214,11 @@ jobs:
         # Wait for the compositor to start
         inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-3\$" $XDG_RUNTIME_DIR
 
-        uv run yarf --platform Mir tests/keyword_suite -- --suite hid_keyboard_test 2> ~/wayland.trace
+        uv run yarf --platform Mir tests/keyword_suite -- --suite hid_keyboard_test --listener ${KEYWORDS_LISTENER_PATH} 2> ~/wayland.trace
 
     - name: Run Keyword tests - Hid pointer
+      env:
+        KEYWORDS_LISTENER_PATH: $GITHUB_WORKSPACE/.github/scripts/yarf/keywords_listener.py
       run: |
         export WAYLAND_DISPLAY=wayland-4
         export WAYLAND_DEBUG=client
@@ -224,7 +232,7 @@ jobs:
         # Wait for the compositor to start
         inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-4\$" $XDG_RUNTIME_DIR
 
-        uv run yarf --platform Mir tests/keyword_suite -- --suite hid_pointer_test 2> ~/wayland.trace
+        uv run yarf --platform Mir tests/keyword_suite -- --suite hid_pointer_test --listener ${KEYWORDS_LISTENER_PATH} 2> ~/wayland.trace
 
     - if: failure()
       name: Collect test results
