@@ -24,9 +24,10 @@ if not data:
 
 print("❗ Unused Robot Framework Keywords\n")
 table = [
-    [kw, info["source"], info["type"], info["class"]]
+    [kw, info.get("source"), info.get("type"), info.get("class")]
     for kw, info in data.items()
 ]
+
 print(
     tabulate(
         table,
