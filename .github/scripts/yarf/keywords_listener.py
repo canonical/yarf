@@ -590,8 +590,14 @@ class KeywordsListener:
         curr = data.name.strip()
         queue = deque([curr])
         while len(queue) > 0:
-            func_name = queue.popleft()
-            exact_func_name = self.get_exact_func_name(func_name)
+            name = queue.popleft()
+            if "." in name:
+                cls_name, func_name = name.split(".", 1)
+            else:
+                func_name = name
+                cls_name = None
+
+            exact_func_name = self.get_exact_func_name(func_name, cls_name)
             if exact_func_name is None:
                 continue
 
@@ -599,18 +605,23 @@ class KeywordsListener:
             for dep in func_info["dependencies"]:
                 queue.append(dep)
 
-    def get_exact_func_name(self, name: str) -> str:
+    def get_exact_func_name(self, name: str, cls_name: str) -> str:
         """
         Get exact function name from given name, even the given name is
         embedded.
         """
         # Exact match
         if name in self.functions:
+            # If class name provided, we also check that.
+            if cls_name and self.functions[name]["class"] == cls_name:
+                return name
             return name
 
         # Embedded keyword
         for kw in self.functions:
             if self.regex_matches_keyword(name, kw):
+                if cls_name and self.functions[name]["class"] == cls_name:
+                    return kw
                 return kw
 
         return None
