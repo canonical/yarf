@@ -8,7 +8,7 @@ from pathlib import Path
 
 from tabulate import tabulate
 
-UNUSED_FILE_PATH = Path("unused_keywords.json")
+UNUSED_FILE_PATH = Path("keywords_coverage.json")
 
 if not UNUSED_FILE_PATH.exists():
     print("No unused_keywords.json found.")
@@ -23,10 +23,14 @@ if not data:
     sys.exit(0)
 
 print("❗ Unused Robot Framework Keywords\n")
-table = [
-    [kw, info.get("source"), info.get("type"), info.get("class")]
-    for kw, info in data.items()
-]
+table = []
+count = 0
+for kw, info in data.items():
+    if info.get("is_keyword"):
+        table.append(
+            [kw, info.get("source"), info.get("type"), info.get("class")]
+        )
+        count += 1
 
 print(
     tabulate(
@@ -35,5 +39,7 @@ print(
         tablefmt="github",
     )
 )
+
+print(f"{count} keyword(s) missed!")
 
 sys.exit(1)
