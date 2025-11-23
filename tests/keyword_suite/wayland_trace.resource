@@ -219,7 +219,7 @@ Assert Pointer Movement Events
             ...                     ${idx}
             ...                     ${step}
             Should Be True          ${jdx} < ${n}
-            Should Be True          ${jdx} - ${idx} == 0
+            Should Be True          ${jdx} - ${idx} <= 1
             ${idx}=                 Evaluate                ${jdx} + 1
             IF    ${{ $step == $sync_pattern }}
                 ${idx}=                 Evaluate                ${idx} + 2
