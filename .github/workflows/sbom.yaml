@@ -1,6 +1,5 @@
 name: YARF Snap - Software Bill of Materials (SBOM)
 on:
-  pull_request:
   schedule:
     - cron: '0 19 * * *'
   workflow_dispatch:
