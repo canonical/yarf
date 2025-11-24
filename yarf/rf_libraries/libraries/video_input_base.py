@@ -11,6 +11,7 @@ import subprocess
 import tempfile
 import time
 from abc import ABC, abstractmethod
+from dataclasses import astuple
 from io import BytesIO
 from types import ModuleType
 from typing import List, Optional, Sequence, Union
@@ -27,7 +28,8 @@ from yarf.rf_libraries.variables.video_input_vars import (
     DEFAULT_TEMPLATE_MATCHING_TOLERANCE,
 )
 from yarf.vendor.RPA.core.geometry import to_region
-from yarf.vendor.RPA.Images import RGB, Images, Region, to_image, to_RGB
+from yarf.vendor.RPA.Images import RGB, Images, Region, to_image
+from yarf.vendor.RPA.Images_patch import to_RGB
 from yarf.vendor.RPA.recognition import ocr as tesseract
 from yarf.vendor.RPA.recognition.templates import ImageNotFoundError
 
@@ -653,7 +655,7 @@ class VideoInputBase(ABC):
 
         logger.info(
             "Trying to match text with a specific color {}".format(
-                color.as_tuple()
+                astuple(color)
             )
         )
         res = self.ocr.find(image, text, region=to_region(region))

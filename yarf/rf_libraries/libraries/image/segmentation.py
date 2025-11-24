@@ -1,3 +1,5 @@
+from dataclasses import astuple
+
 import cv2
 import numpy as np
 from PIL import Image
@@ -266,5 +268,5 @@ class SegmentationTool:
 
     def convert_rgb_to_hsv(self, color: RGB):
         return cv2.cvtColor(
-            np.array([[color.as_tuple()]], dtype=np.uint8), cv2.COLOR_RGB2HSV
+            np.array([[astuple(color)]], dtype=np.uint8), cv2.COLOR_RGB2HSV
         )[0, 0]
