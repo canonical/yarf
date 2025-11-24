@@ -17,6 +17,12 @@ jobs:
     name: YARF - Software Bill of Materials (SBOM)
     runs-on: [self-hosted, linux, noble, x64, large]
     steps:
+      - name: Install dependencies
+        run: |
+          sudo apt update -qq
+          sudo apt install -y \
+            git-lfs
+
       - name: Checkout Repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
