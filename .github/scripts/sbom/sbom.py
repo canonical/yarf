@@ -145,7 +145,7 @@ def download_sbom(artifact_id, output_file=None):
         print(f"SBOM saved to {output_file}")
 
 
-def parse_arguments(argv: list[str]) -> Namespace:
+def parse_arguments(argv: list[str] | None = None) -> Namespace:
     if argv is None:
         argv = sys.argv[1:]
 
