@@ -48,6 +48,6 @@ jobs:
       - name: Collect SBOM
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
-          name: yarf-${{ steps.sbom.outputs.version }}-sbom
-          path: /tmp/yarf-${{ steps.sbom.outputs.version }}.sbom.json
+          name: yarf-${{ steps.sbom.outputs.revision }}-sbom
+          path: /tmp/yarf-${{ steps.sbom.outputs.revision }}.sbom.json
           retention-days: 5
