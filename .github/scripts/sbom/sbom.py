@@ -5,12 +5,12 @@ import time
 import requests
 
 
-def get_yarf_revision() -> str:
+def get_yarf_revision(channel="latest/beta") -> str:
     """
     Get yarf snap revision.
     """
     result = subprocess.run(
-        ["snap", "list", "yarf"],
+        ["snap", "info", "yarf"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -19,13 +19,14 @@ def get_yarf_revision() -> str:
     if result.returncode != 0:
         return None
 
-    lines = result.stdout.strip().splitlines()
-    if len(lines) < 2:
-        return None
+    search_prefix = f"{channel}:"
+    for line in result.stdout.splitlines():
+        if line.strip().startswith(search_prefix):
+            parts = line.split()
+            revision = parts[3].strip("()")
+            return revision
 
-    columns = lines[1].split()
-    revision = columns[2]
-    return revision
+    return None
 
 
 def start_sbom_request(revision: str) -> str:
