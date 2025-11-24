@@ -15,7 +15,8 @@ concurrency:
 jobs:
   sbom:
     name: YARF - Software Bill of Materials (SBOM)
-    runs-on: [self-hosted, linux, noble, x64, large]
+    runs-on:
+      - self-hosted-linux-amd64-noble-private-endpoint-medium
     steps:
       - name: Install dependencies
         run: |
