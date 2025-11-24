@@ -1,7 +1,9 @@
 import json
 import os
 import subprocess
+import sys
 import time
+from argparse import ArgumentParser, Namespace
 
 import requests
 
@@ -143,10 +145,23 @@ def download_sbom(artifact_id, output_file=None):
         print(f"SBOM saved to {output_file}")
 
 
+def parse_arguments(argv: list[str]) -> Namespace:
+    if argv is None:
+        argv = sys.argv[1:]
+
+    parser = ArgumentParser()
+    parser.add_argument(
+        "--channel", help="Channel of YARF snap", required=True
+    )
+
+    return parser.parse_args(argv)
+
+
 if __name__ == "__main__":
-    revision = get_yarf_revision()
+    args = parse_arguments()
+    revision = get_yarf_revision(args.channel)
     artifact_id = start_sbom_request(revision)
     if monitor_artifact_status(artifact_id):
-        download_sbom(artifact_id, f"/tmp/yarf_{revision}.sbom.json")
+        download_sbom(artifact_id, f"/tmp/yarf-{revision}.sbom.json")
         with open(os.environ["GITHUB_OUTPUT"], "a") as f:
             f.write(f"revision={revision}\n")
