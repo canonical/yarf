@@ -34,6 +34,10 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install python dependencies
+        run: |
+          pip install requests
+
       - name: Request and retrieve SBOM
         env:
           SBOM_SCRIPT_PATH: .github/scripts/sbom/sbom.py
