@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import time
 
@@ -147,3 +148,5 @@ if __name__ == "__main__":
     artifact_id = start_sbom_request(revision)
     if monitor_artifact_status(artifact_id):
         download_sbom(artifact_id, f"/tmp/yarf_{revision}.sbom.json")
+        with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+            f.write(f"revision={revision}\n")
