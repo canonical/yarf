@@ -1,0 +1,36 @@
+name: YARF - Software Bill of Materials (SBOM)
+on:
+  pull_request:
+  schedule:
+    - cron: '0 19 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read  # Required to check out repository code
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sbom:
+
+    name: YARF - Software Bill of Materials (SBOM)
+    runs-on: [self-hosted, linux, noble, x64, large]
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
+        with:
+          python-version: "3.12"
+
+      - name: Request and retrieve SBOM
+        env:
+          SBOM_SCRIPT_PATH: .github/scripts/sbom/sbom.py
+        run: python3 ${SBOM_SCRIPT_PATH}
+
+      - name: Collect SBOM
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
+        with:
+          name: yarf-output
+          path: /tmp/yarf-*.sbom.json
+          retention-days: 5
