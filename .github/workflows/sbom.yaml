@@ -1,7 +1,20 @@
 name: YARF Snap - Software Bill of Materials (SBOM)
 on:
   workflow_call:
+    inputs:
+      CHANNEL:
+        description: 'YARF snap channel (e.g., latest/stable)'
+        type: string
+        default: latest/stable
+        required: true
+
   workflow_dispatch:
+    inputs:
+      CHANNEL:
+        description: 'YARF snap channel (e.g., latest/stable)'
+        type: string
+        default: latest/stable
+        required: true
 
 permissions:
   contents: read  # Required to check out repository code
@@ -41,7 +54,7 @@ jobs:
         id: sbom
         env:
           SBOM_SCRIPT_PATH: .github/scripts/sbom/sbom.py
-          YARF_CHANNEL: latest/stable
+          YARF_CHANNEL: ${{ inputs.CHANNEL }}
         run: python3 -u ${SBOM_SCRIPT_PATH} --channel=${YARF_CHANNEL}
 
       - name: Collect SBOM
