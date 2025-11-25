@@ -8,7 +8,7 @@ from argparse import ArgumentParser, Namespace
 import requests
 
 
-def get_yarf_revision(channel="latest/beta") -> str:
+def get_yarf_revision(channel: str) -> str:
     """
     Get yarf snap revision.
     """
@@ -47,11 +47,7 @@ def start_sbom_request(revision: str) -> str:
     }
     headers = {"Content-Type": "application/json"}
     response = requests.post(url, json=payload, headers=headers)
-
-    if response.status_code != 200:
-        raise Exception(
-            f"Failed to submit SBOM generation request. Status code: {response.status_code}, Response: {response.text}"
-        )
+    response.raise_for_status()
 
     response_data = response.json()
 
@@ -60,7 +56,7 @@ def start_sbom_request(revision: str) -> str:
         "data" not in response_data
         or "artifactId" not in response_data["data"]
     ):
-        raise Exception("artifactId not found in response")
+        raise ValueError("artifactId not found in response")
 
     artifact_id = response_data["data"]["artifactId"]
     print(f"Upload started successfully. Artifact ID: {artifact_id}")
@@ -68,7 +64,7 @@ def start_sbom_request(revision: str) -> str:
     return artifact_id
 
 
-def monitor_artifact_status(artifact_id, interval=10, timeout=1800) -> bool:
+def monitor_artifact_status(artifact_id, interval=10, timeout=1800) -> None:
     """
     Monitor the SBOM generation status.
     """
@@ -111,15 +107,14 @@ def monitor_artifact_status(artifact_id, interval=10, timeout=1800) -> bool:
             print(
                 f"Artifact processing completed after {elapsed_time:.1f} seconds"
             )
-            return True
+            return
 
         time.sleep(interval)
         elapsed_time = time.time() - start_time
 
-    print(
+    raise TimeoutError(
         f"Timeout reached after {timeout} seconds. Artifact processing did not complete."
     )
-    return False
 
 
 def download_sbom(artifact_id, output_file=None):
@@ -132,11 +127,7 @@ def download_sbom(artifact_id, output_file=None):
     print(f"Downloading SBOM for artifact ID: {artifact_id}")
 
     response = requests.get(sbom_url, headers=headers)
-
-    if response.status_code != 200:
-        raise Exception(
-            f"Failed to download SBOM. Status code: {response.status_code}, Response: {response.text}"
-        )
+    response.raise_for_status()
 
     sbom_json = json.loads(response.text)
     if output_file:
@@ -151,7 +142,9 @@ def parse_arguments(argv: list[str] | None = None) -> Namespace:
 
     parser = ArgumentParser()
     parser.add_argument(
-        "--channel", help="Channel of YARF snap", required=True
+        "--channel",
+        help="Channel of YARF snap (e.g. latest/stable)",
+        required=True,
     )
 
     return parser.parse_args(argv)
@@ -161,7 +154,7 @@ if __name__ == "__main__":
     args = parse_arguments()
     revision = get_yarf_revision(args.channel)
     artifact_id = start_sbom_request(revision)
-    if monitor_artifact_status(artifact_id):
-        download_sbom(artifact_id, f"/tmp/yarf-{revision}.sbom.json")
-        with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-            f.write(f"revision={revision}\n")
+    monitor_artifact_status(artifact_id)
+    download_sbom(artifact_id, f"/tmp/yarf-{revision}.sbom.json")
+    with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+        f.write(f"revision={revision}\n")

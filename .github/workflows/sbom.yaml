@@ -1,7 +1,6 @@
 name: YARF Snap - Software Bill of Materials (SBOM)
 on:
-  schedule:
-    - cron: '0 19 * * *'
+  workflow_call:
   workflow_dispatch:
 
 permissions:
@@ -42,7 +41,7 @@ jobs:
         id: sbom
         env:
           SBOM_SCRIPT_PATH: .github/scripts/sbom/sbom.py
-          YARF_CHANNEL: latest/beta
+          YARF_CHANNEL: latest/stable
         run: python3 -u ${SBOM_SCRIPT_PATH} --channel=${YARF_CHANNEL}
 
       - name: Collect SBOM
