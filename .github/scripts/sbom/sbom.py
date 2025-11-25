@@ -146,6 +146,12 @@ def parse_arguments(argv: list[str] | None = None) -> Namespace:
         help="Channel of YARF snap (e.g. latest/stable)",
         required=True,
     )
+    parser.add_argument(
+        "--rev-output-env",
+        help="The output environmental variable name for revision.",
+        default="GITHUB_OUTPUT",
+        required=False,
+    )
 
     return parser.parse_args(argv)
 
@@ -156,5 +162,5 @@ if __name__ == "__main__":
     artifact_id = start_sbom_request(revision)
     monitor_artifact_status(artifact_id)
     download_sbom(artifact_id, f"/tmp/yarf-{revision}.sbom.json")
-    with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+    with open(os.environ[args.rev_output_env], "a") as f:
         f.write(f"revision={revision}\n")
