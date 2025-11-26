@@ -77,13 +77,16 @@ jobs:
         python-version: "3.12"
 
     - name: Install uv and json schema
-      run: pip install uv check-jsonschema asttokens
+      run: pip install uv check-jsonschema
 
     - name: Check uv.lock file
       run: uv lock --check
 
     - name: Run tests
       run: |
+        # For keyword coverage
+        uv pip install asttokens
+
         uv tool run tox
 
     - name: Upload Coverage Report
