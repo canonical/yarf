@@ -22,6 +22,7 @@ from robot.api.deco import keyword
 from robot.libraries.BuiltIn import BuiltIn
 
 from yarf import LABEL_PREFIX
+from yarf.lib.images.Images_patch import to_RGB
 from yarf.rf_libraries.libraries.image.segmentation import SegmentationTool
 from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
 from yarf.rf_libraries.variables.video_input_vars import (
@@ -29,7 +30,6 @@ from yarf.rf_libraries.variables.video_input_vars import (
 )
 from yarf.vendor.RPA.core.geometry import to_region
 from yarf.vendor.RPA.Images import RGB, Images, Region, to_image
-from yarf.vendor.RPA.Images_patch import to_RGB
 from yarf.vendor.RPA.recognition import ocr as tesseract
 from yarf.vendor.RPA.recognition.templates import ImageNotFoundError
 

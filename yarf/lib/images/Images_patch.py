@@ -1,9 +1,17 @@
-from typing import List, Any, Optional
+from typing import Any, Optional
 
 from yarf.vendor.RPA.Images import RGB
 
+
 def to_RGB(obj: Any) -> Optional["RGB"]:
-    """Convert `obj` to instance of RGB."""
+    """
+    Convert `obj` to instance of RGB.
+
+    Args:
+        obj: a RGB, 3-items tuple (r,g,b) or None object.
+    Returns:
+        An instance of RGB or None.
+    """
     if obj is None or isinstance(obj, RGB):
         return obj
     if isinstance(obj, str):
@@ -12,4 +20,3 @@ def to_RGB(obj: Any) -> Optional["RGB"]:
     if isinstance(obj, tuple):
         return RGB(red=obj[0], green=obj[1], blue=obj[2])
     return None
-
