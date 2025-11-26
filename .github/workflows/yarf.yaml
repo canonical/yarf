@@ -157,6 +157,7 @@ jobs:
       run: |
         sudo apt-get --yes --no-install-recommends install \
           eog
+        uv pip install asttokens
 
     - name: Run Keyword tests - VideoInput imaging
       env:
