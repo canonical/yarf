@@ -596,6 +596,7 @@ class TestVideoInputBase:
             {"text": "Hello", "region": Region(0, 0, 1, 1), "confidence": 0.9},
         ]
         stub_videoinput.segmentation_tool.get_mean_text_color = Mock()
+        stub_videoinput.segmentation_tool.crop_and_convert_image_with_padding = Mock()
         stub_videoinput.segmentation_tool.convert_rgb_to_hsv = Mock()
         stub_videoinput.segmentation_tool.is_hsv_color_similar = Mock()
         stub_videoinput.segmentation_tool.is_hsv_color_similar.return_value = (
@@ -614,6 +615,7 @@ class TestVideoInputBase:
             {"text": "Hello", "region": Region(0, 0, 1, 1), "confidence": 0.9},
         ]
         stub_videoinput.segmentation_tool.get_mean_text_color = Mock()
+        stub_videoinput.segmentation_tool.crop_and_convert_image_with_padding = Mock()
         stub_videoinput.segmentation_tool.convert_rgb_to_hsv = Mock()
         stub_videoinput.log_image = Mock()
         stub_videoinput.segmentation_tool.is_hsv_color_similar = Mock()

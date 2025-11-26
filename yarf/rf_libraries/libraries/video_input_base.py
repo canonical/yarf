@@ -666,8 +666,19 @@ class VideoInputBase(ABC):
         subregion = res[0]["region"]
 
         # mean color of the text strokes (not the outer background ring)
+        # crop and pad
+        cropped_and_padded = (
+            self.segmentation_tool.crop_and_convert_image_with_padding(
+                image,
+                subregion,
+                pad_inside=2,
+                pad_outside=0,
+            )
+        )
+
+        # get mean color in HSV
         text_color_hsv = self.segmentation_tool.get_mean_text_color(
-            image, subregion, pad_inside=2, pad_outside=0
+            cropped_and_padded
         )
 
         target_color_hsv = self.segmentation_tool.convert_rgb_to_hsv(color)

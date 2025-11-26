@@ -70,7 +70,7 @@ class SegmentationTool:
             top_offset:bot_offset, left_offset:right_offset
         ].copy()
 
-    def get_mean_text_color(
+    def crop_and_convert_image_with_padding(
         self,
         image: Image,
         region: tuple,
@@ -78,25 +78,20 @@ class SegmentationTool:
         pad_outside: int = 0,
     ):
         """
-        Calculate the mean color of text regions in an image.
-
-        This function analyzes the specified text regions in an image and computes
-        the average HSV color values of the pixels within those regions.
+        Crop the image to the specified region with padding.
 
         Args:
             image: input image
-            region: region where the text is. Coordinates in the format (left, top, right, bottom)
-            pad_inside: padding inside the text
-            pad_outside: padding outside the text
+            region: region to crop. Coordinates in the format (left, top, right, bottom)
+            pad_inside: padding inside the region
+            pad_outside: padding outside the region
 
         Returns:
-            A tuple containing the mean HSV values (mean_rh, mean_s, mean_v) of the text regions
+            Cropped image as a numpy array
         """
-
-        hsv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2HSV)
-
+        input_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2HSV)
         left, top, right, bottom = region
-        h, w = hsv_image.shape[:2]
+        h, w = input_image.shape[:2]
 
         # Outer box (optionally allows a bit of context; here default 0 to focus on text box)
         top_offset, left_offset = (
@@ -107,34 +102,49 @@ class SegmentationTool:
             min(bottom + pad_outside, h),
             min(right + pad_outside, w),
         )
-        roi_hsv = self.roi(
-            hsv_image, top_offset, bot_offset, left_offset, right_offset
+        roi_cropped = self.roi(
+            input_image, top_offset, bot_offset, left_offset, right_offset
         )
 
-        # Inner crop to avoid borders/shadows inside the OCR box
         it = pad_inside
         il = pad_inside
-        ib = max(roi_hsv.shape[0] - pad_inside, 0)
-        ir = max(roi_hsv.shape[1] - pad_inside, 0)
+        ib = max(roi_cropped.shape[0] - pad_inside, 0)
+        ir = max(roi_cropped.shape[1] - pad_inside, 0)
 
-        roi_hsv_inner = self.roi(roi_hsv, it, ib, il, ir)
+        roi_cropped_and_padded = self.roi(roi_cropped, it, ib, il, ir)
 
-        if roi_hsv_inner.size == 0:
-            return cv2.mean(roi_hsv)[:3] if roi_hsv.size else (0.0, 0.0, 0.0)
+        return roi_cropped_and_padded
+
+    def get_mean_text_color(
+        self,
+        image: Image,
+    ):
+        """
+        Calculate the mean color of text regions in an image.
+
+        This function analyzes the specified text in an image and computes
+        the average HSV color values of the pixels within those regions.
+
+        Args:
+            image: input image
+
+        Returns:
+            A tuple containing the mean HSV values (mean_rh, mean_s, mean_v) of the text regions
+        """
 
         # Build text mask on inner ROI using color-based segmentation
-        roi_bgr_inner = cv2.cvtColor(roi_hsv_inner, cv2.COLOR_HSV2BGR)
+        roi_bgr_inner = cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
         text_mask_inner = self.segment_text_mask(roi_bgr_inner)
 
         # Safety fallback: if mask ended empty, treat darkest 30% as text
         if cv2.countNonZero(text_mask_inner) == 0:
-            V = roi_hsv_inner[:, :, 2]
+            V = image[:, :, 2]
             thr = np.percentile(V, 30)
             text_mask_inner = (V <= thr).astype(np.uint8) * 255
             text_mask_inner = self.postprocess_mask(text_mask_inner)
 
         # Compute mean HSV only where mask=255
-        return cv2.mean(roi_hsv_inner, mask=text_mask_inner)[:3]
+        return cv2.mean(image, mask=text_mask_inner)[:3]
 
     def postprocess_mask(
         self,

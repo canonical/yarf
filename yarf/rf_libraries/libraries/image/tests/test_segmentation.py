@@ -13,16 +13,27 @@ class TestSegmentation:
         assert not seg.is_hsv_color_similar((0, 0, 0), (255, 255, 255), 10)
         assert seg.is_hsv_color_similar((0, 0, 0), (0, 0, 0), 10)
 
+    def test_ctop_image_with_padding(self):
+        seg = SegmentationTool()
+        image = np.zeros((20, 20, 3), dtype="uint8")
+        region = (2, 2, 8, 8)
+        _ = seg.crop_and_convert_image_with_padding(
+            image, region, pad_outside=2, pad_inside=1
+        )
+
     def test_get_mean_text_color(self):
         seg = SegmentationTool()
-        image = np.zeros((2, 2, 2), dtype="uint8")
+        image = np.zeros((20, 20, 3), dtype="uint8")
         cv2.cvtColor = Mock()
-        cv2.cvtColor.return_value = image
         cv2.mean = Mock()
-        cv2.mean.return_value = True
-
+        cv2.mean.return_value = image
+        cv2.cvtColor.return_value = image
+        cv2.countNonZero = MagicMock()
+        cv2.countNonZero.return_value = 1
         seg.segment_text_mask = Mock()
-        assert seg.get_mean_text_color(image, (0, 0, 0, 0))
+        seg.crop_and_convert_image_with_padding = Mock()
+        seg.crop_and_convert_image_with_padding.return_value = image
+        seg.get_mean_text_color(image)
 
     def test_get_mean_text_color_all_zeros(self):
         seg = SegmentationTool()
@@ -39,7 +50,7 @@ class TestSegmentation:
         seg.postprocess_mask = MagicMock()
         cv2.countNonZero = MagicMock()
         cv2.countNonZero.return_value = 0
-        tup = seg.get_mean_text_color(image, (0, 0, 0, 0))
+        tup = seg.get_mean_text_color(image)
         assert len(tup) == 3
 
     @patch("numpy.median")
