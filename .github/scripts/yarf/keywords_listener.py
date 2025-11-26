@@ -56,16 +56,13 @@ class KeywordsListener:
             for dep in self.functions[kw]["dependencies"].copy():
                 dep_info = self.functions[kw]["dependencies"][dep]
                 del self.functions[kw]["dependencies"][dep]
-                if len(dep_kws := self.get_valid_matches(dep)) > 0:
-                    for dep_kw in dep_kws:
-                        if (
-                            self.functions[dep_kw]["class"]
-                            == dep_info["class"]
-                        ):
-                            self.functions[kw]["dependencies"][dep_kw] = (
-                                dep_info
-                            )
-                            break
+                if len(dep_kws := self.get_valid_matches(dep)) <= 0:
+                    continue
+
+                for dep_kw in dep_kws:
+                    if self.functions[dep_kw]["class"] == dep_info["class"]:
+                        self.functions[kw]["dependencies"][dep_kw] = dep_info
+                        break
 
             # We are not interested in functions that
             # are not keywords and has no dependencies
@@ -118,37 +115,36 @@ class KeywordsListener:
 
         for section in model.sections:
             for kw in section.body:
-                if isinstance(kw, KeywordNode):
-                    kw_name = kw.name
-                    dependencies = {}
+                if not isinstance(kw, KeywordNode):
+                    continue
 
-                    for node in kw.body:
-                        for call in self.extract_keyword_dependencies(node):
-                            klass, original_keyword_name = (
-                                self.resolve_keyword_class(
-                                    call,
-                                    libdocs,
-                                    section.body,
-                                    model.source.name,
-                                )
+                kw_name = kw.name
+                dependencies = {}
+                for node in kw.body:
+                    for call in self.extract_keyword_dependencies(node):
+                        klass, original_keyword_name = (
+                            self.resolve_keyword_class(
+                                call,
+                                libdocs,
+                                section.body,
+                                model.source.name,
                             )
-                            if original_keyword_name is None:
-                                continue
+                        )
+                        if original_keyword_name is None:
+                            continue
 
-                            if "." in original_keyword_name:
-                                original_keyword_name = (
-                                    original_keyword_name.split(".", 1)[1]
-                                )
-                            dependencies[original_keyword_name] = {
-                                "class": klass
-                            }
-                    self.functions[kw_name] = {
-                        "is_keyword": True,
-                        "source": str(model.source),
-                        "type": model.source.suffix.strip("."),
-                        "class": model.source.name,
-                        "dependencies": dependencies,
-                    }
+                        if "." in original_keyword_name:
+                            original_keyword_name = (
+                                original_keyword_name.split(".", 1)[1]
+                            )
+                        dependencies[original_keyword_name] = {"class": klass}
+                self.functions[kw_name] = {
+                    "is_keyword": True,
+                    "source": str(model.source),
+                    "type": model.source.suffix.strip("."),
+                    "class": model.source.name,
+                    "dependencies": dependencies,
+                }
 
     def extract_keyword_dependencies(
         self, node: Statement | Block
@@ -169,9 +165,11 @@ class KeywordsListener:
         # Conditional / exception branches
         for attr in ("orelse", "excepts", "finalbody"):
             branch = getattr(node, attr, None)
-            if branch:
-                for child in self.iter_nodes(branch):
-                    calls.extend(self.extract_keyword_dependencies(child))
+            if not branch:
+                continue
+
+            for child in self.iter_nodes(branch):
+                calls.extend(self.extract_keyword_dependencies(child))
 
         # Special handling for `Run Keyword ...`
         # Also take the Keyword it runs.
@@ -196,10 +194,13 @@ class KeywordsListener:
         """
         libs = set()
         for section in model.sections:
-            if isinstance(section, SettingSection):
-                for setting in section.body:
-                    if setting.type == "LIBRARY":
-                        libs.add(setting.name)
+            if not isinstance(section, SettingSection):
+                continue
+
+            for setting in section.body:
+                if setting.type == "LIBRARY":
+                    libs.add(setting.name)
+
         return libs
 
     def load_library_docs(
@@ -411,41 +412,42 @@ class KeywordsListener:
         """
         deps = {}
         for node in ast.walk(func_node):
-            if isinstance(node, ast.Call) and isinstance(
-                node.func, ast.Attribute
+            if not (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
             ):
-                if node.func.attr == "run_keyword" and node.args:
-                    # BuiltIn().run_keyword("Some Keyword")
-                    if isinstance(node.args[0], ast.Constant):
-                        kw = node.args[0].value
-                        deps.add(kw)
-                else:
-                    # self.do_something()
-                    name = node.func.attr.replace(
-                        "_", " "
-                    ).title()  # convert python name
-                    dep_cls_name = None
-                    if (
-                        id := getattr(node.func.value, "id", None)
-                    ) is not None:
-                        dep_cls_name = cls_node.name if id == "self" else id
+                continue
 
-                    elif getattr(node.func.value, "attr", None) is not None:
-                        attr_chain = self.get_attr_chain(node.func.value)
-                        assignment_node = self.find_assignment_by_chain(
-                            cls_node, attr_chain
+            if node.func.attr == "run_keyword" and node.args:
+                # BuiltIn().run_keyword("Some Keyword")
+                if isinstance(node.args[0], ast.Constant):
+                    kw = node.args[0].value
+                    deps.add(kw)
+            else:
+                # self.do_something()
+                name = node.func.attr.replace(
+                    "_", " "
+                ).title()  # convert python name
+                dep_cls_name = None
+                if (id := getattr(node.func.value, "id", None)) is not None:
+                    dep_cls_name = cls_node.name if id == "self" else id
+
+                elif getattr(node.func.value, "attr", None) is not None:
+                    attr_chain = self.get_attr_chain(node.func.value)
+                    assignment_node = self.find_assignment_by_chain(
+                        cls_node, attr_chain
+                    )
+                    if isinstance(assignment_node, list):
+                        dep_cls_name = ".".join(assignment_node)
+                    else:
+                        dep_cls_name = self.get_dependency_chain(
+                            assignment_node
                         )
-                        if isinstance(assignment_node, list):
-                            dep_cls_name = ".".join(assignment_node)
-                        else:
-                            dep_cls_name = self.get_dependency_chain(
-                                assignment_node
-                            )
-                    deps[name.strip()] = {
-                        "class": dep_cls_name[: len(dep_cls_name) - 4]
-                        if dep_cls_name and dep_cls_name.endswith("Base")
-                        else dep_cls_name
-                    }
+                deps[name.strip()] = {
+                    "class": dep_cls_name[: len(dep_cls_name) - 4]
+                    if dep_cls_name and dep_cls_name.endswith("Base")
+                    else dep_cls_name
+                }
 
         return deps
 
@@ -470,8 +472,10 @@ class KeywordsListener:
             while isinstance(func, ast.Attribute):
                 chain.append(func.attr)
                 func = func.value
+
             if isinstance(func, ast.Name):
                 chain.append(func.id)
+
             chain.reverse()
             return ".".join(chain)
         return None
@@ -581,6 +585,7 @@ class KeywordsListener:
         for d in func.decorator_list:
             if isinstance(d, ast.Name) and d.id == "keyword":
                 return rf_keyword_name, True
+
         return rf_keyword_name, False
 
     def start_keyword(self, data, result) -> None:
@@ -593,6 +598,7 @@ class KeywordsListener:
             name = queue.popleft()
             if "." in name:
                 cls_name, func_name = name.split(".", 1)
+
             else:
                 func_name = name
                 cls_name = None
@@ -619,10 +625,12 @@ class KeywordsListener:
 
         # Embedded keyword
         for kw in self.functions:
-            if self.regex_matches_keyword(name, kw):
-                if cls_name and self.functions[name]["class"] == cls_name:
-                    return kw
+            if not self.regex_matches_keyword(name, kw):
+                continue
+
+            if cls_name and self.functions[name]["class"] == cls_name:
                 return kw
+            return kw
 
         return None
 
