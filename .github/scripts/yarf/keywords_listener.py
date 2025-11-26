@@ -2,10 +2,12 @@ import ast
 import json
 import logging
 import re
+import token
 from collections import deque
 from pathlib import Path
 from typing import Any
 
+from asttokens import ASTTokens
 from robot.api import get_model
 from robot.libdoc import LibraryDocumentation
 from robot.libdocpkg.model import LibraryDoc
@@ -40,12 +42,12 @@ class KeywordsListener:
             self.functions = {}
             self._collect_robot_keywords(Path(ROBOT_RESOURCE_PATH))
             self._collect_library_keywords(Path(lib_path))
-            self.prune()
+            self._prune()
             _logger.info(
                 f"Collected {len(self.functions)} functions from resources and libraries."
             )
 
-    def prune(self) -> None:
+    def _prune(self) -> None:
         """
         Prune dependencies that are not recorded and functions that are not
         keywords.
@@ -364,11 +366,54 @@ class KeywordsListener:
         Returns None if there's a syntax error.
         """
         try:
-            return ast.parse(pyfile.read_text(encoding=ENCODING))
+            self.atok = ASTTokens(
+                pyfile.read_text(encoding=ENCODING), parse=True
+            )
+            return self.atok.tree
 
         except SyntaxError:
             _logger.warning(f"Syntax error when parsing {pyfile}, skipping.")
             return None
+
+    def is_no_coverage(self, node):
+        """
+        Extract contiguous leading comments above a node, including comments
+        above decorators.
+        """
+        comments = []
+        # walk upward token-by-token
+        prev_tok = self.atok.prev_token(node.first_token, include_extra=True)
+        while prev_tok is not None:
+            if prev_tok.type == token.COMMENT:
+                comments.append(prev_tok.string)
+
+            elif prev_tok.type in {
+                token.NL,
+                token.NEWLINE,
+                token.INDENT,
+                token.DEDENT,
+            }:
+                pass
+
+            elif prev_tok.string.strip() == "":
+                pass
+
+            else:
+                # real code
+                break
+
+            prev_tok = self.atok.prev_token(prev_tok, include_extra=True)
+
+        for comment in reversed(comments):
+            parts = comment.split(":", 1)
+            if (
+                len(parts) == 2
+                and parts[0].endswith("yarf")
+                and parts[1].strip() == "nocoverage"
+            ):
+                return True
+
+        return False
 
     def _get_python_class_functions(
         self, node: ast.ClassDef, pyfile: Path
@@ -381,6 +426,9 @@ class KeywordsListener:
             for n in node.body
             if isinstance(n, (ast.AsyncFunctionDef, ast.FunctionDef))
         ]:
+            if self.is_no_coverage(func):
+                continue
+
             kw_name, is_keyword = self._get_python_function_name(func)
             if (kw_name not in self.functions) or (
                 kw_name in self.functions
