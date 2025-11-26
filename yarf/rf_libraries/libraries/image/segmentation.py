@@ -29,7 +29,7 @@ class SegmentationTool:
         Returns:
             True if colors are similar within tolerance, False otherwise
         """
-        for i in (0, 2):  # ignoe saturation
+        for i in (0, 2):  # ignore saturation
             max = int(color1[i] + (255.0 * tolerance / 100.0))
             min = int(color1[i] - (255.0 * tolerance / 100.0))
             logger.info(

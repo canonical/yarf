@@ -12,11 +12,11 @@ def to_RGB(obj: Any) -> Optional["RGB"]:
     Returns:
         An instance of RGB or None.
     """
-    if obj is None or isinstance(obj, RGB):
+    if isinstance(obj, RGB):
         return obj
     if isinstance(obj, str):
         obj = obj.split(",")
-        return RGB(red=obj[0], green=obj[1], blue=obj[2])
+        return RGB(red=int(obj[0]), green=int(obj[1]), blue=int(obj[2]))
     if isinstance(obj, tuple):
         return RGB(red=obj[0], green=obj[1], blue=obj[2])
     return None

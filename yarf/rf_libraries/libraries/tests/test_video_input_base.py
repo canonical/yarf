@@ -18,6 +18,7 @@ from unittest.mock import (
 
 import pytest
 
+from yarf.lib.images.Images_patch import to_RGB
 from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
 from yarf.rf_libraries.libraries.video_input_base import (
     VideoInputBase,
@@ -605,6 +606,25 @@ class TestVideoInputBase:
         )
 
     @pytest.mark.asyncio
+    async def test_find_text_with_color_not_similar(self, stub_videoinput):
+        image = Mock()
+        color = RGB(red=1, green=1, blue=1)
+        stub_videoinput.ocr.find = Mock()
+        stub_videoinput.ocr.find.return_value = [
+            {"text": "Hello", "region": Region(0, 0, 1, 1), "confidence": 0.9},
+        ]
+        stub_videoinput.segmentation_tool.get_mean_text_color = Mock()
+        stub_videoinput.segmentation_tool.convert_rgb_to_hsv = Mock()
+        stub_videoinput.log_image = Mock()
+        stub_videoinput.segmentation_tool.is_hsv_color_similar = Mock()
+        stub_videoinput.segmentation_tool.is_hsv_color_similar.return_value = (
+            False
+        )
+        assert not await stub_videoinput.find_text_with_color(
+            image=image, text="oops", color=color, color_tolerance=1
+        )
+
+    @pytest.mark.asyncio
     async def test_match_text_fails(self, stub_videoinput, mock_time):
         """
         Test the function raises an error if the text is not found.
@@ -873,3 +893,16 @@ class TestVideoInputBase:
 
             with pytest.raises(ValueError):
                 VideoInputBase.get_displays()
+
+    def test_to_RGB(self):
+        """
+        Test the function converts a tuple to RGB.
+        """
+        rgb = to_RGB((10, 20, 30))
+        assert isinstance(rgb, RGB)
+        assert rgb.red == 10
+        assert rgb.green == 20
+        assert rgb.blue == 30
+        assert rgb == to_RGB(rgb)
+        assert rgb == to_RGB("10,20,30")
+        assert to_RGB(None) is None

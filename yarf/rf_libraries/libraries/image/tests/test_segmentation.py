@@ -39,7 +39,8 @@ class TestSegmentation:
         seg.postprocess_mask = MagicMock()
         cv2.countNonZero = MagicMock()
         cv2.countNonZero.return_value = 0
-        assert len(seg.get_mean_text_color(image, (0, 0, 0, 0))) == 3
+        tup = seg.get_mean_text_color(image, (0, 0, 0, 0))
+        assert len(tup) == 3
 
     @patch("numpy.median")
     @patch("numpy.ndarray")

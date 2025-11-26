@@ -675,6 +675,15 @@ class VideoInputBase(ABC):
         logger.info(f"Target color (HSV):   {target_color_hsv}")
         logger.info(f"Detected color (HSV): {text_color_hsv}")
 
-        return self.segmentation_tool.is_hsv_color_similar(
+        is_similar = self.segmentation_tool.is_hsv_color_similar(
             text_color_hsv, target_color_hsv, color_tolerance
         )
+
+        if not is_similar:
+            logger.info("The colors of the detected text could not be matched")
+            log_image(
+                image.crop(subregion.as_tuple()),
+                "The image used for color matching was:",
+            )
+
+        return is_similar
