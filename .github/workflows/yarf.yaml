@@ -77,7 +77,7 @@ jobs:
         python-version: "3.12"
 
     - name: Install uv and json schema
-      run: pip install uv check-jsonschema
+      run: pip install uv check-jsonschema asttokens
 
     - name: Check uv.lock file
       run: uv lock --check
