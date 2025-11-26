@@ -1,6 +1,7 @@
 import os
 import sys
 import tempfile
+import types
 from pathlib import Path
 from textwrap import dedent
 from unittest import mock
@@ -310,16 +311,10 @@ class TestMain:
         [
             (
                 None,
-                {
-                    "MetadataListener": 1,
-                    "RobotStackTracer": 1,
-                },
+                {"MetadataListener": 1, "RobotStackTracer": 1},
             ),
             (
-                [
-                    Path(__file__).parent.parent.parent
-                    / ".github/scripts/yarf/keywords_listener.py"
-                ],
+                ["dummy/keywords_listener.py"],
                 {
                     "MetadataListener": 1,
                     "RobotStackTracer": 1,
@@ -327,30 +322,64 @@ class TestMain:
                 },
             ),
             (
-                [
-                    Path(__file__).parent.parent
-                    / "rf_libraries/libraries/metadata_listener.py"
-                ],
-                {
-                    "MetadataListener": 2,
-                    "RobotStackTracer": 1,
-                },
+                ["dummy/metadata_listener.py"],
+                {"MetadataListener": 2, "RobotStackTracer": 1},
             ),
         ],
     )
-    def test_get_listeners(
-        self, additional_listener_paths: list[str], expected: dict[str]
-    ) -> None:
+    def test_get_listeners(self, additional_listener_paths, expected):
         lib_cls = Mock(get_pkg_path=Mock(return_value="cls_path"))
-        result = get_listeners(additional_listener_paths, lib_cls=lib_cls)
+
+        def fake_module_from_spec(spec):
+            module = types.ModuleType(spec.name)
+            if "keywords_listener" in spec.name:
+
+                class KeywordsListener:
+                    ROBOT_LISTENER_API_VERSION = 3
+
+                    def __init__(self, path=None):
+                        self.path = path
+
+                KeywordsListener.__module__ = module.__name__
+                module.KeywordsListener = KeywordsListener
+
+            elif "metadata_listener" in spec.name:
+
+                class MetadataListener:
+                    ROBOT_LISTENER_API_VERSION = 3
+
+                MetadataListener.__module__ = module.__name__
+                module.MetadataListener = MetadataListener
+
+            return module
+
+        def fake_spec_from_file_location(name, path):
+            fake_loader = Mock()
+            fake_loader.exec_module.side_effect = lambda module: None
+            return types.SimpleNamespace(name=name, loader=fake_loader)
+
+        with (
+            patch(
+                "importlib.util.spec_from_file_location",
+                side_effect=fake_spec_from_file_location,
+            ),
+            patch(
+                "importlib.util.module_from_spec",
+                side_effect=fake_module_from_spec,
+            ),
+        ):
+            result = get_listeners(additional_listener_paths, lib_cls=lib_cls)
+
+        # Count listener instances
+        expected_counts = expected.copy()
         for cls in result:
             cls_name = cls.__class__.__name__
-            if cls_name in expected:
-                expected[cls_name] -= 1
-                if expected[cls_name] == 0:
-                    del expected[cls_name]
+            if cls_name in expected_counts:
+                expected_counts[cls_name] -= 1
+                if expected_counts[cls_name] == 0:
+                    del expected_counts[cls_name]
 
-        assert len(expected) == 0
+        assert len(expected_counts) == 0
 
     @patch("yarf.main.RobotStackTracer")
     @patch("yarf.main.MetadataListener")

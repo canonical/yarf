@@ -84,9 +84,6 @@ jobs:
 
     - name: Run tests
       run: |
-        # For keyword coverage
-        uv pip install asttokens
-
         uv tool run tox
 
     - name: Upload Coverage Report
