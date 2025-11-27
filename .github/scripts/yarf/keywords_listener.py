@@ -32,15 +32,18 @@ class KeywordsListener:
 
     def __init__(self, lib_path: str) -> None:
         self.unused_file = UNUSED_FILE_PATH
+        self.classes = set()
         if self.unused_file.exists():
             with self.unused_file.open("r", encoding=ENCODING) as f:
                 self.functions = json.load(f)
+
+            for func in self.functions:
+                self.classes.add(self.functions[func]["class"])
 
             _logger.info(f"Loaded existing {self.unused_file}.")
 
         else:
             self.functions = {}
-            self.classes = set()
             self._collect_robot_keywords(Path(ROBOT_RESOURCE_PATH))
             self._collect_library_keywords(Path(lib_path))
             self._prune()
