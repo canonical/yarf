@@ -15,7 +15,7 @@ from robot.parsing.model import File
 from robot.parsing.model.blocks import Block
 from robot.parsing.model.blocks import Keyword as KeywordNode
 from robot.parsing.model.blocks import SettingSection
-from robot.parsing.model.statements import KeywordCall, Statement
+from robot.parsing.model.statements import KeywordCall, Statement, Tags
 
 from yarf.rf_libraries import ROBOT_RESOURCE_PATH
 
@@ -124,6 +124,9 @@ class KeywordsListener:
                 if not isinstance(kw, KeywordNode):
                     continue
 
+                if self.is_no_coverage_robot(kw.body):
+                    continue
+
                 kw_name = kw.name
                 dependencies = {}
                 for node in kw.body:
@@ -152,6 +155,16 @@ class KeywordsListener:
                     "dependencies": dependencies,
                 }
                 self.classes.add(model.source.stem)
+
+    def is_no_coverage_robot(self, kw_body: list[Any]) -> bool:
+        for node in kw_body:
+            if not isinstance(node, Tags):
+                continue
+
+            if "yarf: nocoverage" in node.values:
+                return True
+
+        return False
 
     def extract_keyword_dependencies(
         self, node: Statement | Block
@@ -390,7 +403,7 @@ class KeywordsListener:
             _logger.warning(f"Syntax error when parsing {pyfile}, skipping.")
             return None
 
-    def is_no_coverage(self, node):
+    def is_no_coverage_python(self, node):
         """
         Extract contiguous leading comments above a node, including comments
         above decorators.
@@ -441,7 +454,7 @@ class KeywordsListener:
             for n in node.body
             if isinstance(n, (ast.AsyncFunctionDef, ast.FunctionDef))
         ]:
-            if self.is_no_coverage(func):
+            if self.is_no_coverage_python(func):
                 continue
 
             kw_name, is_keyword = self._get_python_function_name(func)
