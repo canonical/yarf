@@ -62,7 +62,7 @@ class KeywordsListener:
             for dep in self.functions[kw]["dependencies"].copy():
                 dep_info = self.functions[kw]["dependencies"][dep]
                 del self.functions[kw]["dependencies"][dep]
-                if len(dep_kws := self.get_valid_matches(dep)) <= 0:
+                if len(dep_kws := self._get_valid_matches(dep)) <= 0:
                     continue
 
                 for dep_kw in dep_kws:
@@ -78,17 +78,17 @@ class KeywordsListener:
             ):
                 del self.functions[kw]
 
-    def get_valid_matches(self, dep):
+    def _get_valid_matches(self, dep):
         """
         Returns the valid keyword names if we get match(es)
         """
         valid_matches = []
         for kw in self.functions.keys():
-            if self.dependency_matches_keyword(dep, kw):
+            if self._dependency_matches_keyword(dep, kw):
                 valid_matches.append(kw)
         return valid_matches
 
-    def dependency_matches_keyword(self, dep: str, kw_name: str) -> bool:
+    def _dependency_matches_keyword(self, dep: str, kw_name: str) -> bool:
         """
         Check if the dependency name matches the keyword name, even if the
         keyword name is embedded.
@@ -101,38 +101,38 @@ class KeywordsListener:
             return dep.lower() == kw_name.lower()
 
         # embedded --> regex match
-        return self.regex_matches_keyword(dep, kw_name)
+        return self._regex_matches_keyword(dep, kw_name)
 
     def _collect_robot_keywords(self, root: Path) -> None:
         """
         Collect keywords defined in Robot Framework resource files.
         """
         for file in root.rglob("*.resource"):
-            self.get_keywords_used_in_robot_file(file)
+            self._get_keywords_used_in_robot_file(file)
 
-    def get_keywords_used_in_robot_file(self, path: str):
+    def _get_keywords_used_in_robot_file(self, path: str):
         """
         Get all keywords in the robot/resource file path, along with their
         dependencies.
         """
         model = get_model(path)
-        libs = self.get_imported_libraries(model)
-        libdocs = self.load_library_docs(libs)
+        libs = self._get_imported_libraries(model)
+        libdocs = self._load_library_docs(libs)
 
         for section in model.sections:
             for kw in section.body:
                 if not isinstance(kw, KeywordNode):
                     continue
 
-                if self.is_no_coverage_robot(kw.body):
+                if self._is_no_coverage_robot(kw.body):
                     continue
 
                 kw_name = kw.name
                 dependencies = {}
                 for node in kw.body:
-                    for call in self.extract_keyword_dependencies(node):
+                    for call in self._extract_keyword_dependencies(node):
                         klass, original_keyword_name = (
-                            self.resolve_keyword_class(
+                            self._resolve_keyword_class(
                                 call,
                                 libdocs,
                                 section.body,
@@ -156,7 +156,7 @@ class KeywordsListener:
                 }
                 self.classes.add(model.source.stem)
 
-    def is_no_coverage_robot(self, kw_body: list[Any]) -> bool:
+    def _is_no_coverage_robot(self, kw_body: list[Any]) -> bool:
         for node in kw_body:
             if not isinstance(node, Tags):
                 continue
@@ -166,7 +166,7 @@ class KeywordsListener:
 
         return False
 
-    def extract_keyword_dependencies(
+    def _extract_keyword_dependencies(
         self, node: Statement | Block
     ) -> list[str]:
         """
@@ -180,7 +180,7 @@ class KeywordsListener:
         # Body
         if hasattr(node, "body"):
             for child in node.body:
-                calls.extend(self.extract_keyword_dependencies(child))
+                calls.extend(self._extract_keyword_dependencies(child))
 
         # Conditional / exception branches
         for attr in ("orelse", "excepts", "finalbody"):
@@ -188,8 +188,8 @@ class KeywordsListener:
             if not branch:
                 continue
 
-            for child in self.iter_nodes(branch):
-                calls.extend(self.extract_keyword_dependencies(child))
+            for child in self._iter_nodes(branch):
+                calls.extend(self._extract_keyword_dependencies(child))
 
         # Special handling for `Run Keyword ...`
         # Also take the Keyword it runs.
@@ -198,7 +198,7 @@ class KeywordsListener:
 
         return calls
 
-    def iter_nodes(self, obj: Any) -> list[Any]:
+    def _iter_nodes(self, obj: Any) -> list[Any]:
         """
         Turn obj into a list for iteration.
         """
@@ -208,7 +208,7 @@ class KeywordsListener:
             return obj
         return [obj]
 
-    def get_imported_libraries(self, model: File) -> set[str]:
+    def _get_imported_libraries(self, model: File) -> set[str]:
         """
         Get all library name from the model (robot/resource) file.
         """
@@ -223,7 +223,7 @@ class KeywordsListener:
 
         return libs
 
-    def load_library_docs(
+    def _load_library_docs(
         self, library_imports: list[str]
     ) -> dict[str, LibraryDoc]:
         """
@@ -246,7 +246,7 @@ class KeywordsListener:
 
         return docs
 
-    def resolve_keyword_class(
+    def _resolve_keyword_class(
         self,
         name: str,
         library_docs: dict[str, LibraryDoc],
@@ -282,7 +282,7 @@ class KeywordsListener:
         # Cannot find keyword through exact match, try regex
         # Current file
         for kw in current_file_keywords:
-            if self.regex_matches_keyword(name, kw.name):
+            if self._regex_matches_keyword(name, kw.name):
                 return current_file_name, kw.name
 
         if "." in name:
@@ -290,19 +290,19 @@ class KeywordsListener:
             libdoc = library_docs.get(lib_prefix)
             if libdoc:
                 for kw in libdoc.keywords:
-                    if self.regex_matches_keyword(kw_name, kw.name):
+                    if self._regex_matches_keyword(kw_name, kw.name):
                         return libdoc.name, kw.name
 
         else:
             # search through all libraries
             for _, libdoc in library_docs.items():
                 for kw in libdoc.keywords:
-                    if self.regex_matches_keyword(name, kw.name):
+                    if self._regex_matches_keyword(name, kw.name):
                         return libdoc.name, kw.name
 
         return None, None
 
-    def regex_matches_keyword(self, to_match: str, kw_name: str) -> bool:
+    def _regex_matches_keyword(self, to_match: str, kw_name: str) -> bool:
         call_tokens = to_match.strip().split()
         template_tokens = kw_name.strip().split()
 
@@ -313,7 +313,7 @@ class KeywordsListener:
             # If token contains a placeholder anywhere
             if "${" in tt:
                 # Convert this template token to regex
-                token_regex = self.embedded_template_to_regex(tt)
+                token_regex = self._embedded_template_to_regex(tt)
                 if not token_regex.fullmatch(ct):
                     return False
             else:
@@ -322,17 +322,14 @@ class KeywordsListener:
 
         return True
 
-    def embedded_template_to_regex(self, template: str) -> re.Pattern:
+    def _embedded_template_to_regex(self, template: str) -> re.Pattern:
         escaped = re.escape(template)
-
-        # Replace placeholders with non-greedy capture groups
         regex = re.sub(
             r"\\\$\\\{[^}]+\\\}(?:\[[^\]]+\])?",  # matches ${var} or ${var}[0]
             r"(.+?)",
             escaped,
         )
 
-        # DO NOT normalize spaces for embedded keywords
         return re.compile("^" + regex + "$", re.IGNORECASE)
 
     def _collect_library_keywords(self, root: Path) -> None:
@@ -403,7 +400,7 @@ class KeywordsListener:
             _logger.warning(f"Syntax error when parsing {pyfile}, skipping.")
             return None
 
-    def is_no_coverage_python(self, node):
+    def _is_no_coverage_python(self, node):
         """
         Extract contiguous leading comments above a node, including comments
         above decorators.
@@ -454,7 +451,7 @@ class KeywordsListener:
             for n in node.body
             if isinstance(n, (ast.AsyncFunctionDef, ast.FunctionDef))
         ]:
-            if self.is_no_coverage_python(func):
+            if self._is_no_coverage_python(func):
                 continue
 
             kw_name, is_keyword = self._get_python_function_name(func)
@@ -501,7 +498,6 @@ class KeywordsListener:
                     kw = node.args[0].value
                     deps.add(kw)
             else:
-                # self.do_something()
                 name = node.func.attr.replace(
                     "_", " "
                 ).title()  # convert python name
@@ -510,14 +506,14 @@ class KeywordsListener:
                     dep_cls_name = cls_node.name if id == "self" else id
 
                 elif getattr(node.func.value, "attr", None) is not None:
-                    attr_chain = self.get_attr_chain(node.func.value)
-                    assignment_node = self.find_assignment_by_chain(
+                    attr_chain = self._get_attr_chain(node.func.value)
+                    assignment_node = self._find_assignment_by_chain(
                         cls_node, attr_chain
                     )
                     if isinstance(assignment_node, list):
                         dep_cls_name = ".".join(assignment_node)
                     else:
-                        dep_cls_name = self.get_dependency_chain(
+                        dep_cls_name = self._get_dependency_chain(
                             assignment_node
                         )
                 deps[name.strip()] = {
@@ -528,7 +524,7 @@ class KeywordsListener:
 
         return deps
 
-    def get_dependency_chain(
+    def _get_dependency_chain(
         self, assign_node: ast.Assign | ast.AnnAssign | None
     ) -> str:
         """
@@ -557,7 +553,7 @@ class KeywordsListener:
             return ".".join(chain)
         return None
 
-    def find_assignment_by_chain(
+    def _find_assignment_by_chain(
         self, classdef: ast.ClassDef, chain: list[str] | None
     ) -> ast.Assign | ast.AnnAssign | list[str]:
         """
@@ -582,11 +578,11 @@ class KeywordsListener:
                     else [node.target]
                 )
                 for t in targets:
-                    if self.matches_attr_chain(t, chain):
+                    if self._matches_attr_chain(t, chain):
                         return node
         return chain
 
-    def matches_attr_chain(self, node: Any, chain: list[str]) -> bool:
+    def _matches_attr_chain(self, node: Any, chain: list[str]) -> bool:
         """
         Check if an ast.Attribute or ast.Name matches a given chain.
 
@@ -611,7 +607,7 @@ class KeywordsListener:
             idx -= 1
         return True
 
-    def get_attr_chain(self, node: Any) -> list[str] | None:
+    def _get_attr_chain(self, node: Any) -> list[str] | None:
         """
         Given an ast.Attribute or ast.Name, return the chain as a list.
 
@@ -680,16 +676,16 @@ class KeywordsListener:
                 func_name = name
                 cls_name = None
 
-            exact_func_name = self.get_exact_func_name(func_name, cls_name)
+            exact_func_name = self._get_exact_func_name(func_name, cls_name)
             if exact_func_name is None:
                 continue
 
             func_info = self.functions.pop(exact_func_name)
-            self.prune_deps(exact_func_name, func_info["class"])
+            self._prune_deps(exact_func_name, func_info["class"])
             for dep in func_info["dependencies"]:
                 queue.append(dep)
 
-    def prune_deps(self, exact_func_name: str, cls_name: str) -> None:
+    def _prune_deps(self, exact_func_name: str, cls_name: str) -> None:
         """
         Prune dependencies with exact_func_name in all functions dependencies.
         """
@@ -706,7 +702,7 @@ class KeywordsListener:
             ):
                 del self.functions[kw_name]["dependencies"][exact_func_name]
 
-    def get_exact_func_name(self, name: str, cls_name: str) -> str:
+    def _get_exact_func_name(self, name: str, cls_name: str) -> str:
         """
         Get exact function name from given name, even the given name is
         embedded.
@@ -720,7 +716,7 @@ class KeywordsListener:
 
         # Embedded keyword
         for kw in self.functions:
-            if not self.regex_matches_keyword(name, kw):
+            if not self._regex_matches_keyword(name, kw):
                 continue
 
             if cls_name and self.functions[name]["class"] == cls_name:
