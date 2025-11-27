@@ -693,7 +693,7 @@ class VideoInputBase(ABC):
         if not is_similar:
             logger.info("The colors of the detected text could not be matched")
             log_image(
-                image.crop(subregion.as_tuple()),
+                cropped_and_padded,
                 "The image used for color matching was:",
             )
 
