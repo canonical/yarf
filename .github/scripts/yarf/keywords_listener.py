@@ -40,6 +40,7 @@ class KeywordsListener:
 
         else:
             self.functions = {}
+            self.classes = set()
             self._collect_robot_keywords(Path(ROBOT_RESOURCE_PATH))
             self._collect_library_keywords(Path(lib_path))
             self._prune()
@@ -144,9 +145,10 @@ class KeywordsListener:
                     "is_keyword": True,
                     "source": str(model.source),
                     "type": model.source.suffix.strip("."),
-                    "class": model.source.name,
+                    "class": model.source.stem,
                     "dependencies": dependencies,
                 }
+                self.classes.add(model.source.stem)
 
     def extract_keyword_dependencies(
         self, node: Statement | Block
@@ -285,26 +287,36 @@ class KeywordsListener:
         return None, None
 
     def regex_matches_keyword(self, to_match: str, kw_name: str) -> bool:
-        """
-        Match an embedded keyword by regex.
-        """
-        to_match = to_match.strip()
-        kw_name = kw_name.strip()
-        regex = self.embedded_template_to_regex(kw_name)
-        return bool(regex.match(to_match))
+        call_tokens = to_match.strip().split()
+        template_tokens = kw_name.strip().split()
+
+        if len(call_tokens) != len(template_tokens):
+            return False
+
+        for ct, tt in zip(call_tokens, template_tokens):
+            # If token contains a placeholder anywhere
+            if "${" in tt:
+                # Convert this template token to regex
+                token_regex = self.embedded_template_to_regex(tt)
+                if not token_regex.fullmatch(ct):
+                    return False
+            else:
+                if ct.lower() != tt.lower():
+                    return False
+
+        return True
 
     def embedded_template_to_regex(self, template: str) -> re.Pattern:
         escaped = re.escape(template)
 
-        # Match escaped placeholder: \$\{NAME\}
-        placeholder_pattern = r"\\\$\\\{[^}]+\\\}(?:\[[^\]]+\])?"
+        # Replace placeholders with non-greedy capture groups
+        regex = re.sub(
+            r"\\\$\\\{[^}]+\\\}(?:\[[^\]]+\])?",  # matches ${var} or ${var}[0]
+            r"(.+?)",
+            escaped,
+        )
 
-        # Replace placeholder with wildcard
-        regex = re.sub(placeholder_pattern, r"(.+?)", escaped)
-
-        # Normalize whitespace (Robot Framework collapses it)
-        regex = regex.replace(r"\ ", r"\s+")
-
+        # DO NOT normalize spaces for embedded keywords
         return re.compile("^" + regex + "$", re.IGNORECASE)
 
     def _collect_library_keywords(self, root: Path) -> None:
@@ -449,6 +461,7 @@ class KeywordsListener:
                         func, node
                     ),
                 }
+                self.classes.add(cls_name)
 
     def _extract_deps_from_python_function(
         self,
@@ -644,7 +657,7 @@ class KeywordsListener:
         queue = deque([curr])
         while len(queue) > 0:
             name = queue.popleft()
-            if "." in name:
+            if any(name.startswith(f"{cls}.") for cls in self.classes):
                 cls_name, func_name = name.split(".", 1)
 
             else:
@@ -656,8 +669,26 @@ class KeywordsListener:
                 continue
 
             func_info = self.functions.pop(exact_func_name)
+            self.prune_deps(exact_func_name, func_info["class"])
             for dep in func_info["dependencies"]:
                 queue.append(dep)
+
+    def prune_deps(self, exact_func_name: str, cls_name: str) -> None:
+        """
+        Prune dependencies with exact_func_name in all functions dependencies.
+        """
+
+        for kw_name in self.functions:
+            if exact_func_name not in self.functions[kw_name]["dependencies"]:
+                continue
+
+            if (
+                self.functions[kw_name]["dependencies"][exact_func_name][
+                    "class"
+                ]
+                == cls_name
+            ):
+                del self.functions[kw_name]["dependencies"][exact_func_name]
 
     def get_exact_func_name(self, name: str, cls_name: str) -> str:
         """
