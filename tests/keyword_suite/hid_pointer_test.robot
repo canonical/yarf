@@ -80,7 +80,7 @@ Test Keyword Walk Pointer
 Test Keyword Click Button On Destination
     [Tags]                  yarf:certification_status: blocker
     Clear Trace File
-    Click LEFT Button On ${100,_100}
+    Click LEFT Button On ${100,100}
     ${movements}=           Evaluate                [(100, 100)]
     Assert Pointer Movement Events                  ${movements}
 
@@ -91,7 +91,7 @@ Test Keyword Click Button On Destination
 Test Keyword Drag And Drop On Destination
     [Tags]                  yarf:certification_status: blocker
     Clear Trace File
-    Drag And Drop On ${200,_200}
+    Drag And Drop On ${200,200}
 
     ${actions}=             Create Dictionary
     ...                     272=press
