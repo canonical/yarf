@@ -12,8 +12,8 @@ Task Tags
 *** Test Cases ***
 Test Keyword Displace Point By X Y
     [Tags]                  yarf:certification_status: blocker
-    ${result}=              Displace                ${3,_3} By (5, 5)
-    Should Be True          ${REUSLT} == (8, 8)
+    ${result}=              Displace ${3,3} By (5, 5)
+    Should Be True          ${result} == (8, 8)
 
 Test Keyword Ensure Destination Des Not Match
     [Tags]                  yarf:certification_status: blocker
