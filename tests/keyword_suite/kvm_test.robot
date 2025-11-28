@@ -29,7 +29,7 @@ Test Keyword Press Key And Match
 Test Keyword Press And Wait For Match
     [Tags]                  yarf:certification_status: blocker
     ${combo}=               Create List             Control_L               Escape
-    Press And Wait For Match                        ${combo}                ${CURDIR}/calculator/02_answer.png
+    Press And Wait For Match                        ${combo}                ${CURDIR}/calculator/03_answer_escaped.png
 
 Test Keyword Move Pointer To Destination In Domain
     [Tags]                  yarf:certification_status: blocker

@@ -18,7 +18,7 @@ if not UNUSED_FILE_PATH.exists():
 with UNUSED_FILE_PATH.open("r", encoding="utf-8") as f:
     data = json.load(f)
 
-if not data:
+if len(data) == 0:
     print("🎉 All keywords are used!")
     sys.exit(0)
 
