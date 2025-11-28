@@ -32,6 +32,7 @@ class VideoInput(VideoInputBase):
         await self.start_video_input()
         return await self._screencopy.grab_screenshot()
 
+    # yarf: nocoverage
     @keyword
     async def start_video_input(self) -> None:
         """
@@ -39,6 +40,7 @@ class VideoInput(VideoInputBase):
         """
         await self._screencopy.connect()
 
+    # yarf: nocoverage
     @keyword
     async def stop_video_input(self) -> None:
         """
