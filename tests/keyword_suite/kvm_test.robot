@@ -21,6 +21,16 @@ Test Keyword Ensure Destination Does Not Match
     Ensure string Does Not Match
     Ensure ${CURDIR}/images/cloud.png Does Not Match
 
+Test Keyword Press Key And Match
+    [Tags]                  yarf:certification_status: blocker
+    Type String             10*4+2
+    Press Key And Match     RETURN                  ${CURDIR}/calculator/02_answer.png
+
+Test Keyword Press And Wait For Match
+    [Tags]                  yarf:certification_status: blocker
+    ${combo}=               Create List             Ctrl_L                  Escape
+    Press And Wait For Match                        ${combo}                ${CURDIR}/calculator/02_answer.png
+
 Test Keyword Move Pointer To Destination In Domain
     [Tags]                  yarf:certification_status: blocker
     ${cal_region}=          Match                   ${CURDIR}/calculator/01_calculator.png
