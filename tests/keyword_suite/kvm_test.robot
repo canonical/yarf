@@ -24,11 +24,11 @@ Test Keyword Ensure Destination Does Not Match
 Test Keyword Press Key And Match
     [Tags]                  yarf:certification_status: blocker
     Type String             10*4+2
-    Press Key And Match     RETURN                  ${CURDIR}/calculator/02_answer.png
+    Press Key And Match     Return                  ${CURDIR}/calculator/02_answer.png
 
 Test Keyword Press And Wait For Match
     [Tags]                  yarf:certification_status: blocker
-    ${combo}=               Create List             Ctrl_L                  Escape
+    ${combo}=               Create List             Control_L               Escape
     Press And Wait For Match                        ${combo}                ${CURDIR}/calculator/02_answer.png
 
 Test Keyword Move Pointer To Destination In Domain
