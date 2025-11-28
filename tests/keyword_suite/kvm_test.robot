@@ -1,6 +1,7 @@
 *** Settings ***
 Documentation       This suite tests KVM keywords under kvm.resource.
 
+Library             Collections
 Resource            kvm.resource
 
 Task Tags
@@ -23,12 +24,15 @@ Test Keyword Ensure Destination Does Not Match
 Test Keyword Move Pointer To Destination In Domain
     [Tags]                  yarf:certification_status: blocker
     ${cal_region}=          Match                   ${CURDIR}/calculator/01_calculator.png
-    ${x}                    ${y}=                   Move Pointer To 1 In ${cal_region}[0]
+    ${target_region}=       Set Variable            ${cal_region}[0]
+    Remove From Dictionary                          ${target_region}        path
+
+    ${x}                    ${y}=                   Move Pointer To 1 In ${target_region}
 
     Should Be True          ${cal_region}[0][left] < ${x} < ${cal_region}[0][right]
     Should Be True          ${cal_region}[0][top] < ${y} < ${cal_region}[0][bottom]
 
-    ${x}                    ${y}=                   Move Pointer To ${CURDIR}/calculator/equals.png In ${cal_region}[0]
+    ${x}                    ${y}=                   Move Pointer To ${CURDIR}/calculator/equals.png In ${target_region}
 
     Should Be True          ${cal_region}[0][left] < ${x} < ${cal_region}[0][right]
     Should Be True          ${cal_region}[0][top] < ${y} < ${cal_region}[0][bottom]
