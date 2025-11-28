@@ -18,11 +18,6 @@ if not UNUSED_FILE_PATH.exists():
 with UNUSED_FILE_PATH.open("r", encoding="utf-8") as f:
     data = json.load(f)
 
-if len(data) == 0:
-    print("🎉 All keywords are used!")
-    sys.exit(0)
-
-print("❗ Unused Robot Framework Keywords\n")
 table = []
 count = 0
 for kw, info in data.items():
@@ -32,6 +27,11 @@ for kw, info in data.items():
         )
         count += 1
 
+if count == 0:
+    print("🎉 All keywords are used!")
+    sys.exit(0)
+
+print("❗ Unused Robot Framework Keywords\n")
 print(
     tabulate(
         table,
@@ -41,5 +41,4 @@ print(
 )
 
 print(f"{count} keyword(s) missed!")
-
 sys.exit(1)
