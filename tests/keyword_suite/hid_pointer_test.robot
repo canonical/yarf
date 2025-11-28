@@ -76,3 +76,28 @@ Test Keyword Walk Pointer
     ${movements}=    Evaluate
     ...    [(22, 17), (44, 35) ,(67, 53), (89, 71), (100, 89), (100, 100), (87, 89), (74, 79), (61, 69), (48, 59), (36, 48), (23, 38), (10, 28), (0, 18), (0, 7), (0, 0)]
     Assert Pointer Movement Events                  ${movements}
+
+Test Keyword Click Button On Destination
+    [Tags]                  yarf:certification_status: blocker
+    Clear Trace File
+    Click LEFT Button On ${100,_100}
+    ${movements}=           Evaluate                [(100, 100)]
+    Assert Pointer Movement Events                  ${movements}
+
+    ${actions}=             Create Dictionary
+    ...                     272=click
+    Assert Pointer Button Events                    ${actions}
+
+Test Keyword Drag And Drop On Destination
+    [Tags]                  yarf:certification_status: blocker
+    Clear Trace File
+    Drag And Drop On ${200,_200}
+
+    ${actions}=             Create Dictionary
+    ...                     272=press
+    ...                     272=release
+    Assert Pointer Button Events                    ${actions}
+
+    ${movements}=    Evaluate
+    ...    [(17, 14), (35,28), (53, 42), (71, 57), (89, 71), (107, 85), (125, 100), (143, 114), (160, 128), (178, 143), (196, 157), (200, 171), (200, 186), (200, 200)]
+    Assert Pointer Movement Events                  ${movements}

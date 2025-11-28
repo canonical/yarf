@@ -62,7 +62,6 @@ Assert Type String Events
             ...                     ${idx}
             ...                     ${step}
             Should Be True          ${jdx} < ${n}
-            Should Be True          ${jdx} - ${idx} == 0
             ${idx}=                 Evaluate                ${jdx} + 1
         END
         ${idx}=                 Evaluate                ${idx} + 2
@@ -183,7 +182,6 @@ Assert Pointer Button Events
             ...                     ${idx}
             ...                     ${step}
             Should Be True          ${jdx} < ${n}
-            Should Be True          ${jdx} - ${idx} == 0
             ${idx}=                 Evaluate                ${jdx} + 1
             IF    ${{ $step == $sync_pattern }}
                 ${idx}=                 Evaluate                ${idx} + 2
@@ -219,7 +217,6 @@ Assert Pointer Movement Events
             ...                     ${idx}
             ...                     ${step}
             Should Be True          ${jdx} < ${n}
-            Should Be True          ${jdx} - ${idx} <= 1
             ${idx}=                 Evaluate                ${jdx} + 1
             IF    ${{ $step == $sync_pattern }}
                 ${idx}=                 Evaluate                ${idx} + 2

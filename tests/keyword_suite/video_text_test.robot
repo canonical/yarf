@@ -23,6 +23,7 @@ Test Text Keywords with Rapid Ocr
     Set Ocr Method          rapidocr
     Test Keyword Read Text
     Test Keyword Get Text Position
+    Test Keyword Get Position Of Target String
     Test Keyword Find Text
     Test Keyword Match Text
 
@@ -31,6 +32,7 @@ Test Text Keywords with Tesseract
     Set Ocr Method          tesseract
     Test Keyword Read Text
     Test Keyword Get Text Position
+    Test Keyword Get Position Of Target String
     Test Keyword Find Text
     Test Keyword Match Text
 
@@ -61,6 +63,12 @@ Test Keyword Get Text Position
     ${x}                    ${y}=                   Get Text Position
     ...                     tempor
     ...                     ${SAMPLE_TEXT_REGION}
+    Should Be True          582 <= ${x} <= 640
+    Should Be True          485 <= ${y} <= 510
+
+Test Keyword Get Position Of Target String
+    [Tags]                  yarf:certification_status: blocker
+    ${x}                    ${y}=                   Get Position Of tempor
     Should Be True          582 <= ${x} <= 640
     Should Be True          485 <= ${y} <= 510
 
