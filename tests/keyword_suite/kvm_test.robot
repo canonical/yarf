@@ -2,7 +2,6 @@
 Documentation       This suite tests KVM keywords under kvm.resource.
 
 Resource            kvm.resource
-Resource            ../../.tox/py310/lib/python3.10/site-packages/yarf/rf_libraries/resources/kvm.resource
 
 Task Tags
 ...    robot:stop-on-failure
