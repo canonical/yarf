@@ -438,7 +438,15 @@ class TestVideoInputBase:
         Test if the function grabs a new screenshot and finds the text
         position.
         """
-        stub_videoinput.ocr.find = Mock()
+        stub_videoinput.ocr.find = Mock(
+            return_value=[
+                {
+                    "text": "Hello",
+                    "region": Region(0, 0, 1, 1),
+                    "confidence": 0.9,
+                }
+            ],
+        )
         await stub_videoinput.find_text("text")
 
         stub_videoinput.ocr.find.assert_called_once_with(
@@ -451,7 +459,15 @@ class TestVideoInputBase:
         Test if the function grabs a new screenshot and finds the text
         position.
         """
-        stub_videoinput.ocr.find = Mock()
+        stub_videoinput.ocr.find = Mock(
+            return_value=[
+                {
+                    "text": "Hello",
+                    "region": Region(0, 0, 1, 1),
+                    "confidence": 0.9,
+                }
+            ],
+        )
         region = {
             "left": 0,
             "top": 0,
@@ -473,7 +489,15 @@ class TestVideoInputBase:
         Test if the function finds the text position in an image.
         """
         image = Mock()
-        stub_videoinput.ocr.find = Mock()
+        stub_videoinput.ocr.find = Mock(
+            return_value=[
+                {
+                    "text": "Hello",
+                    "region": Region(0, 0, 1, 1),
+                    "confidence": 0.9,
+                }
+            ],
+        )
         await stub_videoinput.find_text("text", image=image)
 
         stub_videoinput.ocr.find.assert_called_once_with(
@@ -486,10 +510,13 @@ class TestVideoInputBase:
         Test if the function finds the text position with a regex.
         """
         stub_videoinput.ocr.find = Mock(
-            side_effect=[
-                [sentinel.region1, sentinel.region2, sentinel.region3],
-                [sentinel.region4],
-            ]
+            return_value=[
+                {
+                    "text": "Hello",
+                    "region": Region(0, 0, 1, 1),
+                    "confidence": 0.9,
+                }
+            ],
         )
         stub_videoinput.ocr.read = Mock(
             return_value="""
@@ -520,7 +547,15 @@ class TestVideoInputBase:
         """
         Test if the function finds the text in a region.
         """
-        stub_videoinput.ocr.find = Mock()
+        stub_videoinput.ocr.find = Mock(
+            return_value=[
+                {
+                    "text": "Hello",
+                    "region": Region(0, 0, 1, 1),
+                    "confidence": 0.9,
+                }
+            ],
+        )
         await stub_videoinput.find_text("text", region=Region(0, 0, 1, 1))
 
         stub_videoinput.ocr.find.assert_called_once_with(
