@@ -76,6 +76,29 @@ the repository directory:
 uv run tox
 ```
 
+Robot scripts are used to run tests for keywords supported in YARF.
+
+These tests are executed in our `Testing and quality control for YARF codebase` CI. If you want to contribute to our pool of keywords, please also include test cases under [`tests/keyword_suite`](./tests/keyword_suite/) directory, where we maintain our keyword test cases.
+
+If, for any reason, a keyword shall be excluded from the coverage, please use the `yarf: nocoverage` tag to skip the keyword like below:
+
+1. In the case of robot keyword:
+
+```robotframework
+Fantastic Keyword
+    [Tags]    yarf: nocoverage
+    ...
+```
+
+1. In the case of python keyword:
+
+```python
+# yarf: nocoverage
+def fantastic_keyword(self) -> Any: ...
+```
+
+And add a comment explaining why we should skip this in the keyword test coverage, or a link to the corresponding issue.
+
 ## Documentation
 
 The YARF documentation is maintained under the [`docs/`](./docs/) subdirectory.
