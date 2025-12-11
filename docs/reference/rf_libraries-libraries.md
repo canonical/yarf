@@ -8,7 +8,7 @@ Robot Framework provides a set of standard libraries that can be used for genera
 
 A small set of third party libraries is included in YARF to cover common test scenarios:
 
-- [SSH Library](https://marketsquare.github.io/SSHLibrary/SSHLibrary.html) to connect and run commands via SSH on a Device Under Test
+- [SSH Library](https://marketsquare.github.io/SSHLibrary/SSHLibrary.html) to connect and run commands over SSH on a Device Under Test
 
 ## Custom libraries
 

@@ -15,7 +15,7 @@ In this tutorial, we will create an automated test suite for the `simple-counter
 
 1. `-`: The count displayed will minus one.
 1. `+`: The count displayed will plus one.
-1. `Toggle Theme`: If the current theme of the app is `light`, it will change the theme to `dark`, vice versa.
+1. `Toggle Theme`: If the current theme of the app is `light`, it will change the theme to `dark`, or the other way around.
 
 We want to test if these buttons do work as expected under both light and dark theme. With this, we would like to have the following steps for both themes:
 

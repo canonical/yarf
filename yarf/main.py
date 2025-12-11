@@ -15,7 +15,7 @@ from typing import Any, Optional, Sequence
 from packaging import version
 from robot import rebot
 from robot.api import TestSuite, TestSuiteBuilder
-from robot.errors import Information
+from robot.errors import DATA_ERROR, Information
 from robot.run import RobotFramework
 from RobotStackTracer import RobotStackTracer
 
@@ -324,6 +324,11 @@ def run_robot_suite(
         included_tags=options.pop("include", None),
         excluded_tags=options.pop("exclude", None),
     )
+
+    # Issue: https://github.com/robotframework/robotframework/issues/5549
+    if len(suite.suites) <= 0:
+        _logger.error(f"Suite '{suite.name}' contains no tests.")
+        return DATA_ERROR
 
     with robot_in_path(lib_cls.get_pkg_path()):
         result = suite.run(
