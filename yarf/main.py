@@ -1,4 +1,5 @@
 import contextlib
+import importlib.util
 import logging
 import operator
 import os
@@ -248,6 +249,39 @@ def get_robot_reserved_settings(test_suite: TestSuite) -> dict[str, Any]:
     return robot_reserved_settings
 
 
+def get_listeners(
+    additional_listener_paths: list[str] | None, **kwargs
+) -> list[object]:
+    listeners = [
+        MetadataListener(),
+        RobotStackTracer(),
+    ]
+    if additional_listener_paths is None:
+        return listeners
+
+    for path_str in additional_listener_paths:
+        # import listener and append to list
+        path = Path(path_str)
+        spec = importlib.util.spec_from_file_location(path.stem, path)
+        module = importlib.util.module_from_spec(spec)  # type:ignore[arg-type]
+        spec.loader.exec_module(module)  # type:ignore[union-attr]
+        for name, obj in vars(module).items():
+            if not (
+                isinstance(obj, type)
+                and obj.__module__ == module.__name__
+                and hasattr(obj, "ROBOT_LISTENER_API_VERSION")
+            ):
+                continue
+
+            match name:
+                case "KeywordsListener":
+                    listeners.append(obj(kwargs["lib_cls"].get_pkg_path()))
+                case _:
+                    listeners.append(obj())
+
+    return listeners
+
+
 @output_converter
 def run_robot_suite(
     suite: TestSuite,
@@ -300,7 +334,10 @@ def run_robot_suite(
         result = suite.run(
             variable=variables,
             outputdir=outdir,
-            listener=[MetadataListener(), RobotStackTracer()],
+            listener=get_listeners(
+                options.pop("listener", None),
+                lib_cls=lib_cls,
+            ),
             **options,
         )
 

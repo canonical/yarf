@@ -378,6 +378,7 @@ class VideoInputBase(ABC):
         logger.info(f"\nThe center of the best match is: {center}")
         return center.x, center.y
 
+    # yarf: nocoverage
     @abstractmethod
     @keyword
     async def start_video_input(self) -> None:
@@ -385,6 +386,7 @@ class VideoInputBase(ABC):
         Start video stream process if needed.
         """
 
+    # yarf: nocoverage
     @abstractmethod
     @keyword
     async def stop_video_input(self) -> None:
@@ -392,6 +394,7 @@ class VideoInputBase(ABC):
         Stop video stream process if needed.
         """
 
+    # yarf: nocoverage
     @keyword
     async def restart_video_input(self) -> None:
         """
