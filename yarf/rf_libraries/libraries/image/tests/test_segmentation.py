@@ -2,8 +2,10 @@ from unittest.mock import MagicMock, Mock, patch
 
 import cv2
 import numpy as np
+from PIL import Image
 
 from yarf.rf_libraries.libraries.image.segmentation import SegmentationTool
+from yarf.vendor.RPA.core.geometry import to_region
 from yarf.vendor.RPA.Images import RGB
 
 
@@ -13,13 +15,11 @@ class TestSegmentation:
         assert not seg.is_hsv_color_similar((0, 0, 0), (255, 255, 255), 10)
         assert seg.is_hsv_color_similar((0, 0, 0), (0, 0, 0), 10)
 
-    def test_ctop_image_with_padding(self):
+    def test_crop_image_with_padding(self):
         seg = SegmentationTool()
-        image = np.zeros((20, 20, 3), dtype="uint8")
-        region = (2, 2, 8, 8)
-        _ = seg.crop_and_convert_image_with_padding(
-            image, region, pad_outside=2, pad_inside=1
-        )
+        image = Image.fromarray(np.zeros((20, 20, 3), dtype="uint8"))
+        region = to_region("2,2,8,8")
+        _ = seg.crop_and_convert_image_with_padding(image, region, pad=-2)
 
     def test_get_mean_text_color(self):
         seg = SegmentationTool()
@@ -38,10 +38,8 @@ class TestSegmentation:
     def test_get_mean_text_color_all_zeros(self):
         seg = SegmentationTool()
         image = np.zeros((20, 20, 20), dtype="uint8")
-        seg.roi = MagicMock()
         image2 = MagicMock()
         image2.size = 1
-        seg.roi.return_value = image
         cv2.cvtColor = MagicMock()
         cv2.cvtColor.return_value = image
         cv2.mean = MagicMock()

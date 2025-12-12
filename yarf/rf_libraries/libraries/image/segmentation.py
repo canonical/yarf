@@ -5,6 +5,7 @@ import numpy as np
 from PIL import Image
 from robot.api import logger
 
+from yarf.vendor.RPA.core.geometry import Region
 from yarf.vendor.RPA.Images import RGB
 
 
@@ -52,15 +53,23 @@ class SegmentationTool:
         pad: int = -2,
     ):
         """
-        Crop the image to the specified region with padding. Positive pad
-        expands the region, negative pad shrinks it.
+        Crop the image to the specified region with padding.
+
+        Args:
+            image: Input image (PIL Image)
+            region: Region to crop (Region object)
+            pad: Padding to apply (positive to expand, negative to shrink)
+
+        Returns:
+            Cropped image as a numpy array in HSV color space
         """
-        
+
         # If we can't apply pad, just use the original region
         padded_region = region.resize(pad)
- 
+
         # Clamp to image bounds
         w, h = image.size
+
         clamped_region = padded_region.clamp(Region(0, 0, w, h))
 
         # Crop the original image using the region

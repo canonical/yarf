@@ -671,8 +671,7 @@ class VideoInputBase(ABC):
             self.segmentation_tool.crop_and_convert_image_with_padding(
                 image,
                 subregion,
-                pad_inside=2,
-                pad_outside=0,
+                pad=-2,
             )
         )
 
