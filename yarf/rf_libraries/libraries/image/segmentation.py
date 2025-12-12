@@ -45,75 +45,28 @@ class SegmentationTool:
 
         return True
 
-    def roi(
-        self,
-        input_image: np.ndarray,
-        top_offset: int,
-        bot_offset: int,
-        left_offset: int,
-        right_offset: int,
-    ):
-        """
-        This function returns a subimage object.
-
-        Returns:
-            a region of interest from the input image.
-
-        Args:
-            input_image: The input image as a numpy array
-            top_offset: top offset
-            bot_offset: bottom offset
-            left_offset: left offset
-            right_offset: right offset
-        """
-        return input_image[
-            top_offset:bot_offset, left_offset:right_offset
-        ].copy()
-
     def crop_and_convert_image_with_padding(
         self,
         image: Image,
-        region: tuple,
-        pad_inside: int = 2,
-        pad_outside: int = 0,
+        region: Region,
+        pad: int = -2,
     ):
         """
-        Crop the image to the specified region with padding.
-
-        Args:
-            image: input image
-            region: region to crop. Coordinates in the format (left, top, right, bottom)
-            pad_inside: padding inside the region
-            pad_outside: padding outside the region
-
-        Returns:
-            Cropped image as a numpy array
+        Crop the image to the specified region with padding. Positive pad
+        expands the region, negative pad shrinks it.
         """
-        input_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2HSV)
-        left, top, right, bottom = region
-        h, w = input_image.shape[:2]
+        
+        # If we can't apply pad, just use the original region
+        padded_region = region.resize(pad)
+ 
+        # Clamp to image bounds
+        w, h = image.size
+        clamped_region = padded_region.clamp(Region(0, 0, w, h))
 
-        # Outer box (optionally allows a bit of context; here default 0 to focus on text box)
-        top_offset, left_offset = (
-            max(top - pad_outside, 0),
-            max(left - pad_outside, 0),
-        )
-        bot_offset, right_offset = (
-            min(bottom + pad_outside, h),
-            min(right + pad_outside, w),
-        )
-        roi_cropped = self.roi(
-            input_image, top_offset, bot_offset, left_offset, right_offset
-        )
+        # Crop the original image using the region
+        cropped = image.crop(clamped_region.as_tuple())
 
-        it = pad_inside
-        il = pad_inside
-        ib = max(roi_cropped.shape[0] - pad_inside, 0)
-        ir = max(roi_cropped.shape[1] - pad_inside, 0)
-
-        roi_cropped_and_padded = self.roi(roi_cropped, it, ib, il, ir)
-
-        return roi_cropped_and_padded
+        return cv2.cvtColor(np.array(cropped), cv2.COLOR_RGB2HSV)
 
     def get_mean_text_color(
         self,
