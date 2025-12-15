@@ -46,7 +46,7 @@ jobs:
         run: |
           echo "$GV_OUTPUTS"
 
-      - uses: astral-sh/setup-uv@ed21f2f24f8dd64503750218de024bcf64c7250a
+      - uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867
 
       - name: Normalize version to comply with PEP 440
         id: nv
