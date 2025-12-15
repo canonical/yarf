@@ -39,8 +39,6 @@ parts:
   yarf:
     plugin: python
     source: .
-    build-snaps:
-      - yq
     stage-packages:
       - ffmpeg
       - libblas3
@@ -50,7 +48,9 @@ parts:
       - xclip
     override-pull: |
       craftctl default
-      craftctl set version=$(yq -r .project.version pyproject.toml) || true
+
+      version=$(grep -Po 'version = "\K[^"]*' pyproject.toml)
+      craftctl set version=$version
 
     build-environment:
       # TODO: Drop this when this goes in:
