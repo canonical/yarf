@@ -715,7 +715,9 @@ class TestVideoInputBase:
             stub_videoinput._log_video("videopath")
             m.assert_called_once_with("videopath", ANY)
 
-        mock_logger.error.assert_called_once_with(ANY, html=True)
+        mock_logger.error.assert_called_once_with(
+            ANY, html=True, console=False
+        )
         assert mock_logger.error.call_args.args[0].startswith(
             "<video controls"
         )

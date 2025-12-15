@@ -548,8 +548,9 @@ class VideoInputBase(ABC):
         with open(video_path, "rb") as f:
             logger.error(
                 '<video controls style="max-width: 50%" src="data:video/webm;base64,'
-                f'{base64.b64encode(f.read()).decode()}" />',
+                + f'{base64.b64encode(f.read()).decode()}" />',
                 html=True,
+                console=False,
             )
 
     def _draw_region_on_image(
