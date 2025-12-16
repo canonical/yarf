@@ -36,7 +36,7 @@ snap connect yarf:process-control
 To run YARF from source, clone the repository, navigate to the root, and run (requires the `uv` tool):
 
 ```shell
-uv sync --extra develop
+uv sync
 uv run yarf
 ```
 

@@ -90,7 +90,7 @@ uv run tox
 or to only run pytest, during unit test development:
 
 ```shell
-python3 -m pytest -n=auto --cov=yarf --cov-fail-under=100 --cov-report term-missing --ignore ./examples
+uv run pytest
 ```
 
 Robot scripts are used to run tests for keywords supported in YARF.
