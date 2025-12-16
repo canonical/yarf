@@ -22,7 +22,7 @@ from robot.api.deco import keyword
 from robot.libraries.BuiltIn import BuiltIn
 
 from yarf import LABEL_PREFIX
-from yarf.lib.images.Images_patch import to_RGB
+from yarf.lib.images.utils import to_RGB
 from yarf.rf_libraries.libraries.image.segmentation import SegmentationTool
 from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
 from yarf.rf_libraries.variables.video_input_vars import (
@@ -315,7 +315,7 @@ class VideoInputBase(ABC):
                   if the text we want to find is a regex.
             timeout: Time to wait for the text to appear
             region: The region to search for the text
-            color: The color of the searched for the text
+            color: The color of the searched text
             color_tolerance: The tolerance of the color of the searched text
         Returns:
             It returns a tuple with:
