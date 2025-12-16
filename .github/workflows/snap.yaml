@@ -40,7 +40,7 @@ jobs:
           ref: ${{ inputs.commit_sha }}
           persist-credentials: false
 
-      - uses: astral-sh/setup-uv@ed21f2f24f8dd64503750218de024bcf64c7250a
+      - uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867
 
       - name: Set version
         env:
