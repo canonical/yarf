@@ -30,6 +30,17 @@ uv --no-managed-python venv --system-site-packages
 uv sync
 ```
 
+And finally you can run YARF from source:
+
+```
+yarf --platform {Mir,Vnc}
+
+# And run your first keyword
+> Log    Hello world!
+```
+
+YARF will require a platform backend to be running in parallel. Refer to the [VNC documentation][yarf-vnc] for an example.
+
 Optionally, enable pre-commit checks, so your contribution will pass all the checks
 we run on the code:
 
@@ -76,6 +87,12 @@ the repository directory:
 uv run tox
 ```
 
+or to only run pytest, during unit test development:
+
+```shell
+uv run pytest
+```
+
 Robot scripts are used to run tests for keywords supported in YARF.
 
 These tests are executed in our `Testing and quality control for YARF codebase` CI. If you want to contribute to our pool of keywords, please also include test cases under [`tests/keyword_suite`](./tests/keyword_suite/) directory, where we maintain our keyword test cases.
@@ -111,3 +128,4 @@ To submit changes to the documentation, please read the [documentation contribut
 [snapcraft]: https://snapcraft.io/snapcraft
 [tox]: https://tox.wiki/
 [uv]: https://docs.astral.sh/uv/
+[yarf-vnc]: https://canonical-yarf.readthedocs-hosted.com/latest/how-to/using-the-vnc-backend/
