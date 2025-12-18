@@ -83,6 +83,12 @@ class VideoInputBase(ABC):
     Attributes:
         ROBOT_LIBRARY_SCOPE: The scope of the robot library
         ROBOT_LISTENER_API_VERSION: The robot listener API version
+
+    Notes:
+        When using RapidOCR as the OCR method, you can set the Robot Framework
+        variables `${OCR_SIMILARITY_THRESHOLD}` and `${OCR_CONFIDENCE_THRESHOLD}`
+        to control the minimum similarity and confidence required for text
+        matches (values between 0 and 100).
     """
 
     ROBOT_LIBRARY_SCOPE = "GLOBAL"

@@ -11,6 +11,7 @@ import rapidfuzz
 from PIL import Image
 from rapidocr import RapidOCR
 from robot.api import logger
+from robot.libraries.BuiltIn import BuiltIn
 
 from yarf.rf_libraries.libraries.geometry.quad import Quad
 from yarf.vendor.RPA.core.geometry import Region
@@ -48,9 +49,11 @@ class RapidOCRReader:
         DEFAULT_SIMILARITY_THRESHOLD: Minimum similarity percentage (0-100) for
          text matching. If the similarity between the found text and the target
          text is below this threshold, the match is discarded.
+         Set ${OCR_SIMILARITY_THRESHOLD} to override.
         DEFAULT_CONFIDENCE_THRESHOLD: Minumum confidence percentage (0-100) for
           text matching. If the confidence of the found text is below this
           threshold, the match is discarded.
+          Set ${OCR_CONFIDENCE_THRESHOLD} to override.
         SIMILARITY_LOG_THRESHOLD: Minimum similarity to log rejected matches.
     """
 
@@ -89,8 +92,6 @@ class RapidOCRReader:
         self,
         image: Image.Image | Path,
         text: str,
-        similarity_threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
-        confidence_threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
         region: Region | None = None,
         partial: bool = True,
     ) -> list[dict]:
@@ -101,12 +102,6 @@ class RapidOCRReader:
         Args:
             image: Path to image or Image object.
             text: Text to find in image.
-            similarity_threshold: Minimum similarity percentage (0-100) for
-              text matching. If the similarity between the found text and the
-              target text is below this threshold, the match is discarded.
-            confidence_threshold: Minimum confidence percentage (0-100) for
-              text matching. If the confidence of the found text is below this
-              threshold, the match is discarded.
             region: Limit the region of the screen where to look.
             partial: Use partial matching.
 
@@ -138,9 +133,7 @@ class RapidOCRReader:
         for item in result:
             item.confidence *= 100
 
-        matches = self.get_matches(
-            result, text, similarity_threshold, confidence_threshold, partial
-        )
+        matches = self.get_matches(result, text, partial)
 
         if region is not None:
             for match in matches:
@@ -152,8 +145,6 @@ class RapidOCRReader:
         self,
         result: list[OCRResult],
         match_text: str,
-        similarity_threshold: float,
-        confidence_threshold: float,
         partial: bool,
     ) -> list[dict]:
         """
@@ -162,12 +153,6 @@ class RapidOCRReader:
         Args:
             result: List with the OCR results.
             match_text: Text to match.
-            similarity_threshold: Minimum similarity percentage (0-100) for
-              text matching. If the similarity between the found text and the
-              target text is below this threshold, the match is discarded.
-            confidence_threshold: Minimum confidence percentage (0-100) for
-              text matching. If the confidence of the found text is below this
-              threshold, the match is discarded.
             partial: Use partial matching.
 
         Returns:
@@ -202,6 +187,26 @@ class RapidOCRReader:
             # If the query is longer than the text, we use regular matching, so
             # we don't match against a substring of the query
             return rapidfuzz.fuzz.ratio(q, text)
+
+        similarity_threshold = self.DEFAULT_SIMILARITY_THRESHOLD
+        similarity_threshold_str = BuiltIn().get_variable_value(
+            "${OCR_SIMILARITY_THRESHOLD}"
+        )
+        if similarity_threshold_str is not None:
+            logger.debug(
+                f"OCR similarity threshold set to {similarity_threshold_str}"
+            )
+            similarity_threshold = float(similarity_threshold_str)
+
+        confidence_threshold = self.DEFAULT_CONFIDENCE_THRESHOLD
+        confidence_threshold_str = BuiltIn().get_variable_value(
+            "${OCR_CONFIDENCE_THRESHOLD}"
+        )
+        if confidence_threshold_str is not None:
+            logger.debug(
+                f"OCR confidence threshold set to {confidence_threshold_str}"
+            )
+            confidence_threshold = float(confidence_threshold_str)
 
         matches = []
         for item in result:
