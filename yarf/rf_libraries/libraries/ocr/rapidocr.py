@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import rapidfuzz
 from PIL import Image
-from rapidocr_onnxruntime import RapidOCR
+from rapidocr import RapidOCR
 
 from yarf.rf_libraries.libraries.geometry.quad import Quad
 from yarf.vendor.RPA.core.geometry import Region
