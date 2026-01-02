@@ -25,7 +25,7 @@ dependencies = [
     "keysymdef~=1.2.0",
     "onnxruntime~=1.23.0",
     "opencv-python~=4.12.0.88",
-    "Pillow~=12.0.0",
+    "Pillow~=12.1.0",
     "pytesseract~=0.3.10",
     "pywayland",
     "rapidfuzz>=3.12.1",
