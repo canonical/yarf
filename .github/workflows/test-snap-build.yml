@@ -10,6 +10,9 @@ on:
       - pyproject.toml
   workflow_dispatch:
 
+permissions:
+  contents: read  # Required to check out repository code
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -30,13 +33,15 @@ jobs:
     runs-on: ${{ matrix.runs_on }}
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      with:
+        persist-credentials: false
 
     - name: Build snap
       uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
 
     - name: Upload snap artifact
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
       with:
         name: ${{ matrix.arch }}-snap
         path: "*.snap"

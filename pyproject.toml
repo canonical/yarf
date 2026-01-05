@@ -25,15 +25,17 @@ dependencies = [
     "keysymdef~=1.2.0",
     "onnxruntime~=1.23.0",
     "opencv-python~=4.12.0.88",
-    "Pillow~=11.3.0",
+    "Pillow~=12.0.0",
     "pytesseract~=0.3.10",
     "pywayland",
     "rapidfuzz>=3.12.1",
     "rapidocr-onnxruntime>=1.4.4",
-    "robotframework~=7.3.2",
-    "robotframework-debug~=4.5.0",
+    "robotframework~=7.4.0",
     "robotframework-sshlibrary~=3.8.0",
     "robotframework-stacktrace==0.4.1",
+    "prompt-toolkit>=3.0.38",
+    "pygments>=2.14.0",
+    "pyperclip>=1.8.2",
     "numpy~=2.2.6",  # latest to support 3.10
     "xkbcommon<1.5",  # ubuntu jammy supports up to 1.4.0
     "pyte~=0.8.2",
@@ -41,17 +43,18 @@ dependencies = [
     "python-dateutil>=2.9.0.post0",
 ]
 
-[project.optional-dependencies]
-develop = [
+[dependency-groups]
+dev = [
     "licensecheck",
     "mypy",
-    "pre-commit<4.3.1",
+    "prek",
     "pyfakefs",
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
     "pytest-xdist",
     "tox",
+    "types-python-dateutil",
 ]
 
 [project.scripts]
@@ -81,7 +84,7 @@ extend-exclude = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "--doctest-modules --ignore=docs/ --ignore=hatch_build.py"
+addopts = "--doctest-modules --ignore=docs/ --ignore=examples/ --ignore=hatch_build.py"
 asyncio_default_fixture_loop_scope = "function"
 markers = [
     "output_size",

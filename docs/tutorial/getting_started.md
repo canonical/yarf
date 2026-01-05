@@ -2,7 +2,7 @@
 
 **YARF** is a tool built upon [Robot Framework][robot-framework] that allows developers to build complex visual test scenarios and bootstrap them locally, and then work towards automated runs in continuous integration (CI) and use of platforms/fixtures with minimal effort. In YARF, we support the Mir as one of our default platform.
 
-**Mir** is a display server that is suitable for local development and continuous integration. In this tutorial, we will use Mir to display the calcualtor and then use YARF to perform actions and run tests on it. For details please visit [here][mir-docs].
+**Mir** is a display server that is suitable for local development and continuous integration. In this tutorial, we will use Mir to display the calculator and then use YARF to perform actions and run tests on it. For details please visit [here][mir-docs].
 
 In this tutorial, we will go through the process of setting up YARF and a Mir server, then we will start a calculator app inside the Mir server and use YARF to do some simple calculations.
 
@@ -55,7 +55,7 @@ Now, let's start the Mir server:
 caption: The command to start the mir-test-tools demo server with virtual 
   pointer.
 ---
-export WAYLAND_DISPLAY=wayland-0
+export WAYLAND_DISPLAY=wayland-99
 
 mir-test-tools.demo-server \
     --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 &

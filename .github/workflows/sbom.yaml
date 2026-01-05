@@ -1,0 +1,65 @@
+name: YARF Snap - Software Bill of Materials (SBOM)
+on:
+  workflow_call:
+    inputs:
+      CHANNEL:
+        description: 'YARF snap channel (e.g., latest/stable)'
+        type: string
+        default: latest/stable
+        required: true
+
+  workflow_dispatch:
+    inputs:
+      CHANNEL:
+        description: 'YARF snap channel (e.g., latest/stable)'
+        type: string
+        default: latest/stable
+        required: true
+
+permissions:
+  contents: read  # Required to check out repository code
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sbom:
+    name: YARF Snap - Software Bill of Materials (SBOM)
+    runs-on:
+      - self-hosted-linux-amd64-noble-private-endpoint-medium
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt update -qq
+          sudo apt install -y \
+            git-lfs
+
+      - name: Checkout Repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        with:
+          lfs: true
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548
+        with:
+          python-version: "3.12"
+
+      - name: Install python dependencies
+        run: |
+          pip install requests
+
+      - name: Request and retrieve SBOM
+        id: sbom
+        env:
+          SBOM_SCRIPT_PATH: .github/scripts/sbom/sbom.py
+          YARF_CHANNEL: ${{ inputs.CHANNEL }}
+        run: python3 -u ${SBOM_SCRIPT_PATH} --channel=${YARF_CHANNEL}
+
+      - name: Collect SBOM
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: yarf-${{ steps.sbom.outputs.revision }}-sbom
+          path: /tmp/yarf-${{ steps.sbom.outputs.revision }}.sbom.json
+          retention-days: 5

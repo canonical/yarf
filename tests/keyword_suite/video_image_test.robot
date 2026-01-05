@@ -48,6 +48,14 @@ Test Keyword Match Any
     Run Keyword And Expect Error                    ImageNotFoundError: *
     ...                     Match Any               ${templates}
 
+Test Keyword Get Position Of Target Template
+    [Tags]                  yarf:certification_status: blocker
+    ${cal_region}=          Match                   ${CURDIR}/calculator/01_calculator.png
+    ${x}                    ${y}=                   Get Position Of ${CURDIR}/calculator/equals.png
+
+    Should Be True          ${cal_region}[0][left] < ${x} < ${cal_region}[0][right]
+    Should Be True          ${cal_region}[0][top] < ${y} < ${cal_region}[0][bottom]
+
 # Pending on issue: https://warthogs.atlassian.net/browse/YARF-57
 # Test Keyword Restart Video Input
 #    [Tags]    yarf:certification_status: blocker

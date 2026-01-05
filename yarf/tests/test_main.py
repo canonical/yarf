@@ -1,6 +1,7 @@
 import os
 import sys
 import tempfile
+import types
 from pathlib import Path
 from textwrap import dedent
 from unittest import mock
@@ -15,6 +16,7 @@ from yarf import main
 from yarf.main import (
     YARF_VERSION,
     compare_version,
+    get_listeners,
     get_robot_reserved_settings,
     get_yarf_settings,
     parse_arguments,
@@ -304,6 +306,81 @@ class TestMain:
         additional_reserved_settings = get_robot_reserved_settings(test_suite)
         assert additional_reserved_settings["exitonerror"]
 
+    @pytest.mark.parametrize(
+        "additional_listener_paths, expected",
+        [
+            (
+                None,
+                {"MetadataListener": 1, "RobotStackTracer": 1},
+            ),
+            (
+                ["dummy/keywords_listener.py"],
+                {
+                    "MetadataListener": 1,
+                    "RobotStackTracer": 1,
+                    "KeywordsListener": 1,
+                },
+            ),
+            (
+                ["dummy/metadata_listener.py"],
+                {"MetadataListener": 2, "RobotStackTracer": 1},
+            ),
+        ],
+    )
+    def test_get_listeners(self, additional_listener_paths, expected):
+        lib_cls = Mock(get_pkg_path=Mock(return_value="cls_path"))
+
+        def fake_module_from_spec(spec):
+            module = types.ModuleType(spec.name)
+            if "keywords_listener" in spec.name:
+
+                class KeywordsListener:
+                    ROBOT_LISTENER_API_VERSION = 3
+
+                    def __init__(self, path=None):
+                        self.path = path
+
+                KeywordsListener.__module__ = module.__name__
+                module.KeywordsListener = KeywordsListener
+
+            elif "metadata_listener" in spec.name:
+
+                class MetadataListener:
+                    ROBOT_LISTENER_API_VERSION = 3
+
+                MetadataListener.__module__ = module.__name__
+                module.MetadataListener = MetadataListener
+
+            return module
+
+        def fake_spec_from_file_location(name, path):
+            fake_loader = Mock()
+            fake_loader.exec_module.side_effect = lambda module: None
+            return types.SimpleNamespace(name=name, loader=fake_loader)
+
+        with (
+            patch(
+                "importlib.util.spec_from_file_location",
+                side_effect=fake_spec_from_file_location,
+            ),
+            patch(
+                "importlib.util.module_from_spec",
+                side_effect=fake_module_from_spec,
+            ),
+        ):
+            result = get_listeners(additional_listener_paths, lib_cls=lib_cls)
+
+        # Count listener instances
+        expected_counts = expected.copy()
+        for cls in result:
+            cls_name = cls.__class__.__name__
+            if cls_name in expected_counts:
+                expected_counts[cls_name] -= 1
+                if expected_counts[cls_name] == 0:
+                    del expected_counts[cls_name]
+
+        assert len(expected_counts) == 0
+
     @patch("yarf.main.RobotStackTracer")
     @patch("yarf.main.MetadataListener")
     @patch("yarf.main.get_robot_reserved_settings")
@@ -336,6 +413,8 @@ class TestMain:
         SUPPORTED_PLATFORMS["Vnc"] = Vnc
 
         mock_test_suite = Mock()
+        mock_test_suite.name = "MockSuite"
+        mock_test_suite.suites.__len__ = Mock(return_value=1)
         mock_test_suite.run.return_value.return_code = 0
         mock_get_yarf_settings.return_value = {}
         mock_get_robot_reserved_settings.return_value = {}
@@ -349,7 +428,7 @@ class TestMain:
         assert rc == 0
         mock_get_yarf_settings.assert_called_once()
         mock_test_suite.filter.assert_called_once_with(
-            included_suites=["suiteA"],
+            included_suites=["MockSuite.suiteA"],
             included_tests=["testA", "taskA"],
             included_tags=["tagA"],
             excluded_tags=["tagB"],
@@ -363,6 +442,46 @@ class TestMain:
         mock_rebot.assert_called_once_with(
             f"{outdir}/output.xml", outputdir=outdir
         )
+
+    @patch("yarf.main.get_robot_reserved_settings")
+    @patch("yarf.main.get_yarf_settings")
+    def test_run_robot_suite_no_suite(
+        self,
+        mock_get_yarf_settings: MagicMock,
+        mock_get_robot_reserved_settings: MagicMock,
+    ) -> None:
+        """
+        Test if the function runs the robot suite with the specified variables
+        and output directory.
+        """
+        variables = ["VAR1:value1", "VAR2:value2"]
+        options = {
+            "variable": ["VAR3:value3"],
+            "extra_arg": "extra_value",
+            "suite": ["suiteA"],
+            "test": ["testA"],
+            "task": ["taskA"],
+            "include": ["tagA"],
+            "exclude": ["tagB"],
+        }
+        outdir = Path(tempfile.gettempdir()) / "yarf-outdir"
+        SUPPORTED_PLATFORMS.clear()
+        SUPPORTED_PLATFORMS["Vnc"] = Vnc
+
+        mock_test_suite = Mock()
+        mock_test_suite.name = "MockSuite"
+        mock_test_suite.suites.__len__ = Mock(return_value=0)
+        mock_get_yarf_settings.return_value = {}
+        mock_get_robot_reserved_settings.return_value = {}
+        rc = run_robot_suite(
+            mock_test_suite,
+            SUPPORTED_PLATFORMS["Vnc"],
+            variables,
+            outdir,
+            options,
+        )
+        assert rc == 252
+        mock_test_suite.run.assert_not_called()
 
     @patch("yarf.main.get_robot_reserved_settings")
     @patch("yarf.main.get_yarf_settings")
@@ -387,6 +506,7 @@ class TestMain:
         mock_get_yarf_settings.return_value = {}
         mock_get_robot_reserved_settings.return_value = {}
         mock_test_suite = Mock()
+        mock_test_suite.suites.__len__ = Mock(return_value=1)
         mock_test_suite.run.return_value.return_code = 1
         mock_test_suite.run.return_value.errors.messages = [Mock()]
         with patch("yarf.main.robot_in_path"):

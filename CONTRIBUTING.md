@@ -28,32 +28,27 @@ We can install YARF along with the dependencies specified in
 ```shell
 uv --no-managed-python venv --system-site-packages
 uv sync
-uv pip install .[develop]
 ```
 
-After that, we enter the virtual environment:
+And finally you can run YARF from source:
 
-```shell
-. .venv/bin/activate
 ```
+yarf --platform {Mir,Vnc}
+
+# And run your first keyword
+> Log    Hello world!
+```
+
+YARF will require a platform backend to be running in parallel. Refer to the [VNC documentation][yarf-vnc] for an example.
 
 Optionally, enable pre-commit checks, so your contribution will pass all the checks
 we run on the code:
 
 ```shell
-uvx pre-commit install
+uv run prek install
 ```
 
 We can start working on the repository here.
-
-#### Leave the virtual environment
-
-When we finish working with the repository and leaving the virtual environment,
-we can execute:
-
-```shell
-deactivate
-```
 
 ## Build the Snap Package
 
@@ -89,8 +84,37 @@ To run the above quality control tasks, simply execute the command under
 the repository directory:
 
 ```shell
-uvx tox
+uv run tox
 ```
+
+or to only run pytest, during unit test development:
+
+```shell
+uv run pytest
+```
+
+Robot scripts are used to run tests for keywords supported in YARF.
+
+These tests are executed in our `Testing and quality control for YARF codebase` CI. If you want to contribute to our pool of keywords, please also include test cases under [`tests/keyword_suite`](./tests/keyword_suite/) directory, where we maintain our keyword test cases.
+
+If, for any reason, a keyword shall be excluded from the coverage, please use the `yarf: nocoverage` tag to skip the keyword like below:
+
+1. In the case of robot keyword:
+
+```robotframework
+Fantastic Keyword
+    [Tags]    yarf: nocoverage
+    ...
+```
+
+1. In the case of python keyword:
+
+```python
+# yarf: nocoverage
+def fantastic_keyword(self) -> Any: ...
+```
+
+And add a comment explaining why we should skip this in the keyword test coverage, or a link to the corresponding issue.
 
 ## Documentation
 
@@ -104,3 +128,4 @@ To submit changes to the documentation, please read the [documentation contribut
 [snapcraft]: https://snapcraft.io/snapcraft
 [tox]: https://tox.wiki/
 [uv]: https://docs.astral.sh/uv/
+[yarf-vnc]: https://canonical-yarf.readthedocs-hosted.com/latest/how-to/using-the-vnc-backend/

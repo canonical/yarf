@@ -1,7 +1,17 @@
+Args
 funcobj
+HIDs
+keypresses
 kwargs
 msg
+screenshotting
 step_distance
 tentatives
+tesseract
+typedoc
 typename
 rapidocr
+vnc
+Vnc
+yaml
+color_tolerance

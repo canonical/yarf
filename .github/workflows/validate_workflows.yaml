@@ -1,0 +1,50 @@
+name: Workflow validation
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/*'
+
+permissions:
+  contents: read  # Required to check out repository code
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  workflow_validation:
+    name: Workflow validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        with:
+          persist-credentials: false
+      - name: Install action-validator
+        run: |
+          curl -sSL https://github.com/mpalmer/action-validator/releases/download/v0.6.0/action-validator_linux_amd64 -o /tmp/action-validator
+          chmod +x /tmp/action-validator
+          sudo mv /tmp/action-validator /usr/local/bin/action-validator
+      - name: Lint Actions
+        run: |
+          find .github/workflows -type f \( -iname \*.yaml -o -iname \*.yml \) \
+            | xargs -I {} action-validator --verbose {}
+
+  workflow_vulnerability_scan:
+    name: Workflow vulnerability scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        with:
+          persist-credentials: false
+      - name: Install zizmor from crates.io
+        uses: baptiste0928/cargo-install@b687c656bda5733207e629b50a22bf68974a0305
+        with:
+          crate: zizmor
+          version: '1.16.1'
+      - name: Scan all workflows
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          zizmor --pedantic $(ls .github/workflows/*.{yaml,yml})

@@ -1,4 +1,5 @@
 import contextlib
+import importlib.util
 import logging
 import operator
 import os
@@ -14,7 +15,7 @@ from typing import Any, Optional, Sequence
 from packaging import version
 from robot import rebot
 from robot.api import TestSuite, TestSuiteBuilder
-from robot.errors import Information
+from robot.errors import DATA_ERROR, Information
 from robot.run import RobotFramework
 from RobotStackTracer import RobotStackTracer
 
@@ -248,6 +249,39 @@ def get_robot_reserved_settings(test_suite: TestSuite) -> dict[str, Any]:
     return robot_reserved_settings
 
 
+def get_listeners(
+    additional_listener_paths: list[str] | None, **kwargs
+) -> list[object]:
+    listeners = [
+        MetadataListener(),
+        RobotStackTracer(),
+    ]
+    if additional_listener_paths is None:
+        return listeners
+
+    for path_str in additional_listener_paths:
+        # import listener and append to list
+        path = Path(path_str)
+        spec = importlib.util.spec_from_file_location(path.stem, path)
+        module = importlib.util.module_from_spec(spec)  # type:ignore[arg-type]
+        spec.loader.exec_module(module)  # type:ignore[union-attr]
+        for name, obj in vars(module).items():
+            if not (
+                isinstance(obj, type)
+                and obj.__module__ == module.__name__
+                and hasattr(obj, "ROBOT_LISTENER_API_VERSION")
+            ):
+                continue
+
+            match name:
+                case "KeywordsListener":
+                    listeners.append(obj(kwargs["lib_cls"].get_pkg_path()))
+                case _:
+                    listeners.append(obj())
+
+    return listeners
+
+
 @output_converter
 def run_robot_suite(
     suite: TestSuite,
@@ -280,18 +314,30 @@ def run_robot_suite(
         variables.extend(options.pop("variable"))
 
     selected_tests = options.pop("test", []) + options.pop("task", [])
+    if (targeted_suites := options.pop("suite", None)) is not None:
+        for idx, s in enumerate(targeted_suites):
+            targeted_suites[idx] = suite.name + "." + s
+
     suite.filter(
-        included_suites=options.pop("suite", None),
+        included_suites=targeted_suites,
         included_tests=selected_tests if len(selected_tests) > 0 else None,
         included_tags=options.pop("include", None),
         excluded_tags=options.pop("exclude", None),
     )
 
+    # Issue: https://github.com/robotframework/robotframework/issues/5549
+    if len(suite.suites) <= 0:
+        _logger.error(f"Suite '{suite.name}' contains no tests.")
+        return DATA_ERROR
+
     with robot_in_path(lib_cls.get_pkg_path()):
         result = suite.run(
             variable=variables,
             outputdir=outdir,
-            listener=[MetadataListener(), RobotStackTracer()],
+            listener=get_listeners(
+                options.pop("listener", None),
+                lib_cls=lib_cls,
+            ),
             **options,
         )
 

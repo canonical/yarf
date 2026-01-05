@@ -16,30 +16,45 @@ on:
         required: true
         type: string
 
-run-name: "Build version: ${{ inputs.version }} (${{ inputs.commit_short_sha }})"
+run-name: "Build version: ${{ inputs.version }} (${{ inputs.commit_short_sha }}"
+
+# Read access to repository; write access for artifacts
+permissions:
+  contents: read      # Required to check out repository code
+  actions: read       # Required to download artifacts between jobs
 
 concurrency:
   group: yarf-snap-ci-${{ github.ref_name }}
-  cancel-in-progress: false
+  cancel-in-progress: false  # zizmor: ignore[concurrency-limits]
 
 jobs:
   set-version:
+    name: Set version
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read      # Required to check out repository code
+      actions: write      # Required to upload artifacts
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           ref: ${{ inputs.commit_sha }}
+          persist-credentials: false
 
-      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e
+      - uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867
 
       - name: Set version
-        run: uv version "${{ inputs.version }}" --frozen
+        env:
+          VERSION: ${{ inputs.version }}
+        run: uv version "${VERSION}" --frozen
 
       - name: Add commit sha to the snap
-        run: .github/scripts/snap/add-commit-sha.sh "${{ inputs.commit_sha }}" "${{ inputs.commit_short_sha }}"
+        env:
+          COMMIT_SHA: ${{ inputs.commit_sha }}
+          COMMIT_SHORT_SHA: ${{ inputs.commit_short_sha }}
+        run: .github/scripts/snap/add-commit-sha.sh "${COMMIT_SHA}" "${COMMIT_SHORT_SHA}"
 
       - name: Upload updated project files
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: updated-project-files
           path: |
@@ -49,6 +64,10 @@ jobs:
   build_and_publish:
     needs: [set-version]
     name: Build and publish YARF snap (${{ matrix.arch }})
+    permissions:
+      contents: read   # Required to check out repository code
+      actions: write   # Required to download and upload artifacts
+      id-token: write  # Required for snap store authentication
     strategy:
       fail-fast: false
       matrix:
@@ -62,12 +81,13 @@ jobs:
     runs-on: ${{ matrix.runs_on }}
     steps:
     - name: Checkout Repo
-      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       with:
         ref: ${{ inputs.commit_sha }}
+        persist-credentials: false
 
     - name: Download updated project files
-      uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
       with:
         name: updated-project-files
         path: .
@@ -77,7 +97,7 @@ jobs:
       id: snapcraft
 
     - name: Upload artifact
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
       with:
         name: yarf-${{ matrix.arch }}
         path: ${{ steps.snapcraft.outputs.snap }}

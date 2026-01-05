@@ -6,8 +6,16 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read  # Required to check out repository code
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test-plugin:
+    name: Test platform plugin
     runs-on: ubuntu-latest
     steps:
       - name: Install dependencies
@@ -22,14 +30,15 @@ jobs:
             python3-tk
 
       - name: Checkout repo
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           lfs: true
           fetch-depth: 0
           fetch-tags: true
+          persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548
         with:
           python-version: "3.12"
 
@@ -63,6 +72,6 @@ jobs:
 
       - if: failure() && runner.debug
         name: Setup upterm session (restart with "Enable debug logging" to activate)
-        uses: canonical/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48
+        uses: canonical/action-tmate@a0e8caed3bba2ccb98901a274553bf1284ad96c2  # zizmor: ignore[stale-action-refs]
         with:
           limit-access-to-actor: true

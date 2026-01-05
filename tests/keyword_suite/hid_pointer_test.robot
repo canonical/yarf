@@ -56,27 +56,48 @@ Test Button Actions
 Test Keyword Move Pointer
     [Tags]                  yarf:certification_status: blocker
     Clear Trace File
-    Hid.Move Pointer To Absolute                    100                     100
-    Hid.Move Pointer To Proportional                0.1                     0.1
-    Hid.Move Pointer To Proportional                1                       1
-    Hid.Move Pointer To Absolute                    0                       0
+    Move Pointer To (100, 100)
+    Move Pointer To Proportional (0.1, 0.1)
+    Move Pointer To Proportional (1, 1)
+    Move Pointer To (0, 0)
     ${movements}=           Evaluate                [(100,100), (128,102), (1280,1024), (0,0)]
     Assert Pointer Movement Events                  ${movements}
 
 Test Keyword Walk Pointer
     [Tags]                  yarf:certification_status: blocker
     Clear Trace File
-    Hid.Walk Pointer To Absolute
-    ...                     100
-    ...                     100
+    Walk Pointer To (100, 100)
     ...                     20
     ...                     0.01
-    Hid.Walk Pointer To Proportional
-    ...                     0
-    ...                     0
+    Walk Pointer To Proportional (0, 0)
     ...                     0.01
     ...                     0.01
 
     ${movements}=    Evaluate
     ...    [(22, 17), (44, 35) ,(67, 53), (89, 71), (100, 89), (100, 100), (87, 89), (74, 79), (61, 69), (48, 59), (36, 48), (23, 38), (10, 28), (0, 18), (0, 7), (0, 0)]
+    Assert Pointer Movement Events                  ${movements}
+
+Test Keyword Click Button On Destination
+    [Tags]                  yarf:certification_status: blocker
+    Clear Trace File
+    Click LEFT Button On ${100,100}
+    ${movements}=           Evaluate                [(100, 100)]
+    Assert Pointer Movement Events                  ${movements}
+
+    ${actions}=             Create Dictionary
+    ...                     272=click
+    Assert Pointer Button Events                    ${actions}
+
+Test Keyword Drag And Drop On Destination
+    [Tags]                  yarf:certification_status: blocker
+    Clear Trace File
+    Drag And Drop On ${200,200}
+
+    ${actions}=             Create Dictionary
+    ...                     272=press
+    ...                     272=release
+    Assert Pointer Button Events                    ${actions}
+
+    ${movements}=    Evaluate
+    ...    [(17, 14), (35,28), (53, 42), (71, 57), (89, 71), (107, 85), (125, 100), (143, 114), (160, 128), (178, 143), (196, 157), (200, 171), (200, 186), (200, 200)]
     Assert Pointer Movement Events                  ${movements}

@@ -5,23 +5,22 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: read  # Required to check out repository code
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   TICS:
-    runs-on: ubuntu-latest
+    name: Run TICS analysis
+    runs-on: [self-hosted-linux-amd64-noble-tiobe]
     steps:
-      - name: Checkout repo (main branch)
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
-        with:
-          ref: main
-          lfs: true
-          fetch-depth: 0
-
       - name: Set up Python
-        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548
         with:
           python-version: "3.12"
+
       - name: Install dependencies
         run: |
             sudo apt update -qq
@@ -33,33 +32,44 @@ jobs:
             clang \
             python3-tk
 
-            pip install uv
+            pip install \
+            coverage \
+            flake8 \
+            pylint \
+            pytest \
+            pyfakefs \
+            uv \
+            --break-system-packages
 
-      - name: Install TICS dependencies
-        run: |
-          pip install \
-          flake8 \
-          pylint
+      - name: Checkout repo (main branch)
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        with:
+          ref: main
+          lfs: true
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: Install YARF
         run: |
-          uv venv
-          source .venv/bin/activate
-          echo PATH=$PATH >> $GITHUB_ENV
           pip install .
-          pip install .[develop]
 
       - name: Run test and coverage
         run: |
-          uvx tox
+          uv --no-managed-python venv --system-site-packages
+          uv sync
+          uv run pytest -n=auto --cov=yarf --cov-fail-under=100 --cov-report term-missing
+          coverage xml
 
       - name: Rename coverage report for TICS
         run: |
           mkdir ./coverage
           mv ./coverage.xml ./coverage/cobertura.xml
 
+      - name: Export PATH for TICS
+        run: echo PATH=$PATH >> $GITHUB_ENV
+
       - name: TICS GitHub Action
-        uses: tiobe/tics-github-action@b9861e16fd5d38624516fcd3e49e233c133ebaf3
+        uses: tiobe/tics-github-action@768de18bedf164ee461bc9ef5e2f2fa1a20b122a
         with:
           mode: qserver
           project: yarf
