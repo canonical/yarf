@@ -238,7 +238,7 @@ jobs:
           dbus-run-session -- gnome-calculator &
 
           snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite kvm_test --listener ${KEYWORDS_LISTENER_PATH} 2> ~/wayland.trace
-          
+
       - if: failure()
         name: Collect test results
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
