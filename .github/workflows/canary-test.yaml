@@ -136,7 +136,6 @@ jobs:
         run: |
           sudo apt-get --yes --no-install-recommends install \
             eog
-          pip install asttokens
 
       - name: Run Keyword tests - VideoInput imaging
         env:
