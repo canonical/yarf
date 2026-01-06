@@ -132,11 +132,6 @@ jobs:
         run: |
           snap run yarf --platform Example tests/plugin_suite
 
-      - name: Install keyword suite dependencies
-        run: |
-          sudo apt-get --yes --no-install-recommends install \
-            eog
-
       - name: Run Keyword tests - VideoInput imaging
         env:
           KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
