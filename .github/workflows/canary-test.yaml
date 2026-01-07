@@ -63,13 +63,6 @@ jobs:
 
           pip install check-jsonschema
 
-      - name: Check out repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-        with:
-          lfs: true
-          fetch-depth: 1
-          persist-credentials: false
-
       - name: Install YARF from channel
         shell: bash
         env:
@@ -80,6 +73,31 @@ jobs:
           set -euo pipefail
           sudo snap install yarf --channel="${TRACK}/${CHANNEL}"
           sudo mkdir --parents ${SNAP_USER_COMMON}
+
+      - name: Pin YARF to the requested version in yarf-example-plugin pyproject.toml
+        run: bash .github/scripts/canary-test/pin-yarf-version.sh
+
+      - name: Build yarf-example-plugin snap
+        uses: snapcore/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
+        with:
+          path: examples/yarf-example-plugin
+
+      - name: Install yarf-example-plugin snap
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo snap install examples/yarf-example-plugin/*.snap --dangerous
+
+      - name: Connect platform plugin interface
+        run: |
+          sudo snap connect yarf-example-plugin:platform-plugins yarf:platform-plugins
+
+      - name: Check out repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        with:
+          lfs: true
+          fetch-depth: 1
+          persist-credentials: false
 
       - name: Install platform ${{ matrix.platform }} dependencies
         shell: bash
@@ -106,24 +124,6 @@ jobs:
         run: |
           version=$(jq -r '.version' ~/snap/yarf/common/yarf-outdir/TestSubmissionSchema_output.json)
           check-jsonschema --schemafile https://raw.githubusercontent.com/canonical/test-submission-schema/refs/heads/main/test_submission_schema/schemas/v${version}.json ~/snap/yarf/common/yarf-outdir/TestSubmissionSchema_output.json
-
-      - name: Pin YARF to the requested version in pyproject.toml
-        run: bash .github/scripts/canary-test/pin-yarf-version.sh
-
-      - name: Build yarf-example-plugin snap
-        uses: snapcore/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
-        with:
-          path: examples/yarf-example-plugin
-
-      - name: Install yarf-example-plugin snap
-        shell: bash
-        run: |
-          set -euo pipefail
-          sudo snap install examples/yarf-example-plugin/*.snap --dangerous
-
-      - name: Connect platform plugin interface
-        run: |
-          sudo snap connect yarf-example-plugin:platform-plugins yarf:platform-plugins
 
       - name: Run plugin tests
         run: |
