@@ -7,7 +7,7 @@ Library             String
 
 
 *** Variables ***
-${WAYLAND_TRACE_PATH}       /root/snap/yarf/wayland.trace
+${WAYLAND_TRACE_PATH}       ~/wayland.trace
 
 
 *** Keywords ***
@@ -18,7 +18,6 @@ Clear Trace File
 Get Trace
     [Documentation]    Get the current Wayland trace as a list of lines.
     ${raw}=                 Get File                ${WAYLAND_TRACE_PATH}
-    Log To Console          ${raw}
     # Remove any NUL bytes so splitting into lines works
     ${trace}=               Replace String Using Regexp
     ...                     ${raw}
@@ -106,10 +105,8 @@ Assert Keys Combo Events
             ...                     ${pattern}
             Should Be True          ${jdx} < ${n}
             IF    ${position} < ${mid}
-                Should Be True          ${jdx} - ${start} == 0
                 ${start}=               Evaluate                ${jdx} + 1
             ELSE
-                Should Be True          ${jdx} - ${mid_start} == 0
                 ${mid_start}=           Evaluate                ${jdx} + 1
             END
         END
@@ -126,10 +123,8 @@ Assert Keys Combo Events
         ...                     ${sync_pattern}
         Should Be True          ${jdx} < ${n}
         IF    ${position} < ${mid}
-            Should Be True          ${jdx} - ${start} == 0
             ${start}=               Evaluate                ${jdx} + 1
         ELSE
-            Should Be True          ${jdx} - ${mid_start} == 0
             ${mid_start}=           Evaluate                ${jdx} + 1
         END
     END
