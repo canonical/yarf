@@ -80,9 +80,11 @@ jobs:
         env:
           TRACK: ${{ inputs.TRACK }}
           CHANNEL: ${{ inputs.CHANNEL }}
+          SNAP_USER_COMMON: /root/snap/yarf/common
         run: |
           set -euo pipefail
           sudo snap install yarf --channel="${TRACK}/${CHANNEL}"
+          mkdir --parents "${SNAP_USER_COMMON}
 
       - name: Install platform ${{ matrix.platform }} dependencies
         shell: bash
@@ -175,7 +177,7 @@ jobs:
       - name: Run Keyword tests - Hid keyboard
         env:
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
-          SNAP_COMMON: /var/snap/yarf/common
+          SNAP_USER_COMMON: /root/snap/yarf/common
         run: |
           export WAYLAND_DISPLAY=wayland-3
           export WAYLAND_DEBUG=client
@@ -189,12 +191,12 @@ jobs:
           # Wait for the compositor to start
           inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-3\$" $XDG_RUNTIME_DIR
 
-          sudo snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite hid_keyboard_test 2> ${SNAP_COMMON}/wayland.trace
+          sudo snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite hid_keyboard_test 2> ${SNAP_USER_COMMON}/wayland.trace
 
       - name: Run Keyword tests - Hid pointer
         env:
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
-          SNAP_COMMON: /var/snap/yarf/common
+          SNAP_USER_COMMON: /root/snap/yarf/common
         run: |
           export WAYLAND_DISPLAY=wayland-4
           export WAYLAND_DEBUG=client
@@ -208,7 +210,7 @@ jobs:
           # Wait for the compositor to start
           inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-4\$" $XDG_RUNTIME_DIR
 
-          sudo snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite hid_pointer_test 2> ${SNAP_COMMON}/wayland.trace
+          sudo snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite hid_pointer_test 2> ${SNAP_USER_COMMON}/wayland.trace
 
       - name: Run Keyword tests - KVM
         env:
