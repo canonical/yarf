@@ -59,9 +59,14 @@ jobs:
           sudo apt update -qq
           sudo apt install -y \
             git-lfs \
-            jq
+            libgl1 \
+            libxkbcommon-dev \
+            jq \
+            clang \
+            python3-tk \
+            tesseract-ocr
 
-          pip install check-jsonschema
+          pip install uv check-jsonschema
 
       - name: Install YARF from channel
         shell: bash
@@ -177,25 +182,10 @@ jobs:
 
           snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite video_text_test
 
-      - name: Install dependencies
-        run: |
-          sudo apt update -qq
-          sudo apt install -y \
-            git-lfs \
-            libgl1 \
-            libxkbcommon-dev \
-            jq \
-            clang \
-            python3-tk \
-            tesseract-ocr
-
       - name: Set up Python
         uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548
         with:
           python-version: "3.12"
-
-      - name: Install uv
-        run: pip install uv
 
       - name: Run Keyword tests - Hid keyboard
         env:
