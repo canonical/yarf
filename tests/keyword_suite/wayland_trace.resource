@@ -7,7 +7,7 @@ Library             String
 
 
 *** Variables ***
-${WAYLAND_TRACE_PATH}       ~/wayland.trace
+${WAYLAND_TRACE_PATH}       /root/snap/yarf/wayland.trace
 
 
 *** Keywords ***
@@ -18,6 +18,7 @@ Clear Trace File
 Get Trace
     [Documentation]    Get the current Wayland trace as a list of lines.
     ${raw}=                 Get File                ${WAYLAND_TRACE_PATH}
+    Log To Console          ${raw}
     # Remove any NUL bytes so splitting into lines works
     ${trace}=               Replace String Using Regexp
     ...                     ${raw}
