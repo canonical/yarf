@@ -74,6 +74,18 @@ jobs:
           sudo snap install yarf --channel="${TRACK}/${CHANNEL}"
           sudo mkdir --parents ${SNAP_USER_COMMON}
 
+      - name: Check out tests, examples and github workflows
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        with:
+          lfs: true
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout: |
+            ${{ env.TEST_SUITE_PATH }}
+            ${{ env.EXAMPLE_PATH }}
+            ${{ env.GITHUB_WORKFLOWS }}
+          sparse-checkout-cone-mode: false
+
       - name: Pin YARF to the requested version in yarf-example-plugin pyproject.toml
         run: bash .github/scripts/canary-test/pin-yarf-version.sh
 
@@ -92,12 +104,8 @@ jobs:
         run: |
           sudo snap connect yarf-example-plugin:platform-plugins yarf:platform-plugins
 
-      - name: Check out repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-        with:
-          lfs: true
-          fetch-depth: 1
-          persist-credentials: false
+      - name: Check out the rest of the repository (need the full repo because this CI use the source code to verify the test log for HID keyword tests)
+        run: git sparse-checkout disable
 
       - name: Install platform ${{ matrix.platform }} dependencies
         shell: bash
