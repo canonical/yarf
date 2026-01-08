@@ -83,9 +83,8 @@ Assert Keys Combo Events
 
     ${trace}=               Get Trace
     ${n}=                   Get Length              ${trace}
-    ${start}=               Set Variable            0
-    ${mid}=                 Evaluate                ${n} // 2
-    ${mid_start}=           Set Variable            ${mid}
+    ${down_start}=          Set Variable            0
+    ${up_start}=            Set Variable            0
     ${n_keys}=              Get Length              ${key_ints}
 
     FOR    ${idx}    IN RANGE    ${n_keys}
@@ -96,39 +95,33 @@ Assert Keys Combo Events
         ...                     ^.*zwp_virtual_keyboard_v1#\\d+\\.key\\(\\d+, ${key_ints[${reverse_idx}]}, 0\\)$
 
         ${steps}=               Create Dictionary
-        ...                     ${start}=${key_down_pattern}
-        ...                     ${mid_start}=${key_up_pattern}
+        ...                     ${down_start}=${key_down_pattern}
+        ...                     ${up_start}=${key_up_pattern}
         FOR    ${position}    ${pattern}    IN    &{steps}
             ${jdx}=                 Find Next Matching Line
             ...                     ${trace}
             ...                     ${position}
             ...                     ${pattern}
             Should Be True          ${jdx} < ${n}
-            IF    ${position} < ${mid}
-                ${start}=               Evaluate                ${jdx} + 1
+            IF    ${{ $pattern == $key_down_pattern }}
+                ${down_start}=          Evaluate                ${jdx} + 1
             ELSE
-                ${mid_start}=           Evaluate                ${jdx} + 1
+                ${up_start}=            Evaluate                ${jdx} + 1
             END
         END
     END
 
     ${sync_pattern}=        Set Variable            ^.*wl_display#\\d+\\.sync\\(new id wl_callback#\\d+\\)$
     ${steps}=               Create List
-    ...                     ${start}
-    ...                     ${mid_start}
+    ...                     ${down_start}
+    ...                     ${up_start}
     FOR    ${position}    IN    @{steps}
         ${jdx}=                 Find Next Matching Line
         ...                     ${trace}
         ...                     ${position}
         ...                     ${sync_pattern}
         Should Be True          ${jdx} < ${n}
-        IF    ${position} < ${mid}
-            ${start}=               Evaluate                ${jdx} + 1
-        ELSE
-            ${mid_start}=           Evaluate                ${jdx} + 1
-        END
     END
-    RETURN                  ${mid_start}
 
 Assert Pointer Button Events
     [Documentation]    This function asserts that the following calls are present
