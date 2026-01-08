@@ -191,6 +191,7 @@ jobs:
         env:
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
         run: |
+          set -x
           export WAYLAND_DISPLAY=wayland-3
           export WAYLAND_DEBUG=client
 
@@ -204,25 +205,25 @@ jobs:
           inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-3\$" $XDG_RUNTIME_DIR
 
           snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keyword Type String Numbers" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keyword Type String Numbers" 2>  /dev/null
+          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keyword Type String Numbers"
 
           snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keyword Type String Alphabets" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keyword Type String Alphabets" 2>  /dev/null
+          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keyword Type String Alphabets"
 
           snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keyword Type String With Shift Key Symbols" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keyword Type String With Shift Key Symbols" 2>  /dev/null
+          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keyword Type String With Shift Key Symbols"
 
           snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keyword Type String With Shift Key Capital Letters" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keyword Type String With Shift Key Capital Letters" 2>  /dev/null
+          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keyword Type String With Shift Key Capital Letters"
 
           snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keys Combo Numbers" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keys Combo Numbers" 2>  /dev/null
+          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keys Combo Numbers"
 
           snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keys Combo Alphabets" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keys Combo Alphabets" 2>  /dev/null
+          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keys Combo Alphabets"
 
           snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keys Combo Function" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keys Combo Function" 2>  /dev/null
+          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keys Combo Function"
 
       - name: Run Keyword tests - Hid pointer
         env:
@@ -241,28 +242,28 @@ jobs:
           inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-4\$" $XDG_RUNTIME_DIR
 
           snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Button Press Actions" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Button Press Actions" 2>  /dev/null
+          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Button Press Actions"
 
           snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keyword Type String Alphabets" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keyword Type String Alphabets" 2>  /dev/null
+          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keyword Type String Alphabets"
 
           snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keyword Type String With Shift Key Symbols" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keyword Type String With Shift Key Symbols" 2>  /dev/null
+          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keyword Type String With Shift Key Symbols"
 
           snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keyword Type String With Shift Key Capital Letters" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keyword Type String With Shift Key Capital Letters" 2>  /dev/null
+          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keyword Type String With Shift Key Capital Letters"
 
           snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keys Combo Numbers" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keys Combo Numbers" 2>  /dev/null
+          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keys Combo Numbers"
 
           snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keys Combo Alphabets" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keys Combo Alphabets" 2>  /dev/null
+          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keys Combo Alphabets"
 
           snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keys Combo Function" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keys Combo Function" 2>  /dev/null
+          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keys Combo Function"
 
           snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keys Combo Function" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keys Combo Function" 2>  /dev/null
+          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keys Combo Function"
 
       - name: Run Keyword tests - KVM
         env:
