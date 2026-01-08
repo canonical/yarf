@@ -37,10 +37,10 @@ Find Next Matching Line
 
 Assert Type String Events
     [Documentation]    This function asserts that the following calls are present in the Wayland trace for every key:
-    ...    zwp_virtual_keyboard_v1#*.modifiers(${modifier}, 0, 0, ${modifier})
-    ...    zwp_virtual_keyboard_v1#*.key(*, ${key_int}, 1)
-    ...    zwp_virtual_keyboard_v1#*.key(*, ${key_int}, 0)
-    ...    zwp_virtual_keyboard_v1#*.modifiers(0, 0, 0, 0)
+    ...    zwp_virtual_keyboard_v1[#@]*.modifiers(${modifier}, 0, 0, ${modifier})
+    ...    zwp_virtual_keyboard_v1[#@]*.key(*, ${key_int}, 1)
+    ...    zwp_virtual_keyboard_v1[#@]*.key(*, ${key_int}, 0)
+    ...    zwp_virtual_keyboard_v1[#@]*.modifiers(0, 0, 0, 0)
     ...    wl_display*.sync(new id wl_callback*)
     [Arguments]             ${key_ints}             ${modifier}=0
 
@@ -48,13 +48,15 @@ Assert Type String Events
     ${n}=                   Get Length              ${trace}
     ${idx}=                 Set Variable            0
     FOR    ${key_int}    IN    @{key_ints}
-        ${modifier_before_press_pattern}=               Set Variable
-        ...                     ^.*zwp_virtual_keyboard_v1#\\d+\\.modifiers\\(${modifier}, \\d+, \\d+, ${modifier}\\)$
-        ${key_down_pattern}=    Set Variable            ^.*zwp_virtual_keyboard_v1#\\d+\\.key\\(\\d+, ${key_int}, 1\\)$
-        ${key_up_pattern}=      Set Variable            ^.*zwp_virtual_keyboard_v1#\\d+\\.key\\(\\d+, ${key_int}, 0\\)$
+        ${modifier_before_press_pattern}=    Set Variable
+        ...    ^.*zwp_virtual_keyboard_v1[#@]\\d+\\.modifiers\\(${modifier}, \\d+, \\d+, ${modifier}\\)$
+        ${key_down_pattern}=    Set Variable
+        ...                     ^.*zwp_virtual_keyboard_v1[#@]\\d+\\.key\\(\\d+, ${key_int}, 1\\)$
+        ${key_up_pattern}=      Set Variable
+        ...                     ^.*zwp_virtual_keyboard_v1[#@]\\d+\\.key\\(\\d+, ${key_int}, 0\\)$
         ${modifier_after_press_pattern}=                Set Variable
-        ...                     ^.*zwp_virtual_keyboard_v1#\\d+\\.modifiers\\(0, \\d+, \\d+, 0\\)$
-        ${sync_pattern}=        Set Variable            ^.*wl_display#\\d+\\.sync\\(new id wl_callback#\\d+\\)$
+        ...                     ^.*zwp_virtual_keyboard_v1[#@]\\d+\\.modifiers\\(0, \\d+, \\d+, 0\\)$
+        ${sync_pattern}=        Set Variable            ^.*wl_display[#@]\\d+\\.sync\\(new id wl_callback[#@]\\d+\\)$
 
         FOR    ${step}    IN    ${modifier_before_press_pattern}    ${key_down_pattern}    ${key_up_pattern}    ${modifier_after_press_pattern}    ${sync_pattern}
             ${jdx}=                 Find Next Matching Line
@@ -70,15 +72,15 @@ Assert Type String Events
 
 Assert Keys Combo Events
     [Documentation]    This function asserts that the following calls are present in the Wayland trace for every key in the combo:
-    ...    zwp_virtual_keyboard_v1#*.key(*, ${key_int_1}, 1)
-    ...    zwp_virtual_keyboard_v1#*.key(*, ${key_int_2}, 1)
-    ...    zwp_virtual_keyboard_v1#*.key(*, ${key_int_3}, 1)
-    ...    wl_display#*.sync(new id wl_callback#*)
+    ...    zwp_virtual_keyboard_v1[#@]*.key(*, ${key_int_1}, 1)
+    ...    zwp_virtual_keyboard_v1[#@]*.key(*, ${key_int_2}, 1)
+    ...    zwp_virtual_keyboard_v1[#@]*.key(*, ${key_int_3}, 1)
+    ...    wl_display[#@]*.sync(new id wl_callback[#@]*)
     ...    ...
-    ...    zwp_virtual_keyboard_v1#*.key(*, ${key_int_3}, 0)
-    ...    zwp_virtual_keyboard_v1#*.key(*, ${key_int_2}, 0)
-    ...    zwp_virtual_keyboard_v1#*.key(*, ${key_int_1}, 0)
-    ...    wl_display#*.sync(new id wl_callback#*)
+    ...    zwp_virtual_keyboard_v1[#@]*.key(*, ${key_int_3}, 0)
+    ...    zwp_virtual_keyboard_v1[#@]*.key(*, ${key_int_2}, 0)
+    ...    zwp_virtual_keyboard_v1[#@]*.key(*, ${key_int_1}, 0)
+    ...    wl_display[#@]*.sync(new id wl_callback[#@]*)
     [Arguments]             ${key_ints}
 
     ${trace}=               Get Trace
@@ -90,9 +92,9 @@ Assert Keys Combo Events
     FOR    ${idx}    IN RANGE    ${n_keys}
         ${reverse_idx}=         Evaluate                ${n_keys} - ${idx} - 1
         ${key_down_pattern}=    Set Variable
-        ...                     ^.*zwp_virtual_keyboard_v1#\\d+\\.key\\(\\d+, ${key_ints[${idx}]}, 1\\)$
+        ...                     ^.*zwp_virtual_keyboard_v1[#@]\\d+\\.key\\(\\d+, ${key_ints[${idx}]}, 1\\)$
         ${key_up_pattern}=      Set Variable
-        ...                     ^.*zwp_virtual_keyboard_v1#\\d+\\.key\\(\\d+, ${key_ints[${reverse_idx}]}, 0\\)$
+        ...                     ^.*zwp_virtual_keyboard_v1[#@]\\d+\\.key\\(\\d+, ${key_ints[${reverse_idx}]}, 0\\)$
 
         ${steps}=               Create Dictionary
         ...                     ${down_start}=${key_down_pattern}
@@ -111,7 +113,7 @@ Assert Keys Combo Events
         END
     END
 
-    ${sync_pattern}=        Set Variable            ^.*wl_display#\\d+\\.sync\\(new id wl_callback#\\d+\\)$
+    ${sync_pattern}=        Set Variable            ^.*wl_display[#@]\\d+\\.sync\\(new id wl_callback[#@]\\d+\\)$
     ${steps}=               Create List
     ...                     ${down_start}
     ...                     ${up_start}
@@ -127,12 +129,12 @@ Assert Pointer Button Events
     [Documentation]    This function asserts that the following calls are present
     ...    in the Wayland trace for every button:
     ...    Press:
-    ...    zwlr_virtual_pointer_v1#*.button(*, ${button_int}, 1)
+    ...    zwlr_virtual_pointer_v1[#@]*.button(*, ${button_int}, 1)
     ...    Release:
-    ...    zwlr_virtual_pointer_v1#*.button(*, ${button_int}, 0)
+    ...    zwlr_virtual_pointer_v1[#@]*.button(*, ${button_int}, 0)
     ...    And for either Press or Release:
-    ...    zwlr_virtual_pointer_v1#*.frame()
-    ...    wl_display#*.sync(new id wl_callback#*)
+    ...    zwlr_virtual_pointer_v1[#@]*.frame()
+    ...    wl_display[#@]*.sync(new id wl_callback[#@]*)
     [Arguments]             ${actions}
 
     ${trace}=               Get Trace
@@ -141,11 +143,11 @@ Assert Pointer Button Events
 
     FOR    ${button_int}    ${action}    IN    &{actions}
         ${button_down_pattern}=                         Set Variable
-        ...                     ^.*zwlr_virtual_pointer_v1#\\d+\\.button\\(\\d+, ${button_int}, 1\\)$
+        ...                     ^.*zwlr_virtual_pointer_v1[#@]\\d+\\.button\\(\\d+, ${button_int}, 1\\)$
         ${button_up_pattern}=                           Set Variable
-        ...                     ^.*zwlr_virtual_pointer_v1#\\d+\\.button\\(\\d+, ${button_int}, 0\\)$
-        ${frame_pattern}=       Set Variable            ^.*zwlr_virtual_pointer_v1#\\d+\\.frame\\(\\)$
-        ${sync_pattern}=        Set Variable            ^.*wl_display#\\d+\\.sync\\(new id wl_callback#\\d+\\)$
+        ...                     ^.*zwlr_virtual_pointer_v1[#@]\\d+\\.button\\(\\d+, ${button_int}, 0\\)$
+        ${frame_pattern}=       Set Variable            ^.*zwlr_virtual_pointer_v1[#@]\\d+\\.frame\\(\\)$
+        ${sync_pattern}=        Set Variable            ^.*wl_display[#@]\\d+\\.sync\\(new id wl_callback[#@]\\d+\\)$
         IF    '${action}' == 'press'
             ${steps}=               Create List
             ...                     ${button_down_pattern}
@@ -181,9 +183,9 @@ Assert Pointer Button Events
 
 Assert Pointer Movement Events
     [Documentation]    This function asserts that the following calls are present in the Wayland trace for a pointer move:
-    ...    zwlr_virtual_pointer_v1#*.motion_absolute(*, ${x}, ${y}, *, *)
-    ...    zwlr_virtual_pointer_v1#*.frame()
-    ...    wl_display#*.sync(new id wl_callback#*)
+    ...    zwlr_virtual_pointer_v1[#@]*.motion_absolute(*, ${x}, ${y}, *, *)
+    ...    zwlr_virtual_pointer_v1[#@]*.frame()
+    ...    wl_display[#@]*.sync(new id wl_callback[#@]*)
     [Arguments]             ${movements}
 
     ${trace}=               Get Trace
@@ -193,9 +195,9 @@ Assert Pointer Movement Events
     FOR    ${movement}    IN    @{movements}
         ${x}                    ${y}=                   Evaluate                $movement
         ${motion_pattern}=      Set Variable
-        ...                     ^.*zwlr_virtual_pointer_v1#\\d+\\.motion_absolute\\(\\d+, ${x}, ${y}, \\d+, \\d+\\)$
-        ${frame_pattern}=       Set Variable            ^.*zwlr_virtual_pointer_v1#\\d+\\.frame\\(\\)$
-        ${sync_pattern}=        Set Variable            ^.*wl_display#\\d+\\.sync\\(new id wl_callback#\\d+\\)$
+        ...                     ^.*zwlr_virtual_pointer_v1[#@]\\d+\\.motion_absolute\\(\\d+, ${x}, ${y}, \\d+, \\d+\\)$
+        ${frame_pattern}=       Set Variable            ^.*zwlr_virtual_pointer_v1[#@]\\d+\\.frame\\(\\)$
+        ${sync_pattern}=        Set Variable            ^.*wl_display[#@]\\d+\\.sync\\(new id wl_callback[#@]\\d+\\)$
         ${steps}=               Create List
         ...                     ${motion_pattern}
         ...                     ${frame_pattern}
