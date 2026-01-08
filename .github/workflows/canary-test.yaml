@@ -114,7 +114,14 @@ jobs:
         shell: bash
         env:
           ARCH: ${{ inputs.ARCH }}
-        run: bash .github/scripts/canary-test/install-arch-dependencies.sh "${ARCH}"
+        run: |
+          sudo apt update -qq
+
+          if [ "${ARCH}" == "arm64" ]; then
+              sudo apt-get --yes --no-install-recommends install \
+              libwayland-dev \
+              wayland-protocols
+          fi
 
       - name: Install platform ${{ matrix.platform }} dependencies
         shell: bash
@@ -195,6 +202,13 @@ jobs:
         env:
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
         run: |
+          # In canary test we are running tests on the snap built with the requested YARF version.
+          # Running wayland debug logging with the snap has a different behavior compared to running
+          # with the source code directly - the log will write only after the snap run is finished
+          # and the snap cannot read ~/wayland.trace while the snap is running. So, to workaround this,
+          # we run the test actions with the snap first and then we run the assertions with the source code.
+          # Therefore, we are running each tests and assertion pair one by one here.
+
           set -x
           export WAYLAND_DISPLAY=wayland-3
           export WAYLAND_DEBUG=client
@@ -233,6 +247,14 @@ jobs:
         env:
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
         run: |
+          # In canary test we are running tests on the snap built with the requested YARF version.
+          # Running wayland debug logging with the snap has a different behavior compared to running
+          # with the source code directly - the log will write only after the snap run is finished
+          # and the snap cannot read ~/wayland.trace while the snap is running. So, to workaround this,
+          # we run the test actions with the snap first and then we run the assertions with the source code.
+          # Therefore, we are running each tests and assertion pair one by one here.
+
+          set -x
           export WAYLAND_DISPLAY=wayland-4
           export WAYLAND_DEBUG=client
 
