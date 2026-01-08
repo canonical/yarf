@@ -73,11 +73,9 @@ jobs:
         env:
           TRACK: ${{ inputs.TRACK }}
           CHANNEL: ${{ inputs.CHANNEL }}
-          SNAP_USER_COMMON: /root/snap/yarf/common
         run: |
           set -euo pipefail
           sudo snap install yarf --channel="${TRACK}/${CHANNEL}"
-          sudo mkdir --parents ${SNAP_USER_COMMON}
 
       - name: Check out tests, examples and github workflows
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
@@ -111,6 +109,12 @@ jobs:
 
       - name: Check out the rest of the repository (need the full repo because this CI use the source code to verify the test log for HID keyword tests)
         run: git sparse-checkout disable
+
+      - name: Install architecture specific dependencies
+        shell: bash
+        env:
+          ARCH: ${{ inputs.ARCH }}
+        run: bash .github/scripts/canary-test/install-arch-dependencies.sh "${ARCH}"
 
       - name: Install platform ${{ matrix.platform }} dependencies
         shell: bash
