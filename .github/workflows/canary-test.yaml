@@ -107,7 +107,7 @@ jobs:
         run: |
           sudo snap connect yarf-example-plugin:platform-plugins yarf:platform-plugins
 
-      - name: Check out the rest of the repository (need the full repo because this CI use the source code to verify the test log for HID keyword tests)
+      - name: Check out the rest of the repository (need the full repo because this CI runs YARF from source to verify the test log for HID keyword tests)
         run: git sparse-checkout disable
 
       - name: Install architecture specific dependencies
