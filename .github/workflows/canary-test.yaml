@@ -182,10 +182,10 @@ jobs:
 
           snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite video_text_test
 
-      - name: Set up Python
-        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548
-        with:
-          python-version: "3.12"
+      # - name: Set up Python
+      #   uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548
+      #   with:
+      #     python-version: "3.12"
 
       - name: Run Keyword tests - Hid keyboard
         env:
@@ -269,7 +269,6 @@ jobs:
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
         run: |
           export WAYLAND_DISPLAY=wayland-5
-          export WAYLAND_DEBUG=client
 
           # Start Mir on a virtual display (doesn't require graphics hardware)
           mir-test-tools.demo-server \
