@@ -20,6 +20,7 @@ SNAP_PLUGINS_DIR = (
 )
 SITE_PLUGINS_DIR = site.getsitepackages()[0]
 PLATFORM_PLUGIN_PREFIX = "yarf_plugin_"
+IMPORT_PROCESS_COMPLETED = False
 
 
 class PlatformMeta(abc.ABCMeta):
@@ -45,7 +46,17 @@ class PlatformMeta(abc.ABCMeta):
 
         Returns:
             module_class: the created module class with registered in SUPPORTED_PLATFORMS.
+
+        Raises:
+            KeyError: if the platform is not registered.
         """
+        if IMPORT_PROCESS_COMPLETED:
+            if name not in SUPPORTED_PLATFORMS:
+                _logger.error(f"Platform {name} is not registered.")
+                raise KeyError(f"Platform {name} is not registered.")
+
+            return SUPPORTED_PLATFORMS[name]  # type: ignore[return-value]
+
         module_class = super().__new__(mcs, name, bases, namespace, **kwargs)
         if (
             module_class.__module__.startswith(PLATFORM_PLUGIN_PREFIX)
@@ -153,3 +164,4 @@ import_libraries()
 import_platform_plugin(SITE_PLUGINS_DIR)
 # For plugins installed through snap interfaces
 import_platform_plugin(SNAP_PLUGINS_DIR)  # type: ignore[arg-type]
+IMPORT_PROCESS_COMPLETED = True
