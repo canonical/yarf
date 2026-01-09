@@ -102,13 +102,11 @@ class TestPlatformMeta:
             patch(
                 "yarf.rf_libraries.libraries.IMPORT_PROCESS_COMPLETED", True
             ),
-            pytest.raises(KeyError) as exc_info,
+            pytest.raises(KeyError),
         ):
 
             class AnotherModule(metaclass=PlatformMeta):
                 pass
-
-            assert "AnotherModule is not registered." in str(exc_info.value)
 
 
 class TestPlatformBase:
