@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import rapidfuzz
 from PIL import Image
-from rapidocr_onnxruntime import RapidOCR
+from rapidocr import RapidOCR
 
 from yarf.rf_libraries.libraries.geometry.quad import Quad
 from yarf.vendor.RPA.core.geometry import Region
@@ -32,7 +32,9 @@ class OCRResult:
     confidence: float
 
     def __post_init__(self) -> None:
-        if isinstance(self.position, list):
+        if isinstance(self.position, np.ndarray):
+            self.position = Quad(self.position.tolist())
+        elif isinstance(self.position, list):
             self.position = Quad(self.position)
 
 
@@ -70,11 +72,11 @@ class RapidOCRReader:
             Text found in image.
         """
         image = to_image(image)  # type: ignore[assignment]
-        result, _ = self.reader(np.array(image))
+        result = self.reader(np.array(image))
 
-        if not result:
+        if not result.txts:
             return ""
-        return "\n".join([item[1] for item in result])
+        return "\n".join(result.txts)
 
     def find(
         self,
@@ -111,11 +113,16 @@ class RapidOCRReader:
         if not text:
             raise ValueError("Empty search string")
 
-        result, _ = self.reader(np.array(image_obj))
-        if not result:
+        ocr_output = self.reader(np.array(image_obj))
+        if not ocr_output.txts:
             return []
 
-        result = [OCRResult(*item) for item in result]
+        result = [
+            OCRResult(position=box, text=txt, confidence=score)
+            for box, txt, score in zip(
+                ocr_output.boxes, ocr_output.txts, ocr_output.scores
+            )
+        ]
 
         matches = self.get_matches(
             result, text, confidence, coincidence, partial
