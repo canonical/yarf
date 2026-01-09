@@ -398,11 +398,6 @@ class VideoInputBase(ABC):
         # Get the best match
         match = text_matches[0]
 
-        # Draw the region on the image for debugging
-        if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
-            matched_image = self._draw_region_on_image(image, match["region"])
-            log_image(matched_image, "Matched text region:")
-
         # Get the center of the region
         center = match["region"].center
         logger.info(f"\nThe center of the best match is: {center}")
