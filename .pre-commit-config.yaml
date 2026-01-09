@@ -77,7 +77,7 @@ repos:
   - id: ruff-format
 
 - repo: https://github.com/PyCQA/docformatter
-  rev: eb1df347edd128b30cd3368dddc3aa65edcfac38 # Don't autoupdate until https://github.com/PyCQA/docformatter/issues/293 is fixed
+  rev: e73b8ba0c1316be565983236c72e653ad44e6b66
   hooks:
   - id: docformatter
     args: [
