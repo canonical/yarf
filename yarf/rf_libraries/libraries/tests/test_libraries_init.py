@@ -63,6 +63,53 @@ class TestPlatformMeta:
             == FirstPlatform.__module__
         )
 
+    def test_platform_meta_double_import(self):
+        """
+        Test whether KeyError is raised when trying to import a platform that
+        is not registered.
+        """
+        SUPPORTED_PLATFORMS.clear()
+
+        with patch(
+            "yarf.rf_libraries.libraries.IMPORT_PROCESS_COMPLETED", False
+        ):
+
+            class TestModule(metaclass=PlatformMeta):
+                pass
+
+        with patch(
+            "yarf.rf_libraries.libraries.IMPORT_PROCESS_COMPLETED", True
+        ):
+
+            class TestModule(metaclass=PlatformMeta):
+                pass
+
+    def test_platform_meta_double_import_library_missing(self):
+        """
+        Test whether KeyError is raised when trying to import a platform that
+        is not registered.
+        """
+        SUPPORTED_PLATFORMS.clear()
+
+        with patch(
+            "yarf.rf_libraries.libraries.IMPORT_PROCESS_COMPLETED", False
+        ):
+
+            class TestModule(metaclass=PlatformMeta):
+                pass
+
+        with (
+            patch(
+                "yarf.rf_libraries.libraries.IMPORT_PROCESS_COMPLETED", True
+            ),
+            pytest.raises(KeyError) as exc_info,
+        ):
+
+            class AnotherModule(metaclass=PlatformMeta):
+                pass
+
+            assert "AnotherModule is not registered." in str(exc_info.value)
+
 
 class TestPlatformBase:
     """
