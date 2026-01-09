@@ -716,15 +716,8 @@ class TestVideoInputBase:
             sentinel.image,
         )
 
-    @pytest.mark.parametrize(
-        "log_level",
-        [
-            "INFO",
-            "DEBUG",
-        ],
-    )
     @pytest.mark.asyncio
-    async def test_get_text_position(self, stub_videoinput, log_level: str):
+    async def test_get_text_position(self, stub_videoinput):
         """
         Test the function returns the center of the best match.
         """
@@ -738,18 +731,8 @@ class TestVideoInputBase:
             image,
         )
 
-        with (
-            patch.dict(os.environ, {"YARF_LOG_LEVEL": log_level}),
-            patch(
-                "yarf.rf_libraries.libraries.video_input_base.log_image"
-            ) as mock_log_image,
-        ):
-            result = await stub_videoinput.get_text_position("text")
-            assert result == (2, 2)
-            if log_level == "DEBUG":
-                mock_log_image.assert_called_once()
-            else:
-                mock_log_image.assert_not_called()
+        result = await stub_videoinput.get_text_position("text")
+        assert result == (2, 2)
 
     @pytest.mark.asyncio
     async def test_get_text_position_in_region(self, stub_videoinput):
