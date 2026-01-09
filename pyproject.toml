@@ -29,7 +29,7 @@ dependencies = [
     "pytesseract~=0.3.10",
     "pywayland",
     "rapidfuzz>=3.12.1",
-    "rapidocr~=3.4.5",
+    "rapidocr~=3.5.0",
     "robotframework~=7.4.0",
     "robotframework-sshlibrary~=3.8.0",
     "robotframework-stacktrace==0.4.1",
