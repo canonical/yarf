@@ -46,8 +46,15 @@ class PlatformMeta(abc.ABCMeta):
 
         Returns:
             module_class: the created module class with registered in SUPPORTED_PLATFORMS.
+
+        Raises:
+            KeyError: if the platform is not registered.
         """
         if IMPORT_PROCESS_COMPLETED:
+            if name not in SUPPORTED_PLATFORMS:
+                _logger.error(f"Platform {name} is not registered.")
+                raise KeyError(f"Platform {name} is not registered.")
+
             return SUPPORTED_PLATFORMS[name]  # type: ignore[return-value]
 
         module_class = super().__new__(mcs, name, bases, namespace, **kwargs)
