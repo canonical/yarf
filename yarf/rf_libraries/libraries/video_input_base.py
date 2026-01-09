@@ -132,6 +132,36 @@ class VideoInputBase(ABC):
                     self._log_video(video_path)
 
     @keyword
+    def set_ocr_confidence_threshold(self, threshold: float) -> None:
+        """
+        Set the OCR confidence threshold.
+
+        Args:
+            threshold: Confidence threshold between 0 and 1.
+        """
+        logger.debug(f"Setting OCR confidence threshold to {threshold}")
+        self.ocr.DEFAULT_CONFIDENCE = threshold  # type: ignore[union-attr]
+
+    @keyword
+    def set_ocr_coincidence_threshold(self, threshold: float) -> None:
+        """
+        Set the OCR coincidence threshold.
+
+        Args:
+            threshold: Coincidence threshold between 0 and 100.
+
+        Raises:
+            ValueError: If the OCR method is Tesseract, which does not support
+                        setting coincidence threshold.
+        """
+        if self.ocr == tesseract:
+            raise ValueError(
+                "Setting coincidence threshold is not supported for Tesseract OCR."
+            )
+        logger.debug(f"Setting OCR coincidence threshold to {threshold}")
+        self.ocr.DEFAULT_COINCIDENCE = threshold  # type: ignore[union-attr]
+
+    @keyword
     def set_ocr_method(self, method: str = "rapidocr") -> None:
         """
         Set the OCR method to use.
@@ -293,6 +323,21 @@ class VideoInputBase(ABC):
 
         else:
             matched_text_regions = self.ocr.find(image, text, region=region)  # type: ignore[arg-type]
+
+        for region in matched_text_regions:
+            coincidence = f"{region['confidence']:.2f}"
+            if "ocr_confidence" in region:
+                # Only RapidOCR provides OCR confidence
+                confidence = f"{region['ocr_confidence']:.2f}"
+                logger.debug(
+                    f"Found text matching '{text}' with confidence {confidence}, coincidence {coincidence}: '{region['text']}'",
+                )
+                continue
+            # Tesseract does not provide OCR confidence, and "coincidence" is
+            #  named "confidence" in that case
+            logger.debug(
+                f"Found text matching '{text}' with confidence {coincidence}: '{region['text']}'",
+            )
 
         return matched_text_regions
 
