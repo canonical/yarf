@@ -20,6 +20,7 @@ SNAP_PLUGINS_DIR = (
 )
 SITE_PLUGINS_DIR = site.getsitepackages()[0]
 PLATFORM_PLUGIN_PREFIX = "yarf_plugin_"
+DISCOVERY_COMPLETED = False
 
 
 class PlatformMeta(abc.ABCMeta):
@@ -45,18 +46,30 @@ class PlatformMeta(abc.ABCMeta):
 
         Returns:
             module_class: the created module class with registered in SUPPORTED_PLATFORMS.
-        """
-        module_class = super().__new__(mcs, name, bases, namespace, **kwargs)
-        if (
-            module_class.__module__.startswith(PLATFORM_PLUGIN_PREFIX)
-            and SUPPORTED_PLATFORMS.get(name) is not None
-        ):
-            _logger.warning(
-                f"Platform {name} is being overridden by {module_class.__module__}."
-            )
-        SUPPORTED_PLATFORMS[name] = module_class
 
-        return module_class
+        Raises:
+            KeyError: if the platform is not registered.
+        """
+        if DISCOVERY_COMPLETED:
+            if name not in SUPPORTED_PLATFORMS:
+                _logger.error(f"Platform {name} is not registered.")
+                raise KeyError(f"Platform {name} is not registered.")
+
+            module_class = SUPPORTED_PLATFORMS[name]
+        else:
+            module_class = super().__new__(
+                mcs, name, bases, namespace, **kwargs
+            )
+            if (
+                module_class.__module__.startswith(PLATFORM_PLUGIN_PREFIX)
+                and SUPPORTED_PLATFORMS.get(name) is not None
+            ):
+                _logger.warning(
+                    f"Platform {name} is being overridden by {module_class.__module__}."
+                )
+            SUPPORTED_PLATFORMS[name] = module_class
+
+        return module_class  # type: ignore[return-value]
 
 
 class PlatformBase(abc.ABC, metaclass=PlatformMeta):
@@ -153,3 +166,4 @@ import_libraries()
 import_platform_plugin(SITE_PLUGINS_DIR)
 # For plugins installed through snap interfaces
 import_platform_plugin(SNAP_PLUGINS_DIR)  # type: ignore[arg-type]
+DISCOVERY_COMPLETED = True
