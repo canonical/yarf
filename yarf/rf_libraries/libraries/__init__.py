@@ -20,7 +20,7 @@ SNAP_PLUGINS_DIR = (
 )
 SITE_PLUGINS_DIR = site.getsitepackages()[0]
 PLATFORM_PLUGIN_PREFIX = "yarf_plugin_"
-IMPORT_PROCESS_COMPLETED = False
+DISCOVERY_COMPLETED = False
 
 
 class PlatformMeta(abc.ABCMeta):
