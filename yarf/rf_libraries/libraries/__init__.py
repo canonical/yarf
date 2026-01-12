@@ -50,24 +50,26 @@ class PlatformMeta(abc.ABCMeta):
         Raises:
             KeyError: if the platform is not registered.
         """
-        if IMPORT_PROCESS_COMPLETED:
+        if DISCOVERY_COMPLETED:
             if name not in SUPPORTED_PLATFORMS:
                 _logger.error(f"Platform {name} is not registered.")
                 raise KeyError(f"Platform {name} is not registered.")
 
-            return SUPPORTED_PLATFORMS[name]  # type: ignore[return-value]
-
-        module_class = super().__new__(mcs, name, bases, namespace, **kwargs)
-        if (
-            module_class.__module__.startswith(PLATFORM_PLUGIN_PREFIX)
-            and SUPPORTED_PLATFORMS.get(name) is not None
-        ):
-            _logger.warning(
-                f"Platform {name} is being overridden by {module_class.__module__}."
+            module_class = SUPPORTED_PLATFORMS[name]
+        else:
+            module_class = super().__new__(
+                mcs, name, bases, namespace, **kwargs
             )
-        SUPPORTED_PLATFORMS[name] = module_class
+            if (
+                module_class.__module__.startswith(PLATFORM_PLUGIN_PREFIX)
+                and SUPPORTED_PLATFORMS.get(name) is not None
+            ):
+                _logger.warning(
+                    f"Platform {name} is being overridden by {module_class.__module__}."
+                )
+            SUPPORTED_PLATFORMS[name] = module_class
 
-        return module_class
+        return module_class  # type: ignore[return-value]
 
 
 class PlatformBase(abc.ABC, metaclass=PlatformMeta):
@@ -164,4 +166,4 @@ import_libraries()
 import_platform_plugin(SITE_PLUGINS_DIR)
 # For plugins installed through snap interfaces
 import_platform_plugin(SNAP_PLUGINS_DIR)  # type: ignore[arg-type]
-IMPORT_PROCESS_COMPLETED = True
+DISCOVERY_COMPLETED = True

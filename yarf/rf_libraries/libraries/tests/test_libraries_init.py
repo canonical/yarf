@@ -21,7 +21,7 @@ class TestPlatformMeta:
     Test the Platform metaclass.
     """
 
-    @patch("yarf.rf_libraries.libraries.IMPORT_PROCESS_COMPLETED", False)
+    @patch("yarf.rf_libraries.libraries.DISCOVERY_COMPLETED", False)
     def test_new(self):
         """
         Test a new item is added to SUPPORTED_PLATFORMS at class creation.
@@ -34,7 +34,7 @@ class TestPlatformMeta:
 
         assert SUPPORTED_PLATFORMS.get(TestModule.__name__) == TestModule
 
-    @patch("yarf.rf_libraries.libraries.IMPORT_PROCESS_COMPLETED", False)
+    @patch("yarf.rf_libraries.libraries.DISCOVERY_COMPLETED", False)
     def test_platform_meta_logs_warning(self, caplog: LogCaptureFixture):
         """
         Test whether a warning is logged when a platform is overridden by
@@ -70,16 +70,12 @@ class TestPlatformMeta:
         """
         SUPPORTED_PLATFORMS.clear()
 
-        with patch(
-            "yarf.rf_libraries.libraries.IMPORT_PROCESS_COMPLETED", False
-        ):
+        with patch("yarf.rf_libraries.libraries.DISCOVERY_COMPLETED", False):
 
             class TestModule(metaclass=PlatformMeta):
                 pass
 
-        with patch(
-            "yarf.rf_libraries.libraries.IMPORT_PROCESS_COMPLETED", True
-        ):
+        with patch("yarf.rf_libraries.libraries.DISCOVERY_COMPLETED", True):
 
             class TestModule(metaclass=PlatformMeta):
                 pass
@@ -91,17 +87,13 @@ class TestPlatformMeta:
         """
         SUPPORTED_PLATFORMS.clear()
 
-        with patch(
-            "yarf.rf_libraries.libraries.IMPORT_PROCESS_COMPLETED", False
-        ):
+        with patch("yarf.rf_libraries.libraries.DISCOVERY_COMPLETED", False):
 
             class TestModule(metaclass=PlatformMeta):
                 pass
 
         with (
-            patch(
-                "yarf.rf_libraries.libraries.IMPORT_PROCESS_COMPLETED", True
-            ),
+            patch("yarf.rf_libraries.libraries.DISCOVERY_COMPLETED", True),
             pytest.raises(KeyError),
         ):
 
@@ -114,7 +106,7 @@ class TestPlatformBase:
     Test the Platform base class.
     """
 
-    @patch("yarf.rf_libraries.libraries.IMPORT_PROCESS_COMPLETED", False)
+    @patch("yarf.rf_libraries.libraries.DISCOVERY_COMPLETED", False)
     def test_not_implemented(self):
         """
         Test whether the abstractmethods are required when inheriting from
@@ -127,7 +119,7 @@ class TestPlatformBase:
         with pytest.raises(TypeError):
             TestModule()
 
-    @patch("yarf.rf_libraries.libraries.IMPORT_PROCESS_COMPLETED", False)
+    @patch("yarf.rf_libraries.libraries.DISCOVERY_COMPLETED", False)
     def test_get_pkg_path(self):
         """
         Test whether the "get_pkg_path" method is callable when a class
@@ -148,7 +140,7 @@ class TestInit:
     Test the commonly available, module-level functions.
     """
 
-    @patch("yarf.rf_libraries.libraries.IMPORT_PROCESS_COMPLETED", False)
+    @patch("yarf.rf_libraries.libraries.DISCOVERY_COMPLETED", False)
     def test_import_libraries(self) -> None:
         """
         PlatformBase should not be included in SUPPORTED_PLATFORMS, Test
@@ -163,7 +155,7 @@ class TestInit:
         import_libraries()
         assert PlatformBase.__name__ not in SUPPORTED_PLATFORMS
 
-    @patch("yarf.rf_libraries.libraries.IMPORT_PROCESS_COMPLETED", False)
+    @patch("yarf.rf_libraries.libraries.DISCOVERY_COMPLETED", False)
     def test_import_platform_plugin(self) -> None:  # noqa: F811
         """
         Test whether the import_platform_plugin function is callable.
