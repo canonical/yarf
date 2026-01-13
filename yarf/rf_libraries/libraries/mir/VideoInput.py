@@ -3,6 +3,7 @@ This module provides the Mir-driven implementation for video interactions and
 assertions.
 """
 
+import getpass
 import os
 
 from owasp_logger import OWASPLogger
@@ -17,11 +18,23 @@ _logger = OWASPLogger(appid=__name__)
 
 @library(scope="GLOBAL")
 class VideoInput(VideoInputBase):
+    """
+    This class provides the Mir-driven implementation for video interactions
+    and assertions.
+
+    Attributes:
+        ROBOT_LISTENER_API_VERSION: API version for Robot Framework listeners.
+
+    Raises:
+        Exception: if Mir connection not able to initialize.
+    """
+
     ROBOT_LISTENER_API_VERSION = 3
 
     def __init__(self) -> None:
         self.ROBOT_LIBRARY_LISTENER = self
         display_name = os.environ.get("WAYLAND_DISPLAY", "wayland-0")
+        _logger.sensitive_read(getpass.getuser(), "WAYLAND_DISPLAY")
         try:
             self._screencopy = screencopy.Screencopy(display_name)
             _logger.sys_monitor_enabled("system", "mir_video_input")

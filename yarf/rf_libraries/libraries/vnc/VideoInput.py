@@ -1,3 +1,9 @@
+"""
+This module provides the Vnc-driven implementation for video interactions and
+assertions.
+"""
+
+import getpass
 from asyncio import TimeoutError, wait_for
 from time import sleep
 
@@ -42,7 +48,20 @@ class VideoInput(VideoInputBase):
 
     @keyword
     async def grab_screenshot(self) -> Image.Image:
+        """
+        Grabs the current frame through screencopy.
+
+        Returns:
+            Pillow Image of the frame
+
+        Raises:
+            TimeoutError: If unable to get a screenshot within the timeout period.
+        """
         screenshot = None
+        _logger.sensitive_read(
+            getpass.getuser(),
+            f"vnc_connection:{self.vnc.host}:{self.vnc.port}",
+        )
         for attempt in range(self.screenshot_retries):
             async with connect(self.vnc.host, self.vnc.port) as client:
                 try:
