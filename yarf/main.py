@@ -454,10 +454,14 @@ def main(argv: Optional[list[str]] = None) -> None:
 
     if args.log_level == "DEBUG":
         _logger.sys_monitor_enabled(getpass.getuser(), "debug_mode")
-    else:
-        _logger.sys_monitor_disabled(getpass.getuser(), "debug_mode")
 
     lib_cls = SUPPORTED_PLATFORMS[args.platform]
+    _logger.privilege_permissions_changed(
+        getpass.getuser(),
+        "platform_access",
+        "restricted",
+        f"platform:{args.platform}",
+    )
     logging.basicConfig(level=args.log_level)
     outdir = get_outdir_path(args.outdir)
 
