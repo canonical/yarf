@@ -2,11 +2,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from owasp_logger import OWASPLogger
-
 from yarf.rf_libraries.libraries import PlatformBase
-
-_logger = OWASPLogger(appid=__name__)
 
 
 @dataclass
@@ -16,19 +12,14 @@ class Vnc(PlatformBase):
 
     Raises:
         AssertionError: if VNC_PORT is not numeric or invalid.
-        AssertionError (implicitly from the `assert` statement): if VNC_PORT is not numeric or invalid.
     """
 
     def __init__(self) -> None:
         self.host = os.getenv("VNC_HOST", "localhost")
         port = os.getenv("VNC_PORT", "0")
-        try:
-            assert port.isnumeric()
-            assert int(port) == float(port), f"Invalid port number: {port}"
-            self.port = 5900 + int(port)
-        except AssertionError as e:
-            _logger.sys_crash(f"VNC platform initialization failed: {e}")
-            raise
+        assert port.isnumeric()
+        assert int(port) == float(port), f"Invalid port number: {port}"
+        self.port = 5900 + int(port)
 
     @staticmethod
     def get_pkg_path() -> str:

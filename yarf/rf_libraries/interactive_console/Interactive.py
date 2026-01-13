@@ -12,7 +12,7 @@ from yarf.rf_libraries.interactive_console.tools.roi_selector import (
     ROISelector,
 )
 
-_logger = OWASPLogger(appid=__name__)
+_owasp_logger = OWASPLogger(appid=__name__)
 
 
 class Interactive:
@@ -30,7 +30,7 @@ class Interactive:
 
     def __init__(self):
         self.ROBOT_LIBRARY_LISTENER = self
-        _logger.sys_monitor_enabled("system", "interactive_console")
+        _owasp_logger.sys_monitor_enabled("system", "interactive_console")
 
     def _get_lib_instance(self, lib_name: str) -> Any:
         """
@@ -58,9 +58,7 @@ class Interactive:
         """
         platform_video_input = self._get_lib_instance("VideoInput")
         if (image := await platform_video_input.grab_screenshot()) is None:
-            error_msg = "Failed to grab screenshot."
-            _logger.sys_crash(error_msg)
-            raise ValueError(error_msg)
+            raise ValueError("Failed to grab screenshot.")
 
         roi_selector = ROISelector(image, *names)
         roi_selector.start()

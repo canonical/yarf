@@ -28,7 +28,7 @@ from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS, PlatformBase
 from yarf.rf_libraries.libraries.metadata_listener import MetadataListener
 from yarf.rf_libraries.suite_parser import SuiteParser
 
-_logger = OWASPLogger(appid=__name__)
+_owasp_logger = OWASPLogger(appid=__name__)
 YARF_VERSION = version.parse(metadata.version("yarf"))
 VERSION_TAG_RE = re.compile(
     rf"{LABEL_PREFIX}version: +(?P<operator>[<>=!]+) +(?P<version>[0-9][0-9.]*)"
@@ -151,7 +151,7 @@ def parse_yarf_arguments(argv: list[str]) -> Namespace:
     try:
         return top_level_parser.parse_args(argv)
     except SystemExit as e:
-        _logger.sys_crash("Error parsing YARF arguments.")
+        _owasp_logger.sys_crash("Error parsing YARF arguments.")
         raise e
 
 
@@ -172,7 +172,7 @@ def parse_robot_arguments(args: list[str]) -> dict[str, Any]:
         try:
             options, _ = RobotFramework().parse_arguments(args)
         except Information as info:
-            _logger.sys_crash(info)
+            _owasp_logger.sys_crash(info)
             raise SystemExit()
     return options
 
@@ -264,8 +264,12 @@ def get_listeners(
         MetadataListener(),
         RobotStackTracer(),
     ]
-    _logger.sys_monitor_enabled(getpass.getuser(), "listener:MetadataListener")
-    _logger.sys_monitor_enabled(getpass.getuser(), "listener:RobotStackTracer")
+    _owasp_logger.sys_monitor_enabled(
+        getpass.getuser(), "listener:MetadataListener"
+    )
+    _owasp_logger.sys_monitor_enabled(
+        getpass.getuser(), "listener:RobotStackTracer"
+    )
 
     if additional_listener_paths is None:
         return listeners
@@ -288,16 +292,18 @@ def get_listeners(
                 match name:
                     case "KeywordsListener":
                         listeners.append(obj(kwargs["lib_cls"].get_pkg_path()))
-                        _logger.sys_monitor_enabled(
+                        _owasp_logger.sys_monitor_enabled(
                             getpass.getuser(), f"listener:{name}"
                         )
                     case _:
                         listeners.append(obj())
-                        _logger.sys_monitor_enabled(
+                        _owasp_logger.sys_monitor_enabled(
                             getpass.getuser(), f"listener:{name}"
                         )
         except (ImportError, AttributeError, TypeError) as e:
-            _logger.sys_crash(f"Failed to load listener from {path_str}: {e}")
+            _owasp_logger.sys_crash(
+                f"Failed to load listener from {path_str}: {e}"
+            )
             raise
 
     return listeners
@@ -348,7 +354,7 @@ def run_robot_suite(
 
     # Issue: https://github.com/robotframework/robotframework/issues/5549
     if len(suite.suites) <= 0:
-        _logger.error(f"Suite '{suite.name}' contains no tests.")
+        _owasp_logger.error(f"Suite '{suite.name}' contains no tests.")
         return DATA_ERROR
 
     with robot_in_path(lib_cls.get_pkg_path()):
@@ -367,7 +373,7 @@ def run_robot_suite(
     # The return_code from suite.run is in range(0, 250), shouldn't just check for (0, 1)
     if result.return_code != 0:
         for error_message in result.errors.messages:
-            _logger.error("ROBOT: %s", error_message.message)
+            _owasp_logger.error("ROBOT: %s", error_message.message)
     return result.return_code
 
 
@@ -423,7 +429,7 @@ def run_interactive_console(
             **cli_options,
         )
 
-    _logger.info(
+    _owasp_logger.info(
         "Interactive console log exported to: %s",
         rf_debug_history_log_path,
     )
@@ -441,25 +447,25 @@ def main(argv: Optional[list[str]] = None) -> None:
     Raises:
         FileNotFoundError: If the start_console.robot file is not found
     """
-    _logger.sys_startup(getpass.getuser())
+    _owasp_logger.sys_startup(getpass.getuser())
 
     args, cli_options = parse_arguments(argv)
 
     os.environ["YARF_LOG_LEVEL"] = args.log_level
     if args.log_video:
         os.environ["YARF_LOG_VIDEO"] = "1"
-        _logger.sys_monitor_enabled(getpass.getuser(), "video_logging")
+        _owasp_logger.sys_monitor_enabled(getpass.getuser(), "video_logging")
     else:
-        _logger.sys_monitor_disabled(getpass.getuser(), "video_logging")
+        _owasp_logger.sys_monitor_disabled(getpass.getuser(), "video_logging")
 
     if args.log_level == "DEBUG":
-        _logger.sys_monitor_enabled(getpass.getuser(), "debug_mode")
+        _owasp_logger.sys_monitor_enabled(getpass.getuser(), "debug_mode")
 
     lib_cls = SUPPORTED_PLATFORMS[args.platform]
-    _logger.authz_admin(
+    _owasp_logger.authz_admin(
         getpass.getuser(), f"initialize_platform:{args.platform}"
     )
-    _logger.privilege_permissions_changed(
+    _owasp_logger.privilege_permissions_changed(
         getpass.getuser(),
         "platform_access",
         "restricted",
@@ -471,7 +477,7 @@ def main(argv: Optional[list[str]] = None) -> None:
     if args.suite:
         variables: Sequence[str] = []
         suite_parser = SuiteParser(args.suite)
-        _logger.session_created(getpass.getuser())
+        _owasp_logger.session_created(getpass.getuser())
         with suite_parser.suite_in_temp_folder(
             args.variant
         ) as temp_folder_path:
@@ -486,11 +492,11 @@ def main(argv: Optional[list[str]] = None) -> None:
                 output_format=args.output_format,
             )
 
-        _logger.info(f"Results exported to: {outdir}")
-        _logger.session_expired(
+        _owasp_logger.info(f"Results exported to: {outdir}")
+        _owasp_logger.session_expired(
             getpass.getuser(), f"test_suite_completed:exit_code_{ec}"
         )
-        _logger.sys_shutdown(getpass.getuser())
+        _owasp_logger.sys_shutdown(getpass.getuser())
         sys.exit(ec)
 
     else:
@@ -503,13 +509,13 @@ def main(argv: Optional[list[str]] = None) -> None:
         )
         if not start_console_path.exists():
             error_msg = "Interactive console robot script is missing."
-            _logger.sys_crash(error_msg)
+            _owasp_logger.sys_crash(error_msg)
             raise FileNotFoundError(error_msg)
 
         os.environ["RFDEBUG_HISTORY"] = f"{outdir}/rfdebug_history.log"
         console_suite = TestSuiteBuilder().build(start_console_path)
         console_suite.name = f"{lib_cls.__name__} Interactive Console"
-        _logger.session_created(getpass.getuser())
+        _owasp_logger.session_created(getpass.getuser())
         run_interactive_console(
             suite=console_suite,
             lib_cls=lib_cls,
@@ -517,10 +523,10 @@ def main(argv: Optional[list[str]] = None) -> None:
             rf_debug_history_log_path=Path(os.environ["RFDEBUG_HISTORY"]),
             cli_options=cli_options,
         )
-        _logger.session_expired(
+        _owasp_logger.session_expired(
             getpass.getuser(), "interactive_console_completed"
         )
-        _logger.sys_shutdown(getpass.getuser())
+        _owasp_logger.sys_shutdown(getpass.getuser())
 
 
 if __name__ == "__main__":

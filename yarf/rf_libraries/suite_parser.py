@@ -7,7 +7,7 @@ from typing import Any, Final, Generator
 
 from owasp_logger import OWASPLogger
 
-_logger = OWASPLogger(appid=__name__)
+_owasp_logger = OWASPLogger(appid=__name__)
 
 
 class SuiteParser:
@@ -52,7 +52,7 @@ class SuiteParser:
                     ] = path
                 else:
                     if SuiteParser.VARIANTS_DIR in relative_path.parts:
-                        _logger.warning(
+                        _owasp_logger.warning(
                             f"'{SuiteParser.VARIANTS_DIR}' is a special dirname, avoid using it in asset paths."
                         )
                     has_robot_ext |= path.suffix == ".robot"
@@ -60,7 +60,7 @@ class SuiteParser:
 
         if not has_robot_ext:
             msg = "Expected at least one <name>.robot file."
-            _logger.sys_crash(
+            _owasp_logger.sys_crash(
                 f"Suite parsing failed: {msg} in {self.suite_path}"
             )
             raise ValueError(msg)
@@ -89,7 +89,7 @@ class SuiteParser:
                     dest_path.mkdir(parents=True, exist_ok=True)
 
                 shutil.copy(src_path, dest_path, follow_symlinks=True)
-                _logger.debug(
+                _owasp_logger.debug(
                     f"Copied '{relative_path}' from '{src_path}' to '{dest_path}'"
                 )
 
@@ -118,7 +118,7 @@ class SuiteParser:
                 # go for default
                 actual_assets[rel_file_path] = src_file_path
 
-        _logger.info(
+        _owasp_logger.info(
             "Selected assets:\n  {}".format(
                 "\n  ".join(
                     str(p.relative_to(self.suite_path))

@@ -125,7 +125,7 @@ class TestMain:
         assert args.platform == "Vnc"
 
     @patch("yarf.main.RobotFramework")
-    @patch("yarf.main._logger")
+    @patch("yarf.main._owasp_logger")
     def test_parse_robot_arguments_info(self, mock_logger, mock_rf):
         """
         Test whether the parser catches the Information exception when raised
@@ -523,7 +523,7 @@ class TestMain:
 
     @patch("yarf.main.get_robot_reserved_settings")
     @patch("yarf.main.get_yarf_settings")
-    @patch("yarf.main._logger")
+    @patch("yarf.main._owasp_logger")
     def test_run_robot_suite_with_errors(
         self,
         mock_logger: MagicMock,
@@ -559,7 +559,7 @@ class TestMain:
         mock_logger.error.assert_called()
 
     @mock.patch.dict(os.environ, {"RFDEBUG_HISTORY": "/testoutdir"})
-    @patch("yarf.main._logger")
+    @patch("yarf.main._owasp_logger")
     @patch("yarf.main.rebot")
     def test_run_interactive_console(
         self,

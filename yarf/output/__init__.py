@@ -9,7 +9,7 @@ from typing import Any, Callable, Optional
 from owasp_logger import OWASPLogger
 from robot.api import TestSuite
 
-_logger = OWASPLogger(appid=__name__)
+_owasp_logger = OWASPLogger(appid=__name__)
 
 OUTPUT_FORMATS: dict[str, "OutputConverterMeta"] = {}
 
@@ -92,7 +92,7 @@ def output_converter(func: Callable) -> Callable:
 
         except KeyError:
             error_msg = f"Unsupported output format: {kwargs['output_format']}"
-            _logger.sys_crash(error_msg)
+            _owasp_logger.sys_crash(error_msg)
             raise ValueError(error_msg)
 
         suite = kwargs["suite"]
@@ -105,7 +105,7 @@ def output_converter(func: Callable) -> Callable:
         with open(outdir / f"{output_format}_output.json", "w") as f:
             json.dump(formatted_output, f, indent=4)
 
-        _logger.info(
+        _owasp_logger.info(
             f"Output for '{output_format}' exported to {outdir}/{output_format}_output.json."
         )
 

@@ -9,7 +9,7 @@ from owasp_logger import OWASPLogger
 
 from .protocols.wayland.wl_registry import WlRegistryProxy
 
-_logger = OWASPLogger(appid=__name__)
+_owasp_logger = OWASPLogger(appid=__name__)
 
 
 class WaylandClient(ABC):
@@ -29,7 +29,7 @@ class WaylandClient(ABC):
             self.display.read()
             self.display.dispatch(block=False)
         except Exception as e:
-            _logger.sys_crash(f"Wayland dispatch error: {e}")
+            _owasp_logger.sys_crash(f"Wayland dispatch error: {e}")
             asyncio.get_event_loop().remove_writer(self.display.get_fd())
             raise e
 
@@ -93,7 +93,7 @@ class WaylandClient(ABC):
             Exception: if connection fails
         """
         try:
-            _logger.session_created("system")
+            _owasp_logger.session_created("system")
             self.display.connect()
             self._registry = registry = self.display.get_registry()
             registry.dispatcher["global"] = self.registry_global
@@ -104,7 +104,7 @@ class WaylandClient(ABC):
             )
             return self
         except Exception as e:
-            _logger.session_expired(
+            _owasp_logger.session_expired(
                 "system", f"connection_failed:{type(e).__name__}"
             )
             await self.disconnect()
@@ -118,7 +118,7 @@ class WaylandClient(ABC):
         self.display.roundtrip()
         self.display.disconnect()
         self.disconnected()
-        _logger.session_expired("system", "wayland_connection_closed")
+        _owasp_logger.session_expired("system", "wayland_connection_closed")
 
     async def __aenter__(self) -> Optional["WaylandClient"]:
         return await self.connect()

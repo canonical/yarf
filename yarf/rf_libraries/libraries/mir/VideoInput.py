@@ -13,7 +13,7 @@ from robot.api.deco import keyword, library
 from yarf.lib.wayland import screencopy
 from yarf.rf_libraries.libraries.video_input_base import VideoInputBase
 
-_logger = OWASPLogger(appid=__name__)
+_owasp_logger = OWASPLogger(appid=__name__)
 
 
 @library(scope="GLOBAL")
@@ -24,9 +24,6 @@ class VideoInput(VideoInputBase):
 
     Attributes:
         ROBOT_LISTENER_API_VERSION: API version for Robot Framework listeners.
-
-    Raises:
-        Exception: if Mir connection not able to initialize.
     """
 
     ROBOT_LISTENER_API_VERSION = 3
@@ -34,15 +31,9 @@ class VideoInput(VideoInputBase):
     def __init__(self) -> None:
         self.ROBOT_LIBRARY_LISTENER = self
         display_name = os.environ.get("WAYLAND_DISPLAY", "wayland-0")
-        _logger.sensitive_read(getpass.getuser(), "WAYLAND_DISPLAY")
-        try:
-            self._screencopy = screencopy.Screencopy(display_name)
-            _logger.sys_monitor_enabled("system", "mir_video_input")
-        except Exception as e:
-            _logger.sys_crash(
-                f"Failed to initialize Mir VideoInput with display {display_name}: {e}"
-            )
-            raise
+        _owasp_logger.sensitive_read(getpass.getuser(), "WAYLAND_DISPLAY")
+        self._screencopy = screencopy.Screencopy(display_name)
+        _owasp_logger.sys_monitor_enabled("system", "mir_video_input")
         super().__init__()
 
     async def grab_screenshot(self) -> Image.Image:
