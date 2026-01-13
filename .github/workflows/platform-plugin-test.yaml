@@ -62,8 +62,9 @@ jobs:
             END{if(!added) exit 0}
           ' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
 
-      - name: Install YARF and yarf-example-plugin
+      - name: Install YARF and yarf-example-plugin, with dependencies
         run: |
+          pip install typing_extensions
           pip install examples/yarf-example-plugin
 
       - name: Run plugin integration tests
