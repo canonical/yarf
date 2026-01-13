@@ -456,6 +456,9 @@ def main(argv: Optional[list[str]] = None) -> None:
         _logger.sys_monitor_enabled(getpass.getuser(), "debug_mode")
 
     lib_cls = SUPPORTED_PLATFORMS[args.platform]
+    _logger.authz_admin(
+        getpass.getuser(), f"initialize_platform:{args.platform}"
+    )
     _logger.privilege_permissions_changed(
         getpass.getuser(),
         "platform_access",
