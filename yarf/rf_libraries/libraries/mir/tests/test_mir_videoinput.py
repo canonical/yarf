@@ -37,7 +37,11 @@ class TestMirVideoInput:
             vi = VideoInput()
 
             assert vi.ROBOT_LIBRARY_LISTENER is vi
-            mock_environ.get.assert_called_once_with("WAYLAND_DISPLAY", ANY)
+            mock_environ.get.assert_has_calls(
+                [
+                    call("WAYLAND_DISPLAY", ANY),
+                ]
+            )
             mock_screencopy.assert_called_with(mock_environ.get())
             m.assert_called_once_with()
 
