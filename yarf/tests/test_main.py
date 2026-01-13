@@ -381,6 +381,44 @@ class TestMain:
 
         assert len(expected_counts) == 0
 
+    @pytest.mark.parametrize(
+        "error",
+        [
+            AttributeError,
+            ImportError,
+            TypeError,
+        ],
+    )
+    def test_get_listeners_error(self, error: Exception) -> None:
+        """
+        Test whether the function get_listeners raises errors when encountering
+        invalid listener modules.
+        """
+
+        lib_cls = Mock(get_pkg_path=Mock(return_value="cls_path"))
+
+        def fake_module_from_spec(spec):
+            module = types.ModuleType(spec.name)
+            return module
+
+        def fake_spec_from_file_location(name, path):
+            fake_loader = Mock()
+            fake_loader.exec_module.side_effect = error()
+            return types.SimpleNamespace(name=name, loader=fake_loader)
+
+        with (
+            patch(
+                "importlib.util.spec_from_file_location",
+                side_effect=fake_spec_from_file_location,
+            ),
+            patch(
+                "importlib.util.module_from_spec",
+                side_effect=fake_module_from_spec,
+            ),
+        ):
+            with pytest.raises(error):
+                get_listeners(["dummy/invalid_listener.py"], lib_cls=lib_cls)
+
     @patch("yarf.main.RobotStackTracer")
     @patch("yarf.main.MetadataListener")
     @patch("yarf.main.get_robot_reserved_settings")

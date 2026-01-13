@@ -45,6 +45,19 @@ class TestMirVideoInput:
             mock_screencopy.assert_called_with(mock_environ.get())
             m.assert_called_once_with()
 
+    def test_init_exception(self, mock_environ, mock_screencopy):
+        mock_screencopy.side_effect = Exception("Test exception")
+
+        with pytest.raises(Exception, match="Test exception"):
+            VideoInput()
+
+        mock_environ.get.assert_has_calls(
+            [
+                call("WAYLAND_DISPLAY", ANY),
+            ]
+        )
+        mock_screencopy.assert_called_with(mock_environ.get())
+
     @pytest.mark.asyncio
     async def test_grab_screenshot(self, mock_screencopy, video_input):
         with patch.object(video_input, "start_video_input") as m:
