@@ -257,6 +257,39 @@ def get_robot_reserved_settings(test_suite: TestSuite) -> dict[str, Any]:
     return robot_reserved_settings
 
 
+def _import_listener_from_path(path: Path, **kwargs) -> object:
+    """
+    Import a listener from a given path.
+
+    Arguments:
+        path: The path to the listener file.
+        **kwargs: Additional keyword arguments.
+
+    Returns:
+        listener instances.
+    """
+    spec = importlib.util.spec_from_file_location(path.stem, path)
+    module = importlib.util.module_from_spec(spec)  # type:ignore[arg-type]
+    spec.loader.exec_module(module)  # type:ignore[union-attr]
+    for name, obj in vars(module).items():
+        if not (
+            isinstance(obj, type)
+            and obj.__module__ == module.__name__
+            and hasattr(obj, "ROBOT_LISTENER_API_VERSION")
+        ):
+            continue
+
+        match name:
+            case "KeywordsListener":
+                listener = obj(kwargs["lib_cls"].get_pkg_path())
+                break
+            case _:
+                listener = obj()
+                break
+
+    return listener
+
+
 def get_listeners(
     additional_listener_paths: list[str] | None, **kwargs
 ) -> list[object]:
@@ -275,31 +308,14 @@ def get_listeners(
         return listeners
 
     for path_str in additional_listener_paths:
-        # import listener and append to list
+        # import listeners and append to list
         path = Path(path_str)
         try:
-            spec = importlib.util.spec_from_file_location(path.stem, path)
-            module = importlib.util.module_from_spec(spec)  # type:ignore[arg-type]
-            spec.loader.exec_module(module)  # type:ignore[union-attr]
-            for name, obj in vars(module).items():
-                if not (
-                    isinstance(obj, type)
-                    and obj.__module__ == module.__name__
-                    and hasattr(obj, "ROBOT_LISTENER_API_VERSION")
-                ):
-                    continue
-
-                match name:
-                    case "KeywordsListener":
-                        listeners.append(obj(kwargs["lib_cls"].get_pkg_path()))
-                        _owasp_logger.sys_monitor_enabled(
-                            getpass.getuser(), f"listener:{name}"
-                        )
-                    case _:
-                        listeners.append(obj())
-                        _owasp_logger.sys_monitor_enabled(
-                            getpass.getuser(), f"listener:{name}"
-                        )
+            listener = _import_listener_from_path(path, **kwargs)
+            listeners.append(listener)
+            _owasp_logger.sys_monitor_enabled(
+                getpass.getuser(), f"listener:{listener.__class__.__name__}"
+            )
         except (ImportError, AttributeError, TypeError) as e:
             _owasp_logger.sys_crash(
                 f"Failed to load listener from {path_str}: {e}"
