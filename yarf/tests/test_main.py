@@ -710,8 +710,10 @@ class TestMain:
 
         main.run_interactive_console = Mock()
         main.get_outdir_path = Mock(return_value=outdir)
-        main.main([])
+        with pytest.raises(SystemExit) as cm:
+            main.main([])
 
+        assert cm.value.code == 0
         mock_test_suite_builder.assert_called_once()
         main.run_interactive_console.assert_called_once_with(
             suite=mock_test_suite_builder(),

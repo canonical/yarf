@@ -474,10 +474,11 @@ def main(argv: Optional[list[str]] = None) -> None:
     logging.basicConfig(level=args.log_level)
     outdir = get_outdir_path(args.outdir)
 
+    _owasp_logger.session_created(getpass.getuser())
+    ec = 0
     if args.suite:
         variables: Sequence[str] = []
         suite_parser = SuiteParser(args.suite)
-        _owasp_logger.session_created(getpass.getuser())
         with suite_parser.suite_in_temp_folder(
             args.variant
         ) as temp_folder_path:
@@ -496,8 +497,6 @@ def main(argv: Optional[list[str]] = None) -> None:
         _owasp_logger.session_expired(
             getpass.getuser(), f"test_suite_completed:exit_code_{ec}"
         )
-        _owasp_logger.sys_shutdown(getpass.getuser())
-        sys.exit(ec)
 
     else:
         start_console_path = (
@@ -515,7 +514,6 @@ def main(argv: Optional[list[str]] = None) -> None:
         os.environ["RFDEBUG_HISTORY"] = f"{outdir}/rfdebug_history.log"
         console_suite = TestSuiteBuilder().build(start_console_path)
         console_suite.name = f"{lib_cls.__name__} Interactive Console"
-        _owasp_logger.session_created(getpass.getuser())
         run_interactive_console(
             suite=console_suite,
             lib_cls=lib_cls,
@@ -526,7 +524,9 @@ def main(argv: Optional[list[str]] = None) -> None:
         _owasp_logger.session_expired(
             getpass.getuser(), "interactive_console_completed"
         )
-        _owasp_logger.sys_shutdown(getpass.getuser())
+
+    _owasp_logger.sys_shutdown(getpass.getuser())
+    sys.exit(ec)
 
 
 if __name__ == "__main__":
