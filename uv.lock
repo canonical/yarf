@@ -1611,7 +1611,7 @@ requires-dist = [
     { name = "numpy", specifier = "~=2.2.6" },
     { name = "onnxruntime", specifier = "~=1.23.2" },
     { name = "opencv-python", specifier = "~=4.12.0.88" },
-    { name = "owasp-logger" },
+    { name = "owasp-logger", specifier = "~=0.1.3" },
     { name = "pillow", specifier = "~=12.1.0" },
     { name = "prompt-toolkit", specifier = ">=3.0.38" },
     { name = "pygments", specifier = ">=2.14.0" },
