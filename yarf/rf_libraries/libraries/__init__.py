@@ -2,7 +2,6 @@ import abc
 import importlib
 import importlib.util
 import inspect
-import logging
 import os
 import pathlib
 import pkgutil
@@ -11,7 +10,9 @@ import sys
 from pathlib import Path
 from typing import Any
 
-_logger = logging.getLogger(__name__)
+from owasp_logger import OWASPLogger
+
+_logger = OWASPLogger(appid=__name__)
 SUPPORTED_PLATFORMS: dict[str, type] = {}
 SNAP_PLUGINS_DIR = (
     f"{os.getenv('SNAP_COMMON')}/platform_plugins"
@@ -52,8 +53,10 @@ class PlatformMeta(abc.ABCMeta):
         """
         if DISCOVERY_COMPLETED:
             if name not in SUPPORTED_PLATFORMS:
-                _logger.error(f"Platform {name} is not registered.")
-                raise KeyError(f"Platform {name} is not registered.")
+                error_msg = f"Platform {name} is not registered."
+                _logger.error(error_msg)
+                _logger.sys_crash(error_msg)
+                raise KeyError(error_msg)
 
             module_class = SUPPORTED_PLATFORMS[name]
         else:
@@ -68,6 +71,9 @@ class PlatformMeta(abc.ABCMeta):
                     f"Platform {name} is being overridden by {module_class.__module__}."
                 )
             SUPPORTED_PLATFORMS[name] = module_class
+            _logger.sys_monitor_enabled(
+                "system", f"platform:{name} discovered."
+            )
 
         return module_class  # type: ignore[return-value]
 

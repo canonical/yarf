@@ -125,8 +125,8 @@ class TestMain:
         assert args.platform == "Vnc"
 
     @patch("yarf.main.RobotFramework")
-    @patch("builtins.print")
-    def test_parse_robot_arguments_info(self, mock_print, mock_rf):
+    @patch("yarf.main._logger")
+    def test_parse_robot_arguments_info(self, mock_logger, mock_rf):
         """
         Test whether the parser catches the Information exception when raised
         by Robot parser with --help or --version, prints the information and
@@ -137,7 +137,7 @@ class TestMain:
         mock_rf.return_value.parse_arguments.side_effect = info
         with pytest.raises(SystemExit):
             parse_robot_arguments(["--help"])
-        mock_print.assert_called_once_with(info)
+        mock_logger.sys_crash.assert_called_once_with(info)
 
     def test_parse_arguments_system_argv(self) -> None:
         """

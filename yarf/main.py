@@ -1,4 +1,5 @@
 import contextlib
+import getpass
 import importlib.util
 import logging
 import operator
@@ -12,6 +13,7 @@ from importlib import metadata
 from pathlib import Path
 from typing import Any, Optional, Sequence
 
+from owasp_logger import OWASPLogger
 from packaging import version
 from robot import rebot
 from robot.api import TestSuite, TestSuiteBuilder
@@ -26,7 +28,7 @@ from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS, PlatformBase
 from yarf.rf_libraries.libraries.metadata_listener import MetadataListener
 from yarf.rf_libraries.suite_parser import SuiteParser
 
-_logger = logging.getLogger(__name__)
+_logger = OWASPLogger(appid=__name__)
 YARF_VERSION = version.parse(metadata.version("yarf"))
 VERSION_TAG_RE = re.compile(
     rf"{LABEL_PREFIX}version: +(?P<operator>[<>=!]+) +(?P<version>[0-9][0-9.]*)"
@@ -82,6 +84,9 @@ def parse_yarf_arguments(argv: list[str]) -> Namespace:
 
     Returns:
         The argparse.Namespace got after parsing the input
+
+    Raises:
+        SystemExit: If argument parsing fails
     """
 
     top_level_parser = ArgumentParser()
@@ -143,8 +148,11 @@ def parse_yarf_arguments(argv: list[str]) -> Namespace:
         nargs="?",
         help="Specify suite path.",
     )
-
-    return top_level_parser.parse_args(argv)
+    try:
+        return top_level_parser.parse_args(argv)
+    except SystemExit as e:
+        _logger.sys_crash("Error parsing YARF arguments.")
+        raise e
 
 
 def parse_robot_arguments(args: list[str]) -> dict[str, Any]:
@@ -164,7 +172,7 @@ def parse_robot_arguments(args: list[str]) -> dict[str, Any]:
         try:
             options, _ = RobotFramework().parse_arguments(args)
         except Information as info:
-            print(info)
+            _logger.sys_crash(info)
             raise SystemExit()
     return options
 
@@ -256,28 +264,41 @@ def get_listeners(
         MetadataListener(),
         RobotStackTracer(),
     ]
+    _logger.sys_monitor_enabled(getpass.getuser(), "listener:MetadataListener")
+    _logger.sys_monitor_enabled(getpass.getuser(), "listener:RobotStackTracer")
+
     if additional_listener_paths is None:
         return listeners
 
     for path_str in additional_listener_paths:
         # import listener and append to list
         path = Path(path_str)
-        spec = importlib.util.spec_from_file_location(path.stem, path)
-        module = importlib.util.module_from_spec(spec)  # type:ignore[arg-type]
-        spec.loader.exec_module(module)  # type:ignore[union-attr]
-        for name, obj in vars(module).items():
-            if not (
-                isinstance(obj, type)
-                and obj.__module__ == module.__name__
-                and hasattr(obj, "ROBOT_LISTENER_API_VERSION")
-            ):
-                continue
+        try:
+            spec = importlib.util.spec_from_file_location(path.stem, path)
+            module = importlib.util.module_from_spec(spec)  # type:ignore[arg-type]
+            spec.loader.exec_module(module)  # type:ignore[union-attr]
+            for name, obj in vars(module).items():
+                if not (
+                    isinstance(obj, type)
+                    and obj.__module__ == module.__name__
+                    and hasattr(obj, "ROBOT_LISTENER_API_VERSION")
+                ):
+                    continue
 
-            match name:
-                case "KeywordsListener":
-                    listeners.append(obj(kwargs["lib_cls"].get_pkg_path()))
-                case _:
-                    listeners.append(obj())
+                match name:
+                    case "KeywordsListener":
+                        listeners.append(obj(kwargs["lib_cls"].get_pkg_path()))
+                        _logger.sys_monitor_enabled(
+                            getpass.getuser(), f"listener:{name}"
+                        )
+                    case _:
+                        listeners.append(obj())
+                        _logger.sys_monitor_enabled(
+                            getpass.getuser(), f"listener:{name}"
+                        )
+        except (ImportError, AttributeError, TypeError) as e:
+            _logger.sys_crash(f"Failed to load listener from {path_str}: {e}")
+            raise
 
     return listeners
 
@@ -420,12 +441,21 @@ def main(argv: Optional[list[str]] = None) -> None:
     Raises:
         FileNotFoundError: If the start_console.robot file is not found
     """
+    _logger.sys_startup(getpass.getuser())
 
     args, cli_options = parse_arguments(argv)
 
     os.environ["YARF_LOG_LEVEL"] = args.log_level
     if args.log_video:
         os.environ["YARF_LOG_VIDEO"] = "1"
+        _logger.sys_monitor_enabled(getpass.getuser(), "video_logging")
+    else:
+        _logger.sys_monitor_disabled(getpass.getuser(), "video_logging")
+
+    if args.log_level == "DEBUG":
+        _logger.sys_monitor_enabled(getpass.getuser(), "debug_mode")
+    else:
+        _logger.sys_monitor_disabled(getpass.getuser(), "debug_mode")
 
     lib_cls = SUPPORTED_PLATFORMS[args.platform]
     logging.basicConfig(level=args.log_level)
@@ -449,6 +479,7 @@ def main(argv: Optional[list[str]] = None) -> None:
             )
 
         _logger.info(f"Results exported to: {outdir}")
+        _logger.sys_shutdown(getpass.getuser())
         sys.exit(ec)
 
     else:
@@ -460,9 +491,9 @@ def main(argv: Optional[list[str]] = None) -> None:
             )
         )
         if not start_console_path.exists():
-            raise FileNotFoundError(
-                "Interactive console robot script is missing."
-            )
+            error_msg = "Interactive console robot script is missing."
+            _logger.sys_crash(error_msg)
+            raise FileNotFoundError(error_msg)
 
         os.environ["RFDEBUG_HISTORY"] = f"{outdir}/rfdebug_history.log"
         console_suite = TestSuiteBuilder().build(start_console_path)
@@ -474,6 +505,7 @@ def main(argv: Optional[list[str]] = None) -> None:
             rf_debug_history_log_path=Path(os.environ["RFDEBUG_HISTORY"]),
             cli_options=cli_options,
         )
+        _logger.sys_shutdown(getpass.getuser())
 
 
 if __name__ == "__main__":

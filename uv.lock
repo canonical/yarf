@@ -748,6 +748,15 @@ wheels = [
 ]
 
 [[package]]
+name = "owasp-logger"
+version = "0.1.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/73/6f/f6853d1f6a272698f43afa760d421b71afcf7d263453b242b4359a7001f8/owasp_logger-0.1.3.tar.gz", hash = "sha256:e17d3d8e81ff5f0045c889d4f7be561bc1f5115570d005ba5800fe577e9eacf3", size = 58464, upload-time = "2025-10-16T10:11:29.236Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/67/47/e808a23837136b4190029a28cf2521769abc1ec9034700b2f2f561df32b7/owasp_logger-0.1.3-py3-none-any.whl", hash = "sha256:bfbb9a7b791906c6d090e60218c08f3f3be7477976469aea21b63a00304a36ee", size = 10901, upload-time = "2025-10-16T10:11:27.345Z" },
+]
+
+[[package]]
 name = "packaging"
 version = "25.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1564,6 +1573,7 @@ dependencies = [
     { name = "numpy" },
     { name = "onnxruntime" },
     { name = "opencv-python" },
+    { name = "owasp-logger" },
     { name = "pillow" },
     { name = "prompt-toolkit" },
     { name = "pygments" },
@@ -1601,6 +1611,7 @@ requires-dist = [
     { name = "numpy", specifier = "~=2.2.6" },
     { name = "onnxruntime", specifier = "~=1.23.2" },
     { name = "opencv-python", specifier = "~=4.12.0.88" },
+    { name = "owasp-logger" },
     { name = "pillow", specifier = "~=12.1.0" },
     { name = "prompt-toolkit", specifier = ">=3.0.38" },
     { name = "pygments", specifier = ">=2.14.0" },

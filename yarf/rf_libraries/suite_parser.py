@@ -1,4 +1,3 @@
-import logging
 import os
 import shutil
 import tempfile
@@ -6,7 +5,9 @@ from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import Any, Final, Generator
 
-_logger = logging.getLogger(__name__)
+from owasp_logger import OWASPLogger
+
+_logger = OWASPLogger(appid=__name__)
 
 
 class SuiteParser:
@@ -59,7 +60,9 @@ class SuiteParser:
 
         if not has_robot_ext:
             msg = "Expected at least one <name>.robot file."
-            _logger.error(msg)
+            _logger.sys_crash(
+                f"Suite parsing failed: {msg} in {self.suite_path}"
+            )
             raise ValueError(msg)
 
     @contextmanager

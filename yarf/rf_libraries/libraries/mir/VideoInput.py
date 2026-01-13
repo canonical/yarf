@@ -5,11 +5,14 @@ assertions.
 
 import os
 
+from owasp_logger import OWASPLogger
 from PIL import Image
 from robot.api.deco import keyword, library
 
 from yarf.lib.wayland import screencopy
 from yarf.rf_libraries.libraries.video_input_base import VideoInputBase
+
+_logger = OWASPLogger(appid=__name__)
 
 
 @library(scope="GLOBAL")
@@ -19,7 +22,14 @@ class VideoInput(VideoInputBase):
     def __init__(self) -> None:
         self.ROBOT_LIBRARY_LISTENER = self
         display_name = os.environ.get("WAYLAND_DISPLAY", "wayland-0")
-        self._screencopy = screencopy.Screencopy(display_name)
+        try:
+            self._screencopy = screencopy.Screencopy(display_name)
+            _logger.sys_monitor_enabled("system", "mir_video_input")
+        except Exception as e:
+            _logger.sys_crash(
+                f"Failed to initialize Mir VideoInput with display {display_name}: {e}"
+            )
+            raise
         super().__init__()
 
     async def grab_screenshot(self) -> Image.Image:

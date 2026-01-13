@@ -1,17 +1,17 @@
 import abc
 import importlib
 import json
-import logging
 import os
 import tempfile
 from pathlib import Path
 from typing import Any, Callable, Optional
 
+from owasp_logger import OWASPLogger
 from robot.api import TestSuite
 
-OUTPUT_FORMATS: dict[str, "OutputConverterMeta"] = {}
+_logger = OWASPLogger(appid=__name__)
 
-_logger = logging.getLogger(__name__)
+OUTPUT_FORMATS: dict[str, "OutputConverterMeta"] = {}
 
 
 def get_outdir_path(outdir: Optional[str] = None) -> Path:
@@ -91,9 +91,9 @@ def output_converter(func: Callable) -> Callable:
             converter: OutputConverterBase = OUTPUT_FORMATS[output_format]()
 
         except KeyError:
-            raise ValueError(
-                f"Unsupported output format: {kwargs['output_format']}"
-            )
+            error_msg = f"Unsupported output format: {kwargs['output_format']}"
+            _logger.sys_crash(error_msg)
+            raise ValueError(error_msg)
 
         suite = kwargs["suite"]
         outdir = kwargs["outdir"]

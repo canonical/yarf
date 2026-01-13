@@ -5,8 +5,11 @@ from typing import Optional
 
 import pywayland
 import pywayland.client
+from owasp_logger import OWASPLogger
 
 from .protocols.wayland.wl_registry import WlRegistryProxy
+
+_logger = OWASPLogger(appid=__name__)
 
 
 class WaylandClient(ABC):
@@ -26,6 +29,7 @@ class WaylandClient(ABC):
             self.display.read()
             self.display.dispatch(block=False)
         except Exception as e:
+            _logger.sys_crash(f"Wayland dispatch error: {e}")
             asyncio.get_event_loop().remove_writer(self.display.get_fd())
             raise e
 
