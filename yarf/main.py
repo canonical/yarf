@@ -464,6 +464,7 @@ def main(argv: Optional[list[str]] = None) -> None:
     if args.suite:
         variables: Sequence[str] = []
         suite_parser = SuiteParser(args.suite)
+        _logger.session_created(getpass.getuser())
         with suite_parser.suite_in_temp_folder(
             args.variant
         ) as temp_folder_path:
@@ -479,6 +480,9 @@ def main(argv: Optional[list[str]] = None) -> None:
             )
 
         _logger.info(f"Results exported to: {outdir}")
+        _logger.session_expired(
+            getpass.getuser(), f"test_suite_completed:exit_code_{ec}"
+        )
         _logger.sys_shutdown(getpass.getuser())
         sys.exit(ec)
 
@@ -498,12 +502,16 @@ def main(argv: Optional[list[str]] = None) -> None:
         os.environ["RFDEBUG_HISTORY"] = f"{outdir}/rfdebug_history.log"
         console_suite = TestSuiteBuilder().build(start_console_path)
         console_suite.name = f"{lib_cls.__name__} Interactive Console"
+        _logger.session_created(getpass.getuser())
         run_interactive_console(
             suite=console_suite,
             lib_cls=lib_cls,
             outdir=outdir,
             rf_debug_history_log_path=Path(os.environ["RFDEBUG_HISTORY"]),
             cli_options=cli_options,
+        )
+        _logger.session_expired(
+            getpass.getuser(), "interactive_console_completed"
         )
         _logger.sys_shutdown(getpass.getuser())
 

@@ -93,6 +93,7 @@ class WaylandClient(ABC):
             Exception: if connection fails
         """
         try:
+            _logger.session_created("system")
             self.display.connect()
             self._registry = registry = self.display.get_registry()
             registry.dispatcher["global"] = self.registry_global
@@ -103,6 +104,9 @@ class WaylandClient(ABC):
             )
             return self
         except Exception as e:
+            _logger.session_expired(
+                "system", f"connection_failed:{type(e).__name__}"
+            )
             await self.disconnect()
             raise e
 
@@ -114,6 +118,7 @@ class WaylandClient(ABC):
         self.display.roundtrip()
         self.display.disconnect()
         self.disconnected()
+        _logger.session_expired("system", "wayland_connection_closed")
 
     async def __aenter__(self) -> Optional["WaylandClient"]:
         return await self.connect()
