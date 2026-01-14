@@ -292,7 +292,9 @@ def _import_listener_from_path(path: Path, **kwargs) -> object:
                 break
 
     if listener is None:
-        raise ImportError(f"No valid listener found in {path}.")
+        msg = f"No valid listener found in {path}."
+        _owasp_logger.sys_crash(msg)
+        raise ImportError(msg)
     return listener
 
 
