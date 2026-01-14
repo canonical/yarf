@@ -1588,6 +1588,7 @@ dependencies = [
     { name = "robotframework" },
     { name = "robotframework-sshlibrary" },
     { name = "robotframework-stacktrace" },
+    { name = "typing-extensions" },
     { name = "xkbcommon" },
 ]
 
@@ -1626,6 +1627,7 @@ requires-dist = [
     { name = "robotframework", specifier = "~=7.4.0" },
     { name = "robotframework-sshlibrary", specifier = "~=3.8.0" },
     { name = "robotframework-stacktrace", specifier = "==0.4.1" },
+    { name = "typing-extensions", specifier = "~=4.15.0" },
     { name = "xkbcommon", specifier = "<1.5" },
 ]
 
