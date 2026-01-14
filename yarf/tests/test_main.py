@@ -365,6 +365,33 @@ class TestMain:
 
         assert listener.__class__.__name__ == expected_listener_name
 
+    def test_import_listener_from_path_no_listener(self):
+        lib_cls = Mock(get_pkg_path=Mock(return_value="cls_path"))
+
+        def fake_module_from_spec(spec):
+            module = types.ModuleType(spec.name)
+            return module
+
+        def fake_spec_from_file_location(name, path):
+            fake_loader = Mock()
+            fake_loader.exec_module.side_effect = lambda module: None
+            return types.SimpleNamespace(name=name, loader=fake_loader)
+
+        with (
+            patch(
+                "importlib.util.spec_from_file_location",
+                side_effect=fake_spec_from_file_location,
+            ),
+            patch(
+                "importlib.util.module_from_spec",
+                side_effect=fake_module_from_spec,
+            ),
+        ):
+            with pytest.raises(ImportError):
+                _import_listener_from_path(
+                    Path("dummy/invalid_listener.py"), lib_cls=lib_cls
+                )
+
     @pytest.mark.parametrize(
         "additional_listener_paths, expected",
         [

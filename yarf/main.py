@@ -267,10 +267,14 @@ def _import_listener_from_path(path: Path, **kwargs) -> object:
 
     Returns:
         listener instances.
+
+    Raises:
+        ImportError: If the listener cannot be imported.
     """
     spec = importlib.util.spec_from_file_location(path.stem, path)
     module = importlib.util.module_from_spec(spec)  # type:ignore[arg-type]
     spec.loader.exec_module(module)  # type:ignore[union-attr]
+    listener = None
     for name, obj in vars(module).items():
         if not (
             isinstance(obj, type)
@@ -287,6 +291,8 @@ def _import_listener_from_path(path: Path, **kwargs) -> object:
                 listener = obj()
                 break
 
+    if listener is None:
+        raise ImportError(f"No valid listener found in {path}.")
     return listener
 
 
