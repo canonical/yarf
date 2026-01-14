@@ -15,6 +15,7 @@ from robot.errors import Information
 from yarf import main
 from yarf.main import (
     YARF_VERSION,
+    _import_listener_from_path,
     compare_version,
     get_listeners,
     get_robot_reserved_settings,
@@ -125,8 +126,8 @@ class TestMain:
         assert args.platform == "Vnc"
 
     @patch("yarf.main.RobotFramework")
-    @patch("builtins.print")
-    def test_parse_robot_arguments_info(self, mock_print, mock_rf):
+    @patch("yarf.main._owasp_logger")
+    def test_parse_robot_arguments_info(self, mock_logger, mock_rf):
         """
         Test whether the parser catches the Information exception when raised
         by Robot parser with --help or --version, prints the information and
@@ -137,7 +138,7 @@ class TestMain:
         mock_rf.return_value.parse_arguments.side_effect = info
         with pytest.raises(SystemExit):
             parse_robot_arguments(["--help"])
-        mock_print.assert_called_once_with(info)
+        mock_logger.sys_crash.assert_called_once_with(info)
 
     def test_parse_arguments_system_argv(self) -> None:
         """
@@ -307,6 +308,91 @@ class TestMain:
         assert additional_reserved_settings["exitonerror"]
 
     @pytest.mark.parametrize(
+        "path, expected_listener_name",
+        [
+            (
+                Path("dummy/keywords_listener.py"),
+                "KeywordsListener",
+            ),
+            (
+                Path("dummy/metadata_listener.py"),
+                "MetadataListener",
+            ),
+        ],
+    )
+    def test_import_listener_from_path(self, path, expected_listener_name):
+        lib_cls = Mock(get_pkg_path=Mock(return_value="cls_path"))
+
+        def fake_module_from_spec(spec):
+            module = types.ModuleType(spec.name)
+            if "keywords_listener" in spec.name:
+
+                class KeywordsListener:
+                    ROBOT_LISTENER_API_VERSION = 3
+
+                    def __init__(self, path=None):
+                        self.path = path
+
+                KeywordsListener.__module__ = module.__name__
+                module.KeywordsListener = KeywordsListener
+
+            elif "metadata_listener" in spec.name:
+
+                class MetadataListener:
+                    ROBOT_LISTENER_API_VERSION = 3
+
+                MetadataListener.__module__ = module.__name__
+                module.MetadataListener = MetadataListener
+
+            return module
+
+        def fake_spec_from_file_location(name, path):
+            fake_loader = Mock()
+            fake_loader.exec_module.side_effect = lambda module: None
+            return types.SimpleNamespace(name=name, loader=fake_loader)
+
+        with (
+            patch(
+                "importlib.util.spec_from_file_location",
+                side_effect=fake_spec_from_file_location,
+            ),
+            patch(
+                "importlib.util.module_from_spec",
+                side_effect=fake_module_from_spec,
+            ),
+        ):
+            listener = _import_listener_from_path(path, lib_cls=lib_cls)
+
+        assert listener.__class__.__name__ == expected_listener_name
+
+    def test_import_listener_from_path_no_listener(self):
+        lib_cls = Mock(get_pkg_path=Mock(return_value="cls_path"))
+
+        def fake_module_from_spec(spec):
+            module = types.ModuleType(spec.name)
+            return module
+
+        def fake_spec_from_file_location(name, path):
+            fake_loader = Mock()
+            fake_loader.exec_module.side_effect = lambda module: None
+            return types.SimpleNamespace(name=name, loader=fake_loader)
+
+        with (
+            patch(
+                "importlib.util.spec_from_file_location",
+                side_effect=fake_spec_from_file_location,
+            ),
+            patch(
+                "importlib.util.module_from_spec",
+                side_effect=fake_module_from_spec,
+            ),
+        ):
+            with pytest.raises(ImportError):
+                _import_listener_from_path(
+                    Path("dummy/invalid_listener.py"), lib_cls=lib_cls
+                )
+
+    @pytest.mark.parametrize(
         "additional_listener_paths, expected",
         [
             (
@@ -380,6 +466,26 @@ class TestMain:
                     del expected_counts[cls_name]
 
         assert len(expected_counts) == 0
+
+    @pytest.mark.parametrize(
+        "error",
+        [
+            AttributeError,
+            ImportError,
+            TypeError,
+        ],
+    )
+    def test_get_listeners_error(self, error: Exception) -> None:
+        """
+        Test whether the function get_listeners raises errors when encountering
+        invalid listener modules.
+        """
+
+        with patch(
+            "yarf.main._import_listener_from_path", side_effect=error()
+        ):
+            with pytest.raises(error):
+                get_listeners(["dummy/invalid_listener.py"])
 
     @patch("yarf.main.RobotStackTracer")
     @patch("yarf.main.MetadataListener")
@@ -672,8 +778,10 @@ class TestMain:
 
         main.run_interactive_console = Mock()
         main.get_outdir_path = Mock(return_value=outdir)
-        main.main([])
+        with pytest.raises(SystemExit) as cm:
+            main.main([])
 
+        assert cm.value.code == 0
         mock_test_suite_builder.assert_called_once()
         main.run_interactive_console.assert_called_once_with(
             suite=mock_test_suite_builder(),

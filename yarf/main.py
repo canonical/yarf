@@ -1,4 +1,5 @@
 import contextlib
+import getpass
 import importlib.util
 import logging
 import operator
@@ -12,6 +13,7 @@ from importlib import metadata
 from pathlib import Path
 from typing import Any, Optional, Sequence
 
+from owasp_logger import OWASPLogger
 from packaging import version
 from robot import rebot
 from robot.api import TestSuite, TestSuiteBuilder
@@ -20,12 +22,14 @@ from robot.run import RobotFramework
 from RobotStackTracer import RobotStackTracer
 
 from yarf import LABEL_PREFIX
+from yarf.logging.owasp_logger import get_owasp_logger
 from yarf.output import OUTPUT_FORMATS, get_outdir_path, output_converter
 from yarf.rf_libraries import robot_in_path
 from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS, PlatformBase
 from yarf.rf_libraries.libraries.metadata_listener import MetadataListener
 from yarf.rf_libraries.suite_parser import SuiteParser
 
+_owasp_logger = OWASPLogger(appid=__name__, logger=get_owasp_logger())
 _logger = logging.getLogger(__name__)
 YARF_VERSION = version.parse(metadata.version("yarf"))
 VERSION_TAG_RE = re.compile(
@@ -82,6 +86,9 @@ def parse_yarf_arguments(argv: list[str]) -> Namespace:
 
     Returns:
         The argparse.Namespace got after parsing the input
+
+    Raises:
+        SystemExit: If argument parsing fails
     """
 
     top_level_parser = ArgumentParser()
@@ -143,8 +150,11 @@ def parse_yarf_arguments(argv: list[str]) -> Namespace:
         nargs="?",
         help="Specify suite path.",
     )
-
-    return top_level_parser.parse_args(argv)
+    try:
+        return top_level_parser.parse_args(argv)
+    except SystemExit as e:
+        _owasp_logger.sys_crash("Error parsing YARF arguments.")
+        raise e
 
 
 def parse_robot_arguments(args: list[str]) -> dict[str, Any]:
@@ -164,7 +174,7 @@ def parse_robot_arguments(args: list[str]) -> dict[str, Any]:
         try:
             options, _ = RobotFramework().parse_arguments(args)
         except Information as info:
-            print(info)
+            _owasp_logger.sys_crash(info)
             raise SystemExit()
     return options
 
@@ -249,6 +259,47 @@ def get_robot_reserved_settings(test_suite: TestSuite) -> dict[str, Any]:
     return robot_reserved_settings
 
 
+def _import_listener_from_path(path: Path, **kwargs) -> object:
+    """
+    Import a listener from a given path.
+
+    Arguments:
+        path: The path to the listener file.
+        **kwargs: Additional keyword arguments.
+
+    Returns:
+        listener instances.
+
+    Raises:
+        ImportError: If the listener cannot be imported.
+    """
+    spec = importlib.util.spec_from_file_location(path.stem, path)
+    module = importlib.util.module_from_spec(spec)  # type:ignore[arg-type]
+    spec.loader.exec_module(module)  # type:ignore[union-attr]
+    listener = None
+    for name, obj in vars(module).items():
+        if not (
+            isinstance(obj, type)
+            and obj.__module__ == module.__name__
+            and hasattr(obj, "ROBOT_LISTENER_API_VERSION")
+        ):
+            continue
+
+        match name:
+            case "KeywordsListener":
+                listener = obj(kwargs["lib_cls"].get_pkg_path())
+                break
+            case _:
+                listener = obj()
+                break
+
+    if listener is None:
+        msg = f"No valid listener found in {path}."
+        _owasp_logger.sys_crash(msg)
+        raise ImportError(msg)
+    return listener
+
+
 def get_listeners(
     additional_listener_paths: list[str] | None, **kwargs
 ) -> list[object]:
@@ -256,28 +307,30 @@ def get_listeners(
         MetadataListener(),
         RobotStackTracer(),
     ]
+    _owasp_logger.sys_monitor_enabled(
+        getpass.getuser(), "listener:MetadataListener"
+    )
+    _owasp_logger.sys_monitor_enabled(
+        getpass.getuser(), "listener:RobotStackTracer"
+    )
+
     if additional_listener_paths is None:
         return listeners
 
     for path_str in additional_listener_paths:
-        # import listener and append to list
+        # import listeners and append to list
         path = Path(path_str)
-        spec = importlib.util.spec_from_file_location(path.stem, path)
-        module = importlib.util.module_from_spec(spec)  # type:ignore[arg-type]
-        spec.loader.exec_module(module)  # type:ignore[union-attr]
-        for name, obj in vars(module).items():
-            if not (
-                isinstance(obj, type)
-                and obj.__module__ == module.__name__
-                and hasattr(obj, "ROBOT_LISTENER_API_VERSION")
-            ):
-                continue
-
-            match name:
-                case "KeywordsListener":
-                    listeners.append(obj(kwargs["lib_cls"].get_pkg_path()))
-                case _:
-                    listeners.append(obj())
+        try:
+            listener = _import_listener_from_path(path, **kwargs)
+            listeners.append(listener)
+            _owasp_logger.sys_monitor_enabled(
+                getpass.getuser(), f"listener:{listener.__class__.__name__}"
+            )
+        except (ImportError, AttributeError, TypeError) as e:
+            _owasp_logger.sys_crash(
+                f"Failed to load listener from {path_str}: {e}"
+            )
+            raise
 
     return listeners
 
@@ -420,17 +473,35 @@ def main(argv: Optional[list[str]] = None) -> None:
     Raises:
         FileNotFoundError: If the start_console.robot file is not found
     """
+    _owasp_logger.sys_startup(getpass.getuser())
 
     args, cli_options = parse_arguments(argv)
 
     os.environ["YARF_LOG_LEVEL"] = args.log_level
     if args.log_video:
         os.environ["YARF_LOG_VIDEO"] = "1"
+        _owasp_logger.sys_monitor_enabled(getpass.getuser(), "video_logging")
+    else:
+        _owasp_logger.sys_monitor_disabled(getpass.getuser(), "video_logging")
+
+    if args.log_level == "DEBUG":
+        _owasp_logger.sys_monitor_enabled(getpass.getuser(), "debug_mode")
 
     lib_cls = SUPPORTED_PLATFORMS[args.platform]
+    _owasp_logger.authz_admin(
+        getpass.getuser(), f"initialize_platform:{args.platform}"
+    )
+    _owasp_logger.privilege_permissions_changed(
+        getpass.getuser(),
+        "platform_access",
+        "restricted",
+        f"platform:{args.platform}",
+    )
     logging.basicConfig(level=args.log_level)
     outdir = get_outdir_path(args.outdir)
 
+    _owasp_logger.session_created(getpass.getuser())
+    ec = 0
     if args.suite:
         variables: Sequence[str] = []
         suite_parser = SuiteParser(args.suite)
@@ -449,7 +520,9 @@ def main(argv: Optional[list[str]] = None) -> None:
             )
 
         _logger.info(f"Results exported to: {outdir}")
-        sys.exit(ec)
+        _owasp_logger.session_expired(
+            getpass.getuser(), f"test_suite_completed:exit_code_{ec}"
+        )
 
     else:
         start_console_path = (
@@ -460,9 +533,9 @@ def main(argv: Optional[list[str]] = None) -> None:
             )
         )
         if not start_console_path.exists():
-            raise FileNotFoundError(
-                "Interactive console robot script is missing."
-            )
+            error_msg = "Interactive console robot script is missing."
+            _owasp_logger.sys_crash(error_msg)
+            raise FileNotFoundError(error_msg)
 
         os.environ["RFDEBUG_HISTORY"] = f"{outdir}/rfdebug_history.log"
         console_suite = TestSuiteBuilder().build(start_console_path)
@@ -474,6 +547,12 @@ def main(argv: Optional[list[str]] = None) -> None:
             rf_debug_history_log_path=Path(os.environ["RFDEBUG_HISTORY"]),
             cli_options=cli_options,
         )
+        _owasp_logger.session_expired(
+            getpass.getuser(), "interactive_console_completed"
+        )
+
+    _owasp_logger.sys_shutdown(getpass.getuser())
+    sys.exit(ec)
 
 
 if __name__ == "__main__":

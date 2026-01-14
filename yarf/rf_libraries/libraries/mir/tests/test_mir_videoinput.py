@@ -37,9 +37,26 @@ class TestMirVideoInput:
             vi = VideoInput()
 
             assert vi.ROBOT_LIBRARY_LISTENER is vi
-            mock_environ.get.assert_called_once_with("WAYLAND_DISPLAY", ANY)
+            mock_environ.get.assert_has_calls(
+                [
+                    call("WAYLAND_DISPLAY", ANY),
+                ]
+            )
             mock_screencopy.assert_called_with(mock_environ.get())
             m.assert_called_once_with()
+
+    def test_init_exception(self, mock_environ, mock_screencopy):
+        mock_screencopy.side_effect = Exception("Test exception")
+
+        with pytest.raises(Exception, match="Test exception"):
+            VideoInput()
+
+        mock_environ.get.assert_has_calls(
+            [
+                call("WAYLAND_DISPLAY", ANY),
+            ]
+        )
+        mock_screencopy.assert_called_with(mock_environ.get())
 
     @pytest.mark.asyncio
     async def test_grab_screenshot(self, mock_screencopy, video_input):

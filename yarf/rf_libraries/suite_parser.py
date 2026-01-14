@@ -6,6 +6,11 @@ from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import Any, Final, Generator
 
+from owasp_logger import OWASPLogger
+
+from yarf.logging.owasp_logger import get_owasp_logger
+
+_owasp_logger = OWASPLogger(appid=__name__, logger=get_owasp_logger())
 _logger = logging.getLogger(__name__)
 
 
@@ -59,7 +64,9 @@ class SuiteParser:
 
         if not has_robot_ext:
             msg = "Expected at least one <name>.robot file."
-            _logger.error(msg)
+            _owasp_logger.sys_crash(
+                f"Suite parsing failed: {msg} in {self.suite_path}"
+            )
             raise ValueError(msg)
 
     @contextmanager

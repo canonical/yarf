@@ -1,13 +1,23 @@
+"""
+This module provides the Vnc-driven implementation for video interactions and
+assertions.
+"""
+
+import getpass
 from asyncio import TimeoutError, wait_for
 from time import sleep
 
+from owasp_logger import OWASPLogger
 from PIL import Image
 from robot.api import logger
 from robot.api.deco import keyword, library
 
+from yarf.logging.owasp_logger import get_owasp_logger
 from yarf.rf_libraries.libraries.video_input_base import VideoInputBase
 from yarf.rf_libraries.libraries.vnc import Vnc
 from yarf.vendor.asyncvnc import connect
+
+_owasp_logger = OWASPLogger(appid=__name__, logger=get_owasp_logger())
 
 
 @library
@@ -28,10 +38,24 @@ class VideoInput(VideoInputBase):
     def __init__(self) -> None:
         super().__init__()
         self.vnc = Vnc()
+        _owasp_logger.sys_monitor_enabled("system", "vnc_video_input")
 
     @keyword
     async def grab_screenshot(self) -> Image.Image:
+        """
+        Grabs the current frame through screencopy.
+
+        Returns:
+            Pillow Image of the frame
+
+        Raises:
+            TimeoutError: If unable to get a screenshot within the timeout period.
+        """
         screenshot = None
+        _owasp_logger.sensitive_read(
+            getpass.getuser(),
+            f"vnc_connection:{self.vnc.host}:{self.vnc.port}",
+        )
         for attempt in range(self.screenshot_retries):
             async with connect(self.vnc.host, self.vnc.port) as client:
                 try:
@@ -47,9 +71,10 @@ class VideoInput(VideoInputBase):
                     sleep(self.screenshot_sleep_interval)
             if screenshot:
                 return screenshot
-        raise TimeoutError(
+        error_msg = (
             "Failed to get screenshots via asyncvnc, something went wrong!"
         )
+        raise TimeoutError(error_msg)
 
     @keyword
     async def stop_video_input(self) -> None:

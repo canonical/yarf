@@ -13,6 +13,23 @@ def mock_image():
 
 
 class TestVncVideoInput:
+    def test_init(self) -> None:
+        with patch(
+            "yarf.rf_libraries.libraries.vnc.VideoInput.Vnc",
+            new=MagicMock(),
+        ) as vnc_mock:
+            video_input = VideoInput()
+            assert video_input.vnc == vnc_mock.return_value
+
+    def test_init_exception(self) -> None:
+        with patch(
+            "yarf.rf_libraries.libraries.vnc.VideoInput.Vnc",
+            new=MagicMock(side_effect=Exception("VNC init failed")),
+        ):
+            with pytest.raises(Exception) as excinfo:
+                VideoInput()
+            assert "VNC init failed" in str(excinfo.value)
+
     @pytest.mark.asyncio
     async def test_grab_screenshot(
         self,

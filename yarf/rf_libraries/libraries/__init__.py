@@ -11,6 +11,11 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from owasp_logger import OWASPLogger
+
+from yarf.logging.owasp_logger import get_owasp_logger
+
+_owasp_logger = OWASPLogger(appid=__name__, logger=get_owasp_logger())
 _logger = logging.getLogger(__name__)
 SUPPORTED_PLATFORMS: dict[str, type] = {}
 SNAP_PLUGINS_DIR = (
@@ -52,8 +57,10 @@ class PlatformMeta(abc.ABCMeta):
         """
         if DISCOVERY_COMPLETED:
             if name not in SUPPORTED_PLATFORMS:
-                _logger.error(f"Platform {name} is not registered.")
-                raise KeyError(f"Platform {name} is not registered.")
+                error_msg = f"Platform {name} is not registered."
+                _logger.error(error_msg)
+                _owasp_logger.sys_crash(error_msg)
+                raise KeyError(error_msg)
 
             module_class = SUPPORTED_PLATFORMS[name]
         else:
@@ -68,6 +75,9 @@ class PlatformMeta(abc.ABCMeta):
                     f"Platform {name} is being overridden by {module_class.__module__}."
                 )
             SUPPORTED_PLATFORMS[name] = module_class
+            _owasp_logger.sys_monitor_enabled(
+                "system", f"platform:{name} discovered."
+            )
 
         return module_class  # type: ignore[return-value]
 

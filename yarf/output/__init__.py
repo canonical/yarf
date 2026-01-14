@@ -7,11 +7,15 @@ import tempfile
 from pathlib import Path
 from typing import Any, Callable, Optional
 
+from owasp_logger import OWASPLogger
 from robot.api import TestSuite
 
-OUTPUT_FORMATS: dict[str, "OutputConverterMeta"] = {}
+from yarf.logging.owasp_logger import get_owasp_logger
 
+_owasp_logger = OWASPLogger(appid=__name__, logger=get_owasp_logger())
 _logger = logging.getLogger(__name__)
+
+OUTPUT_FORMATS: dict[str, "OutputConverterMeta"] = {}
 
 
 def get_outdir_path(outdir: Optional[str] = None) -> Path:
@@ -91,9 +95,9 @@ def output_converter(func: Callable) -> Callable:
             converter: OutputConverterBase = OUTPUT_FORMATS[output_format]()
 
         except KeyError:
-            raise ValueError(
-                f"Unsupported output format: {kwargs['output_format']}"
-            )
+            error_msg = f"Unsupported output format: {kwargs['output_format']}"
+            _owasp_logger.sys_crash(error_msg)
+            raise ValueError(error_msg)
 
         suite = kwargs["suite"]
         outdir = kwargs["outdir"]

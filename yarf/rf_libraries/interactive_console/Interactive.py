@@ -4,12 +4,16 @@ This module provides Robot Framework keywords exclusive to interactive mode.
 
 from typing import Any
 
+from owasp_logger import OWASPLogger
 from robot.api.deco import keyword
 from robot.libraries.BuiltIn import BuiltIn
 
+from yarf.logging.owasp_logger import get_owasp_logger
 from yarf.rf_libraries.interactive_console.tools.roi_selector import (
     ROISelector,
 )
+
+_owasp_logger = OWASPLogger(appid=__name__, logger=get_owasp_logger())
 
 
 class Interactive:
@@ -27,6 +31,7 @@ class Interactive:
 
     def __init__(self):
         self.ROBOT_LIBRARY_LISTENER = self
+        _owasp_logger.sys_monitor_enabled("system", "interactive_console")
 
     def _get_lib_instance(self, lib_name: str) -> Any:
         """
