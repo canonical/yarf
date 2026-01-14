@@ -22,13 +22,15 @@ from robot.run import RobotFramework
 from RobotStackTracer import RobotStackTracer
 
 from yarf import LABEL_PREFIX
+from yarf.logging.owasp_logger import get_owasp_logger
 from yarf.output import OUTPUT_FORMATS, get_outdir_path, output_converter
 from yarf.rf_libraries import robot_in_path
 from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS, PlatformBase
 from yarf.rf_libraries.libraries.metadata_listener import MetadataListener
 from yarf.rf_libraries.suite_parser import SuiteParser
 
-_owasp_logger = OWASPLogger(appid=__name__)
+_owasp_logger = OWASPLogger(appid=__name__, logger=get_owasp_logger())
+_logger = logging.getLogger(__name__)
 YARF_VERSION = version.parse(metadata.version("yarf"))
 VERSION_TAG_RE = re.compile(
     rf"{LABEL_PREFIX}version: +(?P<operator>[<>=!]+) +(?P<version>[0-9][0-9.]*)"
@@ -378,7 +380,7 @@ def run_robot_suite(
 
     # Issue: https://github.com/robotframework/robotframework/issues/5549
     if len(suite.suites) <= 0:
-        _owasp_logger.error(f"Suite '{suite.name}' contains no tests.")
+        _logger.error(f"Suite '{suite.name}' contains no tests.")
         return DATA_ERROR
 
     with robot_in_path(lib_cls.get_pkg_path()):
@@ -397,7 +399,7 @@ def run_robot_suite(
     # The return_code from suite.run is in range(0, 250), shouldn't just check for (0, 1)
     if result.return_code != 0:
         for error_message in result.errors.messages:
-            _owasp_logger.error("ROBOT: %s", error_message.message)
+            _logger.error("ROBOT: %s", error_message.message)
     return result.return_code
 
 
@@ -453,7 +455,7 @@ def run_interactive_console(
             **cli_options,
         )
 
-    _owasp_logger.info(
+    _logger.info(
         "Interactive console log exported to: %s",
         rf_debug_history_log_path,
     )
@@ -517,7 +519,7 @@ def main(argv: Optional[list[str]] = None) -> None:
                 output_format=args.output_format,
             )
 
-        _owasp_logger.info(f"Results exported to: {outdir}")
+        _logger.info(f"Results exported to: {outdir}")
         _owasp_logger.session_expired(
             getpass.getuser(), f"test_suite_completed:exit_code_{ec}"
         )

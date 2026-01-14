@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 import tempfile
@@ -7,7 +8,10 @@ from typing import Any, Final, Generator
 
 from owasp_logger import OWASPLogger
 
-_owasp_logger = OWASPLogger(appid=__name__)
+from yarf.logging.owasp_logger import get_owasp_logger
+
+_owasp_logger = OWASPLogger(appid=__name__, logger=get_owasp_logger())
+_logger = logging.getLogger(__name__)
 
 
 class SuiteParser:
@@ -52,7 +56,7 @@ class SuiteParser:
                     ] = path
                 else:
                     if SuiteParser.VARIANTS_DIR in relative_path.parts:
-                        _owasp_logger.warning(
+                        _logger.warning(
                             f"'{SuiteParser.VARIANTS_DIR}' is a special dirname, avoid using it in asset paths."
                         )
                     has_robot_ext |= path.suffix == ".robot"
@@ -89,7 +93,7 @@ class SuiteParser:
                     dest_path.mkdir(parents=True, exist_ok=True)
 
                 shutil.copy(src_path, dest_path, follow_symlinks=True)
-                _owasp_logger.debug(
+                _logger.debug(
                     f"Copied '{relative_path}' from '{src_path}' to '{dest_path}'"
                 )
 
@@ -118,7 +122,7 @@ class SuiteParser:
                 # go for default
                 actual_assets[rel_file_path] = src_file_path
 
-        _owasp_logger.info(
+        _logger.info(
             "Selected assets:\n  {}".format(
                 "\n  ".join(
                     str(p.relative_to(self.suite_path))

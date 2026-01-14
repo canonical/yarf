@@ -591,7 +591,7 @@ class TestMain:
 
     @patch("yarf.main.get_robot_reserved_settings")
     @patch("yarf.main.get_yarf_settings")
-    @patch("yarf.main._owasp_logger")
+    @patch("yarf.main._logger")
     def test_run_robot_suite_with_errors(
         self,
         mock_logger: MagicMock,
@@ -627,7 +627,7 @@ class TestMain:
         mock_logger.error.assert_called()
 
     @mock.patch.dict(os.environ, {"RFDEBUG_HISTORY": "/testoutdir"})
-    @patch("yarf.main._owasp_logger")
+    @patch("yarf.main._logger")
     @patch("yarf.main.rebot")
     def test_run_interactive_console(
         self,

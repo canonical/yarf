@@ -2,6 +2,7 @@ import abc
 import importlib
 import importlib.util
 import inspect
+import logging
 import os
 import pathlib
 import pkgutil
@@ -12,7 +13,10 @@ from typing import Any
 
 from owasp_logger import OWASPLogger
 
-_owasp_logger = OWASPLogger(appid=__name__)
+from yarf.logging.owasp_logger import get_owasp_logger
+
+_owasp_logger = OWASPLogger(appid=__name__, logger=get_owasp_logger())
+_logger = logging.getLogger(__name__)
 SUPPORTED_PLATFORMS: dict[str, type] = {}
 SNAP_PLUGINS_DIR = (
     f"{os.getenv('SNAP_COMMON')}/platform_plugins"
@@ -54,7 +58,7 @@ class PlatformMeta(abc.ABCMeta):
         if DISCOVERY_COMPLETED:
             if name not in SUPPORTED_PLATFORMS:
                 error_msg = f"Platform {name} is not registered."
-                _owasp_logger.error(error_msg)
+                _logger.error(error_msg)
                 _owasp_logger.sys_crash(error_msg)
                 raise KeyError(error_msg)
 
@@ -67,7 +71,7 @@ class PlatformMeta(abc.ABCMeta):
                 module_class.__module__.startswith(PLATFORM_PLUGIN_PREFIX)
                 and SUPPORTED_PLATFORMS.get(name) is not None
             ):
-                _owasp_logger.warning(
+                _logger.warning(
                     f"Platform {name} is being overridden by {module_class.__module__}."
                 )
             SUPPORTED_PLATFORMS[name] = module_class
@@ -128,7 +132,7 @@ def import_platform_plugin(dir_path: str) -> None:
         external_plugins_path.is_dir()
         and not any(external_plugins_path.iterdir())
     ):
-        _owasp_logger.info(
+        _logger.info(
             f"External plugins directory '{external_plugins_path}' does not exist or it is empty. "
             "Skipping import of external libraries."
         )

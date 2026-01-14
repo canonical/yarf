@@ -1,6 +1,7 @@
 import abc
 import importlib
 import json
+import logging
 import os
 import tempfile
 from pathlib import Path
@@ -9,7 +10,10 @@ from typing import Any, Callable, Optional
 from owasp_logger import OWASPLogger
 from robot.api import TestSuite
 
-_owasp_logger = OWASPLogger(appid=__name__)
+from yarf.logging.owasp_logger import get_owasp_logger
+
+_owasp_logger = OWASPLogger(appid=__name__, logger=get_owasp_logger())
+_logger = logging.getLogger(__name__)
 
 OUTPUT_FORMATS: dict[str, "OutputConverterMeta"] = {}
 
@@ -105,7 +109,7 @@ def output_converter(func: Callable) -> Callable:
         with open(outdir / f"{output_format}_output.json", "w") as f:
             json.dump(formatted_output, f, indent=4)
 
-        _owasp_logger.info(
+        _logger.info(
             f"Output for '{output_format}' exported to {outdir}/{output_format}_output.json."
         )
 

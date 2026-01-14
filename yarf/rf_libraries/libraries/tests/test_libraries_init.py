@@ -46,7 +46,7 @@ class TestPlatformMeta:
             pass
 
         assert "FirstPlatform" in SUPPORTED_PLATFORMS
-        assert caplog.records
+        assert not caplog.records
 
         with caplog.at_level("WARNING"):
 
