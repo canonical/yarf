@@ -42,7 +42,7 @@ dependencies = [
     "pyte~=0.8.2",
     "pyserial>=3.5",
     "python-dateutil>=2.9.0.post0",
-    "typing-extensions~=4.15.0",
+    "typing-extensions~=4.15.0",  # implicitly required by owasp-logger
 ]
 
 [dependency-groups]
