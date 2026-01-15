@@ -294,6 +294,19 @@ class VideoInputBase(ABC):
         else:
             matched_text_regions = self.ocr.find(image, text, region=region)  # type: ignore[arg-type]
 
+        # Log the image which we found the text on for debugging false positives
+        if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
+            for match in matched_text_regions:
+                similarity = f"{match['similarity']:.2f}"
+                confidence = f"{match['confidence']:.2f}"
+                matched_image = self._draw_region_on_image(
+                    image, match["region"]
+                )
+                log_image(
+                    matched_image,
+                    f"Found text matching '{text}' with similarity {similarity}, confidence {confidence}: '{match['text']}'",
+                )
+
         return matched_text_regions
 
     @keyword
@@ -353,7 +366,6 @@ class VideoInputBase(ABC):
             if text_matches:
                 return text_matches, cropped_image
 
-        log_image(cropped_image, "The image used for ocr was:")
         read_text = await self.read_text(cropped_image)
         raise ValueError(
             f"Timed out looking for '{text}' after '{timeout}' seconds. "
@@ -385,11 +397,6 @@ class VideoInputBase(ABC):
 
         # Get the best match
         match = text_matches[0]
-
-        # Draw the region on the image for debugging
-        if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
-            matched_image = self._draw_region_on_image(image, match["region"])
-            log_image(matched_image, "Matched text region:")
 
         # Get the center of the region
         center = match["region"].center

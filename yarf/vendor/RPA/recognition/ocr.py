@@ -38,7 +38,7 @@ INSTALL_PROMPT = (
     "see library documentation for installation instructions"
 )
 
-DEFAULT_CONFIDENCE = 80.0
+DEFAULT_SIMILARITY_THRESHOLD = 80.0
 
 
 def read(
@@ -67,7 +67,7 @@ def read(
 def find(
     image: Union[Image.Image, Path],
     text: str,
-    confidence: float = DEFAULT_CONFIDENCE,
+    similarity_threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
     region: Optional[Region] = None,
     language: Optional[str] = None,
     configuration: Optional[str] = None
@@ -77,14 +77,16 @@ def find(
 
     :param image: Path to image or Image object
     :param text: Text to find in image
-    :param confidence: Minimum confidence for text similaritys
+    :param similarity_threshold: Minimum similarity percentage (0-100) for text
+     matching. If the similarity between the found text and the target text is
+     below this threshold, the match is discarded. The default value is 80.0.
     :param region: Limit the region of the screen where to look for the text
     :param language: 3-character ISO 639-2 language code of the text.
      This is passed directly to the pytesseract lib in the lang parameter.
      See https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html#using-one-language
     """  # noqa: E501
     image = to_image(image)
-    confidence = clamp(1, float(confidence), 100)
+    similarity_threshold = clamp(1, float(similarity_threshold), 100)
 
     text = str(text).strip()
     if not text:
@@ -107,7 +109,7 @@ def find(
         raise EnvironmentError(INSTALL_PROMPT) from err
 
     lines = _dict_lines(data)
-    matches = _match_lines(lines, text, confidence)
+    matches = _match_lines(lines, text, similarity_threshold)
 
     if region is not None:
         for match in matches:
@@ -132,8 +134,7 @@ def _dict_lines(data: Dict) -> List:
             word["left"], word["top"], word["width"], word["height"]
         )
 
-        # NOTE: Currently ignoring confidence in tesseract results
-        lines[key].append({"text": word["text"], "region": region})
+        lines[key].append({"text": word["text"], "region": region, "confidence": word["conf"]})
         assert len(lines[key]) == word["word_num"]
 
     return list(lines.values())
@@ -144,9 +145,9 @@ def _iter_rows(data: Dict) -> Generator:
     return (dict(zip(data.keys(), values)) for values in zip(*data.values()))
 
 
-def _match_lines(lines: List[Dict], text: str, confidence: float) -> List[Dict]:
+def _match_lines(lines: List[Dict], text: str, similarity_threshold: float) -> List[Dict]:
     """Find best matches between lines of text and target text,
-    and return resulting bounding boxes and confidences.
+    and return resulting bounding boxes and similarities.
 
     A line of N words will be matched to the given text in all 1 to N
     length sections, in every sequential position.
@@ -161,21 +162,26 @@ def _match_lines(lines: List[Dict], text: str, confidence: float) -> List[Dict]:
                 regions = [word["region"] for word in words]
 
                 sentence = " ".join(word["text"] for word in words)
-                ratio = SequenceMatcher(None, sentence, text).ratio() * 100.0
+                similarity = SequenceMatcher(None, sentence, text).ratio() * 100.0
 
-                if ratio < confidence:
+                if similarity < similarity_threshold:
                     continue
 
-                if match and match["confidence"] >= ratio:
+                if match and match["similarity"] >= similarity:
+                    # We already have a better match
                     continue
+
+                # Use the lowest confidence among the words in the match
+                confidence = min(word["confidence"] for word in words if word["confidence"] != -1)
 
                 match = {
                     "text": sentence,
                     "region": Region.merge(regions),
-                    "confidence": ratio,
+                    "similarity": similarity,
+                    "confidence": confidence,
                 }
 
         if match:
             matches.append(match)
 
-    return sorted(matches, key=lambda match: match["confidence"], reverse=True)
+    return sorted(matches, key=lambda match: match["similarity"], reverse=True)
