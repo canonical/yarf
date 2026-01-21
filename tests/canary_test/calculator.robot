@@ -1,34 +1,36 @@
 *** Settings ***
-Resource        kvm.resource
+Documentation    Test suite for calculator application interactions.
+Resource         kvm.resource
 
-Task Tags
+Test Tags
 ...    robot:stop-on-failure
-...    yarf:category_id: com.canonical.yarf::canary
-...    yarf:test_group_id: com.canonical.yarf::canary
+...    yarf:category_id:com.canonical.yarf::canary
+...    yarf:test_group_id:com.canonical.yarf::canary
+...    yarf:certification_status:blocker
 
 
 *** Test Cases ***
 Assert Calculator Started
-    [Tags]                  yarf:certification_status: blocker
-    Match                   ${CURDIR}/01_calculator.png
+    [Documentation]    Verify the calculator application has started.
+    Match    ${CURDIR}/01_calculator.png
 
-Answer the ultimate question of life, the universe and everything
-    [Tags]                  yarf:certification_status: blocker
-    Click LEFT Button On 1
-    Click LEFT Button On 0
-    Click LEFT Button on ${CURDIR}/calculator/x.png
-    Type String             4+2=
+Answer The Ultimate Question Of Life The Universe And Everything
+    [Documentation]    Calculate the answer to the ultimate question.
+    Click Left Button On 1
+    Click Left Button On 0
+    Click Left Button On    ${CURDIR}/calculator/x.png
+    Type String    4+2\=
 
-Assert correct Answer
-    [Tags]                  yarf:certification_status: blocker
-    Match                   ${CURDIR}/02_answer.png
+Assert Correct Answer
+    [Documentation]    Verify the calculation result is correct.
+    Match    ${CURDIR}/02_answer.png
 
-Close the calculator
-    [Tags]                  yarf:certification_status: blocker
-    Keys Combo              Alt_L                   F4
+Close The Calculator
+    [Documentation]    Close the calculator application.
+    Keys Combo    Alt_L    F4
 
-Assert calculator closed
-    [Tags]                  yarf:certification_status: blocker
-    Wait Until Keyword Succeeds                     5                       1
-    ...                     Run Keyword And Expect Error                    ImageNotFoundError: *
-    ...                     Match                   ${CURDIR}/02_answer.png                         0
+Assert Calculator Closed
+    [Documentation]    Verify the calculator application has closed.
+    Wait Until Keyword Succeeds    5    1
+    ...    Run Keyword And Expect Error    ImageNotFoundError: *
+    ...    Match    ${CURDIR}/02_answer.png    0
