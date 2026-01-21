@@ -51,23 +51,15 @@ repos:
     - yarf/vendor/.*
     - .
 
-- repo: https://github.com/MarketSquare/robotframework-tidy
-  rev: 4.16.0
+- repo: https://github.com/MarketSquare/robotframework-robocop
+  rev: v7.2.0
   hooks:
-  - id: robotidy
+  - id: robocop
     args:
-    - --configure
-    - RenameTestCases:enabled=true
-    - --configure
-    - RenameVariables:enabled=true
-    - --configure
-    - IndentNestedKeywords:enabled=true
-    - --configure
-    - AlignKeywordsSection:enabled=true
-    - --configure
-    - AlignTestCasesSection:enabled=true
-    - --configure
-    - AlignTemplatedTestCases:enabled=true
+    - --ignore
+    - LEN01  # Keyword name too long (would require API changes)
+    - --ignore
+    - LEN03  # Keyword has too many keywords inside (would require refactoring)
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.11.0
