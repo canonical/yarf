@@ -434,14 +434,41 @@ class TestVideoInputBase:
         await stub_videoinput.read_text(image)
         stub_videoinput.ocr.read.assert_called_once_with(image)
 
+    @pytest.mark.parametrize(
+        "log_level",
+        [
+            "INFO",
+            "DEBUG",
+        ],
+    )
     @pytest.mark.asyncio
-    async def test_find_text(self, stub_videoinput):
+    async def test_find_text(self, stub_videoinput, log_level: str):
         """
         Test if the function grabs a new screenshot and finds the text
         position.
         """
-        stub_videoinput.ocr.find = Mock()
-        await stub_videoinput.find_text("text")
+        stub_videoinput.ocr.find = Mock(
+            return_value=[
+                {
+                    "text": "Hello",
+                    "region": Region(0, 0, 1, 1),
+                    "confidence": 90,
+                    "similarity": 100,
+                }
+            ],
+        )
+
+        with (
+            patch.dict(os.environ, {"YARF_LOG_LEVEL": log_level}),
+            patch(
+                "yarf.rf_libraries.libraries.video_input_base.log_image"
+            ) as mock_log_image,
+        ):
+            await stub_videoinput.find_text("text")
+            if log_level == "DEBUG":
+                mock_log_image.assert_called_once()
+            else:
+                mock_log_image.assert_not_called()
 
         stub_videoinput.ocr.find.assert_called_once_with(
             stub_videoinput.grab_screenshot.return_value, "text", region=None
@@ -453,7 +480,16 @@ class TestVideoInputBase:
         Test if the function grabs a new screenshot and finds the text
         position.
         """
-        stub_videoinput.ocr.find = Mock()
+        stub_videoinput.ocr.find = Mock(
+            return_value=[
+                {
+                    "text": "Hello",
+                    "region": Region(0, 0, 1, 1),
+                    "confidence": 90,
+                    "similarity": 100,
+                }
+            ],
+        )
         region = {
             "left": 0,
             "top": 0,
@@ -475,7 +511,16 @@ class TestVideoInputBase:
         Test if the function finds the text position in an image.
         """
         image = Mock()
-        stub_videoinput.ocr.find = Mock()
+        stub_videoinput.ocr.find = Mock(
+            return_value=[
+                {
+                    "text": "Hello",
+                    "region": Region(0, 0, 1, 1),
+                    "confidence": 90,
+                    "similarity": 100,
+                }
+            ],
+        )
         await stub_videoinput.find_text("text", image=image)
 
         stub_videoinput.ocr.find.assert_called_once_with(
@@ -488,10 +533,14 @@ class TestVideoInputBase:
         Test if the function finds the text position with a regex.
         """
         stub_videoinput.ocr.find = Mock(
-            side_effect=[
-                [sentinel.region1, sentinel.region2, sentinel.region3],
-                [sentinel.region4],
-            ]
+            return_value=[
+                {
+                    "text": "Hello",
+                    "region": Region(0, 0, 1, 1),
+                    "confidence": 90,
+                    "similarity": 100,
+                }
+            ],
         )
         stub_videoinput.ocr.read = Mock(
             return_value="""
@@ -522,7 +571,16 @@ class TestVideoInputBase:
         """
         Test if the function finds the text in a region.
         """
-        stub_videoinput.ocr.find = Mock()
+        stub_videoinput.ocr.find = Mock(
+            return_value=[
+                {
+                    "text": "Hello",
+                    "region": Region(0, 0, 1, 1),
+                    "confidence": 90,
+                    "similarity": 100,
+                }
+            ],
+        )
         await stub_videoinput.find_text("text", region=Region(0, 0, 1, 1))
 
         stub_videoinput.ocr.find.assert_called_once_with(
@@ -658,15 +716,8 @@ class TestVideoInputBase:
             sentinel.image,
         )
 
-    @pytest.mark.parametrize(
-        "log_level",
-        [
-            "INFO",
-            "DEBUG",
-        ],
-    )
     @pytest.mark.asyncio
-    async def test_get_text_position(self, stub_videoinput, log_level: str):
+    async def test_get_text_position(self, stub_videoinput):
         """
         Test the function returns the center of the best match.
         """
@@ -680,18 +731,8 @@ class TestVideoInputBase:
             image,
         )
 
-        with (
-            patch.dict(os.environ, {"YARF_LOG_LEVEL": log_level}),
-            patch(
-                "yarf.rf_libraries.libraries.video_input_base.log_image"
-            ) as mock_log_image,
-        ):
-            result = await stub_videoinput.get_text_position("text")
-            assert result == (2, 2)
-            if log_level == "DEBUG":
-                mock_log_image.assert_called_once()
-            else:
-                mock_log_image.assert_not_called()
+        result = await stub_videoinput.get_text_position("text")
+        assert result == (2, 2)
 
     @pytest.mark.asyncio
     async def test_get_text_position_in_region(self, stub_videoinput):

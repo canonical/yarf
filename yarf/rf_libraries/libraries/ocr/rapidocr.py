@@ -10,6 +10,7 @@ import numpy as np
 import rapidfuzz
 from PIL import Image
 from rapidocr import RapidOCR
+from robot.api import logger
 
 from yarf.rf_libraries.libraries.geometry.quad import Quad
 from yarf.vendor.RPA.core.geometry import Region
@@ -24,7 +25,7 @@ class OCRResult:
     Attributes:
         position: Quadrilateral region of the match.
         text: Text found in the match.
-        confidence: Confidence of the match
+        confidence: Estimated probability that the recognized text is correct.
     """
 
     position: Quad
@@ -44,12 +45,18 @@ class RapidOCRReader:
     This class is a singleton to avoid loading the model multiple times.
 
     Attributes:
-        DEFAULT_CONFIDENCE: Default confidence for text detection.
-        DEFAULT_COINCIDENCE: Default coincidence for text similarities.
+        DEFAULT_SIMILARITY_THRESHOLD: Minimum similarity percentage (0-100) for
+         text matching. If the similarity between the found text and the target
+         text is below this threshold, the match is discarded.
+        DEFAULT_CONFIDENCE_THRESHOLD: Minumum confidence percentage (0-100) for
+          text matching. If the confidence of the found text is below this
+          threshold, the match is discarded.
+        SIMILARITY_LOG_THRESHOLD: Minimum similarity to log rejected matches.
     """
 
-    DEFAULT_CONFIDENCE: float = 0.7
-    DEFAULT_COINCIDENCE: float = 80.0
+    DEFAULT_SIMILARITY_THRESHOLD: float = 80.0
+    DEFAULT_CONFIDENCE_THRESHOLD: float = 70.0
+    SIMILARITY_LOG_THRESHOLD: float = 80.0
 
     def __new__(cls) -> "RapidOCRReader":
         if not hasattr(cls, "instance"):
@@ -82,8 +89,8 @@ class RapidOCRReader:
         self,
         image: Image.Image | Path,
         text: str,
-        confidence: float = DEFAULT_CONFIDENCE,
-        coincidence: float = DEFAULT_COINCIDENCE,
+        similarity_threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
+        confidence_threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
         region: Region | None = None,
         partial: bool = True,
     ) -> list[dict]:
@@ -94,8 +101,12 @@ class RapidOCRReader:
         Args:
             image: Path to image or Image object.
             text: Text to find in image.
-            confidence: Minimum confidence for text detection.
-            coincidence: Minimum coincidence for text similarities.
+            similarity_threshold: Minimum similarity percentage (0-100) for
+              text matching. If the similarity between the found text and the
+              target text is below this threshold, the match is discarded.
+            confidence_threshold: Minimum confidence percentage (0-100) for
+              text matching. If the confidence of the found text is below this
+              threshold, the match is discarded.
             region: Limit the region of the screen where to look.
             partial: Use partial matching.
 
@@ -123,9 +134,12 @@ class RapidOCRReader:
                 ocr_output.boxes, ocr_output.txts, ocr_output.scores
             )
         ]
+        # Multiply the item confidence with 100 to convert it to percentage
+        for item in result:
+            item.confidence *= 100
 
         matches = self.get_matches(
-            result, text, confidence, coincidence, partial
+            result, text, similarity_threshold, confidence_threshold, partial
         )
 
         if region is not None:
@@ -138,8 +152,8 @@ class RapidOCRReader:
         self,
         result: list[OCRResult],
         match_text: str,
-        confidence: float,
-        coincidence: float,
+        similarity_threshold: float,
+        confidence_threshold: float,
         partial: bool,
     ) -> list[dict]:
         """
@@ -148,8 +162,12 @@ class RapidOCRReader:
         Args:
             result: List with the OCR results.
             match_text: Text to match.
-            confidence: Minimum confidence for text detection.
-            coincidence: Minimum coincidence for text similarities.
+            similarity_threshold: Minimum similarity percentage (0-100) for
+              text matching. If the similarity between the found text and the
+              target text is below this threshold, the match is discarded.
+            confidence_threshold: Minimum confidence percentage (0-100) for
+              text matching. If the confidence of the found text is below this
+              threshold, the match is discarded.
             partial: Use partial matching.
 
         Returns:
@@ -187,17 +205,27 @@ class RapidOCRReader:
 
         matches = []
         for item in result:
-            ratio = (
+            similarity = (
                 directional_ratio(match_text, item.text)
                 if partial
                 else rapidfuzz.fuzz.ratio(item.text, match_text)
             )
-            if ratio >= coincidence and item.confidence >= confidence:
+            if (
+                similarity >= similarity_threshold
+                and item.confidence >= confidence_threshold
+            ):
                 matches.append(
                     {
                         "text": item.text,
                         "region": item.position.to_region(),
-                        "confidence": ratio,  # Using the ratio like tesseract
+                        "similarity": similarity,
+                        "confidence": item.confidence,
                     }
                 )
-        return sorted(matches, key=lambda x: x["confidence"], reverse=True)
+            elif similarity >= self.SIMILARITY_LOG_THRESHOLD:
+                logger.debug(
+                    f"Rejected match for text '{match_text}' "
+                    f"with similarity {similarity} "
+                    f"and confidence {item.confidence}: '{item.text}'"
+                )
+        return sorted(matches, key=lambda x: x["similarity"], reverse=True)
