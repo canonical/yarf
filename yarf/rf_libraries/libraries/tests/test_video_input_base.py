@@ -954,3 +954,16 @@ class TestVideoInputBase:
         assert rgb == to_RGB(rgb)
         assert rgb == to_RGB("10,20,30")
         assert to_RGB(None) is None
+
+    @pytest.mark.asyncio
+    async def test_log_screenshot(self, stub_videoinput, mock_logger):
+        """
+        Test that log_screenshot grabs a screenshot and logs it.
+        """
+        screenshot = Mock()
+        stub_videoinput.grab_screenshot = AsyncMock(return_value=screenshot)
+
+        await stub_videoinput.log_screenshot("Debug message")
+
+        stub_videoinput.grab_screenshot.assert_awaited_once_with()
+        assert mock_logger.info.call_args.args[0].startswith("Debug message")

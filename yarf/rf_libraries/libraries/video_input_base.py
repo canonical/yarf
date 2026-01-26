@@ -708,3 +708,14 @@ class VideoInputBase(ABC):
             )
 
         return is_similar
+
+    @keyword
+    async def log_screenshot(self, msg: str = "") -> None:
+        """
+        Grab an image and add it to the html log.
+
+        Args:
+            msg: Message to log with the image
+        """
+        screenshot = await self.grab_screenshot()
+        log_image(screenshot, msg)
