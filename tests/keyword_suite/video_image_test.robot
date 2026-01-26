@@ -62,3 +62,7 @@ Test Keyword Get Position Of Target Template
 #    Restart Video Input
 #    Sleep    2s
 #    Match    ${CURDIR}/calculator/01_calculator.png
+
+Test Keyword Log Screenshot
+    [Tags]                  yarf:certification_status: blocker
+    Log Screenshot          This is a test screenshot
