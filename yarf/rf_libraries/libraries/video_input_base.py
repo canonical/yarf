@@ -12,7 +12,6 @@ import tempfile
 import time
 from abc import ABC, abstractmethod
 from dataclasses import astuple
-from io import BytesIO
 from types import ModuleType
 from typing import List, Optional, Sequence, Union
 
@@ -24,6 +23,7 @@ from robot.libraries.BuiltIn import BuiltIn
 from yarf import LABEL_PREFIX
 from yarf.lib.images.utils import to_RGB
 from yarf.rf_libraries.libraries.image.segmentation import SegmentationTool
+from yarf.rf_libraries.libraries.image.utils import log_image
 from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
 from yarf.rf_libraries.variables.video_input_vars import (
     DEFAULT_TEMPLATE_MATCHING_TOLERANCE,
@@ -36,41 +36,6 @@ from yarf.vendor.RPA.recognition.templates import ImageNotFoundError
 DISPLAY_PATTERN = r"((?P<id>[\w-]+)\:)?(?P<resolution>\d+x\d+)(\s+|$)"
 DISPLAY_RE = re.compile(rf"{DISPLAY_PATTERN}")
 DISPLAYS_RE = re.compile(rf"^({DISPLAY_PATTERN})+$")
-
-
-def log_image(image: Image.Image, msg: str = "") -> None:
-    """
-    Log an image.
-
-    Args:
-        image: Image to log
-        msg: Message to log with the image
-    """
-    image_string = (
-        f"{msg}<br />"
-        '<img style="max-width: 100%" src="data:image/png;base64,'
-        f'{_to_base64(image)}" />'
-    )
-    logger.info(image_string, html=True)
-
-
-def _to_base64(image: Image.Image) -> str:
-    """
-    Convert Pillow Image to b64.
-
-    Args:
-        image: Image to convert
-
-    Returns:
-        Image as base64 string
-    """
-
-    im_file = BytesIO()
-    image = image.convert("RGB")
-    image.save(im_file, format="PNG")
-    im_bytes = im_file.getvalue()  # im_bytes: image in binary format.
-    im_b64 = base64.b64encode(im_bytes)
-    return im_b64.decode()
 
 
 class VideoInputBase(ABC):
