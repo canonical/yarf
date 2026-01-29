@@ -7,16 +7,15 @@ from typing import List, Mapping, Optional, Sequence
 from xkbcommon import xkb
 
 from . import get_memfd
-from .protocols import WlSeat, ZwpVirtualKeyboardManagerV1
-from .protocols.virtual_keyboard_unstable_v1.zwp_virtual_keyboard_manager_v1 import (
+from .protocols import (
+    WlKeyboard,
+    WlRegistryProxy,
+    WlSeat,
+    WlSeatProxy,
+    ZwpVirtualKeyboardManagerV1,
     ZwpVirtualKeyboardManagerV1Proxy,
-)
-from .protocols.virtual_keyboard_unstable_v1.zwp_virtual_keyboard_v1 import (
     ZwpVirtualKeyboardV1Proxy,
 )
-from .protocols.wayland.wl_keyboard import WlKeyboard
-from .protocols.wayland.wl_registry import WlRegistryProxy
-from .protocols.wayland.wl_seat import WlSeatProxy
 from .wayland_client import WaylandClient
 
 Key = namedtuple("Key", ("keycode", "level"))

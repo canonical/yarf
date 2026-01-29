@@ -31,13 +31,13 @@ Modifications:
 All modifications to the original source code are documented in the NOTICE file.
 """
 
-from . import Images
 from . import core
 from . import recognition
 
 # Expose commonly used classes at package level
-from .Images import Images, Region, to_image, ImageNotFoundError
+from .Images import Images, ImageNotFoundError, RGB, Region, to_image
 from .core.geometry import Region, to_region
+from .recognition import ocr as tesseract
 
 __version__ = "29.0.0-vendored"
 __author__ = "Robocorp Technologies, Inc. (original), Canonical Ltd. (vendored)"
@@ -45,11 +45,13 @@ __license__ = "Apache License 2.0"
 __repository__ = "https://github.com/robocorp/rpaframework"
 
 __all__ = [
-    "Images", 
-    "Region", 
-    "to_image", 
-    "to_region",
     "ImageNotFoundError",
+    "Images",
+    "RGB",
+    "Region",
     "core",
     "recognition",
+    "tesseract",
+    "to_image",
+    "to_region",
 ]

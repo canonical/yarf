@@ -5,8 +5,7 @@ import numpy as np
 from PIL import Image
 from robot.api import logger
 
-from yarf.vendor.RPA.core.geometry import Region
-from yarf.vendor.RPA.Images import RGB
+from yarf.vendor.RPA import RGB, Region
 
 
 class SegmentationTool:

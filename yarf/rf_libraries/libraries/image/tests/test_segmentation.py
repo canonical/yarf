@@ -4,9 +4,8 @@ import cv2
 import numpy as np
 from PIL import Image
 
-from yarf.rf_libraries.libraries.image.segmentation import SegmentationTool
-from yarf.vendor.RPA.core.geometry import to_region
-from yarf.vendor.RPA.Images import RGB
+from yarf.rf_libraries.libraries.image import SegmentationTool
+from yarf.vendor.RPA import RGB, to_region
 
 
 class TestSegmentation:

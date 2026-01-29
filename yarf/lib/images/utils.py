@@ -1,6 +1,6 @@
 from typing import Any, Optional
 
-from yarf.vendor.RPA.Images import RGB
+from yarf.vendor.RPA import RGB
 
 
 def to_RGB(obj: Any) -> Optional["RGB"]:

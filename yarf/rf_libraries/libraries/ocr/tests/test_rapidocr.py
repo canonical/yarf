@@ -5,8 +5,9 @@ import numpy as np
 import pytest
 
 from yarf.rf_libraries.libraries.geometry.quad import Quad
-from yarf.rf_libraries.libraries.ocr.rapidocr import OCRResult, RapidOCRReader
-from yarf.vendor.RPA.core.geometry import Region
+from yarf.rf_libraries.libraries.ocr import RapidOCRReader
+from yarf.rf_libraries.libraries.ocr.rapidocr import OCRResult
+from yarf.vendor.RPA import Region
 
 
 @dataclass

@@ -19,15 +19,13 @@ from unittest.mock import (
 import pytest
 
 from yarf.lib.images.utils import to_RGB
-from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
+from yarf.rf_libraries.libraries.ocr import RapidOCRReader
 from yarf.rf_libraries.libraries.video_input_base import (
     VideoInputBase,
     _to_base64,
     log_image,
 )
-from yarf.vendor.RPA.core.geometry import Region
-from yarf.vendor.RPA.Images import RGB
-from yarf.vendor.RPA.recognition.templates import ImageNotFoundError
+from yarf.vendor.RPA import RGB, ImageNotFoundError, Region
 
 
 class StubVideoInput(VideoInputBase):
