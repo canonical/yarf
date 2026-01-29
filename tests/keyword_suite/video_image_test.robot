@@ -66,5 +66,5 @@ Test Keyword Get Position Of Target Template
 #    Match    ${CURDIR}/calculator/01_calculator.png
 
 Test Keyword Log Screenshot
-    [Tags]                  yarf:certification_status: blocker
-    Log Screenshot          This is a test screenshot
+    [Documentation]    Test the Log Screenshot keyword.
+    Log Screenshot    This is a test screenshot

@@ -94,7 +94,7 @@ Test Find Text Exact Match
     ${length}=    Get Length    ${matched_text}
     Should Be True    ${length} > 1
     Should Be Equal As Strings    ${matched_text[0]['text']}    AB123cd
-    Should Be Equal As Numbers    ${matched_text[0]['confidence']}    100.0
+    Should Be Equal As Numbers    ${matched_text[0]['Similarity']}    100.0
 
 Test Find Text Regex Match
     [Documentation]    Test finding text with regex pattern.
