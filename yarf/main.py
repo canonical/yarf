@@ -259,6 +259,24 @@ def get_robot_reserved_settings(test_suite: TestSuite) -> dict[str, Any]:
     return robot_reserved_settings
 
 
+def _is_robot_listener(obj: object, module_name: str) -> bool:
+    """
+    Check if an object is a valid Robot Framework listener.
+
+    Arguments:
+        obj: object to check
+        module_name: expected module name for the listener
+
+    Returns:
+        True if the object is a valid Robot listener, False otherwise
+    """
+    return (
+        isinstance(obj, type)
+        and obj.__module__ == module_name
+        and hasattr(obj, "ROBOT_LISTENER_API_VERSION")
+    )
+
+
 def _import_listener_from_path(path: Path, **kwargs) -> object:
     """
     Import a listener from a given path.
@@ -276,28 +294,18 @@ def _import_listener_from_path(path: Path, **kwargs) -> object:
     spec = importlib.util.spec_from_file_location(path.stem, path)
     module = importlib.util.module_from_spec(spec)  # type:ignore[arg-type]
     spec.loader.exec_module(module)  # type:ignore[union-attr]
-    listener = None
+
     for name, obj in vars(module).items():
-        if not (
-            isinstance(obj, type)
-            and obj.__module__ == module.__name__
-            and hasattr(obj, "ROBOT_LISTENER_API_VERSION")
-        ):
+        if not _is_robot_listener(obj, module.__name__):
             continue
 
-        match name:
-            case "KeywordsListener":
-                listener = obj(kwargs["lib_cls"].get_pkg_path())
-                break
-            case _:
-                listener = obj()
-                break
+        if name == "KeywordsListener":
+            return obj(kwargs["lib_cls"].get_pkg_path())
+        return obj()
 
-    if listener is None:
-        msg = f"No valid listener found in {path}."
-        _owasp_logger.sys_crash(msg)
-        raise ImportError(msg)
-    return listener
+    msg = f"No valid listener found in {path}."
+    _owasp_logger.sys_crash(msg)
+    raise ImportError(msg)
 
 
 def get_listeners(
@@ -462,21 +470,95 @@ def run_interactive_console(
     rebot(f"{outdir}/output.xml", outputdir=outdir)
 
 
-def main(argv: Optional[list[str]] = None) -> None:
+def _run_test_suite(
+    args: Namespace,
+    lib_cls: type[PlatformBase],
+    outdir: Path,
+    cli_options: dict[str, Any],
+) -> int:
     """
-    Main entry point.
+    Run a test suite from the given arguments.
 
-    Args:
-        argv: list of arguments received via command line, defaults
-            to None
+    Arguments:
+        args: parsed YARF command line arguments
+        lib_cls: platform library class
+        outdir: output directory path
+        cli_options: additional CLI options for Robot
+
+    Returns:
+        Exit code from the test run
+    """
+    variables: Sequence[str] = []
+    suite_parser = SuiteParser(args.suite)
+    with suite_parser.suite_in_temp_folder(args.variant) as temp_folder_path:
+        test_suite = TestSuite.from_file_system(temp_folder_path)
+        test_suite.name = suite_parser.suite_path.absolute().name
+        ec = run_robot_suite(
+            suite=test_suite,
+            lib_cls=lib_cls,
+            variables=variables,
+            outdir=outdir,
+            cli_options=cli_options,
+            output_format=args.output_format,
+        )
+
+    _logger.info(f"Results exported to: {outdir}")
+    _owasp_logger.session_expired(
+        getpass.getuser(), f"test_suite_completed:exit_code_{ec}"
+    )
+    return ec
+
+
+def _run_console(
+    lib_cls: type[PlatformBase],
+    outdir: Path,
+    cli_options: dict[str, Any],
+) -> None:
+    """
+    Run the interactive console.
+
+    Arguments:
+        lib_cls: platform library class
+        outdir: output directory path
+        cli_options: additional CLI options for Robot
 
     Raises:
-        FileNotFoundError: If the start_console.robot file is not found
+        FileNotFoundError: if the interactive console script is missing
     """
-    _owasp_logger.sys_startup(getpass.getuser())
+    start_console_path = (
+        Path(__file__)
+        .resolve()
+        .parent.joinpath(
+            "rf_libraries/interactive_console/start_console.robot"
+        )
+    )
+    if not start_console_path.exists():
+        error_msg = "Interactive console robot script is missing."
+        _owasp_logger.sys_crash(error_msg)
+        raise FileNotFoundError(error_msg)
 
-    args, cli_options = parse_arguments(argv)
+    os.environ["RFDEBUG_HISTORY"] = f"{outdir}/rfdebug_history.log"
+    console_suite = TestSuiteBuilder().build(start_console_path)
+    console_suite.name = f"{lib_cls.__name__} Interactive Console"
+    run_interactive_console(
+        suite=console_suite,
+        lib_cls=lib_cls,
+        outdir=outdir,
+        rf_debug_history_log_path=Path(os.environ["RFDEBUG_HISTORY"]),
+        cli_options=cli_options,
+    )
+    _owasp_logger.session_expired(
+        getpass.getuser(), "interactive_console_completed"
+    )
 
+
+def _configure_logging(args: Namespace) -> None:
+    """
+    Configure logging based on command line arguments.
+
+    Arguments:
+        args: parsed YARF command line arguments
+    """
     os.environ["YARF_LOG_LEVEL"] = args.log_level
     if args.log_video:
         os.environ["YARF_LOG_VIDEO"] = "1"
@@ -486,6 +568,22 @@ def main(argv: Optional[list[str]] = None) -> None:
 
     if args.log_level == "DEBUG":
         _owasp_logger.sys_monitor_enabled(getpass.getuser(), "debug_mode")
+
+    logging.basicConfig(level=args.log_level)
+
+
+def main(argv: Optional[list[str]] = None) -> None:
+    """
+    Main entry point.
+
+    Args:
+        argv: list of arguments received via command line, defaults
+            to None
+    """
+    _owasp_logger.sys_startup(getpass.getuser())
+
+    args, cli_options = parse_arguments(argv)
+    _configure_logging(args)
 
     lib_cls = SUPPORTED_PLATFORMS[args.platform]
     _owasp_logger.authz_admin(
@@ -497,59 +595,14 @@ def main(argv: Optional[list[str]] = None) -> None:
         "restricted",
         f"platform:{args.platform}",
     )
-    logging.basicConfig(level=args.log_level)
     outdir = get_outdir_path(args.outdir)
-
     _owasp_logger.session_created(getpass.getuser())
+
     ec = 0
     if args.suite:
-        variables: Sequence[str] = []
-        suite_parser = SuiteParser(args.suite)
-        with suite_parser.suite_in_temp_folder(
-            args.variant
-        ) as temp_folder_path:
-            test_suite = TestSuite.from_file_system(temp_folder_path)
-            test_suite.name = suite_parser.suite_path.absolute().name
-            ec = run_robot_suite(
-                suite=test_suite,
-                lib_cls=lib_cls,
-                variables=variables,
-                outdir=outdir,
-                cli_options=cli_options,
-                output_format=args.output_format,
-            )
-
-        _logger.info(f"Results exported to: {outdir}")
-        _owasp_logger.session_expired(
-            getpass.getuser(), f"test_suite_completed:exit_code_{ec}"
-        )
-
+        ec = _run_test_suite(args, lib_cls, outdir, cli_options)
     else:
-        start_console_path = (
-            Path(__file__)
-            .resolve()
-            .parent.joinpath(
-                "rf_libraries/interactive_console/start_console.robot"
-            )
-        )
-        if not start_console_path.exists():
-            error_msg = "Interactive console robot script is missing."
-            _owasp_logger.sys_crash(error_msg)
-            raise FileNotFoundError(error_msg)
-
-        os.environ["RFDEBUG_HISTORY"] = f"{outdir}/rfdebug_history.log"
-        console_suite = TestSuiteBuilder().build(start_console_path)
-        console_suite.name = f"{lib_cls.__name__} Interactive Console"
-        run_interactive_console(
-            suite=console_suite,
-            lib_cls=lib_cls,
-            outdir=outdir,
-            rf_debug_history_log_path=Path(os.environ["RFDEBUG_HISTORY"]),
-            cli_options=cli_options,
-        )
-        _owasp_logger.session_expired(
-            getpass.getuser(), "interactive_console_completed"
-        )
+        _run_console(lib_cls, outdir, cli_options)
 
     _owasp_logger.sys_shutdown(getpass.getuser())
     sys.exit(ec)
