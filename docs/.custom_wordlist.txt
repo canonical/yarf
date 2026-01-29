@@ -1,4 +1,6 @@
 Args
+bool
+boolean
 funcobj
 HIDs
 keypresses
