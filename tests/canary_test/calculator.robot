@@ -16,9 +16,9 @@ Assert Calculator Started
 
 Answer The Ultimate Question Of Life The Universe And Everything
     [Documentation]    Calculate the answer to the ultimate question.
-    Click Left Button On 1
-    Click Left Button On 0
-    Click Left Button On    ${CURDIR}/calculator/x.png
+    Click LEFT Button On 1
+    Click LEFT Button On 0
+    Click LEFT Button On    ${CURDIR}/calculator/x.png
     Type String    4+2\=
 
 Assert Correct Answer

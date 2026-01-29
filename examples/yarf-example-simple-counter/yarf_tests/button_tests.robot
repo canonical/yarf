@@ -16,17 +16,17 @@ Assert Simple Counter Started
 
 Increase The Counter And Assert Count
     [Documentation]    Click the plus button and verify the count increases.
-    Click Left Button On    ${CURDIR}/buttons/+.png
+    Click LEFT Button On    ${CURDIR}/buttons/+.png
     Match Text    Count: 1
 
 Decrease The Counter And Assert Count
     [Documentation]    Click the minus button and verify the count decreases.
-    Click Left Button On    ${CURDIR}/buttons/-.png
+    Click LEFT Button On    ${CURDIR}/buttons/-.png
     Match Text    Count: 0
 
 Toggle Theme And Assert The Theme Changed
     [Documentation]    Toggle the application theme and verify the change.
-    Click Left Button On    ${CURDIR}/buttons/toggle_theme.png
+    Click LEFT Button On    ${CURDIR}/buttons/toggle_theme.png
     Hid.Move Pointer To Absolute    x=0    y=0
     Match    ${CURDIR}/simple_counter_toggled.png
 
