@@ -13,7 +13,7 @@ from rapidocr import RapidOCR
 from robot.api import logger
 
 from yarf.rf_libraries.libraries.geometry.quad import Quad
-from yarf.vendor.RPA.core.geometry import Region
+from yarf.vendor.RPA import Region
 from yarf.vendor.RPA.recognition.utils import to_image
 
 
