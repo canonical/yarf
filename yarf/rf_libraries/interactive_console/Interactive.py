@@ -8,7 +8,7 @@ from owasp_logger import OWASPLogger
 from robot.api.deco import keyword
 from robot.libraries.BuiltIn import BuiltIn
 
-from yarf.logging.owasp_logger import get_owasp_logger
+from yarf.loggings.owasp_logger import get_owasp_logger
 from yarf.rf_libraries.interactive_console.tools.roi_selector import (
     ROISelector,
 )

@@ -7,7 +7,7 @@ import pywayland
 import pywayland.client
 from owasp_logger import OWASPLogger
 
-from yarf.logging.owasp_logger import get_owasp_logger
+from yarf.loggings.owasp_logger import get_owasp_logger
 
 from .protocols.wayland.wl_registry import WlRegistryProxy
 

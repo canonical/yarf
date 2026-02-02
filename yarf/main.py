@@ -22,7 +22,7 @@ from robot.run import RobotFramework
 from RobotStackTracer import RobotStackTracer
 
 from yarf import LABEL_PREFIX
-from yarf.logging.owasp_logger import get_owasp_logger
+from yarf.loggings.owasp_logger import get_owasp_logger
 from yarf.output import OUTPUT_FORMATS, get_outdir_path, output_converter
 from yarf.rf_libraries import robot_in_path
 from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS, PlatformBase
