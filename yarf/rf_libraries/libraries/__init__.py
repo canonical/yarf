@@ -13,7 +13,7 @@ from typing import Any
 
 from owasp_logger import OWASPLogger
 
-from yarf.logging.owasp_logger import get_owasp_logger
+from yarf.loggings.owasp_logger import get_owasp_logger
 
 _owasp_logger = OWASPLogger(appid=__name__, logger=get_owasp_logger())
 _logger = logging.getLogger(__name__)
