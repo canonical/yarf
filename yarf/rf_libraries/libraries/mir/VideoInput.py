@@ -11,7 +11,7 @@ from PIL import Image
 from robot.api.deco import keyword, library
 
 from yarf.lib.wayland import screencopy
-from yarf.logging.owasp_logger import get_owasp_logger
+from yarf.loggings.owasp_logger import get_owasp_logger
 from yarf.rf_libraries.libraries.video_input_base import VideoInputBase
 
 _owasp_logger = OWASPLogger(appid=__name__, logger=get_owasp_logger())
