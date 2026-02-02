@@ -7,6 +7,8 @@ Documentation       Keyword definitions for specialised functionality
 ...                 The initialization is platform-specific.
 
 Library             Collections
+Library             DateTime
+Library             PIL.ImageChops
 Library             Hid.py
 Library             VideoInput.py
 Variables           video_input_vars.py
@@ -361,3 +363,55 @@ Drag And Drop On ${destination}
     ${end_position}=        Walk Pointer To ${destination}                  ${step_distance}        ${delay}
     Release LEFT Button
     RETURN                  ${end_position}
+
+Wait Still Screen
+    [Documentation]    Monitors the screen for a set 'duration' (e.g., 1 minute),
+    ...    checking every 'interval' (e.g., 5s).
+    ...    Fails if the screen is not still for still_duration.
+    [Arguments]
+    ...                     ${duration}=30s
+    ...                     ${still_duration}=10s
+    ...                     ${screenshot_interval}=2s
+
+    ${previous_img}=        Set Variable            ${None}
+
+    ${time_limit}=          Convert Time            ${duration}
+    ${still_time_limit}=    Convert Time            ${still_duration}
+    ${start_time}=          Get Current Date        result_format=epoch
+    ${still_start_time}=    Get Current Date        result_format=epoch
+
+    WHILE    True
+        ${current_img}=         Grab Screenshot
+        ${current_img}=         Evaluate                $current_img.convert('RGB')
+        IF    $previous_img is not None
+            ${diff}=                Evaluate
+            ...                     PIL.ImageChops.difference($previous_img, $current_img)
+            ...                     modules=PIL.ImageChops
+            ${bbox}=                Evaluate                $diff.getbbox()
+
+            IF    $bbox is not None
+                Log
+                ...                     Screen changed, resetting still timer.
+                ...                     html=true
+                ...                     console=true
+                ${still_start_time}=    Get Current Date        result_format=epoch
+            END
+        END
+
+        ${previous_img}=        Set Variable            ${current_img}
+
+        ${now}=                 Get Current Date        result_format=epoch
+        ${still_elapsed}=       Evaluate                $now - $still_start_time
+        ${elapsed}=             Evaluate                $now - $start_time
+        IF    $still_elapsed >= $still_time_limit
+            Log
+            ...                     Screen remained stable for ${still_duration}.
+            ...                     html=true
+            ...                     console=true
+            BREAK
+        ELSE IF    $elapsed >= $time_limit
+            Fail                    Screen did not remain still for ${still_duration} within ${duration} time.
+        END
+
+        Sleep                   ${screenshot_interval}
+    END
