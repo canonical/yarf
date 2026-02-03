@@ -217,8 +217,7 @@ jobs:
         # Wait for the compositor to start
         inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-3\$" $XDG_RUNTIME_DIR
 
-        # Avoid GNOME apps waiting for portals
-        dbus-run-session -- xdg-open test_video.mp4 &
+        xdg-open test_video.mp4 &
 
         uv run yarf --platform Mir tests/keyword_suite -- --suite video_video_test --listener ${KEYWORDS_LISTENER_PATH}
 
@@ -263,7 +262,6 @@ jobs:
         KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
       run: |
         export WAYLAND_DISPLAY=wayland-6
-        export WAYLAND_DEBUG=client
 
         # Start Mir on a virtual display (doesn't require graphics hardware)
         mir-test-tools.demo-server \
