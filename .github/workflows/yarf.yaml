@@ -32,7 +32,8 @@ jobs:
           libxkbcommon-dev \
           jq \
           clang \
-          python3-tk
+          python3-tk \
+          mpv
 
     - name: Checkout Repository
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
@@ -217,7 +218,8 @@ jobs:
         # Wait for the compositor to start
         inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-3\$" $XDG_RUNTIME_DIR
 
-        xdg-open test_video.mp4 &
+        # Avoid apps waiting for portals
+        dbus-run-session -- mpv --fs test_video.mp4 &
 
         uv run yarf --platform Mir tests/keyword_suite -- --suite video_video_test --listener ${KEYWORDS_LISTENER_PATH}
 
