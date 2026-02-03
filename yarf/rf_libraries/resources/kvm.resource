@@ -7,8 +7,6 @@ Documentation       Keyword definitions for specialised functionality
 ...                 The initialization is platform-specific.
 
 Library             Collections
-Library             DateTime
-Library             PIL.ImageChops
 Library             Hid.py
 Library             VideoInput.py
 Variables           video_input_vars.py
