@@ -64,7 +64,8 @@ jobs:
             jq \
             clang \
             python3-tk \
-            tesseract-ocr
+            tesseract-ocr \
+            mpv
 
           pip install uv check-jsonschema
 
