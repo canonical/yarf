@@ -749,8 +749,7 @@ class VideoInputBase(ABC):
             curr_img = curr_img.convert("RGB")
             if previous_img is not None:
                 diff_img = ImageChops.difference(previous_img, curr_img)
-                bbox = diff_img.getbbox()
-                if bbox is not None:
+                if diff_img.getbbox():
                     logger.info(
                         "Screen changed, resetting still timer. (Time elapsed: "
                         f"{time.time() - start_time:.2f}s)",
@@ -771,7 +770,7 @@ class VideoInputBase(ABC):
                     console=True,
                     html=True,
                 )
-                break
+                return
 
             if total_elapsed >= duration:
                 raise TimeoutError(
