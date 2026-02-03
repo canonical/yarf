@@ -725,7 +725,7 @@ class VideoInputBase(ABC):
         self,
         duration: float = 30.0,
         still_duration: float = 10.0,
-        screenshot_interval: float = 2.0,
+        screenshot_interval: float = 1.0,
     ) -> None:
         """
         Monitors the screen for a set 'duration' (e.g., 30s), checking every
