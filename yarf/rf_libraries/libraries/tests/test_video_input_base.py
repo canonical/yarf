@@ -17,6 +17,7 @@ from unittest.mock import (
 )
 
 import pytest
+from PIL import Image
 
 from yarf.lib.images.utils import to_RGB
 from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
@@ -967,3 +968,90 @@ class TestVideoInputBase:
 
         stub_videoinput.grab_screenshot.assert_awaited_once_with()
         assert mock_logger.info.call_args.args[0].startswith("Debug message")
+
+    @pytest.mark.asyncio
+    async def test_wait_still_screen(
+        self, stub_videoinput, mock_time, mock_logger
+    ):
+        """
+        Test that the function waits until the screen is still.
+        """
+        screenshots = [Mock(), Mock(), Mock(), Mock()]
+        # First two screenshots are different, third is the same as second
+        screenshots[0].convert.return_value = Image.new(
+            "RGB", (10, 10), color="white"
+        )
+        screenshots[1].convert.return_value = Image.new(
+            "RGB", (10, 10), color="black"
+        )
+        screenshots[2].convert.return_value = Image.new(
+            "RGB", (10, 10), color="black"
+        )
+        screenshots[3].convert.return_value = Image.new(
+            "RGB", (10, 10), color="black"
+        )
+        stub_videoinput.grab_screenshot = AsyncMock(side_effect=screenshots)
+
+        mock_time.side_effect = [0, 0, 0, 1, 1, 1, 2, 3]
+        with patch("time.sleep"):
+            await stub_videoinput.wait_still_screen(
+                duration=5, still_duration=2, screenshot_interval=1
+            )
+        assert (
+            mock_logger.info.call_args.args[0]
+            == "Screen remained stable for 2 seconds."
+        )
+
+    @pytest.mark.asyncio
+    async def test_wait_still_screen_timeout(self, stub_videoinput, mock_time):
+        """
+        Test that the function raises a TimeoutError if the screen doesn't
+        become still in time.
+        """
+        screenshots = [Mock(), Mock(), Mock(), Mock(), Mock(), Mock()]
+        # All screenshots are different
+        screenshots[0].convert.return_value = Image.new(
+            "RGB", (10, 10), color="white"
+        )
+        screenshots[1].convert.return_value = Image.new(
+            "RGB", (10, 10), color="black"
+        )
+        screenshots[2].convert.return_value = Image.new(
+            "RGB", (10, 10), color="red"
+        )
+        screenshots[3].convert.return_value = Image.new(
+            "RGB", (10, 10), color="blue"
+        )
+        screenshots[4].convert.return_value = Image.new(
+            "RGB", (10, 10), color="green"
+        )
+        screenshots[5].convert.return_value = Image.new(
+            "RGB", (10, 10), color="red"
+        )
+        stub_videoinput.grab_screenshot = AsyncMock(side_effect=screenshots)
+
+        mock_time.side_effect = [
+            0,
+            0,
+            0,
+            1,
+            1,
+            1,
+            2,
+            2,
+            2,
+            3,
+            3,
+            3,
+            4,
+            4,
+            4,
+            5,
+            5,
+            5,
+        ]
+        with patch("time.sleep"), pytest.raises(TimeoutError) as e:
+            await stub_videoinput.wait_still_screen(
+                duration=5, still_duration=2, screenshot_interval=1
+            )
+        assert "Screen did not remain still for 2s within 5s." in str(e.value)
