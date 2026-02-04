@@ -294,26 +294,13 @@ class VideoInputBase(ABC):
         else:
             matched_text_regions = self.ocr.find(image, text, region=region)  # type: ignore[arg-type]
 
-        # Always log if we didn't find anything
-        if not matched_text_regions:
-            log_image(
-                image,
-                f"Text '{text}' not found in the image.",
-            )
-            # Also log the cropped region if specified
-            if region is not None:
-                log_image(
-                    image.crop(region.as_tuple()),
-                    "Cropped region where text was searched.",
-                )
-
-        # Log all the matches if in debug mode
+        # Log all the matches if in debug mode (If there are any matches)
         if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
             for match in matched_text_regions:
                 similarity = f"{match['similarity']:.2f}"
                 confidence = f"{match['confidence']:.2f}"
                 matched_image = self._draw_region_on_image(
-                    image, match["region"]
+                    image.copy(), match["region"]
                 )
                 log_image(
                     matched_image,
@@ -381,6 +368,13 @@ class VideoInputBase(ABC):
                 return text_matches, cropped_image
 
         read_text = await self.read_text(cropped_image)
+
+        # Log the image where the text was searched
+        log_image(image, f"Text '{text}' not found in the image.")
+        # Also log the cropped region if specified
+        if region is not None:
+            log_image(cropped_image, "Cropped region")
+
         raise ValueError(
             f"Timed out looking for '{text}' after '{timeout}' seconds. "
             f"Text read on screen was:\n{read_text}"
