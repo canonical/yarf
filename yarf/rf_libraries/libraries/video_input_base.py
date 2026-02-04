@@ -302,6 +302,8 @@ class VideoInputBase(ABC):
                 matched_image = self._draw_region_on_image(
                     image.copy(), match["region"]
                 )
+                if region:
+                    matched_image = matched_image.crop(region.as_tuple())
                 log_image(
                     matched_image,
                     f"Found text matching '{text}' with similarity "
