@@ -741,8 +741,8 @@ class VideoInputBase(ABC):
             TimeoutError: If the screen does not remain still for the required still_duration within the total duration.
         """
         previous_img: Optional[Image.Image] = None
-        start_time = time.time()
-        still_start_time = time.time()
+        start_time = time.monotonic()
+        still_start_time = time.monotonic()
 
         while True:
             curr_img = await self.grab_screenshot()
@@ -752,14 +752,13 @@ class VideoInputBase(ABC):
                 if diff_img.getbbox():
                     logger.debug(
                         "Screen changed, resetting still timer. (Time elapsed: "
-                        f"{time.time() - start_time:.2f}s)",
+                        f"{time.monotonic() - start_time:.2f}s)",
                         html=True,
                     )
-                    still_start_time = time.time()
-
+                    still_start_time = time.monotonic()
             previous_img = curr_img
 
-            now = time.time()
+            now = time.monotonic()
             still_elapsed = now - still_start_time
             total_elapsed = now - start_time
 

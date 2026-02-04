@@ -970,8 +970,9 @@ class TestVideoInputBase:
         assert mock_logger.info.call_args.args[0].startswith("Debug message")
 
     @pytest.mark.asyncio
+    @patch("time.monotonic")
     async def test_wait_still_screen(
-        self, stub_videoinput, mock_time, mock_logger
+        self, mock_monotonic_time, stub_videoinput, mock_logger
     ):
         """
         Test that the function waits until the screen is still.
@@ -992,7 +993,7 @@ class TestVideoInputBase:
         )
         stub_videoinput.grab_screenshot = AsyncMock(side_effect=screenshots)
 
-        mock_time.side_effect = [0, 0, 0, 1, 1, 1, 2, 3]
+        mock_monotonic_time.side_effect = [0, 0, 0, 1, 1, 1, 2, 3]
         with patch("time.sleep"):
             await stub_videoinput.wait_still_screen(
                 duration=5, still_duration=2, screenshot_interval=1
@@ -1003,7 +1004,10 @@ class TestVideoInputBase:
         )
 
     @pytest.mark.asyncio
-    async def test_wait_still_screen_timeout(self, stub_videoinput, mock_time):
+    @patch("time.monotonic")
+    async def test_wait_still_screen_timeout(
+        self, mock_monotonic_time, stub_videoinput
+    ):
         """
         Test that the function raises a TimeoutError if the screen doesn't
         become still in time.
@@ -1030,7 +1034,7 @@ class TestVideoInputBase:
         )
         stub_videoinput.grab_screenshot = AsyncMock(side_effect=screenshots)
 
-        mock_time.side_effect = [
+        mock_monotonic_time.side_effect = [
             0,
             0,
             0,
