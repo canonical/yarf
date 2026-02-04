@@ -750,10 +750,9 @@ class VideoInputBase(ABC):
             if previous_img is not None:
                 diff_img = ImageChops.difference(previous_img, curr_img)
                 if diff_img.getbbox():
-                    logger.info(
+                    logger.debug(
                         "Screen changed, resetting still timer. (Time elapsed: "
                         f"{time.time() - start_time:.2f}s)",
-                        console=True,
                         html=True,
                     )
                     still_start_time = time.time()

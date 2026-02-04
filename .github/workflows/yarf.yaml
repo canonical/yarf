@@ -204,9 +204,6 @@ jobs:
       env:
         KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
       run: |
-        # Use ffmpeg to generate a 30 secs video:
-        ffmpeg -f lavfi -i testsrc=duration=30:size=1280x720:rate=30 -c:v libx264 test_video.mp4
-
         export WAYLAND_DISPLAY=wayland-3
 
         # Start Mir on a virtual display (doesn't require graphics hardware)
@@ -217,9 +214,6 @@ jobs:
 
         # Wait for the compositor to start
         inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-3\$" $XDG_RUNTIME_DIR
-
-        # Avoid apps waiting for portals
-        dbus-run-session -- mpv --fs test_video.mp4 &
 
         uv run yarf --platform Mir tests/keyword_suite -- --suite video_video_test --listener ${KEYWORDS_LISTENER_PATH}
 
