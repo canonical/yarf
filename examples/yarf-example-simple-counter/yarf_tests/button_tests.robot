@@ -1,4 +1,5 @@
 *** Settings ***
+Library         OperatingSystem
 Library         Process
 Resource        kvm.resource
 
