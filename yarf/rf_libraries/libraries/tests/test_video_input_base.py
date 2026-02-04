@@ -474,8 +474,15 @@ class TestVideoInputBase:
             stub_videoinput.grab_screenshot.return_value, "text", region=None
         )
 
+    @pytest.mark.parametrize(
+        "log_level",
+        [
+            "INFO",
+            "DEBUG",
+        ],
+    )
     @pytest.mark.asyncio
-    async def test_find_text_in_region(self, stub_videoinput):
+    async def test_find_text_in_region(self, stub_videoinput, log_level: str):
         """
         Test if the function grabs a new screenshot and finds the text
         position.
@@ -497,7 +504,18 @@ class TestVideoInputBase:
             "bottom": 1,
         }
         expected_region = Region(0, 0, 1, 1)
-        await stub_videoinput.find_text("text", region=region)
+
+        with (
+            patch.dict(os.environ, {"YARF_LOG_LEVEL": log_level}),
+            patch(
+                "yarf.rf_libraries.libraries.video_input_base.log_image"
+            ) as mock_log_image,
+        ):
+            await stub_videoinput.find_text("text", region=region)
+            if log_level == "DEBUG":
+                mock_log_image.assert_called_once()
+            else:
+                mock_log_image.assert_not_called()
 
         stub_videoinput.ocr.find.assert_called_once_with(
             stub_videoinput.grab_screenshot.return_value,
@@ -688,7 +706,10 @@ class TestVideoInputBase:
         )
 
     @pytest.mark.asyncio
-    async def test_match_text_fails(self, stub_videoinput, mock_time):
+    @patch("yarf.rf_libraries.libraries.video_input_base.log_image")
+    async def test_match_text_fails(
+        self, mock_log_image, stub_videoinput, mock_time
+    ):
         """
         Test the function raises an error if the text is not found.
         """
@@ -700,8 +721,34 @@ class TestVideoInputBase:
         with pytest.raises(Exception) as e:
             await stub_videoinput.match_text("hello")
 
+        mock_log_image.assert_called()
         assert "Timed out looking for 'hello'" in str(e.value)
         assert "Text read on screen was:\nwrong\ntext" in str(e.value)
+
+    @pytest.mark.asyncio
+    @patch("yarf.rf_libraries.libraries.video_input_base.log_image")
+    async def test_match_text_fails_with_region(
+        self, mock_log_image, stub_videoinput, mock_time
+    ):
+        """
+        Test the function raises an error if the text is not found.
+        """
+        mock_time.side_effect = [0, 1, 11, 12]
+        stub_videoinput.find_text = AsyncMock()
+        stub_videoinput.find_text.return_value = []
+        stub_videoinput.read_text = AsyncMock()
+        stub_videoinput.read_text.return_value = "wrong\ntext"
+        with pytest.raises(Exception):
+            await stub_videoinput.match_text(
+                "hello", region=Region(0, 0, 10, 10)
+            )
+
+        mock_log_image.assert_has_calls(
+            [
+                call(ANY, "Text 'hello' not found in the image."),
+                call(ANY, "Cropped region"),
+            ]
+        )
 
     @pytest.mark.asyncio
     async def test_match_text_with_regex(self, stub_videoinput):
