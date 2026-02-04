@@ -738,7 +738,7 @@ class TestVideoInputBase:
         stub_videoinput.find_text.return_value = []
         stub_videoinput.read_text = AsyncMock()
         stub_videoinput.read_text.return_value = "wrong\ntext"
-        with pytest.raises(Exception) as e:
+        with pytest.raises(Exception):
             await stub_videoinput.match_text(
                 "hello", region=Region(0, 0, 10, 10)
             )
