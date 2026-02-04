@@ -115,9 +115,6 @@ jobs:
         # Wait for the compositor to start
         inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-99\$" $XDG_RUNTIME_DIR
 
-        # Avoid GNOME apps waiting for portals
-        dbus-run-session -- gnome-calculator &
-
         uv run yarf --platform Mir --output-format TestSubmissionSchema tests/canary_test
 
     - name: Download test submission schema and validate
@@ -175,9 +172,6 @@ jobs:
         # Wait for the compositor to start
         inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-1\$" $XDG_RUNTIME_DIR
 
-        # Avoid GNOME apps waiting for portals
-        dbus-run-session -- gnome-calculator &
-
         uv run yarf --platform Mir tests/keyword_suite -- --suite video_image_test --listener ${KEYWORDS_LISTENER_PATH}
 
     - name: Run Keyword tests - VideoInput text
@@ -194,9 +188,6 @@ jobs:
 
         # Wait for the compositor to start
         inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-2\$" $XDG_RUNTIME_DIR
-
-        # Avoid GNOME apps waiting for portals
-        dbus-run-session -- eog -f tests/keyword_suite/text/text.png &
 
         uv run yarf --platform Mir tests/keyword_suite -- --suite video_text_test --listener ${KEYWORDS_LISTENER_PATH}
 
@@ -267,8 +258,6 @@ jobs:
 
         # Wait for the compositor to start
         inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-6\$" $XDG_RUNTIME_DIR
-
-        dbus-run-session -- gnome-calculator &
 
         uv run yarf --platform Mir tests/keyword_suite -- --suite kvm_test --listener ${KEYWORDS_LISTENER_PATH} 2> ~/wayland.trace
 

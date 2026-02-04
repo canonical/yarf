@@ -2,7 +2,10 @@
 Documentation       This suite tests VideoInput text related keywords.
 
 Library             String
+Library             Process
 Resource            kvm.resource
+
+Suite Setup         Open Text Image
 
 Task Tags
 ...    robot:stop-on-failure
@@ -43,6 +46,15 @@ Test Set Ocr Method with Invalid Method
 
 
 *** Keywords ***
+Open Text Image
+    [Documentation]    Opens the image used for text tests.
+    Start Process
+    ...                     dbus-run-session
+    ...                     --
+    ...                     eog
+    ...                     -f
+    ...                     ${CURDIR}/text/text.png
+
 Test Keyword Read Text
     [Tags]                  yarf:certification_status: blocker
     ${text}=                Read Text               ${CURDIR}/text/sample_text.png

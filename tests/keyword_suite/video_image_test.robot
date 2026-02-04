@@ -1,7 +1,10 @@
 *** Settings ***
 Documentation       This suite tests VideoInput image related keywords.
 
+Library             Process
 Resource            kvm.resource
+
+Suite Setup         Start Calculator
 
 Task Tags
 ...    robot:stop-on-failure
@@ -66,3 +69,12 @@ Test Keyword Get Position Of Target Template
 Test Keyword Log Screenshot
     [Tags]                  yarf:certification_status: blocker
     Log Screenshot          This is a test screenshot
+
+
+*** Keywords ***
+Start Calculator
+    [Documentation]    Starts the calculator application.
+    Start Process
+    ...                     dbus-run-session
+    ...                     --
+    ...                     gnome-calculator
