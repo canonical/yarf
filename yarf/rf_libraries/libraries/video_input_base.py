@@ -343,6 +343,8 @@ class VideoInputBase(ABC):
             ValueError: If the specified text isn't found in time
         """
         region = to_region(region)
+        print(f"\nLooking for '{text}'")
+        print(region)
         start_time = time.time()
         while time.time() - start_time < timeout:
             image = await self._grab_and_save_screenshot()
