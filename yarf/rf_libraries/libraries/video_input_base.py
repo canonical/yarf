@@ -294,7 +294,20 @@ class VideoInputBase(ABC):
         else:
             matched_text_regions = self.ocr.find(image, text, region=region)  # type: ignore[arg-type]
 
-        # Log the image which we found the text on for debugging false positives
+        # Always log if we didn't find anything
+        if not matched_text_regions:
+            log_image(
+                image,
+                f"Text '{text}' not found in the image.",
+            )
+            # Also log the cropped region if specified
+            if region is not None:
+                log_image(
+                    image.crop(region.as_tuple()),
+                    "Cropped region where text was searched.",
+                )
+
+        # Log all the matches if in debug mode
         if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
             for match in matched_text_regions:
                 similarity = f"{match['similarity']:.2f}"
@@ -304,9 +317,10 @@ class VideoInputBase(ABC):
                 )
                 log_image(
                     matched_image,
-                    f"Found text matching '{text}' with similarity {similarity}, confidence {confidence}: '{match['text']}'",
+                    f"Found text matching '{text}' with similarity "
+                    f"{similarity}, confidence {confidence}: "
+                    f"'{match['text']}'",
                 )
-
         return matched_text_regions
 
     @keyword
