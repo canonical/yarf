@@ -51,7 +51,7 @@ jobs:
 
   test-noble:
     name: Test on Noble
-    # We use GitHub hosted runners for this job as Pa11y needs working Chrom support
+    # We use GitHub hosted runners for this job as Pa11y needs working Chrome support
     runs-on: ubuntu-24.04
     steps:
     - name: Install dependencies
@@ -64,8 +64,7 @@ jobs:
           jq \
           clang \
           python3-tk \
-          tesseract-ocr \
-          mpv
+          tesseract-ocr
 
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
@@ -104,7 +103,7 @@ jobs:
 
     - name: Start Global Mir Server
       run: |
-        export WAYLAND_DISPLAY=wayland-0
+        export WAYLAND_DISPLAY=wayland-99
 
         # Start Mir on a virtual display (doesn't require graphics hardware)
         mir-test-tools.demo-server \
@@ -113,10 +112,10 @@ jobs:
           --virtual-output 1280x1024 &
 
         # Wait for the compositor to start
-        inotifywait --event create --include "^wayland-0\$" $XDG_RUNTIME_DIR
+        inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-99\$" $XDG_RUNTIME_DIR
 
         # Persist the variable for all future steps
-        echo "WAYLAND_DISPLAY=wayland-0" >> $GITHUB_ENV
+        echo "WAYLAND_DISPLAY=wayland-99" >> $GITHUB_ENV
 
     - name: Run integration tests
       run: |
@@ -146,7 +145,8 @@ jobs:
     - name: Install keyword suite dependencies
       run: |
         sudo apt-get --yes --no-install-recommends install \
-          eog
+          eog \
+          mpv
         uv pip install asttokens
 
     - name: Run Keyword tests - VideoInput imaging
