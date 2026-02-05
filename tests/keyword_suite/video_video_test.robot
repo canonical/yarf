@@ -37,7 +37,7 @@ Create Video Directory
 
 Start Video
     [Documentation]    Generate and start a video with given duration (seconds).
-    [Arguments]             ${duration}=20
+    [Arguments]             ${duration}
     Start Process
     ...                     ffmpeg
     ...                     -f
