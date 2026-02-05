@@ -130,19 +130,22 @@ jobs:
           PLATFORM: ${{ matrix.platform }}
         run: bash .github/scripts/canary-test/install-platform-dependencies.sh "${PLATFORM}"
 
+      - name: Start Global Mir Server
+        shell: bash
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          WAYLAND_DISPLAY: wayland-99
+        run: |
+          bash .github/scripts/canary-test/prepare-platform.sh "${PLATFORM}" "${WAYLAND_DISPLAY}"
+          echo "WAYLAND_DISPLAY=${WAYLAND_DISPLAY}" >> $GITHUB_ENV
+
       - name: Run canary test
         id: test
         shell: bash
         env:
           PLATFORM: ${{ matrix.platform }}
-          WAYLAND_DISPLAY: wayland-99
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
         run: |
-          bash .github/scripts/canary-test/prepare-platform.sh "${PLATFORM}" "${WAYLAND_DISPLAY}"
-
-          # Avoid GNOME apps waiting for portals
-          dbus-run-session -- gnome-calculator &
-
           snap run yarf --platform="${PLATFORM}" --output-format=TestSubmissionSchema "${TEST_SUITE_PATH}/canary_test"
 
       - name: Download test submission schema and validate
@@ -158,58 +161,19 @@ jobs:
         env:
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
         run: |
-          export WAYLAND_DISPLAY=wayland-1
-
-          # Start Mir on a virtual display (doesn't require graphics hardware)
-          mir-test-tools.demo-server \
-            --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
-            --platform-display-libs mir:virtual \
-            --virtual-output 1280x1024 &
-
-          # Wait for the compositor to start
-          inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-1\$" $XDG_RUNTIME_DIR
-
-          # Avoid GNOME apps waiting for portals
-          dbus-run-session -- gnome-calculator &
-
           snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite video_image_test
 
       - name: Run Keyword tests - VideoInput text
         env:
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
         run: |
-          export WAYLAND_DISPLAY=wayland-2
-
-          # Start Mir on a virtual display (doesn't require graphics hardware)
-          mir-test-tools.demo-server \
-            --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
-            --platform-display-libs mir:virtual \
-            --virtual-output 1280x1024 &
-
-          # Wait for the compositor to start
-          inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-2\$" $XDG_RUNTIME_DIR
-
-          # Avoid GNOME apps waiting for portals
-          dbus-run-session -- eog -f ${TEST_SUITE_PATH}/keyword_suite/text/text.png &
-
           snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite video_text_test
 
       - name: Run Keyword tests - VideoInput Video
         env:
-          KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
+          TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
         run: |
-          export WAYLAND_DISPLAY=wayland-3
-
-          # Start Mir on a virtual display (doesn't require graphics hardware)
-          mir-test-tools.demo-server \
-            --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
-            --platform-display-libs mir:virtual \
-            --virtual-output 1280x1024 &
-
-          # Wait for the compositor to start
-          inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-3\$" $XDG_RUNTIME_DIR
-
-          uv run yarf --platform Mir tests/keyword_suite -- --suite video_video_test
+          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite video_video_test
 
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
@@ -228,38 +192,28 @@ jobs:
           # Therefore, we are running each tests and assertion pair one by one here.
 
           set -x
-          export WAYLAND_DISPLAY=wayland-4
           export WAYLAND_DEBUG=client
 
-          # Start Mir on a virtual display (doesn't require graphics hardware)
-          mir-test-tools.demo-server \
-            --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
-            --platform-display-libs mir:virtual \
-            --virtual-output 1280x1024 &
+          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keyword Type String Numbers" 2> ~/wayland.trace
+          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keyword Type String Numbers"
 
-          # Wait for the compositor to start
-          inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-4\$" $XDG_RUNTIME_DIR
+          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keyword Type String Alphabets" 2> ~/wayland.trace
+          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keyword Type String Alphabets"
 
-          snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keyword Type String Numbers" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keyword Type String Numbers"
+          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keyword Type String With Shift Key Symbols" 2> ~/wayland.trace
+          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keyword Type String With Shift Key Symbols"
 
-          snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keyword Type String Alphabets" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keyword Type String Alphabets"
+          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keyword Type String With Shift Key Capital Letters" 2> ~/wayland.trace
+          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keyword Type String With Shift Key Capital Letters"
 
-          snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keyword Type String With Shift Key Symbols" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keyword Type String With Shift Key Symbols"
+          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keys Combo Numbers" 2> ~/wayland.trace
+          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keys Combo Numbers"
 
-          snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keyword Type String With Shift Key Capital Letters" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keyword Type String With Shift Key Capital Letters"
+          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keys Combo Alphabets" 2> ~/wayland.trace
+          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keys Combo Alphabets"
 
-          snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keys Combo Numbers" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keys Combo Numbers"
-
-          snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keys Combo Alphabets" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keys Combo Alphabets"
-
-          snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keys Combo Function" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keys Combo Function"
+          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keys Combo Function" 2> ~/wayland.trace
+          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keys Combo Function"
 
       - name: Run Keyword tests - Hid pointer
         env:
@@ -273,59 +227,36 @@ jobs:
           # Therefore, we are running each tests and assertion pair one by one here.
 
           set -x
-          export WAYLAND_DISPLAY=wayland-5
           export WAYLAND_DEBUG=client
 
-          # Start Mir on a virtual display (doesn't require graphics hardware)
-          mir-test-tools.demo-server \
-            --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
-            --platform-display-libs mir:virtual \
-            --virtual-output 1280x1024 &
+          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Button Press Actions" 2> ~/wayland.trace
+          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Button Press Actions"
 
-          # Wait for the compositor to start
-          inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-5\$" $XDG_RUNTIME_DIR
+          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keyword Type String Alphabets" 2> ~/wayland.trace
+          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keyword Type String Alphabets"
 
-          snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Button Press Actions" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Button Press Actions"
+          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keyword Type String With Shift Key Symbols" 2> ~/wayland.trace
+          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keyword Type String With Shift Key Symbols"
 
-          snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keyword Type String Alphabets" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keyword Type String Alphabets"
+          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keyword Type String With Shift Key Capital Letters" 2> ~/wayland.trace
+          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keyword Type String With Shift Key Capital Letters"
 
-          snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keyword Type String With Shift Key Symbols" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keyword Type String With Shift Key Symbols"
+          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keys Combo Numbers" 2> ~/wayland.trace
+          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keys Combo Numbers"
 
-          snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keyword Type String With Shift Key Capital Letters" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keyword Type String With Shift Key Capital Letters"
+          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keys Combo Alphabets" 2> ~/wayland.trace
+          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keys Combo Alphabets"
 
-          snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keys Combo Numbers" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keys Combo Numbers"
+          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keys Combo Function" 2> ~/wayland.trace
+          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keys Combo Function"
 
-          snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keys Combo Alphabets" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keys Combo Alphabets"
-
-          snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keys Combo Function" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keys Combo Function"
-
-          snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keys Combo Function" 2> ~/wayland.trace
-          uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keys Combo Function"
+          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keys Combo Function" 2> ~/wayland.trace
+          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keys Combo Function"
 
       - name: Run Keyword tests - KVM
         env:
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
         run: |
-          export WAYLAND_DISPLAY=wayland-6
-
-          # Start Mir on a virtual display (doesn't require graphics hardware)
-          mir-test-tools.demo-server \
-            --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
-            --platform-display-libs mir:virtual \
-            --virtual-output 1280x1024 &
-
-          # Wait for the compositor to start
-          inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-6\$" $XDG_RUNTIME_DIR
-
-          dbus-run-session -- gnome-calculator &
-
           snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite kvm_test
 
       - if: failure()
