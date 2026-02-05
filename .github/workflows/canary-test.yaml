@@ -64,7 +64,8 @@ jobs:
             jq \
             clang \
             python3-tk \
-            tesseract-ocr
+            tesseract-ocr \
+            mpv
 
           pip install uv check-jsonschema
 
@@ -193,6 +194,23 @@ jobs:
 
           snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite video_text_test
 
+      - name: Run Keyword tests - VideoInput Video
+        env:
+          KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
+        run: |
+          export WAYLAND_DISPLAY=wayland-3
+
+          # Start Mir on a virtual display (doesn't require graphics hardware)
+          mir-test-tools.demo-server \
+            --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
+            --platform-display-libs mir:virtual \
+            --virtual-output 1280x1024 &
+
+          # Wait for the compositor to start
+          inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-3\$" $XDG_RUNTIME_DIR
+
+          uv run yarf --platform Mir tests/keyword_suite -- --suite video_video_test
+
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
         with:
@@ -210,7 +228,7 @@ jobs:
           # Therefore, we are running each tests and assertion pair one by one here.
 
           set -x
-          export WAYLAND_DISPLAY=wayland-3
+          export WAYLAND_DISPLAY=wayland-4
           export WAYLAND_DEBUG=client
 
           # Start Mir on a virtual display (doesn't require graphics hardware)
@@ -220,7 +238,7 @@ jobs:
             --virtual-output 1280x1024 &
 
           # Wait for the compositor to start
-          inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-3\$" $XDG_RUNTIME_DIR
+          inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-4\$" $XDG_RUNTIME_DIR
 
           snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Keyword Type String Numbers" 2> ~/wayland.trace
           uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Keyword Type String Numbers"
@@ -255,7 +273,7 @@ jobs:
           # Therefore, we are running each tests and assertion pair one by one here.
 
           set -x
-          export WAYLAND_DISPLAY=wayland-4
+          export WAYLAND_DISPLAY=wayland-5
           export WAYLAND_DEBUG=client
 
           # Start Mir on a virtual display (doesn't require graphics hardware)
@@ -265,7 +283,7 @@ jobs:
             --virtual-output 1280x1024 &
 
           # Wait for the compositor to start
-          inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-4\$" $XDG_RUNTIME_DIR
+          inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-5\$" $XDG_RUNTIME_DIR
 
           snap run yarf --platform Mir ./tests/keyword_suite/ -- --test "Test Button Press Actions" 2> ~/wayland.trace
           uv run yarf --platform Mir ./tests/keyword_suite/ -- --test "Assert Test Button Press Actions"
@@ -295,7 +313,7 @@ jobs:
         env:
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
         run: |
-          export WAYLAND_DISPLAY=wayland-5
+          export WAYLAND_DISPLAY=wayland-6
 
           # Start Mir on a virtual display (doesn't require graphics hardware)
           mir-test-tools.demo-server \
@@ -304,7 +322,7 @@ jobs:
             --virtual-output 1280x1024 &
 
           # Wait for the compositor to start
-          inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-5\$" $XDG_RUNTIME_DIR
+          inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-6\$" $XDG_RUNTIME_DIR
 
           dbus-run-session -- gnome-calculator &
 

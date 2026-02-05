@@ -16,7 +16,7 @@ from io import BytesIO
 from types import ModuleType
 from typing import List, Optional, Sequence, Union
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageChops, ImageDraw
 from robot.api import logger
 from robot.api.deco import keyword
 from robot.libraries.BuiltIn import BuiltIn
@@ -731,3 +731,60 @@ class VideoInputBase(ABC):
         """
         screenshot = await self.grab_screenshot()
         log_image(screenshot, msg)
+
+    @keyword
+    async def wait_still_screen(
+        self,
+        duration: float = 30.0,
+        still_duration: float = 10.0,
+        screenshot_interval: float = 1.0,
+    ) -> None:
+        """
+        Monitors the screen for a set 'duration' (e.g., 30s), checking every
+        'interval' (e.g., 5s). Fails if the screen is not still for
+        still_duration.
+
+        Args:
+            duration: Total time to monitor the screen (in seconds)
+            still_duration: Time the screen must remain still (in seconds)
+            screenshot_interval: Interval between screenshots (in seconds)
+
+        Raises:
+            TimeoutError: If the screen does not remain still for the required still_duration within the total duration.
+        """
+        previous_img: Optional[Image.Image] = None
+        start_time = time.monotonic()
+        still_start_time = time.monotonic()
+
+        while True:
+            curr_img = await self.grab_screenshot()
+            curr_img = curr_img.convert("RGB")
+            if previous_img is not None:
+                diff_img = ImageChops.difference(previous_img, curr_img)
+                if diff_img.getbbox():
+                    logger.debug(
+                        "Screen changed, resetting still timer. (Time elapsed: "
+                        f"{time.monotonic() - start_time:.2f}s)",
+                        html=True,
+                    )
+                    still_start_time = time.monotonic()
+            previous_img = curr_img
+
+            now = time.monotonic()
+            still_elapsed = now - still_start_time
+            total_elapsed = now - start_time
+
+            if still_elapsed >= still_duration:
+                logger.info(
+                    f"Screen remained stable for {still_duration} seconds.",
+                    console=True,
+                    html=True,
+                )
+                return
+
+            if total_elapsed >= duration:
+                raise TimeoutError(
+                    f"Screen did not remain still for {still_duration}s within {duration}s."
+                )
+
+            time.sleep(screenshot_interval)
