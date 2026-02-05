@@ -10,3 +10,16 @@ Documentation       This suite is a canary test to test the following major
 ...                 7. Can interactive with mouse
 Metadata            title    Canary Suite
 Metadata            test_plan_id    com.canonical.yarf::canary_test
+
+Library             Process
+
+Suite Setup         Start Calculator
+
+
+*** Keywords ***
+Start Calculator
+    [Documentation]    Starts the calculator application.
+    Start Process
+    ...                     dbus-run-session
+    ...                     --
+    ...                     gnome-calculator
