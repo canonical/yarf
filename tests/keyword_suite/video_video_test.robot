@@ -4,6 +4,8 @@ Documentation       This suite tests VideoInput video related keywords.
 Library             Process
 Resource            kvm.resource
 
+Suite Setup         Create Video Directory
+
 Task Tags
 ...    robot:stop-on-failure
 ...    yarf:category_id: com.canonical.yarf::video
@@ -28,11 +30,13 @@ Test Keyword Wait Still Screen Expect Success
 
 
 *** Keywords ***
-Start Video 20s
-    [Documentation]    Starts the video.
-    Start Process
+Create Video Directory
+    [Documentation]    Creates the videos directory if it doesn't exist.
+    Run Process
     ...                     mkdir                   -p                      ${CURDIR}/videos
 
+Start Video 20s
+    [Documentation]    Starts the video.
     Start Process
     ...                     ffmpeg
     ...                     -f
@@ -54,9 +58,6 @@ Start Video 20s
 
 Start Video 10s
     [Documentation]    Starts the video.
-    Start Process
-    ...                     mkdir                   -p                      ${CURDIR}/videos
-
     Start Process
     ...                     ffmpeg
     ...                     -f
