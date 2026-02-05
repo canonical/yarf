@@ -15,7 +15,7 @@ Task Tags
 *** Test Cases ***
 Test Keyword Wait Still Screen Expect Timeout
     [Tags]                  yarf:certification_status: blocker
-    [Setup]                 Start Video 20s
+    [Setup]                 Start Video             20
     Run Keyword And Expect Error
     ...                     *
     ...                     Wait Still Screen
@@ -25,7 +25,7 @@ Test Keyword Wait Still Screen Expect Timeout
 
 Test Keyword Wait Still Screen Expect Success
     [Tags]                  yarf:certification_status: blocker
-    [Setup]                 Start Video 10s
+    [Setup]                 Start Video             10
     Wait Still Screen       duration=20             still_duration=5        screenshot_interval=1
 
 
@@ -35,44 +35,24 @@ Create Video Directory
     Run Process
     ...                     mkdir                   -p                      ${CURDIR}/videos
 
-Start Video 20s
-    [Documentation]    Generate and start a 20 seconds video.
+Start Video
+    [Documentation]    Generate and start a video with given duration (seconds).
+    [Arguments]             ${duration}=20
     Start Process
     ...                     ffmpeg
     ...                     -f
     ...                     lavfi
     ...                     -i
-    ...                     testsrc\=duration\=20:size\=1280x720:rate\=30
+    ...                     testsrc\=duration\=${duration}:size\=1280x720:rate\=30
     ...                     -c:v
     ...                     libx264
-    ...                     ${CURDIR}/videos/test_video_20.mp4
-    ...                     alias=CreateTestVideo1
+    ...                     ${CURDIR}/videos/test_video_${duration}.mp4
+    ...                     alias=CreateTestVideo
 
-    Wait For Process        CreateTestVideo1
+    Wait For Process        CreateTestVideo
     Start Process
     ...                     dbus-run-session
     ...                     --
     ...                     mpv
     ...                     --fs
-    ...                     ${CURDIR}/videos/test_video_20.mp4
-
-Start Video 10s
-    [Documentation]    Generate and start a 10 seconds video.
-    Start Process
-    ...                     ffmpeg
-    ...                     -f
-    ...                     lavfi
-    ...                     -i
-    ...                     testsrc\=duration\=10:size\=1280x720:rate\=30
-    ...                     -c:v
-    ...                     libx264
-    ...                     ${CURDIR}/videos/test_video_10.mp4
-    ...                     alias=CreateTestVideo2
-
-    Wait For Process        CreateTestVideo2
-    Start Process
-    ...                     dbus-run-session
-    ...                     --
-    ...                     mpv
-    ...                     --fs
-    ...                     ${CURDIR}/videos/test_video_10.mp4
+    ...                     ${CURDIR}/videos/test_video_${duration}.mp4
