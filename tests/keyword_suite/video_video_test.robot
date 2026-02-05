@@ -36,7 +36,7 @@ Create Video Directory
     ...                     mkdir                   -p                      ${CURDIR}/videos
 
 Start Video 20s
-    [Documentation]    Starts the video.
+    [Documentation]    Generate and start a 20 seconds video.
     Start Process
     ...                     ffmpeg
     ...                     -f
@@ -57,7 +57,7 @@ Start Video 20s
     ...                     ${CURDIR}/videos/test_video_20.mp4
 
 Start Video 10s
-    [Documentation]    Starts the video.
+    [Documentation]    Generate and start a 10 seconds video.
     Start Process
     ...                     ffmpeg
     ...                     -f
