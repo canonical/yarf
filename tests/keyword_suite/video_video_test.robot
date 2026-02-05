@@ -4,7 +4,7 @@ Documentation       This suite tests VideoInput video related keywords.
 Library             Process
 Resource            kvm.resource
 
-Suite Setup         Start Video
+Suite Setup         Create Video Directory
 
 Task Tags
 ...    robot:stop-on-failure
@@ -15,6 +15,7 @@ Task Tags
 *** Test Cases ***
 Test Keyword Wait Still Screen Expect Timeout
     [Tags]                  yarf:certification_status: blocker
+    [Setup]                 Start Video             20
     Run Keyword And Expect Error
     ...                     *
     ...                     Wait Still Screen
@@ -24,24 +25,28 @@ Test Keyword Wait Still Screen Expect Timeout
 
 Test Keyword Wait Still Screen Expect Success
     [Tags]                  yarf:certification_status: blocker
+    [Setup]                 Start Video             10
     Wait Still Screen       duration=20             still_duration=5        screenshot_interval=1
 
 
 *** Keywords ***
-Start Video
-    [Documentation]    Starts the video.
-    Start Process
+Create Video Directory
+    [Documentation]    Creates the videos directory if it doesn't exist.
+    Run Process
     ...                     mkdir                   -p                      ${CURDIR}/videos
 
+Start Video
+    [Documentation]    Generate and start a video with given duration (seconds).
+    [Arguments]             ${duration}
     Start Process
     ...                     ffmpeg
     ...                     -f
     ...                     lavfi
     ...                     -i
-    ...                     testsrc\=duration\=30:size\=1280x720:rate\=30
+    ...                     testsrc\=duration\=${duration}:size\=1280x720:rate\=30
     ...                     -c:v
     ...                     libx264
-    ...                     ${CURDIR}/videos/test_video.mp4
+    ...                     ${CURDIR}/videos/test_video_${duration}.mp4
     ...                     alias=CreateTestVideo
 
     Wait For Process        CreateTestVideo
@@ -50,4 +55,4 @@ Start Video
     ...                     --
     ...                     mpv
     ...                     --fs
-    ...                     ${CURDIR}/videos/test_video.mp4
+    ...                     ${CURDIR}/videos/test_video_${duration}.mp4
