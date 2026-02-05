@@ -102,9 +102,9 @@ jobs:
           inotify-tools \
           gnome-calculator
 
-    - name: Run integration tests
+    - name: Start Global Mir Server
       run: |
-        export WAYLAND_DISPLAY=wayland-99
+        export WAYLAND_DISPLAY=wayland-0
 
         # Start Mir on a virtual display (doesn't require graphics hardware)
         mir-test-tools.demo-server \
@@ -113,8 +113,13 @@ jobs:
           --virtual-output 1280x1024 &
 
         # Wait for the compositor to start
-        inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-99\$" $XDG_RUNTIME_DIR
+        inotifywait --event create --include "^wayland-0\$" $XDG_RUNTIME_DIR
 
+        # Persist the variable for all future steps
+        echo "WAYLAND_DISPLAY=wayland-0" >> $GITHUB_ENV
+
+    - name: Run integration tests
+      run: |
         uv run yarf --platform Mir --output-format TestSubmissionSchema tests/canary_test
 
     - name: Download test submission schema and validate
@@ -132,17 +137,6 @@ jobs:
 
     - name: Run tutorial examples
       run: |
-        export WAYLAND_DISPLAY=wayland-0
-
-        # Start Mir on a virtual display (doesn't require graphics hardware)
-        mir-test-tools.demo-server \
-          --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
-          --platform-display-libs mir:virtual \
-          --virtual-output 1280x1024 &
-
-        # Wait for the compositor to start
-        inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-0\$" $XDG_RUNTIME_DIR
-
         uv venv --python=/usr/bin/python3 --system-site-packages --project=$(pwd)/examples/yarf-example-simple-counter
         uv run yarf --platform Mir examples/yarf-example-simple-counter/yarf_tests
 
@@ -159,104 +153,38 @@ jobs:
       env:
         KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
       run: |
-        export WAYLAND_DISPLAY=wayland-1
-
-        # Start Mir on a virtual display (doesn't require graphics hardware)
-        mir-test-tools.demo-server \
-          --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
-          --platform-display-libs mir:virtual \
-          --virtual-output 1280x1024 &
-
-        # Wait for the compositor to start
-        inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-1\$" $XDG_RUNTIME_DIR
-
         uv run yarf --platform Mir tests/keyword_suite -- --suite video_image_test --listener ${KEYWORDS_LISTENER_PATH}
 
     - name: Run Keyword tests - VideoInput text
       env:
         KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
       run: |
-        export WAYLAND_DISPLAY=wayland-2
-
-        # Start Mir on a virtual display (doesn't require graphics hardware)
-        mir-test-tools.demo-server \
-          --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
-          --platform-display-libs mir:virtual \
-          --virtual-output 1280x1024 &
-
-        # Wait for the compositor to start
-        inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-2\$" $XDG_RUNTIME_DIR
-
         uv run yarf --platform Mir tests/keyword_suite -- --suite video_text_test --listener ${KEYWORDS_LISTENER_PATH}
 
     - name: Run Keyword tests - VideoInput Video
       env:
         KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
       run: |
-        export WAYLAND_DISPLAY=wayland-3
-
-        # Start Mir on a virtual display (doesn't require graphics hardware)
-        mir-test-tools.demo-server \
-          --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
-          --platform-display-libs mir:virtual \
-          --virtual-output 1280x1024 &
-
-        # Wait for the compositor to start
-        inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-3\$" $XDG_RUNTIME_DIR
-
         uv run yarf --platform Mir tests/keyword_suite -- --suite video_video_test --listener ${KEYWORDS_LISTENER_PATH}
 
     - name: Run Keyword tests - Hid keyboard
       env:
         KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
       run: |
-        export WAYLAND_DISPLAY=wayland-4
         export WAYLAND_DEBUG=client
-
-        # Start Mir on a virtual display (doesn't require graphics hardware)
-        mir-test-tools.demo-server \
-          --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
-          --platform-display-libs mir:virtual \
-          --virtual-output 1280x1024 &
-
-        # Wait for the compositor to start
-        inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-4\$" $XDG_RUNTIME_DIR
-
         uv run yarf --platform Mir tests/keyword_suite -- --suite hid_keyboard_test --listener ${KEYWORDS_LISTENER_PATH} 2> ~/wayland.trace
 
     - name: Run Keyword tests - Hid pointer
       env:
         KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
       run: |
-        export WAYLAND_DISPLAY=wayland-5
         export WAYLAND_DEBUG=client
-
-        # Start Mir on a virtual display (doesn't require graphics hardware)
-        mir-test-tools.demo-server \
-          --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
-          --platform-display-libs mir:virtual \
-          --virtual-output 1280x1024 &
-
-        # Wait for the compositor to start
-        inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-5\$" $XDG_RUNTIME_DIR
-
         uv run yarf --platform Mir tests/keyword_suite -- --suite hid_pointer_test --listener ${KEYWORDS_LISTENER_PATH} 2> ~/wayland.trace
 
     - name: Run Keyword tests - KVM
       env:
         KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
       run: |
-        export WAYLAND_DISPLAY=wayland-6
-
-        # Start Mir on a virtual display (doesn't require graphics hardware)
-        mir-test-tools.demo-server \
-          --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
-          --platform-display-libs mir:virtual \
-          --virtual-output 1280x1024 &
-
-        # Wait for the compositor to start
-        inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-6\$" $XDG_RUNTIME_DIR
-
         uv run yarf --platform Mir tests/keyword_suite -- --suite kvm_test --listener ${KEYWORDS_LISTENER_PATH} 2> ~/wayland.trace
 
     - name: Check Keywords coverage
