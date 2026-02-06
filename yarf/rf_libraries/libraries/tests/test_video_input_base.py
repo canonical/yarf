@@ -17,6 +17,7 @@ from unittest.mock import (
 )
 
 import pytest
+from PIL import Image
 
 from yarf.lib.images.utils import to_RGB
 from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
@@ -474,8 +475,15 @@ class TestVideoInputBase:
             stub_videoinput.grab_screenshot.return_value, "text", region=None
         )
 
+    @pytest.mark.parametrize(
+        "log_level",
+        [
+            "INFO",
+            "DEBUG",
+        ],
+    )
     @pytest.mark.asyncio
-    async def test_find_text_in_region(self, stub_videoinput):
+    async def test_find_text_in_region(self, stub_videoinput, log_level: str):
         """
         Test if the function grabs a new screenshot and finds the text
         position.
@@ -497,7 +505,18 @@ class TestVideoInputBase:
             "bottom": 1,
         }
         expected_region = Region(0, 0, 1, 1)
-        await stub_videoinput.find_text("text", region=region)
+
+        with (
+            patch.dict(os.environ, {"YARF_LOG_LEVEL": log_level}),
+            patch(
+                "yarf.rf_libraries.libraries.video_input_base.log_image"
+            ) as mock_log_image,
+        ):
+            await stub_videoinput.find_text("text", region=region)
+            if log_level == "DEBUG":
+                mock_log_image.assert_called_once()
+            else:
+                mock_log_image.assert_not_called()
 
         stub_videoinput.ocr.find.assert_called_once_with(
             stub_videoinput.grab_screenshot.return_value,
@@ -688,7 +707,10 @@ class TestVideoInputBase:
         )
 
     @pytest.mark.asyncio
-    async def test_match_text_fails(self, stub_videoinput, mock_time):
+    @patch("yarf.rf_libraries.libraries.video_input_base.log_image")
+    async def test_match_text_fails(
+        self, mock_log_image, stub_videoinput, mock_time
+    ):
         """
         Test the function raises an error if the text is not found.
         """
@@ -700,8 +722,34 @@ class TestVideoInputBase:
         with pytest.raises(Exception) as e:
             await stub_videoinput.match_text("hello")
 
+        mock_log_image.assert_called()
         assert "Timed out looking for 'hello'" in str(e.value)
         assert "Text read on screen was:\nwrong\ntext" in str(e.value)
+
+    @pytest.mark.asyncio
+    @patch("yarf.rf_libraries.libraries.video_input_base.log_image")
+    async def test_match_text_fails_with_region(
+        self, mock_log_image, stub_videoinput, mock_time
+    ):
+        """
+        Test the function raises an error if the text is not found.
+        """
+        mock_time.side_effect = [0, 1, 11, 12]
+        stub_videoinput.find_text = AsyncMock()
+        stub_videoinput.find_text.return_value = []
+        stub_videoinput.read_text = AsyncMock()
+        stub_videoinput.read_text.return_value = "wrong\ntext"
+        with pytest.raises(Exception):
+            await stub_videoinput.match_text(
+                "hello", region=Region(0, 0, 10, 10)
+            )
+
+        mock_log_image.assert_has_calls(
+            [
+                call(ANY, "Text 'hello' not found in the image."),
+                call(ANY, "Cropped region"),
+            ]
+        )
 
     @pytest.mark.asyncio
     async def test_match_text_with_regex(self, stub_videoinput):
@@ -967,3 +1015,94 @@ class TestVideoInputBase:
 
         stub_videoinput.grab_screenshot.assert_awaited_once_with()
         assert mock_logger.info.call_args.args[0].startswith("Debug message")
+
+    @pytest.mark.asyncio
+    @patch("time.monotonic")
+    async def test_wait_still_screen(
+        self, mock_monotonic_time, stub_videoinput, mock_logger
+    ):
+        """
+        Test that the function waits until the screen is still.
+        """
+        screenshots = [Mock(), Mock(), Mock(), Mock()]
+        # First two screenshots are different, third is the same as second
+        screenshots[0].convert.return_value = Image.new(
+            "RGB", (10, 10), color="white"
+        )
+        screenshots[1].convert.return_value = Image.new(
+            "RGB", (10, 10), color="black"
+        )
+        screenshots[2].convert.return_value = Image.new(
+            "RGB", (10, 10), color="black"
+        )
+        screenshots[3].convert.return_value = Image.new(
+            "RGB", (10, 10), color="black"
+        )
+        stub_videoinput.grab_screenshot = AsyncMock(side_effect=screenshots)
+
+        mock_monotonic_time.side_effect = [0, 0, 0, 1, 1, 1, 2, 3]
+        with patch("time.sleep"):
+            await stub_videoinput.wait_still_screen(
+                duration=5, still_duration=2, screenshot_interval=1
+            )
+        assert (
+            mock_logger.info.call_args.args[0]
+            == "Screen remained stable for 2 seconds."
+        )
+
+    @pytest.mark.asyncio
+    @patch("time.monotonic")
+    async def test_wait_still_screen_timeout(
+        self, mock_monotonic_time, stub_videoinput
+    ):
+        """
+        Test that the function raises a TimeoutError if the screen doesn't
+        become still in time.
+        """
+        screenshots = [Mock(), Mock(), Mock(), Mock(), Mock(), Mock()]
+        # All screenshots are different
+        screenshots[0].convert.return_value = Image.new(
+            "RGB", (10, 10), color="white"
+        )
+        screenshots[1].convert.return_value = Image.new(
+            "RGB", (10, 10), color="black"
+        )
+        screenshots[2].convert.return_value = Image.new(
+            "RGB", (10, 10), color="red"
+        )
+        screenshots[3].convert.return_value = Image.new(
+            "RGB", (10, 10), color="blue"
+        )
+        screenshots[4].convert.return_value = Image.new(
+            "RGB", (10, 10), color="green"
+        )
+        screenshots[5].convert.return_value = Image.new(
+            "RGB", (10, 10), color="red"
+        )
+        stub_videoinput.grab_screenshot = AsyncMock(side_effect=screenshots)
+
+        mock_monotonic_time.side_effect = [
+            0,
+            0,
+            0,
+            1,
+            1,
+            1,
+            2,
+            2,
+            2,
+            3,
+            3,
+            3,
+            4,
+            4,
+            4,
+            5,
+            5,
+            5,
+        ]
+        with patch("time.sleep"), pytest.raises(TimeoutError) as e:
+            await stub_videoinput.wait_still_screen(
+                duration=5, still_duration=2, screenshot_interval=1
+            )
+        assert "Screen did not remain still for 2s within 5s." in str(e.value)

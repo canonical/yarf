@@ -20,17 +20,17 @@ bootstrap them locally, then work towards automated runs.
 # The version should be set during CI.
 version = "0.0.0"
 readme = "README.md"
-requires-python = ">=3.10.12, !=3.11.*, >=3.11.4, <3.14"
+requires-python = ">=3.10.12,<3.15,!=3.11.0,!=3.11.1,!=3.11.2,!=3.11.3"
 dependencies = [
     "keysymdef~=1.2.0",
-    "onnxruntime~=1.23.2",
+    "onnxruntime~=1.24.1",
     "opencv-python~=4.13.0.90",
     "owasp-logger~=0.1.3",
     "Pillow~=12.1.0",
     "pytesseract~=0.3.10",
     "pywayland",
     "rapidfuzz>=3.12.1",
-    "rapidocr~=3.5.0",
+    "rapidocr~=3.6.0",
     "robotframework~=7.4.0",
     "robotframework-sshlibrary~=3.8.0",
     "robotframework-stacktrace==0.4.1",

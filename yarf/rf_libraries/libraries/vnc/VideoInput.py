@@ -12,7 +12,7 @@ from PIL import Image
 from robot.api import logger
 from robot.api.deco import keyword, library
 
-from yarf.logging.owasp_logger import get_owasp_logger
+from yarf.loggers.owasp_logger import get_owasp_logger
 from yarf.rf_libraries.libraries.video_input_base import VideoInputBase
 from yarf.rf_libraries.libraries.vnc import Vnc
 from yarf.vendor.asyncvnc import connect

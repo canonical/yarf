@@ -1,5 +1,9 @@
 *** Settings ***
+Library         OperatingSystem
+Library         Process
 Resource        kvm.resource
+
+Suite Setup     Start Simple Counter
 
 Task Tags
 ...    robot:stop-on-failure
@@ -37,3 +41,20 @@ Assert simple counter closed
     Wait Until Keyword Succeeds                     5                       1
     ...                     Run Keyword And Expect Error                    ImageNotFoundError: *
     ...                     Match                   ${CURDIR}/simple_counter_toggled.png            0
+
+
+*** Keywords ***
+Start Simple Counter
+    [Documentation]    Starts the simple counter application.
+    ${workspace}=           Get Environment Variable                        GITHUB_WORKSPACE        default=${CURDIR}
+    ${theme}=               Get Environment Variable                        SIMPLE_COUNTER_THEME    default=dark
+    Start Process
+    ...                     dbus-run-session
+    ...                     --
+    ...                     uv
+    ...                     --project
+    ...                     ${workspace}/examples/yarf-example-simple-counter
+    ...                     run
+    ...                     simple-counter
+    ...                     --theme
+    ...                     ${theme}

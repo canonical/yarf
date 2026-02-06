@@ -1,6 +1,6 @@
 import logging
 
-from yarf.logging.owasp_logger import get_owasp_logger
+from yarf.loggers.owasp_logger import get_owasp_logger
 
 
 class TestPrettyJSONFormatter:
