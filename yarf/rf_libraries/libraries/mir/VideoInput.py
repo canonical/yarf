@@ -40,6 +40,7 @@ class VideoInput(VideoInputBase):
         _owasp_logger.sys_monitor_enabled("system", "mir_video_input")
         super().__init__()
 
+    @keyword
     async def grab_screenshot(self) -> Image.Image:
         """
         Grabs the current frame through screencopy.

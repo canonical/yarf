@@ -1,8 +1,11 @@
 *** Settings ***
 Documentation       This suite tests KVM keywords under kvm.resource.
 
+Library             Process
 Library             Collections
 Resource            kvm.resource
+
+Suite Setup         Start Calculator
 
 Task Tags
 ...    robot:stop-on-failure
@@ -46,3 +49,12 @@ Test Keyword Move Pointer To Destination In Domain
 
     Should Be True          ${cal_region}[0][left] < ${x} < ${cal_region}[0][right]
     Should Be True          ${cal_region}[0][top] < ${y} < ${cal_region}[0][bottom]
+
+
+*** Keywords ***
+Start Calculator
+    [Documentation]    Starts the calculator application.
+    Start Process
+    ...                     dbus-run-session
+    ...                     --
+    ...                     gnome-calculator

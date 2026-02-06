@@ -16,7 +16,7 @@ from io import BytesIO
 from types import ModuleType
 from typing import List, Optional, Sequence, Union
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageChops, ImageDraw
 from robot.api import logger
 from robot.api.deco import keyword
 from robot.libraries.BuiltIn import BuiltIn
@@ -294,19 +294,22 @@ class VideoInputBase(ABC):
         else:
             matched_text_regions = self.ocr.find(image, text, region=region)  # type: ignore[arg-type]
 
-        # Log the image which we found the text on for debugging false positives
+        # Log all the matches if in debug mode (If there are any matches)
         if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
             for match in matched_text_regions:
                 similarity = f"{match['similarity']:.2f}"
                 confidence = f"{match['confidence']:.2f}"
                 matched_image = self._draw_region_on_image(
-                    image, match["region"]
+                    image.copy(), match["region"]
                 )
+                if region:
+                    matched_image = matched_image.crop(region.as_tuple())
                 log_image(
                     matched_image,
-                    f"Found text matching '{text}' with similarity {similarity}, confidence {confidence}: '{match['text']}'",
+                    f"Found text matching '{text}' with similarity "
+                    f"{similarity}, confidence {confidence}: "
+                    f"'{match['text']}'",
                 )
-
         return matched_text_regions
 
     @keyword
@@ -340,6 +343,8 @@ class VideoInputBase(ABC):
             ValueError: If the specified text isn't found in time
         """
         region = to_region(region)
+        print(f"\nLooking for '{text}'")
+        print(region)
         start_time = time.time()
         while time.time() - start_time < timeout:
             image = await self._grab_and_save_screenshot()
@@ -367,6 +372,13 @@ class VideoInputBase(ABC):
                 return text_matches, cropped_image
 
         read_text = await self.read_text(cropped_image)
+
+        # Log the image where the text was searched
+        log_image(image, f"Text '{text}' not found in the image.")
+        # Also log the cropped region if specified
+        if region is not None:
+            log_image(cropped_image, "Cropped region")
+
         raise ValueError(
             f"Timed out looking for '{text}' after '{timeout}' seconds. "
             f"Text read on screen was:\n{read_text}"
@@ -719,3 +731,60 @@ class VideoInputBase(ABC):
         """
         screenshot = await self.grab_screenshot()
         log_image(screenshot, msg)
+
+    @keyword
+    async def wait_still_screen(
+        self,
+        duration: float = 30.0,
+        still_duration: float = 10.0,
+        screenshot_interval: float = 1.0,
+    ) -> None:
+        """
+        Monitors the screen for a set 'duration' (e.g., 30s), checking every
+        'interval' (e.g., 5s). Fails if the screen is not still for
+        still_duration.
+
+        Args:
+            duration: Total time to monitor the screen (in seconds)
+            still_duration: Time the screen must remain still (in seconds)
+            screenshot_interval: Interval between screenshots (in seconds)
+
+        Raises:
+            TimeoutError: If the screen does not remain still for the required still_duration within the total duration.
+        """
+        previous_img: Optional[Image.Image] = None
+        start_time = time.monotonic()
+        still_start_time = time.monotonic()
+
+        while True:
+            curr_img = await self.grab_screenshot()
+            curr_img = curr_img.convert("RGB")
+            if previous_img is not None:
+                diff_img = ImageChops.difference(previous_img, curr_img)
+                if diff_img.getbbox():
+                    logger.debug(
+                        "Screen changed, resetting still timer. (Time elapsed: "
+                        f"{time.monotonic() - start_time:.2f}s)",
+                        html=True,
+                    )
+                    still_start_time = time.monotonic()
+            previous_img = curr_img
+
+            now = time.monotonic()
+            still_elapsed = now - still_start_time
+            total_elapsed = now - start_time
+
+            if still_elapsed >= still_duration:
+                logger.info(
+                    f"Screen remained stable for {still_duration} seconds.",
+                    console=True,
+                    html=True,
+                )
+                return
+
+            if total_elapsed >= duration:
+                raise TimeoutError(
+                    f"Screen did not remain still for {still_duration}s within {duration}s."
+                )
+
+            time.sleep(screenshot_interval)
