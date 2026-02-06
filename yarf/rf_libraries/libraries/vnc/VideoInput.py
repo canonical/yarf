@@ -15,7 +15,6 @@ from robot.api.deco import keyword, library
 from yarf.loggers.owasp_logger import get_owasp_logger
 from yarf.rf_libraries.libraries.video_input_base import VideoInputBase
 from yarf.rf_libraries.libraries.vnc import Vnc
-from yarf.vendor.asyncvnc import connect
 
 _owasp_logger = OWASPLogger(appid=__name__, logger=get_owasp_logger())
 
@@ -57,7 +56,7 @@ class VideoInput(VideoInputBase):
             f"vnc_connection:{self.vnc.host}:{self.vnc.port}",
         )
         for attempt in range(self.screenshot_retries):
-            async with connect(self.vnc.host, self.vnc.port) as client:
+            async with self.vnc.safe_connect() as client:
                 try:
                     screenshot = Image.fromarray(
                         await wait_for(

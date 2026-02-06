@@ -2,6 +2,7 @@ from unittest.mock import ANY, AsyncMock, call, patch
 
 import pytest
 
+from yarf.errors.yarf_errors import YARFExitCode
 from yarf.rf_libraries.libraries.mir.VideoInput import VideoInput
 
 
@@ -82,6 +83,18 @@ class TestMirVideoInput:
         await video_input.start_video_input()
 
         mock_screencopy().connect.assert_awaited_once_with()
+
+    @pytest.mark.asyncio
+    async def test_start_video_input_exception(
+        self, mock_screencopy, video_input
+    ):
+        mock_screencopy().connect.side_effect = Exception("Connection failed")
+
+        with pytest.raises(SystemExit) as exc_info:
+            await video_input.start_video_input()
+
+        mock_screencopy().connect.assert_awaited_once_with()
+        assert exc_info.value.code == YARFExitCode.CONNECTION_ERROR
 
     @pytest.mark.asyncio
     async def test_stop_video_input(self, mock_screencopy, video_input):
