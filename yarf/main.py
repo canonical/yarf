@@ -490,6 +490,7 @@ def main(argv: Optional[list[str]] = None) -> None:
         _owasp_logger.sys_monitor_enabled(getpass.getuser(), "debug_mode")
 
     lib_cls = SUPPORTED_PLATFORMS[args.platform]
+    lib_cls().check_connection()
     _owasp_logger.authz_admin(
         getpass.getuser(), f"initialize_platform:{args.platform}"
     )

@@ -11,7 +11,7 @@ from owasp_logger import OWASPLogger
 from PIL import Image
 from robot.api.deco import keyword, library
 
-from yarf.errors.yarf_errors import YARFExitCode
+from yarf.errors.yarf_errors import YARFConnectionError
 from yarf.lib.wayland import screencopy
 from yarf.loggers.owasp_logger import get_owasp_logger
 from yarf.rf_libraries.libraries.video_input_base import VideoInputBase
@@ -58,14 +58,16 @@ class VideoInput(VideoInputBase):
         Connect to the display.
 
         Raises:
-            SystemExit: if connection fails
+            YARFConnectionError: if connection fails
         """
         try:
             await self._screencopy.connect()
-        except Exception as e:
+        except (ValueError, AssertionError, RuntimeError) as e:
             _owasp_logger.sys_monitor_disabled("system", "mir_video_input")
             _logger.error(f"Failed to connect to Mir VideoInput: {e}")
-            raise SystemExit(YARFExitCode.CONNECTION_ERROR)
+            raise YARFConnectionError(
+                f"Failed to connect to Mir VideoInput: {e}"
+            )
 
     # yarf: nocoverage
     @keyword

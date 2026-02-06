@@ -3,7 +3,7 @@ from unittest.mock import ANY, AsyncMock, call, patch, sentinel
 
 import pytest
 
-from yarf.errors.yarf_errors import YARFExitCode
+from yarf.errors.yarf_errors import YARFConnectionError, YARFExitCode
 from yarf.rf_libraries.libraries.hid_base import Size
 from yarf.rf_libraries.libraries.mir.Hid import Button, Hid
 
@@ -54,13 +54,13 @@ class TestMirHid:
         mock_pointer.connect.assert_awaited_once()
 
     def test_start_test_exception(self, mir_hid, mock_pointer):
-        mock_pointer.connect.side_effect = Exception("Connection failed")
+        mock_pointer.connect.side_effect = ValueError("Connection failed")
 
-        with pytest.raises(SystemExit) as exc_info:
+        with pytest.raises(YARFConnectionError) as exc_info:
             mir_hid._start_test()
 
         mock_pointer.connect.assert_awaited_once()
-        assert exc_info.value.code == YARFExitCode.CONNECTION_ERROR
+        assert exc_info.value.exit_code == YARFExitCode.CONNECTION_ERROR
 
     def test_close(self, mir_hid, mock_pointer):
         mir_hid._close()

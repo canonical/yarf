@@ -134,6 +134,27 @@ class TestPlatformBase:
         platform = TestModule()
         assert platform.get_pkg_path() == test_lib_path
 
+    @patch("yarf.rf_libraries.libraries.DISCOVERY_COMPLETED", False)
+    def test_check_connection_not_implemented(self) -> None:
+        """
+        Test whether the check_connection method returns True and logs a
+        warning when it is not implemented in the subclass.
+        """
+        SUPPORTED_PLATFORMS.clear()
+
+        class TestModule(PlatformBase):
+            def get_pkg_path(self) -> str:
+                pass
+
+        platform = TestModule()
+        with patch(
+            "yarf.rf_libraries.libraries._logger.warning"
+        ) as mock_warning:
+            result = platform.check_connection()
+
+        mock_warning.assert_called_once()
+        assert result is True
+
 
 class TestInit:
     """

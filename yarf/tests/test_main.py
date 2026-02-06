@@ -675,6 +675,7 @@ class TestMain:
         fs.create_file(f"{test_path}/test.robot")
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Vnc"] = Vnc
+        SUPPORTED_PLATFORMS["Vnc"].check_connection = MagicMock()
 
         main.run_robot_suite = Mock()
         main.run_robot_suite.return_value = 0
@@ -709,6 +710,7 @@ class TestMain:
         fs.create_file(f"{test_path}/test.robot")
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Vnc"] = Vnc
+        SUPPORTED_PLATFORMS["Vnc"].check_connection = MagicMock()
 
         main.run_robot_suite = Mock()
         main.run_robot_suite.return_value = 0
@@ -745,6 +747,7 @@ class TestMain:
         fs.create_dir(outdir)
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Vnc"] = Vnc
+        SUPPORTED_PLATFORMS["Vnc"].check_connection = MagicMock()
 
         main.run_robot_suite = Mock()
         main.run_robot_suite.return_value = 0
@@ -776,6 +779,7 @@ class TestMain:
         rf_debug_log_path = outdir / "rfdebug_history.log"
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Vnc"] = Vnc
+        SUPPORTED_PLATFORMS["Vnc"].check_connection = MagicMock()
 
         main.run_interactive_console = Mock()
         main.get_outdir_path = Mock(return_value=outdir)
@@ -805,6 +809,7 @@ class TestMain:
 
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Vnc"] = Vnc
+        SUPPORTED_PLATFORMS["Vnc"].check_connection = MagicMock()
 
         main.run_interactive_console = Mock()
         argv = [""]
