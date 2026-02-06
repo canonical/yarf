@@ -15,6 +15,7 @@ from dataclasses import astuple
 from io import BytesIO
 from types import ModuleType
 from typing import List, Optional, Sequence, Union
+from time import sleep
 
 from PIL import Image, ImageChops, ImageDraw
 from robot.api import logger
@@ -370,6 +371,7 @@ class VideoInputBase(ABC):
                 )
             if text_matches:
                 return text_matches, cropped_image
+            sleep(1)
 
         read_text = await self.read_text(cropped_image)
 
@@ -549,6 +551,7 @@ class VideoInputBase(ABC):
                 # have matched
                 if not accept_any:
                     return matches
+            sleep(1)
 
         if screenshot:
             for template in templates:
