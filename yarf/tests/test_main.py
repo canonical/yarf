@@ -647,13 +647,14 @@ class TestMain:
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Vnc"] = Vnc
 
-        run_interactive_console(
-            mock_console_suite,
-            SUPPORTED_PLATFORMS["Vnc"],
-            outdir,
-            rf_debug_log_path,
-            cli_options,
-        )
+        with patch("yarf.main.get_robot_reserved_settings"):
+            run_interactive_console(
+                mock_console_suite,
+                SUPPORTED_PLATFORMS["Vnc"],
+                outdir,
+                rf_debug_log_path,
+                cli_options,
+            )
         mock_rebot.assert_called_once_with(
             f"{outdir}/output.xml", outputdir=outdir
         )
