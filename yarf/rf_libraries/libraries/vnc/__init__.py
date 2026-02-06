@@ -59,7 +59,7 @@ class Vnc(PlatformBase):
             async with connect(self.host, self.port) as client:
                 _owasp_logger.sys_monitor_enabled("system", "vnc")
                 yield client
-        except ConnectionRefusedError as e:
+        except (ConnectionRefusedError, OSError) as e:
             _owasp_logger.sys_monitor_disabled("system", "vnc")
             _logger.error(
                 f"Failed to connect to VNC server at {self.host}:{self.port} - {e}"
@@ -75,6 +75,9 @@ class Vnc(PlatformBase):
         """
 
         async def perform_check():
+            """
+            Perform the connection check asynchronously.
+            """
             async with self.safe_connect():
                 pass
 
