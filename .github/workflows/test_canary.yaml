@@ -6,7 +6,7 @@ on:
 
 jobs:
   run-canary:
-    uses: ./.github/workflows/canary-test.yaml@canary-test
+    uses: ./.github/workflows/canary-test.yaml
     with:
       TRACK: 'latest'
       CHANNEL: 'edge'
@@ -19,4 +19,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Log Output
-        run: echo '${{ needs.run-canary.outputs.passed }}''
+        run: echo '${{ needs.run-canary.outputs.passed }}'
