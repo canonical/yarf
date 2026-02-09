@@ -76,7 +76,7 @@ jobs:
           CHANNEL: ${{ inputs.CHANNEL }}
         run: |
           set -euo pipefail
-          sudo snap install yarf --devmode --channel="${TRACK}/${CHANNEL}"
+          sudo snap install yarf --channel="${TRACK}/${CHANNEL}"
 
       - name: Check out tests, examples and github workflows
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
@@ -146,7 +146,9 @@ jobs:
           PLATFORM: ${{ matrix.platform }}
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
         run: |
+          dbus-run-session -- gnome-calculator &
           snap run yarf --platform="${PLATFORM}" --output-format=TestSubmissionSchema "${TEST_SUITE_PATH}/canary_test"
+          pkill -f gnome-calculator || true
 
       - name: Download test submission schema and validate
         run: |
@@ -161,19 +163,27 @@ jobs:
         env:
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
         run: |
+          dbus-run-session -- gnome-calculator &
           snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite video_image_test
+          pkill -f gnome-calculator || true
 
       - name: Run Keyword tests - VideoInput text
         env:
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
         run: |
+          dbus-run-session -- eog -f tests/keyword_suite/text/text.png &
           snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite video_text_test
+          pkill -f eog || true
 
       - name: Run Keyword tests - VideoInput Video
         env:
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
         run: |
+          mkdir -p tests/keyword_suite/videos
+          ffmpeg -f lavfi -i testsrc=duration=30:size=1280x720:rate=30 -c:v libx264 tests/keyword_suite/videos/video.mp4
+          dbus-run-session -- mpv --fs tests/keyword_suite/videos/video.mp4 &
           snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite video_video_test
+          pkill -f mpv || true
 
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
@@ -257,7 +267,9 @@ jobs:
         env:
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
         run: |
+          dbus-run-session -- gnome-calculator &
           snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite kvm_test
+          pkill -f gnome-calculator || true
 
       - if: failure()
         name: Collect test results
