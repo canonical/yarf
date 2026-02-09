@@ -1,0 +1,22 @@
+name: Manual Test Caller
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  run-canary:
+    uses: ./.github/workflows/canary-test.yaml@canary-test
+    with:
+      TRACK: 'latest'
+      CHANNEL: 'edge'
+      VER: '3.12.4'
+      ARCH: amd64
+      RUNNER: 'ubuntu-24.04'
+
+  check-results:
+    needs: run-canary
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log Output
+        run: echo '${{ needs.run-canary.outputs.passed }}''

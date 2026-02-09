@@ -76,7 +76,7 @@ jobs:
           CHANNEL: ${{ inputs.CHANNEL }}
         run: |
           set -euo pipefail
-          sudo snap install yarf --channel="${TRACK}/${CHANNEL}"
+          sudo snap install yarf --devmode --channel="${TRACK}/${CHANNEL}"
 
       - name: Check out tests, examples and github workflows
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
