@@ -65,7 +65,8 @@ jobs:
             clang \
             python3-tk \
             tesseract-ocr \
-            mpv
+            mpv \
+            wlrctl
 
           pip install uv check-jsonschema
 
@@ -149,6 +150,7 @@ jobs:
           dbus-run-session -- gnome-calculator &
           snap run yarf --platform="${PLATFORM}" --output-format=TestSubmissionSchema "${TEST_SUITE_PATH}/canary_test"
           pkill -f gnome-calculator || true
+          wlrctl pointer move -1280 -1024
 
       - name: Download test submission schema and validate
         run: |
@@ -166,6 +168,7 @@ jobs:
           dbus-run-session -- gnome-calculator &
           snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite video_image_test
           pkill -f gnome-calculator || true
+          wlrctl pointer move -1280 -1024
 
       - name: Run Keyword tests - VideoInput text
         env:
@@ -174,6 +177,7 @@ jobs:
           dbus-run-session -- eog -f tests/keyword_suite/text/text.png &
           snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite video_text_test
           pkill -f eog || true
+          wlrctl pointer move -1280 -1024
 
       - name: Run Keyword tests - VideoInput Video
         env:
@@ -184,6 +188,7 @@ jobs:
           dbus-run-session -- mpv --fs tests/keyword_suite/videos/video.mp4 &
           snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite video_video_test
           pkill -f mpv || true
+          wlrctl pointer move -1280 -1024
 
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
@@ -262,6 +267,7 @@ jobs:
 
           snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keys Combo Function" 2> ~/wayland.trace
           uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keys Combo Function"
+          wlrctl pointer move -1280 -1024
 
       - name: Run Keyword tests - KVM
         env:
