@@ -38,7 +38,7 @@ class LlmClient:
             TypeError: If unknown parameters are provided.
             ValueError: If parameter values are of incorrect type.
         """
-        config_fiedls = {"model", "server_url", "endpoint", "max_tokens"}
+        config_fields = {"model", "server_url", "endpoint", "max_tokens"}
 
         unknown = set(kwargs) - config_fiedls
         if unknown:
