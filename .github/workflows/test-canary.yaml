@@ -1,0 +1,24 @@
+name: Test Canary Workflow
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-canary-matrix:
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    uses: ./.github/workflows/canary-test.yaml
+    with:
+      TRACK: 'latest'
+      CHANNEL: 'edge'
+      VER: '3.12.6'
+      ARCH: ${{ matrix.arch }}
+      RUNNER: ${{ matrix.runner }}
