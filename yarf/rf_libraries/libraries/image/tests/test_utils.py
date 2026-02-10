@@ -3,7 +3,7 @@ from unittest.mock import ANY, Mock, patch
 from yarf.rf_libraries.libraries.image.utils import log_image
 
 
-class TestRfImageUtils:
+class TestImageUtils:
     @patch("yarf.rf_libraries.libraries.image.utils.to_image")
     @patch("yarf.rf_libraries.libraries.image.utils.to_base64")
     @patch("yarf.rf_libraries.libraries.image.utils.logger")
