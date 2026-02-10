@@ -111,7 +111,7 @@ jobs:
       - name: Check out the rest of the repository (need the full repo because this CI runs YARF from source to verify the test log for HID keyword tests)
         run: git sparse-checkout disable
 
-      - name: Install architecture specific dependencies
+      - name: Build and install architecture specific dependencies
         shell: bash
         env:
           ARCH: ${{ inputs.ARCH }}
