@@ -1,5 +1,6 @@
 """
-This module provides the Robot interface for llm interactions with ollama.
+This module provides the Robot Framework library for interacting with an LLM
+server using OpenAPI.
 """
 
 from typing import Any
@@ -40,11 +41,11 @@ class LlmClient:
         """
         config_fields = {"model", "server_url", "endpoint", "max_tokens"}
 
-        unknown = set(kwargs) - config_fiedls
+        unknown = set(kwargs) - config_fields
         if unknown:
             raise TypeError(
                 f"Unknown argument(s): {', '.join(sorted(unknown))}. "
-                f"Allowed: {', '.join(sorted(config_fiedls))}"
+                f"Allowed: {', '.join(sorted(config_fields))}"
             )
 
         for k, v in kwargs.items():
@@ -53,7 +54,7 @@ class LlmClient:
             field_type = type(getattr(self, k))
             try:
                 setattr(self, k, field_type(v))
-            except ValueError:
+            except (ValueError, TypeError):
                 raise ValueError(
                     f"Invalid value for {k}: {v}. "
                     f"Expected type {field_type.__name__}"

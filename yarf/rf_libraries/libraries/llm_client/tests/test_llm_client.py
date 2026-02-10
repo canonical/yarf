@@ -8,7 +8,9 @@ from yarf.rf_libraries.libraries.llm_client.LlmClient import LlmClient
 
 @pytest.fixture(autouse=True)
 def mock_post():
-    with patch("requests.post") as p:
+    with patch(
+        "yarf.rf_libraries.libraries.llm_client.LlmClient.requests.post"
+    ) as p:
         yield p
 
 

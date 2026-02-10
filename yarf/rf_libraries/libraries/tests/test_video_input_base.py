@@ -678,8 +678,10 @@ class TestVideoInputBase:
             image=image, text="oops", color=color, color_tolerance=1
         )
 
-    @patch("yarf.rf_libraries.libraries.video_input_base.Image", Mock())
-    @patch("yarf.rf_libraries.libraries.video_input_base.log_image", Mock())
+    @patch("yarf.rf_libraries.libraries.video_input_base.Image", new=Mock())
+    @patch(
+        "yarf.rf_libraries.libraries.video_input_base.log_image", new=Mock()
+    )
     @pytest.mark.asyncio
     async def test_find_text_with_color_not_similar(self, stub_videoinput):
         image = Mock()
