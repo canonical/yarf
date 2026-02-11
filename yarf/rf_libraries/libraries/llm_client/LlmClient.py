@@ -17,7 +17,8 @@ from yarf.vendor.RPA.recognition.utils import to_image
 @library
 class LlmClient:
     """
-    This class provides the Robot interface for llm interactions with ollama.
+    This class provides the Robot interface for llm interactions with an LLM
+    server.
     """
 
     # Define the parameters for the LLM client here if needed
