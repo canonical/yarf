@@ -4,35 +4,35 @@ on:
   workflow_call:
     inputs:
       TRACK:
-        description: 'YARF track to promote within (e.g., latest)'
+        description: "YARF track to promote within (e.g., latest)"
         type: string
         required: true
       CHANNEL:
-        description: 'YARF channel to promote from (e.g., stable, candidate, beta, edge)'
+        description: "YARF channel to promote from (e.g., stable, candidate, beta, edge)"
         type: string
         required: true
       VER:
-        description: 'The version of YARF'
+        description: "The version of YARF"
         type: string
         required: true
       ARCH:
-        description: 'The architecture of the snap to promote (e.g., amd64, arm64)'
+        description: "The architecture of the snap to promote (e.g., amd64, arm64)"
         type: string
         required: true
       RUNNER:
-        description: 'The type of machine to run the canary test on'
+        description: "The type of machine to run the canary test on"
         type: string
         required: true
 
     outputs:
       passed:
-        description: 'Whether all matrix canary tests passed'
+        description: "Whether all matrix canary tests passed"
         value: ${{ jobs.summarize.outputs.passed }}
 
 # Read-only access to repository contents for checking out code and uploading test results
 permissions:
   contents: read
-  actions: read   # Required to read workflow run data
+  actions: read # Required to read workflow run data
 
 concurrency:
   group: canary-test-${{ github.ref }}-${{ inputs.TRACK }}-${{ inputs.CHANNEL }}-${{ inputs.ARCH }}
@@ -277,6 +277,14 @@ jobs:
           snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite kvm_test
           pkill -f gnome-calculator || true
 
+      - name: Run Keyword tests - LLM client
+        env:
+          TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
+        run: |
+          python3 ${TEST_SUITE_PATH}/server/llm_stub_server.py  &
+          snap run yarf ${TEST_SUITE_PATH}/keyword_suite -- --suite llm_client_test
+          pkill -f llm_stub_server.py || true
+
       - if: failure()
         name: Collect test results
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
@@ -287,7 +295,7 @@ jobs:
 
       - if: failure() && runner.debug
         name: Setup upterm session (restart with "Enable debug logging" to activate)
-        uses: canonical/action-tmate@a0e8caed3bba2ccb98901a274553bf1284ad96c2  # zizmor: ignore[stale-action-refs]
+        uses: canonical/action-tmate@a0e8caed3bba2ccb98901a274553bf1284ad96c2 # zizmor: ignore[stale-action-refs]
         with:
           limit-access-to-actor: true
 
