@@ -5,7 +5,7 @@ Module for geometry related classes and functions.
 from dataclasses import dataclass
 from typing import Iterator
 
-from yarf.vendor.RPA.core.geometry import Region
+from yarf.vendor.RPA import Region
 
 
 @dataclass

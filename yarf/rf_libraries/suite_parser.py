@@ -50,17 +50,20 @@ class SuiteParser:
             for fl in files:
                 path = Path(f"{root}/{fl}")
                 relative_path = path.relative_to(self.suite_path)
-                if relative_path.parts[0] == SuiteParser.VARIANTS_DIR:
+                is_variant = relative_path.parts[0] == SuiteParser.VARIANTS_DIR
+                if is_variant:
                     self.variants[
                         Path().joinpath(*relative_path.parts[1:])
                     ] = path
-                else:
-                    if SuiteParser.VARIANTS_DIR in relative_path.parts:
-                        _logger.warning(
-                            f"'{SuiteParser.VARIANTS_DIR}' is a special dirname, avoid using it in asset paths."
-                        )
-                    has_robot_ext |= path.suffix == ".robot"
-                    self.assets[relative_path] = path
+                    continue
+
+                if SuiteParser.VARIANTS_DIR in relative_path.parts:
+                    _logger.warning(
+                        f"'{SuiteParser.VARIANTS_DIR}' is a special dirname, "
+                        "avoid using it in asset paths."
+                    )
+                has_robot_ext = has_robot_ext or path.suffix == ".robot"
+                self.assets[relative_path] = path
 
         if not has_robot_ext:
             msg = "Expected at least one <name>.robot file."
@@ -144,21 +147,18 @@ class SuiteParser:
         Returns:
             The list of paths sorted by specificity degree.
         """
-        if variant_str == "" or variant_str is None:
+        if not variant_str:
             return []
 
         variant = Path(variant_str)
-        n = len(variant.parts)
         precedence_list = []
 
         # Create combinations of paths that we want to look into:
-        for i in range(n):
+        for i in range(len(variant.parts)):
             joined_path = Path().joinpath(*variant.parts[i:])
-            # Add current path
+            # Add current path and parent paths
             precedence_list.append(joined_path)
-            # Add parent paths
-            for parent_path in joined_path.parents[:-1]:
-                precedence_list.append(parent_path)
+            precedence_list.extend(joined_path.parents[:-1])
 
         precedence_list.sort(key=lambda x: len(x.parts))
         precedence_list.reverse()
