@@ -423,6 +423,8 @@ def run_interactive_console(
             log file
         cli_options: extra options given by CLI
     """
+    robot_reserved_settings = get_robot_reserved_settings(suite)
+    options = cli_options | robot_reserved_settings
     platform_library_paths = []
     for file_path in Path(lib_cls.get_pkg_path()).glob("*.py"):
         if file_path.name == "__init__.py":
@@ -445,14 +447,14 @@ def run_interactive_console(
         f"CURDIR:{os.getcwd()}",
     ]
     with contextlib.suppress(KeyError):
-        variables.extend(cli_options.pop("variable"))
+        variables.extend(options.pop("variable"))
 
     with robot_in_path(lib_cls.get_pkg_path()):
         suite.run(
             variable=variables,
             outputdir=outdir,
             console="none",
-            **cli_options,
+            **options,
         )
 
     _logger.info(
@@ -488,6 +490,7 @@ def main(argv: Optional[list[str]] = None) -> None:
         _owasp_logger.sys_monitor_enabled(getpass.getuser(), "debug_mode")
 
     lib_cls = SUPPORTED_PLATFORMS[args.platform]
+    lib_cls().check_connection()
     _owasp_logger.authz_admin(
         getpass.getuser(), f"initialize_platform:{args.platform}"
     )

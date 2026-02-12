@@ -94,6 +94,18 @@ class PlatformBase(abc.ABC, metaclass=PlatformMeta):
         """
         raise NotImplementedError
 
+    def check_connection(self) -> Any:
+        """
+        Check if a connection to the platform can be established.
+
+        Returns:
+            True by default
+        """
+        _logger.warning(
+            "check_connection is not implemented for this platform."
+        )
+        return True
+
 
 def import_libraries() -> None:
     """

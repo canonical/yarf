@@ -40,16 +40,13 @@ class TestVncVideoInput:
             m.setenv("VNC_PORT", "1")
             m.setenv("VNC_HOST", "localhost")
             video_input = VideoInput()
-            with patch(
-                "yarf.rf_libraries.libraries.vnc.VideoInput.connect",
-                new=MagicMock(),
-            ) as connect_mock:
-                client_mock = connect_mock.return_value.__aenter__.return_value
-                client_mock.screenshot = AsyncMock()
-                mock_image.from_array.return_value = Image.Image()
-                screenshot = await video_input.grab_screenshot()
-                assert screenshot is not None
-                client_mock.screenshot.assert_called_once
+            video_input.vnc.safe_connect = MagicMock()
+            client_mock = video_input.vnc.safe_connect.return_value.__aenter__.return_value
+            client_mock.screenshot = AsyncMock()
+            mock_image.from_array.return_value = Image.Image()
+            screenshot = await video_input.grab_screenshot()
+            assert screenshot is not None
+            client_mock.screenshot.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_grab_screenshot_timeout(
@@ -61,16 +58,13 @@ class TestVncVideoInput:
             m.setenv("VNC_PORT", "1")
             m.setenv("VNC_HOST", "localhost")
             video_input = VideoInput()
+            video_input.vnc.safe_connect = MagicMock()
             screenshot = None
-            with patch(
-                "yarf.rf_libraries.libraries.vnc.VideoInput.connect",
-                new=MagicMock(),
-            ) as connect_mock:
-                client_mock = connect_mock.return_value.__aenter__.return_value
-                client_mock.screenshot = AsyncMock()
-                client_mock.screenshot.side_effect = TimeoutError
-                with pytest.raises(TimeoutError):
-                    screenshot = await video_input.grab_screenshot()
+            client_mock = video_input.vnc.safe_connect.return_value.__aenter__.return_value
+            client_mock.screenshot = AsyncMock()
+            client_mock.screenshot.side_effect = TimeoutError
+            with pytest.raises(TimeoutError):
+                screenshot = await video_input.grab_screenshot()
             assert screenshot is None
 
     @pytest.mark.asyncio
@@ -83,13 +77,10 @@ class TestVncVideoInput:
             m.setenv("VNC_PORT", "1")
             m.setenv("VNC_HOST", "localhost")
             video_input = VideoInput()
-            with patch(
-                "yarf.rf_libraries.libraries.vnc.VideoInput.connect",
-                new=MagicMock(),
-            ) as connect_mock:
-                client_mock = connect_mock.return_value.__aenter__.return_value
-                client_mock.screenshot = AsyncMock()
-                mock_image.from_array.return_value = Image.Image()
-                screenshot = await video_input.grab_screenshot()
-                assert screenshot is not None
-                client_mock.screenshot.assert_called_once
+            video_input.vnc.safe_connect = MagicMock()
+            client_mock = video_input.vnc.safe_connect.return_value.__aenter__.return_value
+            client_mock.screenshot = AsyncMock()
+            mock_image.from_array.return_value = Image.Image()
+            screenshot = await video_input.grab_screenshot()
+            assert screenshot is not None
+            client_mock.screenshot.assert_called_once()
