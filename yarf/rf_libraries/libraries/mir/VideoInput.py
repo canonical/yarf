@@ -4,19 +4,16 @@ assertions.
 """
 
 import getpass
-import logging
 import os
 
 from owasp_logger import OWASPLogger
 from PIL import Image
 from robot.api.deco import keyword, library
 
-from yarf.errors.yarf_errors import YARFConnectionError
 from yarf.lib.wayland import screencopy
 from yarf.loggers.owasp_logger import get_owasp_logger
 from yarf.rf_libraries.libraries.video_input_base import VideoInputBase
 
-_logger = logging.getLogger(__name__)
 _owasp_logger = OWASPLogger(appid=__name__, logger=get_owasp_logger())
 
 
@@ -56,18 +53,8 @@ class VideoInput(VideoInputBase):
     async def start_video_input(self) -> None:
         """
         Connect to the display.
-
-        Raises:
-            YARFConnectionError: if connection fails
         """
-        try:
-            await self._screencopy.connect()
-        except (ValueError, AssertionError, RuntimeError) as e:
-            _owasp_logger.sys_monitor_disabled("system", "mir_video_input")
-            _logger.error(f"Failed to connect to Mir VideoInput: {e}")
-            raise YARFConnectionError(
-                f"Failed to connect to Mir VideoInput: {e}"
-            )
+        await self._screencopy.connect()
 
     # yarf: nocoverage
     @keyword

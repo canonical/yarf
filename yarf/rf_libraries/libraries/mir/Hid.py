@@ -6,7 +6,6 @@ from typing import Any, Sequence
 from owasp_logger import OWASPLogger
 from robot.api.deco import keyword, library
 
-from yarf.errors.yarf_errors import YARFConnectionError
 from yarf.lib.wayland.virtual_keyboard import VirtualKeyboard
 from yarf.lib.wayland.virtual_pointer import Button, VirtualPointer
 from yarf.loggers.owasp_logger import get_owasp_logger
@@ -127,19 +126,11 @@ class Hid(HidBase):
     async def _connect(self) -> None:
         """
         Connect to the display.
-
-        Raises:
-            YARFConnectionError: if connection fails
         """
         if not self._connected:
-            try:
-                await self._virtual_pointer.connect()
-                await self._virtual_keyboard.connect()
-                self._connected = True
-            except (ValueError, AssertionError, RuntimeError) as e:
-                _owasp_logger.sys_monitor_disabled("system", "mir_hid")
-                _logger.error(f"Failed to connect to Mir HID: {e}")
-                raise YARFConnectionError(f"Failed to connect to Mir HID: {e}")
+            await self._virtual_pointer.connect()
+            await self._virtual_keyboard.connect()
+            self._connected = True
 
     async def _disconnect(self) -> None:
         """
