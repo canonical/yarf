@@ -19,13 +19,8 @@ from unittest.mock import (
 import pytest
 from PIL import Image
 
-from yarf.lib.images.utils import to_RGB
 from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
-from yarf.rf_libraries.libraries.video_input_base import (
-    VideoInputBase,
-    _to_base64,
-    log_image,
-)
+from yarf.rf_libraries.libraries.video_input_base import VideoInputBase
 from yarf.vendor.RPA.core.geometry import Region
 from yarf.vendor.RPA.Images import RGB
 from yarf.vendor.RPA.recognition.templates import ImageNotFoundError
@@ -683,11 +678,12 @@ class TestVideoInputBase:
             image=image, text="oops", color=color, color_tolerance=1
         )
 
-    @patch("yarf.rf_libraries.libraries.video_input_base.Image")
+    @patch("yarf.rf_libraries.libraries.video_input_base.Image", new=Mock())
+    @patch(
+        "yarf.rf_libraries.libraries.video_input_base.log_image", new=Mock()
+    )
     @pytest.mark.asyncio
-    async def test_find_text_with_color_not_similar(
-        self, mock_image, stub_videoinput
-    ):
+    async def test_find_text_with_color_not_similar(self, stub_videoinput):
         image = Mock()
         color = RGB(red=1, green=1, blue=1)
         stub_videoinput.ocr.find = Mock()
@@ -819,32 +815,6 @@ class TestVideoInputBase:
 
         stub_videoinput.stop_video_input.assert_called_once()
         stub_videoinput.start_video_input.assert_called_once()
-
-    def test_to_base64(self):
-        """
-        Test the function converts the image to base64.
-        """
-        image = Mock()
-
-        _to_base64(image)
-        image.convert.assert_called_with("RGB")
-
-        converted_image = image.convert.return_value
-        converted_image.save.assert_called_with(ANY, format="PNG")
-
-    @patch("yarf.rf_libraries.libraries.video_input_base._to_base64")
-    def test_log_image(self, mock_base_64, mock_logger):
-        """
-        Test whether the function converts the images to base64 and add them to
-        the HTML Robot log.
-        """
-
-        image = Mock()
-        log_image(image, "Debug message")
-
-        mock_base_64.assert_called_once_with(image)
-        mock_logger.info.assert_called_once_with(ANY, html=True)
-        assert mock_logger.info.call_args.args[0].startswith("Debug message")
 
     @patch("yarf.rf_libraries.libraries.video_input_base.log_image")
     @patch("yarf.rf_libraries.libraries.video_input_base.Image")
@@ -990,21 +960,9 @@ class TestVideoInputBase:
             with pytest.raises(ValueError):
                 VideoInputBase.get_displays()
 
-    def test_to_RGB(self):
-        """
-        Test the function converts a tuple to RGB.
-        """
-        rgb = to_RGB((10, 20, 30))
-        assert isinstance(rgb, RGB)
-        assert rgb.red == 10
-        assert rgb.green == 20
-        assert rgb.blue == 30
-        assert rgb == to_RGB(rgb)
-        assert rgb == to_RGB("10,20,30")
-        assert to_RGB(None) is None
-
     @pytest.mark.asyncio
-    async def test_log_screenshot(self, stub_videoinput, mock_logger):
+    @patch("yarf.rf_libraries.libraries.video_input_base.log_image")
+    async def test_log_screenshot(self, mock_log_image, stub_videoinput):
         """
         Test that log_screenshot grabs a screenshot and logs it.
         """
@@ -1013,8 +971,7 @@ class TestVideoInputBase:
 
         await stub_videoinput.log_screenshot("Debug message")
 
-        stub_videoinput.grab_screenshot.assert_awaited_once_with()
-        assert mock_logger.info.call_args.args[0].startswith("Debug message")
+        mock_log_image.assert_called_once_with(screenshot, "Debug message")
 
     @pytest.mark.asyncio
     @patch("time.monotonic")

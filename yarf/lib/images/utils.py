@@ -1,6 +1,29 @@
+import base64
+from io import BytesIO
 from typing import Any, Optional
 
+from PIL import Image
+
 from yarf.vendor.RPA.Images import RGB
+
+
+def to_base64(image: Image.Image) -> str:
+    """
+    Convert Pillow Image to b64.
+
+    Args:
+        image: Image to convert
+
+    Returns:
+        Image as base64 string
+    """
+
+    im_file = BytesIO()
+    image = image.convert("RGB")
+    image.save(im_file, format="PNG")
+    im_bytes = im_file.getvalue()  # im_bytes: image in binary format.
+    im_b64 = base64.b64encode(im_bytes)
+    return im_b64.decode()
 
 
 def to_RGB(obj: Any) -> Optional["RGB"]:

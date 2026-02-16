@@ -33,6 +33,7 @@ PACKAGE = {
         Path("yarf/rf_libraries/libraries"),
         Path("yarf/rf_libraries/libraries/vnc"),
         Path("yarf/rf_libraries/libraries/mir"),
+        Path("yarf/rf_libraries/libraries/llm_client"),
         Path("yarf/rf_libraries/interactive_console"),
     ],
     RobotFile.RESOURCE: [

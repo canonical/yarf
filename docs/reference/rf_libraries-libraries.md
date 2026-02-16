@@ -22,5 +22,6 @@ glob: true
 rf_libraries/libraries/index.md
 rf_libraries/libraries/mir/index.md
 rf_libraries/libraries/vnc/index.md
+rf_libraries/libraries/llm_client/index.md
 rf_libraries/interactive_console/index.md
 ```

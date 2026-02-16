@@ -15,3 +15,8 @@ vnc
 Vnc
 yaml
 color_tolerance
+screencopy
+bool
+boolean
+Ollama
+LLM

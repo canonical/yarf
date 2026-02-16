@@ -2,6 +2,7 @@
 Documentation       This suite is a keyword suite to test the following keyword libraries:
 ...                 - VideoInput
 ...                 - Hid
+...                 - LlmClient
 ...                 And the following resources:
 ...                 - kvm
 Metadata            title    Keyword Suite

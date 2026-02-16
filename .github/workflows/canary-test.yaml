@@ -4,35 +4,35 @@ on:
   workflow_call:
     inputs:
       TRACK:
-        description: 'YARF track to promote within (e.g., latest)'
+        description: "YARF track to promote within (e.g., latest)"
         type: string
         required: true
       CHANNEL:
-        description: 'YARF channel to promote from (e.g., stable, candidate, beta, edge)'
+        description: "YARF channel to promote from (e.g., stable, candidate, beta, edge)"
         type: string
         required: true
       VER:
-        description: 'The version of YARF'
+        description: "The version of YARF"
         type: string
         required: true
       ARCH:
-        description: 'The architecture of the snap to promote (e.g., amd64, arm64)'
+        description: "The architecture of the snap to promote (e.g., amd64, arm64)"
         type: string
         required: true
       RUNNER:
-        description: 'The type of machine to run the canary test on'
+        description: "The type of machine to run the canary test on"
         type: string
         required: true
 
     outputs:
       passed:
-        description: 'Whether all matrix canary tests passed'
+        description: "Whether all matrix canary tests passed"
         value: ${{ jobs.summarize.outputs.passed }}
 
 # Read-only access to repository contents for checking out code and uploading test results
 permissions:
   contents: read
-  actions: read   # Required to read workflow run data
+  actions: read # Required to read workflow run data
 
 concurrency:
   group: canary-test-${{ github.ref }}-${{ inputs.TRACK }}-${{ inputs.CHANNEL }}-${{ inputs.ARCH }}
@@ -111,7 +111,7 @@ jobs:
       - name: Check out the rest of the repository (need the full repo because this CI runs YARF from source to verify the test log for HID keyword tests)
         run: git sparse-checkout disable
 
-      - name: Install architecture specific dependencies
+      - name: Build and install architecture specific dependencies
         shell: bash
         env:
           ARCH: ${{ inputs.ARCH }}
@@ -121,7 +121,20 @@ jobs:
           if [ "${ARCH}" == "arm64" ]; then
               sudo apt-get --yes --no-install-recommends install \
               libwayland-dev \
-              wayland-protocols
+              wayland-protocols \
+              scdoc \
+              meson \
+              ninja-build \
+              gcc
+
+              git clone https://git.sr.ht/~brocellous/wlrctl
+              meson setup wlrctl/build wlrctl
+              ninja -C wlrctl/build
+              sudo ninja -C wlrctl/build install
+
+          elif [ "${ARCH}" == "amd64" ]; then
+              sudo apt-get --yes --no-install-recommends install \
+              wlrctl
           fi
 
       - name: Install platform ${{ matrix.platform }} dependencies
@@ -146,7 +159,10 @@ jobs:
           PLATFORM: ${{ matrix.platform }}
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
         run: |
+          dbus-run-session -- gnome-calculator &
           snap run yarf --platform="${PLATFORM}" --output-format=TestSubmissionSchema "${TEST_SUITE_PATH}/canary_test"
+          pkill -f gnome-calculator || true
+          wlrctl pointer move -1280 -1024
 
       - name: Download test submission schema and validate
         run: |
@@ -161,19 +177,30 @@ jobs:
         env:
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
         run: |
+          dbus-run-session -- gnome-calculator &
           snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite video_image_test
+          pkill -f gnome-calculator || true
+          wlrctl pointer move -1280 -1024
 
       - name: Run Keyword tests - VideoInput text
         env:
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
         run: |
+          dbus-run-session -- eog -f tests/keyword_suite/text/text.png &
           snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite video_text_test
+          pkill -f eog || true
+          wlrctl pointer move -1280 -1024
 
       - name: Run Keyword tests - VideoInput Video
         env:
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
         run: |
+          mkdir -p tests/keyword_suite/videos
+          ffmpeg -f lavfi -i testsrc=duration=30:size=1280x720:rate=30 -c:v libx264 tests/keyword_suite/videos/video.mp4
+          dbus-run-session -- mpv --fs tests/keyword_suite/videos/video.mp4 &
           snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite video_video_test
+          pkill -f mpv || true
+          wlrctl pointer move -1280 -1024
 
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
@@ -252,12 +279,23 @@ jobs:
 
           snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keys Combo Function" 2> ~/wayland.trace
           uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keys Combo Function"
+          wlrctl pointer move -1280 -1024
 
       - name: Run Keyword tests - KVM
         env:
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
         run: |
+          dbus-run-session -- gnome-calculator &
           snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite kvm_test
+          pkill -f gnome-calculator || true
+
+      - name: Run Keyword tests - LLM client
+        env:
+          TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
+        run: |
+          python3 ${TEST_SUITE_PATH}/keyword_suite/server/llm_stub_server.py  &
+          snap run yarf ${TEST_SUITE_PATH}/keyword_suite -- --suite llm_client_test
+          pkill -f llm_stub_server.py || true
 
       - if: failure()
         name: Collect test results
@@ -269,7 +307,7 @@ jobs:
 
       - if: failure() && runner.debug
         name: Setup upterm session (restart with "Enable debug logging" to activate)
-        uses: canonical/action-tmate@a0e8caed3bba2ccb98901a274553bf1284ad96c2  # zizmor: ignore[stale-action-refs]
+        uses: canonical/action-tmate@a0e8caed3bba2ccb98901a274553bf1284ad96c2 # zizmor: ignore[stale-action-refs]
         with:
           limit-access-to-actor: true
 

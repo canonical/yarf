@@ -3,6 +3,7 @@ Documentation       Import all platform libraries and start an interactive mode
 
 Library             String
 Library             Interactive.py
+Library             yarf.rf_libraries.libraries.llm_client.LlmClient
 Library             yarf.vendor.robotframework_debug.RobotDebug    repl=${True}
 
 
