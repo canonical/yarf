@@ -86,6 +86,7 @@ repos:
       --pre-summary-newline,
       --make-summary-multi-line,
     ]
+    language_version: python3.13
 
 - repo: https://github.com/econchick/interrogate
   rev: 1.7.0
