@@ -2,6 +2,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from yarf.errors.yarf_errors import YARFConnectionError
 from yarf.rf_libraries.libraries.mir import Mir
 
 
@@ -24,7 +25,7 @@ class TestMir:
         """
 
         mir = Mir()
-        with pytest.raises(SystemExit):
+        with pytest.raises(YARFConnectionError):
             mir.check_connection()
 
     def test_check_connection_success(self) -> None:

@@ -6,6 +6,7 @@ from robot.api.deco import keyword, library
 
 from yarf.rf_libraries.libraries.hid_base import HidBase, Size
 from yarf.rf_libraries.libraries.vnc import Vnc
+from yarf.vendor.asyncvnc import connect
 
 
 class MouseTranslation(IntEnum):
@@ -39,7 +40,7 @@ class Hid(HidBase):
         Args:
             combo: list of keys to press at the same time.
         """
-        async with self.vnc.safe_connect() as client:
+        async with connect(self.vnc.host, self.vnc.port) as client:
             client.mouse.move(self.curr_x, self.curr_y)
             client.keyboard.press(*combo)
 
@@ -51,7 +52,7 @@ class Hid(HidBase):
         Args:
             string: string to type.
         """
-        async with self.vnc.safe_connect() as client:
+        async with connect(self.vnc.host, self.vnc.port) as client:
             client.mouse.move(self.curr_x, self.curr_y)
             for character in string:
                 client.keyboard.write(character)
@@ -73,7 +74,7 @@ class Hid(HidBase):
             raise ValueError(
                 f"Button {button} is not supported for mouse clicks"
             )
-        async with self.vnc.safe_connect() as client:
+        async with connect(self.vnc.host, self.vnc.port) as client:
             client.mouse.move(self.curr_x, self.curr_y)
             with client.mouse.hold(MouseTranslation[button]):
                 sleep(0.005)
@@ -86,7 +87,7 @@ class Hid(HidBase):
         Args:
             button: either LEFT, MIDDLE or RIGHT.
         """
-        async with self.vnc.safe_connect() as client:
+        async with connect(self.vnc.host, self.vnc.port) as client:
             client.mouse.move(self.curr_x, self.curr_y)
             mask = 1 << MouseTranslation[button]
             client.mouse.buttons |= mask
@@ -100,7 +101,7 @@ class Hid(HidBase):
         Args:
             button: either LEFT, MIDDLE or RIGHT.
         """
-        async with self.vnc.safe_connect() as client:
+        async with connect(self.vnc.host, self.vnc.port) as client:
             client.mouse.move(self.curr_x, self.curr_y)
             mask = 1 << MouseTranslation[button]
             client.mouse.buttons &= ~mask
@@ -111,7 +112,7 @@ class Hid(HidBase):
         """
         Release all pointer buttons.
         """
-        async with self.vnc.safe_connect() as client:
+        async with connect(self.vnc.host, self.vnc.port) as client:
             client.mouse.move(self.curr_x, self.curr_y)
             client.mouse.buttons = 0
             client.mouse._write()
@@ -136,7 +137,7 @@ class Hid(HidBase):
         assert 0 <= y <= 1
         abs_x = None
         abs_y = None
-        async with self.vnc.safe_connect() as client:
+        async with connect(self.vnc.host, self.vnc.port) as client:
             abs_x = int(client.video.width * x)
             abs_y = int(client.video.height * y)
             client.mouse.move(abs_x, abs_y)
@@ -144,7 +145,7 @@ class Hid(HidBase):
         self.curr_y = abs_y
 
     async def _get_display_size(self) -> Size:
-        async with self.vnc.safe_connect() as client:
+        async with connect(self.vnc.host, self.vnc.port) as client:
             return Size(
                 client.video.width,
                 client.video.height,

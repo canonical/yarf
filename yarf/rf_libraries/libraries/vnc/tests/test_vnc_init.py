@@ -24,26 +24,11 @@ class TestVnc:
             with pytest.raises(AssertionError):
                 _ = Vnc()
 
-    @pytest.mark.asyncio
-    async def test_safe_connect(self) -> None:
-        vnc = Vnc()
-        with patch("yarf.rf_libraries.libraries.vnc.connect"):
-            async with vnc.safe_connect() as client:
-                assert client is not None
-
-    @pytest.mark.asyncio
-    async def test_safe_connect_error(self) -> None:
-        vnc = Vnc()
-        with pytest.raises(YARFConnectionError) as exc_info:
-            async with vnc.safe_connect():
-                pass
-        assert exc_info.value.exit_code == YARFExitCode.CONNECTION_ERROR
-
     def test_check_connection(self) -> None:
         vnc = Vnc()
-        with pytest.raises(SystemExit) as exc_info:
+        with pytest.raises(YARFConnectionError) as exc_info:
             vnc.check_connection()
-        assert exc_info.value.code == YARFExitCode.CONNECTION_ERROR
+        assert exc_info.value.exit_code == YARFExitCode.CONNECTION_ERROR
 
     def test_check_connection_success(self) -> None:
         vnc = Vnc()

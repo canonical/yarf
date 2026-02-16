@@ -29,7 +29,7 @@ class Mir(PlatformBase):
         Check connection to the display. (Synchronous version)
 
         Raises:
-            SystemExit: with custom exit code if connection fails
+            YARFConnectionError: with custom exit code if connection fails
         """
         display_name = os.environ.get("WAYLAND_DISPLAY", "wayland-0")
 
@@ -43,17 +43,7 @@ class Mir(PlatformBase):
                 await virtual_screen.connect()
                 await virtual_pointer.connect()
                 await virtual_keyboard.connect()
-
-                _owasp_logger.sys_monitor_enabled("system", "mir")
                 can_connect = True
-            except (ValueError, AssertionError, RuntimeError) as e:
-                _owasp_logger.sys_monitor_disabled("system", "mir")
-                _logger.error(
-                    f"Failed to connect to Mir display server at {display_name} - {e}"
-                )
-                raise YARFConnectionError(
-                    f"Failed to connect to Mir display server: {e}"
-                )
             finally:
                 if can_connect:
                     await virtual_screen.disconnect()
@@ -70,6 +60,13 @@ class Mir(PlatformBase):
                 future.result()
             else:
                 loop.run_until_complete(_async_connection_check())
+            _owasp_logger.sys_monitor_enabled("system", "mir")
 
-        except YARFConnectionError as e:
-            raise SystemExit(e.exit_code)
+        except (ValueError, AssertionError, RuntimeError) as e:
+            _owasp_logger.sys_monitor_disabled("system", "mir")
+            _logger.error(
+                f"Failed to connect to Mir display server at {display_name} - {e}"
+            )
+            raise YARFConnectionError(
+                f"Failed to connect to Mir display server: {e}"
+            )

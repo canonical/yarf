@@ -13,6 +13,7 @@ from robot.api import TestSuite as RobotSuite
 from robot.errors import Information
 
 from yarf import main
+from yarf.errors.yarf_errors import YARFConnectionError, YARFExitCode
 from yarf.main import (
     YARF_VERSION,
     _import_listener_from_path,
@@ -694,6 +695,21 @@ class TestMain:
             output_format=None,
         )
         assert os.getenv("YARF_LOG_LEVEL") == "INFO"
+
+    def test_main_connection_error(self) -> None:
+        """
+        Test whether the function raises a YARFConnectionError when the
+        connection to the platform fails.
+        """
+        SUPPORTED_PLATFORMS.clear()
+        SUPPORTED_PLATFORMS["Vnc"] = Vnc
+        SUPPORTED_PLATFORMS["Vnc"].check_connection = MagicMock(
+            side_effect=YARFConnectionError("Connection failed")
+        )
+
+        with pytest.raises(SystemExit) as cm:
+            main.main([])
+        assert cm.value.code == YARFExitCode.CONNECTION_ERROR
 
     @patch("yarf.main.TestSuite.from_file_system")
     def test_main_log_video(
