@@ -293,7 +293,7 @@ jobs:
         env:
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
         run: |
-          python3 ${TEST_SUITE_PATH}/server/llm_stub_server.py  &
+          python3 ${TEST_SUITE_PATH}/keyword_suite/server/llm_stub_server.py  &
           snap run yarf ${TEST_SUITE_PATH}/keyword_suite -- --suite llm_client_test
           pkill -f llm_stub_server.py || true
 
