@@ -58,11 +58,12 @@ jobs:
       run: |
         sudo apt update -qq
         sudo apt install -y \
+          clang \
+          libwayland-dev \
           git-lfs \
+          jq \
           libgl1 \
           libxkbcommon-dev \
-          jq \
-          clang \
           python3-tk \
           tesseract-ocr
 
