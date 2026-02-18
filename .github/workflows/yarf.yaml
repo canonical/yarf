@@ -192,7 +192,7 @@ jobs:
         KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
       run: |
         python3 tests/keyword_suite/server/llm_stub_server.py  &
-        uv run yarf tests/keyword_suite -- --suite llm_client_test --listener ${KEYWORDS_LISTENER_PATH}
+        uv run yarf --platform Mir tests/keyword_suite -- --suite llm_client_test --listener ${KEYWORDS_LISTENER_PATH}
         pkill -f llm_stub_server.py || true
 
     - name: Check Keywords coverage
