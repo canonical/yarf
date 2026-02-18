@@ -14,14 +14,12 @@ ${RESOURCES}                None
 
 *** Test Cases ***
 Import Platform Libraries
-    [Tags]                  robot:exit-on-error
     @{libraries}=           Split String            ${PLATFORM_LIBRARIES}                           ,
     FOR    ${lib_path}    IN    @{libraries}
         Import Library          ${lib_path}
     END
 
 Import Resources
-    [Tags]                  robot:exit-on-error
     @{resources}=           Split String            ${RESOURCES}            ,
     FOR    ${res_path}    IN    @{resources}
         Import Resource         ${res_path}
