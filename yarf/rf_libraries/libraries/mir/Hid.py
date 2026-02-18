@@ -1,12 +1,18 @@
 import asyncio
+import logging
 import os
 from typing import Any, Sequence
 
+from owasp_logger import OWASPLogger
 from robot.api.deco import keyword, library
 
 from yarf.lib.wayland.virtual_keyboard import VirtualKeyboard
 from yarf.lib.wayland.virtual_pointer import Button, VirtualPointer
+from yarf.loggers.owasp_logger import get_owasp_logger
 from yarf.rf_libraries.libraries.hid_base import HidBase, Size
+
+_logger = logging.getLogger(__name__)
+_owasp_logger = OWASPLogger(appid=__name__, logger=get_owasp_logger())
 
 
 @library

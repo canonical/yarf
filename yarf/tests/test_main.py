@@ -13,6 +13,7 @@ from robot.api import TestSuite as RobotSuite
 from robot.errors import Information
 
 from yarf import main
+from yarf.errors.yarf_errors import YARFConnectionError, YARFExitCode
 from yarf.main import (
     YARF_VERSION,
     _import_listener_from_path,
@@ -647,13 +648,14 @@ class TestMain:
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Vnc"] = Vnc
 
-        run_interactive_console(
-            mock_console_suite,
-            SUPPORTED_PLATFORMS["Vnc"],
-            outdir,
-            rf_debug_log_path,
-            cli_options,
-        )
+        with patch("yarf.main.get_robot_reserved_settings"):
+            run_interactive_console(
+                mock_console_suite,
+                SUPPORTED_PLATFORMS["Vnc"],
+                outdir,
+                rf_debug_log_path,
+                cli_options,
+            )
         mock_rebot.assert_called_once_with(
             f"{outdir}/output.xml", outputdir=outdir
         )
@@ -674,6 +676,7 @@ class TestMain:
         fs.create_file(f"{test_path}/test.robot")
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Vnc"] = Vnc
+        SUPPORTED_PLATFORMS["Vnc"].check_connection = MagicMock()
 
         main.run_robot_suite = Mock()
         main.run_robot_suite.return_value = 0
@@ -693,6 +696,21 @@ class TestMain:
         )
         assert os.getenv("YARF_LOG_LEVEL") == "INFO"
 
+    def test_main_connection_error(self) -> None:
+        """
+        Test whether the function raises a YARFConnectionError when the
+        connection to the platform fails.
+        """
+        SUPPORTED_PLATFORMS.clear()
+        SUPPORTED_PLATFORMS["Vnc"] = Vnc
+        SUPPORTED_PLATFORMS["Vnc"].check_connection = MagicMock(
+            side_effect=YARFConnectionError("Connection failed")
+        )
+
+        with pytest.raises(SystemExit) as cm:
+            main.main([])
+        assert cm.value.code == YARFExitCode.CONNECTION_ERROR
+
     @patch("yarf.main.TestSuite.from_file_system")
     def test_main_log_video(
         self,
@@ -708,6 +726,7 @@ class TestMain:
         fs.create_file(f"{test_path}/test.robot")
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Vnc"] = Vnc
+        SUPPORTED_PLATFORMS["Vnc"].check_connection = MagicMock()
 
         main.run_robot_suite = Mock()
         main.run_robot_suite.return_value = 0
@@ -744,6 +763,7 @@ class TestMain:
         fs.create_dir(outdir)
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Vnc"] = Vnc
+        SUPPORTED_PLATFORMS["Vnc"].check_connection = MagicMock()
 
         main.run_robot_suite = Mock()
         main.run_robot_suite.return_value = 0
@@ -775,6 +795,7 @@ class TestMain:
         rf_debug_log_path = outdir / "rfdebug_history.log"
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Vnc"] = Vnc
+        SUPPORTED_PLATFORMS["Vnc"].check_connection = MagicMock()
 
         main.run_interactive_console = Mock()
         main.get_outdir_path = Mock(return_value=outdir)
@@ -804,6 +825,7 @@ class TestMain:
 
         SUPPORTED_PLATFORMS.clear()
         SUPPORTED_PLATFORMS["Vnc"] = Vnc
+        SUPPORTED_PLATFORMS["Vnc"].check_connection = MagicMock()
 
         main.run_interactive_console = Mock()
         argv = [""]

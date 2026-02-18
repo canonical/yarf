@@ -22,6 +22,7 @@ from robot.run import RobotFramework
 from RobotStackTracer import RobotStackTracer
 
 from yarf import LABEL_PREFIX
+from yarf.errors.yarf_errors import YARFConnectionError
 from yarf.loggers.owasp_logger import get_owasp_logger
 from yarf.output import OUTPUT_FORMATS, get_outdir_path, output_converter
 from yarf.rf_libraries import robot_in_path
@@ -488,6 +489,15 @@ def main(argv: Optional[list[str]] = None) -> None:
         _owasp_logger.sys_monitor_enabled(getpass.getuser(), "debug_mode")
 
     lib_cls = SUPPORTED_PLATFORMS[args.platform]
+
+    try:
+        lib_cls().check_connection()
+    except YARFConnectionError as e:
+        _logger.error(
+            f"Connection check failed for platform {args.platform}: {e}"
+        )
+        sys.exit(e.exit_code)
+
     _owasp_logger.authz_admin(
         getpass.getuser(), f"initialize_platform:{args.platform}"
     )

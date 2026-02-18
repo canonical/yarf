@@ -1,8 +1,18 @@
+import asyncio
+import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from owasp_logger import OWASPLogger
+
+from yarf.errors.yarf_errors import YARFConnectionError
+from yarf.loggers.owasp_logger import get_owasp_logger
 from yarf.rf_libraries.libraries import PlatformBase
+from yarf.vendor.asyncvnc import connect
+
+_logger = logging.getLogger(__name__)
+_owasp_logger = OWASPLogger(appid=__name__, logger=get_owasp_logger())
 
 
 @dataclass
@@ -30,3 +40,32 @@ class Vnc(PlatformBase):
             str: path to the current package
         """
         return str(Path(__file__).parent)
+
+    def check_connection(self) -> None:
+        """
+        Check if a connection to the VNC server can be established.
+
+        Raises:
+            YARFConnectionError: if connection fails
+        """
+
+        async def perform_check():
+            """
+            Perform the connection check asynchronously.
+            """
+            async with connect(self.host, self.port):
+                pass
+
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # If a loop is already running, we run the task and wait
+                future = asyncio.run_coroutine_threadsafe(
+                    perform_check(), loop
+                )
+                future.result()
+            else:
+                loop.run_until_complete(perform_check())
+
+        except (ConnectionRefusedError, OSError) as e:
+            raise YARFConnectionError(f"Failed to connect to VNC server: {e}")

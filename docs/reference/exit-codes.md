@@ -8,5 +8,7 @@ YARF inherits some of the [exit codes from Robot Framework][rf-exit-codes]. In t
 | 1 - 249   | Number of failed tests or tasks. |
 | 250       | 250 or more failures.            |
 | 252       | Invalid test data.               |
+| 253       | Connection Error                 |
+| 255       | Unknown Error                    |
 
 [rf-exit-codes]: https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html#return-codes
