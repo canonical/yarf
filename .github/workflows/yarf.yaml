@@ -47,7 +47,7 @@ jobs:
     - name: Install uv
       run: pip install uv
     - name: Sync Python dependencies
-      run: uv sync
+      run: uv sync --python 3.10
 
   test-noble:
     name: Test on Noble
@@ -58,11 +58,12 @@ jobs:
       run: |
         sudo apt update -qq
         sudo apt install -y \
+          clang \
+          libwayland-dev \
           git-lfs \
+          jq \
           libgl1 \
           libxkbcommon-dev \
-          jq \
-          clang \
           python3-tk \
           tesseract-ocr
 
