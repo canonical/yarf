@@ -113,20 +113,17 @@ class TestVncHid:
                 new=MagicMock(),
             ) as connect_mock:
                 client_mock = connect_mock.return_value.__aenter__.return_value
-                client_mock.mouse._write = MagicMock()
+                client_mock.mouse.press = MagicMock()
                 client_mock.mouse.move = MagicMock()
-                button = "LEFT"
-                await vnc_hid.press_pointer_button(button)
-                client_mock.mouse._write.assert_called_once
-                client_mock.mouse.move.assert_called_once
-                button = "RIGHT"
-                await vnc_hid.press_pointer_button(button)
-                client_mock.mouse._write.assert_called_once
-                client_mock.mouse.move.assert_called_once
-                button = "MIDDLE"
-                await vnc_hid.press_pointer_button(button)
-                client_mock.mouse._write.assert_called_once
-                client_mock.mouse.move.assert_called_once
+                for button in ["LEFT", "RIGHT", "MIDDLE"]:
+                    await vnc_hid.press_pointer_button(button)
+                client_mock.mouse.press.assert_has_calls(
+                    [
+                        call(MouseTranslation[b])
+                        for b in ["LEFT", "RIGHT", "MIDDLE"]
+                    ],
+                    any_order=False,
+                )
 
     @pytest.mark.asyncio
     async def test_release_pointer_button(self, monkeypatch, vnc_hid):
@@ -139,19 +136,16 @@ class TestVncHid:
             ) as connect_mock:
                 client_mock = connect_mock.return_value.__aenter__.return_value
                 client_mock.mouse.move = MagicMock()
-                client_mock.mouse._write = MagicMock()
-                button = "LEFT"
-                await vnc_hid.release_pointer_button(button)
-                client_mock.mouse.move.assert_called_with(0, 0)
-                client_mock.mouse._write.assert_called()
-                button = "RIGHT"
-                await vnc_hid.release_pointer_button(button)
-                client_mock.mouse.move.assert_called_with(0, 0)
-                client_mock.mouse._write.assert_called()
-                button = "MIDDLE"
-                await vnc_hid.release_pointer_button(button)
-                client_mock.mouse.move.assert_called_with(0, 0)
-                client_mock.mouse._write.assert_called()
+                client_mock.mouse.release = MagicMock()
+                for button in ["LEFT", "RIGHT", "MIDDLE"]:
+                    await vnc_hid.release_pointer_button(button)
+                client_mock.mouse.release.assert_has_calls(
+                    [
+                        call(MouseTranslation[b])
+                        for b in ["LEFT", "RIGHT", "MIDDLE"]
+                    ],
+                    any_order=False,
+                )
 
     @pytest.mark.asyncio
     async def test_release_pointer_buttons(self, monkeypatch, vnc_hid):
@@ -164,10 +158,13 @@ class TestVncHid:
             ) as connect_mock:
                 client_mock = connect_mock.return_value.__aenter__.return_value
                 client_mock.mouse.move = MagicMock()
-                client_mock.mouse._write = MagicMock()
+                client_mock.mouse.release = MagicMock()
                 await vnc_hid.release_pointer_buttons()
-                client_mock.mouse.move.assert_called_once()
-                client_mock.mouse._write.assert_called_once()
+                client_mock.mouse.move.assert_called_once_with(0, 0)
+                client_mock.mouse.release.assert_has_calls(
+                    [call(button) for button in MouseTranslation],
+                    any_order=False,
+                )
 
     @pytest.mark.asyncio
     async def test_move_pointer(self, monkeypatch, vnc_hid):
