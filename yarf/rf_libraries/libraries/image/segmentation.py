@@ -35,14 +35,17 @@ class SegmentationTool:
             True if colors are similar within tolerance, False otherwise
         """
         for i in (0, 2):  # ignore saturation
-            max = int(color1[i] + (255.0 * tolerance / 100.0))
-            min = int(color1[i] - (255.0 * tolerance / 100.0))
+            upper_bound = int(color1[i] + (255.0 * tolerance / 100.0))
+            lower_bound = int(color1[i] - (255.0 * tolerance / 100.0))
             logger.info(
                 "Checking if {}={} is between {} and {}".format(
-                    ("H" if i == 0 else "V"), color2[i], min, max
+                    ("H" if i == 0 else "V"),
+                    color2[i],
+                    lower_bound,
+                    upper_bound,
                 )
             )
-            if min < color2[i] < max:
+            if lower_bound < color2[i] < upper_bound:
                 # in the right scale
                 continue
             else:
@@ -104,9 +107,9 @@ class SegmentationTool:
 
         # Safety fallback: if mask ended empty, treat darkest 30% as text
         if cv2.countNonZero(text_mask_inner) == 0:
-            V = image[:, :, 2]
-            thr = np.percentile(V, 30)
-            text_mask_inner = (V <= thr).astype(np.uint8) * 255
+            v_channel = image[:, :, 2]
+            thr = np.percentile(v_channel, 30)
+            text_mask_inner = (v_channel <= thr).astype(np.uint8) * 255
             text_mask_inner = self.postprocess_mask(text_mask_inner)
 
         # Compute mean HSV only where mask=255
@@ -154,6 +157,94 @@ class SegmentationTool:
                 keep[labels == i] = 255
         return keep
 
+    def _build_kmeans_masks(
+        self, lab: np.ndarray, h: int, w: int
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Build candidate text masks using K-means clustering on Lab color space.
+
+        Args:
+            lab: Input image in Lab color space
+            h: Image height in pixels
+            w: Image width in pixels
+
+        Returns:
+            A tuple of two binary masks corresponding to the two k-means clusters
+        """
+        lab_pixels = lab.reshape((-1, 3)).astype(np.float32)
+        criteria = (
+            cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER,
+            20,
+            0.5,
+        )
+        _ret, labels, _centers = cv2.kmeans(
+            lab_pixels, 2, None, criteria, 3, cv2.KMEANS_PP_CENTERS
+        )
+        labels = labels.reshape((h, w))
+        mask_k0 = self.postprocess_mask((labels == 0).astype(np.uint8) * 255)
+        mask_k1 = self.postprocess_mask((labels == 1).astype(np.uint8) * 255)
+        return mask_k0, mask_k1
+
+    def _build_contrast_mask(
+        self, gray: np.ndarray, hsv: np.ndarray
+    ) -> np.ndarray:
+        """
+        Build a contrast-based text mask combining dark and saturated regions.
+
+        Args:
+            gray: Grayscale image as numpy array
+            hsv: Image in HSV color space as numpy array
+
+        Returns:
+            Binary mask highlighting dark or highly saturated regions
+        """
+        _thr, otsu = cv2.threshold(
+            gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+        )
+        dark_text = cv2.bitwise_not(otsu)
+        saturation = hsv[:, :, 1]
+        s_med = int(np.median(saturation))
+        sat_text = (saturation > min(s_med + 20, 255)).astype(np.uint8) * 255
+        return self.postprocess_mask(cv2.bitwise_or(dark_text, sat_text))
+
+    def _select_best_mask(
+        self,
+        candidates: list[np.ndarray],
+        h: int,
+        w: int,
+        edges: np.ndarray,
+    ) -> np.ndarray:
+        """
+        Score candidate masks by edge density and select the best one.
+
+        Args:
+            candidates: List of binary mask arrays to evaluate
+            h: Image height in pixels
+            w: Image width in pixels
+            edges: Edge map used to score mask quality
+
+        Returns:
+            The candidate mask with the highest edge-density score
+        """
+
+        def score(mask):
+            area = max(cv2.countNonZero(mask), 1)
+            edge_overlap = cv2.countNonZero(cv2.bitwise_and(edges, mask))
+            frac = area / float(h * w)
+            penalty = 0.35 if frac < 0.005 or frac > 0.65 else 1.0
+            return (edge_overlap / area) * penalty
+
+        scored = sorted(
+            ((m, score(m)) for m in candidates),
+            key=lambda x: x[1],
+            reverse=True,
+        )
+        best_mask, _ = scored[0]
+        frac_best = cv2.countNonZero(best_mask) / float(h * w)
+        if (frac_best < 0.003 or frac_best > 0.80) and len(scored) > 1:
+            best_mask, _ = scored[1]
+        return best_mask
+
     def segment_text_mask(self, bgr_roi: np.ndarray):
         """
         Returns a binary mask (uint8 0/255) of likely text strokes within ROI.
@@ -178,71 +269,25 @@ class SegmentationTool:
         hsv = cv2.cvtColor(bgr_blur, cv2.COLOR_BGR2HSV)
         gray = cv2.cvtColor(bgr_blur, cv2.COLOR_BGR2GRAY)
 
-        # --- Candidate A: K=2 k-means on Lab
-        Z = lab.reshape((-1, 3)).astype(np.float32)
-        criteria = (
-            cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER,
-            20,
-            0.5,
-        )
-        K = 2
-        _ret, labels, centers = cv2.kmeans(
-            Z, K, None, criteria, 3, cv2.KMEANS_PP_CENTERS
-        )
-        labels = labels.reshape((h, w))
+        mask_k0, mask_k1 = self._build_kmeans_masks(lab, h, w)
+        mask_contrast = self._build_contrast_mask(gray, hsv)
 
-        # produce two masks (cluster 0 and 1)
-        mask_k0 = (labels == 0).astype(np.uint8) * 255
-        mask_k1 = (labels == 1).astype(np.uint8) * 255
-
-        # heuristic: text is often darker OR more saturated/contrasty
-        # we’ll compute edge-density score for each and pick the better one anyway.
-        mask_k0 = self.postprocess_mask(mask_k0)
-        mask_k1 = self.postprocess_mask(mask_k1)
-
-        # --- Candidate B: contrast-based mask (dark text OR saturated colored text)
-        # Otsu for dark text
-        _thr, otsu = cv2.threshold(
-            gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
-        )
-        dark_text = cv2.bitwise_not(otsu)  # dark -> white strokes
-        # Saturated text (colored glyphs)
-        S = hsv[:, :, 1]
-        s_med = int(np.median(S))
-        sat_text = (S > min(s_med + 20, 255)).astype(np.uint8) * 255
-
-        mask_contrast = cv2.bitwise_or(dark_text, sat_text)
-        mask_contrast = self.postprocess_mask(mask_contrast)
-
-        # --- Score masks by edge density per area
+        # Score masks by edge density per area
         edges = cv2.Canny(gray, 50, 150)
-
-        def score(mask):
-            area = max(cv2.countNonZero(mask), 1)
-            edge_overlap = cv2.countNonZero(cv2.bitwise_and(edges, mask))
-            # penalize masks that are too tiny or too huge
-            frac = area / float(h * w)
-            penalty = 1.0
-            if frac < 0.005 or frac > 0.65:
-                penalty = 0.35
-            return (edge_overlap / area) * penalty
-
-        candidates = [
-            ("k0", mask_k0, score(mask_k0)),
-            ("k1", mask_k1, score(mask_k1)),
-            ("contrast", mask_contrast, score(mask_contrast)),
-        ]
-        candidates.sort(key=lambda x: x[2], reverse=True)
-        best_name, best_mask, best_score = candidates[0]
-
-        # If best mask is suspiciously small/large, fall back to the next best
-        frac_best = cv2.countNonZero(best_mask) / float(h * w)
-        if (frac_best < 0.003 or frac_best > 0.80) and len(candidates) > 1:
-            best_name, best_mask, best_score = candidates[1]
-
-        return best_mask
+        return self._select_best_mask(
+            [mask_k0, mask_k1, mask_contrast], h, w, edges
+        )
 
     def convert_rgb_to_hsv(self, color: RGB):
+        """
+        Convert an RGB color to HSV color space.
+
+        Args:
+            color: Input color as an RGB dataclass instance
+
+        Returns:
+            HSV representation of the color as a numpy array
+        """
         return cv2.cvtColor(
             np.array([[astuple(color)]], dtype=np.uint8), cv2.COLOR_RGB2HSV
         )[0, 0]
