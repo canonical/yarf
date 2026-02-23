@@ -1,3 +1,7 @@
+"""
+Image segmentation utilities for matching text regions by color.
+"""
+
 from dataclasses import astuple
 
 import cv2

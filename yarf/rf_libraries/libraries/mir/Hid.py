@@ -1,3 +1,7 @@
+"""
+Robot Framework HID keyword library for Mir-based interactions.
+"""
+
 import asyncio
 import logging
 import os

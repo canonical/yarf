@@ -1,3 +1,7 @@
+"""
+YARF-specific exception classes and exit codes.
+"""
+
 from enum import IntEnum
 
 

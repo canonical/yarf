@@ -1,3 +1,7 @@
+"""
+Robot Framework HID keyword library for VNC-based interactions.
+"""
+
 from enum import IntEnum
 from time import sleep
 from typing import Sequence

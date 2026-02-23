@@ -1,3 +1,7 @@
+"""
+Region-of-interest selector tool for the YARF interactive console.
+"""
+
 import contextlib
 import tkinter as tk
 from pathlib import Path

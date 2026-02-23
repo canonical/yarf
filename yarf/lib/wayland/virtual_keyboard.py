@@ -1,3 +1,7 @@
+"""
+Wayland virtual keyboard protocol client implementation.
+"""
+
 import os
 import warnings
 from collections import namedtuple

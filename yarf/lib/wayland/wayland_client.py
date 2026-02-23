@@ -1,3 +1,7 @@
+"""
+Abstract base class and helpers for Wayland protocol clients.
+"""
+
 import asyncio
 import time
 from abc import ABC, abstractmethod

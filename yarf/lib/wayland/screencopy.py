@@ -1,3 +1,7 @@
+"""
+Wayland screencopy protocol client implementation.
+"""
+
 import asyncio
 import mmap
 import os

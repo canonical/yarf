@@ -1,0 +1,3 @@
+"""
+YARF interactive console package.
+"""
