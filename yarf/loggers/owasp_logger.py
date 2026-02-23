@@ -1,3 +1,7 @@
+"""
+OWASP-compliant logger configuration for YARF.
+"""
+
 import json
 import logging
 import os

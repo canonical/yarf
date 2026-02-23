@@ -1,3 +1,7 @@
+"""
+Platform library discovery, registration, and plugin loading for YARF.
+"""
+
 import abc
 import importlib
 import importlib.util

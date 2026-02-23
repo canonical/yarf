@@ -1,3 +1,7 @@
+"""
+Robot Framework test suite parsing and execution utilities.
+"""
+
 import logging
 import os
 import shutil

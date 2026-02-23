@@ -1,3 +1,7 @@
+"""
+Wayland virtual pointer protocol client implementation.
+"""
+
 from enum import IntEnum
 from typing import List, Optional
 

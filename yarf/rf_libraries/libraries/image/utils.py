@@ -1,3 +1,7 @@
+"""
+Image logging keyword for Robot Framework.
+"""
+
 from PIL import Image
 from robot.api import logger
 from robot.api.deco import keyword

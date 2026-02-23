@@ -1,3 +1,5 @@
+"""Wayland protocol bindings re-exported for package-level access."""
+
 from .wayland import *  # noqa: F401,F403
 from .virtual_keyboard_unstable_v1 import *  # noqa: F401,F403
 from .wlr_screencopy_unstable_v1 import *  # noqa: F401,F403

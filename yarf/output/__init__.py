@@ -1,3 +1,7 @@
+"""
+Output format converter base classes and registration for YARF.
+"""
+
 import abc
 import importlib
 import json

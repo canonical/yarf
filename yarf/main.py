@@ -1,3 +1,7 @@
+"""
+YARF command-line entry point.
+"""
+
 import contextlib
 import getpass
 import importlib.util

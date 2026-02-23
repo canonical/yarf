@@ -1,3 +1,7 @@
+"""
+Mir Wayland display server platform implementation for YARF.
+"""
+
 import asyncio
 import logging
 import os

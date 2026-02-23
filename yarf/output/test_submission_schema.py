@@ -1,3 +1,7 @@
+"""
+Test submission output schema and converter for YARF.
+"""
+
 import os
 import re
 import xml.etree.ElementTree as ET
