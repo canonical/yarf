@@ -14,6 +14,15 @@ from yarf.vendor.asyncvnc import connect
 
 
 class MouseTranslation(IntEnum):
+    """
+    Maps human-readable button names to their VNC bitmask positions.
+
+    Attributes:
+        LEFT: Left mouse button (bitmask position 0).
+        MIDDLE: Middle mouse button (bitmask position 1).
+        RIGHT: Right mouse button (bitmask position 2).
+    """
+
     LEFT = 0
     MIDDLE = 1
     RIGHT = 2
@@ -93,9 +102,7 @@ class Hid(HidBase):
         """
         async with connect(self.vnc.host, self.vnc.port) as client:
             client.mouse.move(self.curr_x, self.curr_y)
-            mask = 1 << MouseTranslation[button]
-            client.mouse.buttons |= mask
-            client.mouse._write()
+            client.mouse.press(MouseTranslation[button])
 
     @keyword
     async def release_pointer_button(self, button: str) -> None:
@@ -107,9 +114,7 @@ class Hid(HidBase):
         """
         async with connect(self.vnc.host, self.vnc.port) as client:
             client.mouse.move(self.curr_x, self.curr_y)
-            mask = 1 << MouseTranslation[button]
-            client.mouse.buttons &= ~mask
-            client.mouse._write()
+            client.mouse.release(MouseTranslation[button])
 
     @keyword
     async def release_pointer_buttons(self) -> None:
@@ -118,8 +123,8 @@ class Hid(HidBase):
         """
         async with connect(self.vnc.host, self.vnc.port) as client:
             client.mouse.move(self.curr_x, self.curr_y)
-            client.mouse.buttons = 0
-            client.mouse._write()
+            for button in MouseTranslation:
+                client.mouse.release(button)
 
     @keyword
     async def _move_pointer(
