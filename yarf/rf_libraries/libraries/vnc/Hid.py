@@ -123,8 +123,7 @@ class Hid(HidBase):
         """
         async with connect(self.vnc.host, self.vnc.port) as client:
             client.mouse.move(self.curr_x, self.curr_y)
-            for button in MouseTranslation:
-                client.mouse.release(button)
+            client.mouse.release_all()
 
     @keyword
     async def _move_pointer(

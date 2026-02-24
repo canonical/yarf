@@ -213,6 +213,14 @@ class Mouse:
         self.buttons &= ~(1 << button)
         self._write()
 
+    def release_all(self):
+        """
+        Releases all mouse buttons at once.
+        """
+
+        self.buttons = 0
+        self._write()
+
     @contextmanager
     def hold(self, button: int = 0):
         """
