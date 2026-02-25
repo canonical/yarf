@@ -21,7 +21,7 @@ Chat Completions API.
 
 **Inference snaps** are Canonical’s way of packaging AI models as snaps that are
 tuned for efficient local inference. Each snap automatically detects your
-machine’s available hardware (CPU/GPU/NPU) and selects compatible runtimes and
+machine’s available hardware (CPU/GPU/NPU) and selects a compatible runtime and
 model optimizations.
 
 They are an easy way to run an OpenAI-compatible LLM endpoint locally, which
