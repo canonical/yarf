@@ -27,7 +27,7 @@ Switch model
     Should Contain          ${out}                  This is my prompt
 
 Switch Server port
-    Configure Llm Client    server_url=http://127.0.0.1:11435
+    Configure Llm Client    server_url=http://127.0.0.1:11435/v1
     ${out}=                 Prompt Llm              This is my prompt
 
     # Check that the server echoes with the right parameters
