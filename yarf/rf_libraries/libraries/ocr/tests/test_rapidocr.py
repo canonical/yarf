@@ -123,9 +123,13 @@ class TestRapidOCR:
                 Quad([[0, 0], [1, 0], [1, 1], [0, 1]]), "Hello World", 90
             ),
         ]
-        result = RapidOCRReader.get_matches(
-            mock_reader, items, "Hello World", 80, 80, False
-        )
+        with patch(
+            "yarf.rf_libraries.libraries.video_input_base.BuiltIn.get_variable_value"
+        ) as mock_get_variable_value:
+            mock_get_variable_value.return_value = 80
+            result = RapidOCRReader.get_matches(
+                mock_reader, items, "Hello World", False
+            )
 
         assert result == [
             {
@@ -140,9 +144,13 @@ class TestRapidOCR:
         items = [
             OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Hello World", 90),
         ]
-        result = RapidOCRReader.get_matches(
-            mock_reader, items, "Hello", 80, 80, True
-        )
+        with patch(
+            "yarf.rf_libraries.libraries.video_input_base.BuiltIn.get_variable_value"
+        ) as mock_get_variable_value:
+            mock_get_variable_value.return_value = 80
+            result = RapidOCRReader.get_matches(
+                mock_reader, items, "Hello", True
+            )
 
         assert result == [
             {
@@ -157,9 +165,13 @@ class TestRapidOCR:
         items = [
             OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Hello World", 90),
         ]
-        result = RapidOCRReader.get_matches(
-            mock_reader, items, "Hello", 80, 90, False
-        )
+        with patch(
+            "yarf.rf_libraries.libraries.video_input_base.BuiltIn.get_variable_value"
+        ) as mock_get_variable_value:
+            mock_get_variable_value.return_value = 80
+            result = RapidOCRReader.get_matches(
+                mock_reader, items, "Hello", False
+            )
 
         assert result == []
 
@@ -177,9 +189,13 @@ class TestRapidOCR:
             OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to Trash", 90),
             OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to ...", 90),
         ]
-        result = RapidOCRReader.get_matches(
-            mock_reader, items, input_text, 80, 80, True
-        )
+        with patch(
+            "yarf.rf_libraries.libraries.video_input_base.BuiltIn.get_variable_value"
+        ) as mock_get_variable_value:
+            mock_get_variable_value.return_value = 80
+            result = RapidOCRReader.get_matches(
+                mock_reader, items, input_text, True
+            )
         for text in result_text:
             assert {
                 "text": text,
@@ -204,9 +220,13 @@ class TestRapidOCR:
             OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to Trash", 90),
             OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to ...", 90),
         ]
-        result = RapidOCRReader.get_matches(
-            mock_reader, items, input_text, 90, 80, True
-        )
+        with patch(
+            "yarf.rf_libraries.libraries.video_input_base.BuiltIn.get_variable_value"
+        ) as mock_get_variable_value:
+            mock_get_variable_value.return_value = 90
+            result = RapidOCRReader.get_matches(
+                mock_reader, items, input_text, True
+            )
         assert len(result) == 1
         assert result == [
             {
@@ -230,9 +250,13 @@ class TestRapidOCR:
                 90,
             ),
         ]
-        result = RapidOCRReader.get_matches(
-            mock_reader, items, "Move to Trash!", 80, 80, True
-        )
+        with patch(
+            "yarf.rf_libraries.libraries.video_input_base.BuiltIn.get_variable_value"
+        ) as mock_get_variable_value:
+            mock_get_variable_value.return_value = 80
+            result = RapidOCRReader.get_matches(
+                mock_reader, items, "Move to Trash!", True
+            )
 
         assert result[0]["text"] == "Move to Trash"
         assert result[0]["region"] == Region(0, 0, 1, 1)
