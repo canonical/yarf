@@ -19,8 +19,22 @@ Chat Completions API.
 
 ### Option 1: Inference Snap
 
+**Inference snaps** are Canonical’s way of packaging AI models as snaps that are
+tuned for efficient local inference. Each snap automatically detects your
+machine’s available hardware (CPU/GPU/NPU) and selects compatible runtimes and
+model optimizations.
+
+They are an easy way to run an OpenAI-compatible LLM endpoint locally, which
+makes them a great fit for YARF’s LLM Client. For this guide, you’ll install the
+Qwen VL snap, and configure it to be used with YARF.
+
+For more details on available snaps and management commands, see the official
+Inference Snaps docs: https://documentation.ubuntu.com/inference-snaps/.
+
+
 1. Install an inference snap. For this example, we will use the Qwen VL snap,
    which provides a vision-capable model:
+#### Steps
 
    ```{code-block} bash
    ---
@@ -29,7 +43,8 @@ Chat Completions API.
    sudo snap install qwen-vl --channel "2.5/beta"
    ```
 
-1. Inference snaps start their API service automatically. Check the active API URL:
+1. Inference snaps start their API service automatically. Check the active API
+   URL:
 
    ```{code-block} bash
    ---
@@ -73,6 +88,12 @@ Chat Completions API.
 
 ### Option 2: Ollama
 
+[Ollama](https://ollama.com/) is a local LLM server that allows you to run
+various language models on your machine. It provides an OpenAI-compatible API,
+making it easy to integrate with the LLM Client.
+
+#### Steps
+
 1. Install Ollama:
 
    ```{code-block} bash
@@ -92,8 +113,8 @@ Chat Completions API.
    ```
 
 1. By default, Ollama uses the same default values as the LLM Client (
-   `http://localhost:11434/v1` and `/chat/completions`), so you
-   only need to configure the model:
+   `http://localhost:11434/v1` and `/chat/completions`), so you only need to
+   configure the model:
 
    ```{code-block} robotframework
    ---
