@@ -50,7 +50,6 @@ def make_handler(port: int):
             payload = {"choices": [{"message": {"content": content}}]}
             return _json_response(self, 200, payload)
 
-
     return Handler
 
 
