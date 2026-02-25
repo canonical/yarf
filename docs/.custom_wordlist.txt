@@ -19,4 +19,5 @@ screencopy
 bool
 boolean
 Ollama
+Qwen
 LLM
