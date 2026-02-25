@@ -20,92 +20,90 @@ Chat Completions API.
 ### Option 1: Inference Snap
 
 1. Install an inference snap. For this example, we will use the Qwen VL snap,
-which provides a vision-capable model:
+   which provides a vision-capable model:
 
-    ```{code-block} bash
-    ---
-    caption: Install the Qwen VL inference snap
-    ---
-    sudo snap install qwen-vl --channel "2.5/beta"
-    ```
+   ```{code-block} bash
+   ---
+   caption: Install the Qwen VL inference snap
+   ---
+   sudo snap install qwen-vl --channel "2.5/beta"
+   ```
 
 1. Inference snaps start their API service automatically. Check the active API URL:
 
-    ```{code-block} bash
-    ---
-    caption: Get the OpenAI-compatible endpoint
-    ---
-    qwen-vl status
-    # engine: cpu-avx512
-    # endpoints:
-    #     openai: http://localhost:8326/v1
-    ```
-
+   ```{code-block} bash
+   ---
+   caption: Get the OpenAI-compatible endpoint
+   ---
+   qwen-vl status
+   # engine: cpu-avx512
+   # endpoints:
+   #     openai: http://localhost:8326/v1
+   ```
 
 1. Get the exact model name from the snap:
 
-    ```{code-block} bash
-    ---
-    caption: List model IDs exposed by the inference snap
-    ---
-    curl -s http://localhost:8326/v1/models | jq -r '.data[].id'
-    # /snap/qwen-vl/components/248/model-qwen2-5-vl-7b-instruct-q4-k-m/Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf
-    ```
+   ```{code-block} bash
+   ---
+   caption: List model IDs exposed by the inference snap
+   ---
+   curl -s http://localhost:8326/v1/models | jq -r '.data[].id'
+   # /snap/qwen-vl/components/248/model-qwen2-5-vl-7b-instruct-q4-k-m/Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf
+   ```
 
-1. Configure the LLM Client in your Robot Framework tests to use the snap's 
+1. Configure the LLM Client in your Robot Framework tests to use the snap's
    endpoint and model:
 
-    ```{code-block} robotframework
-    ---
-    caption: Configure LLM Client for an inference snap endpoint
-    ---
-    *** Test Cases ***
-    Use Inference Snap
-        Configure Llm Client
-        ...    server_url=http://localhost:8326/v1
-        ...    endpoint=/chat/completions
-        ...    model=/snap/qwen-vl/components/248/model-qwen2-5-vl-7b-instruct-q4-k-m/Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf
-    ```
-    ```{note}
-    The inference snap only exposes a single model, so you can also omit the 
-        `model` parameter and it will use that one by default.
-    ```
+   ```{code-block} robotframework
+   ---
+   caption: Configure LLM Client for an inference snap endpoint
+   ---
+   *** Test Cases ***
+   Use Inference Snap
+       Configure Llm Client
+       ...    server_url=http://localhost:8326/v1
+       ...    endpoint=/chat/completions
+       ...    model=/snap/qwen-vl/components/248/model-qwen2-5-vl-7b-instruct-q4-k-m/Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf
+   ```
 
+   ```{note}
+   The inference snap only exposes a single model, so you can also omit the 
+       `model` parameter and it will use that one by default.
+   ```
 
 ### Option 2: Ollama
 
 1. Install Ollama:
 
-    ```{code-block} bash
-    ---
-    caption: Install Ollama on Linux
-    ---
-    curl -fsSL https://ollama.com/install.sh | sh
-    ```
+   ```{code-block} bash
+   ---
+   caption: Install Ollama on Linux
+   ---
+   curl -fsSL https://ollama.com/install.sh | sh
+   ```
 
 1. Run a vision-capable model (example: `qwen3-vl:2b-instruct`):
 
-    ```{code-block} bash
-    ---
-    caption: Download and run a vision-capable model
-    ---
-    ollama run qwen3-vl:2b-instruct
-    ```
+   ```{code-block} bash
+   ---
+   caption: Download and run a vision-capable model
+   ---
+   ollama run qwen3-vl:2b-instruct
+   ```
 
 1. By default, Ollama uses the same default values as the LLM Client (
    `http://localhost:11434/v1` and `/chat/completions`), so you
    only need to configure the model:
 
-    ```{code-block} robotframework
-    ---
-    caption: Configure LLM Client for an inference snap endpoint
-    ---
-    *** Test Cases ***
-    Use Inference Snap
-        Configure Llm Client
-        ...    model=qwen3-vl:2b-instruct
-    ```
-
+   ```{code-block} robotframework
+   ---
+   caption: Configure LLM Client for an Ollama model
+   ---
+   *** Test Cases ***
+   Use Ollama Model
+       Configure Llm Client
+       ...    model=qwen3-vl:2b-instruct
+   ```
 
 ## Basic text prompting
 
