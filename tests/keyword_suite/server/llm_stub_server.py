@@ -26,7 +26,7 @@ def _json_response(
 def make_handler(port: int):
     class Handler(BaseHTTPRequestHandler):
         def do_POST(self):
-            if urlparse(self.path).path != ENDPOINT:
+            if urlparse(self.path).path != f"/{API_VERSION}{ENDPOINT}":
                 return _json_response(
                     self, 404, {"error": "not found", "port": port}
                 )
@@ -49,6 +49,7 @@ def make_handler(port: int):
 
             payload = {"choices": [{"message": {"content": content}}]}
             return _json_response(self, 200, payload)
+
 
     return Handler
 
