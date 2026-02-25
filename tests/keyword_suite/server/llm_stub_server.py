@@ -8,7 +8,8 @@ from typing import Any
 from urllib.parse import urlparse
 
 HOST = "127.0.0.1"
-ENDPOINT = "/v1/chat/completions"
+API_VERSION = "v1"
+ENDPOINT = "/chat/completions"
 
 
 def _json_response(
@@ -54,7 +55,10 @@ def make_handler(port: int):
 
 def serve(port: int) -> None:
     httpd = HTTPServer((HOST, port), make_handler(port))
-    print(f"LLM stub listening on http://{HOST}:{port}{ENDPOINT}", flush=True)
+    print(
+        f"LLM stub listening on http://{HOST}:{port}/{API_VERSION}{ENDPOINT}",
+        flush=True,
+    )
     httpd.serve_forever()
 
 

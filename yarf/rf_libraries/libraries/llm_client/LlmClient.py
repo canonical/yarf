@@ -24,8 +24,8 @@ class LlmClient:
     # Define the parameters for the LLM client here if needed
     def __init__(self) -> None:
         self.model: str = "qwen3-vl:2b-instruct"
-        self.server_url: str = "http://localhost:11434"
-        self.endpoint: str = "/v1/chat/completions"
+        self.server_url: str = "http://localhost:11434/v1"
+        self.endpoint: str = "/chat/completions"
         self.max_tokens: int = 32768
 
     @keyword
