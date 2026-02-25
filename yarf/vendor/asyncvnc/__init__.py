@@ -197,6 +197,30 @@ class Mouse:
     def _write(self):
         self.writer.write(mouse_struct.pack(5, self.buttons, self.x, self.y))
 
+    def press(self, button: int = 0):
+        """
+        Presses a mouse button without releasing it.
+        """
+
+        self.buttons |= 1 << button
+        self._write()
+
+    def release(self, button: int = 0):
+        """
+        Releases a mouse button.
+        """
+
+        self.buttons &= ~(1 << button)
+        self._write()
+
+    def release_all(self):
+        """
+        Releases all mouse buttons at once.
+        """
+
+        self.buttons = 0
+        self._write()
+
     @contextmanager
     def hold(self, button: int = 0):
         """
