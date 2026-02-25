@@ -68,7 +68,7 @@ Chat Completions API.
 
    ```{note}
    The inference snap only exposes a single model, so you can also omit the 
-       `model` parameter and it will use that one by default.
+   `model` parameter and it will use that one by default.
    ```
 
 ### Option 2: Ollama
