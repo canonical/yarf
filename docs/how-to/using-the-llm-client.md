@@ -31,10 +31,10 @@ Qwen VL snap, and configure it to be used with YARF.
 For more details on available snaps and management commands, see the official
 Inference Snaps docs: https://documentation.ubuntu.com/inference-snaps/.
 
+#### Steps
 
 1. Install an inference snap. For this example, we will use the Qwen VL snap,
    which provides a vision-capable model:
-#### Steps
 
    ```{code-block} bash
    ---
