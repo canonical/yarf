@@ -53,9 +53,12 @@ def stub_videoinput(request):
 
 @pytest.fixture(autouse=True)
 def mock_time():
-    with patch("time.time") as p:
-        p.return_value = 0
-        yield p
+    mock = Mock(return_value=0)
+    mock_time_module = Mock(time=mock, monotonic=mock)
+    with patch(
+        "yarf.rf_libraries.libraries.video_input_base.time", mock_time_module
+    ):
+        yield mock
 
 
 @pytest.fixture(autouse=True)
@@ -117,6 +120,27 @@ class TestVideoInputBase:
         ]
         assert await stub_videoinput.match("path") == expected
         stub_videoinput.grab_screenshot.return_value.save.assert_called_once()
+
+    @pytest.mark.asyncio
+    @patch(
+        "yarf.rf_libraries.libraries.video_input_base.asyncio.sleep",
+        new_callable=AsyncMock,
+    )
+    async def test_match_waits_for_minimum_iteration_time(
+        self, mock_sleep, stub_videoinput, mock_time
+    ):
+        stub_videoinput.grab_screenshot.side_effect = [
+            RuntimeError,
+            stub_videoinput.grab_screenshot.return_value,
+        ]
+        stub_videoinput._rpa_images.find_template_in_image.return_value = [
+            Mock()
+        ]
+        mock_time.side_effect = [0, 0.02, 0.05, 0.12]
+
+        await stub_videoinput.match("path", timeout=1)
+
+        assert mock_sleep.await_args.args[0] == pytest.approx(0.07)
 
     @pytest.mark.asyncio
     @pytest.mark.start_suite
@@ -290,7 +314,7 @@ class TestVideoInputBase:
         stub_videoinput._rpa_images.find_template_in_image.side_effect = (
             ValueError
         )
-        mock_time.side_effect = [0, 0, 2]
+        mock_time.side_effect = [0, 0, 2, 2]
 
         with pytest.raises(ImageNotFoundError):
             await stub_videoinput.match("path", timeout=1)
@@ -302,7 +326,7 @@ class TestVideoInputBase:
         stub_videoinput._rpa_images.find_template_in_image.side_effect = (
             ImageNotFoundError
         )
-        mock_time.side_effect = [0, 0, 2]
+        mock_time.side_effect = [0, 0, 2, 2]
 
         with pytest.raises(ImageNotFoundError):
             await stub_videoinput.match("path", timeout=1)
@@ -323,10 +347,14 @@ class TestVideoInputBase:
         stub_videoinput._rpa_images.find_template_in_image.side_effect = (
             ImageNotFoundError
         )
-        mock_time.side_effect = [0, 0, 0, 2]
+        mock_time.side_effect = [0, 0, 0.05, 0.5, 2, 2]
 
-        with pytest.raises(ImageNotFoundError):
-            await stub_videoinput.match("path", timeout=1)
+        with patch(
+            "yarf.rf_libraries.libraries.video_input_base.asyncio.sleep",
+            new=AsyncMock(),
+        ):
+            with pytest.raises(ImageNotFoundError):
+                await stub_videoinput.match("path", timeout=1)
 
         assert (
             stub_videoinput.grab_screenshot.return_value.save.call_args_list
@@ -366,7 +394,7 @@ class TestVideoInputBase:
         stub_videoinput._rpa_images.find_template_in_image.side_effect = (
             ImageNotFoundError
         )
-        mock_time.side_effect = [0, 0, 2]
+        mock_time.side_effect = [0, 0, 2, 2]
 
         with pytest.raises(ImageNotFoundError):
             await stub_videoinput.match("path", timeout=1)
@@ -620,6 +648,25 @@ class TestVideoInputBase:
         assert await stub_videoinput.match_text("Hello") == (result, image)
 
     @pytest.mark.asyncio
+    @patch(
+        "yarf.rf_libraries.libraries.video_input_base.asyncio.sleep",
+        new_callable=AsyncMock,
+    )
+    async def test_match_text_waits_for_minimum_iteration_time(
+        self, mock_sleep, stub_videoinput, mock_time
+    ):
+        image = AsyncMock()
+        result = [
+            {"text": "Hello", "region": Region(0, 0, 1, 1), "confidence": 0.9},
+        ]
+        mock_time.side_effect = [0, 0.02, 0.05, 0.12]
+        stub_videoinput.find_text = AsyncMock(side_effect=[[], result])
+        stub_videoinput.grab_screenshot.return_value = image
+
+        assert await stub_videoinput.match_text("Hello") == (result, image)
+        assert mock_sleep.await_args.args[0] == pytest.approx(0.07)
+
+    @pytest.mark.asyncio
     async def test_match_text_with_color_succeeds(
         self, stub_videoinput, mock_time
     ):
@@ -741,6 +788,21 @@ class TestVideoInputBase:
         stub_videoinput.read_text.return_value = "wrong\ntext"
         with pytest.raises(Exception) as e:
             await stub_videoinput.match_text("hello")
+
+        mock_log_image.assert_called()
+        assert "Timed out looking for 'hello'" in str(e.value)
+        assert "Text read on screen was:\nwrong\ntext" in str(e.value)
+
+    @pytest.mark.asyncio
+    @patch("yarf.rf_libraries.libraries.video_input_base.log_image")
+    async def test_match_text_fails_with_zero_timeout(
+        self, mock_log_image, stub_videoinput
+    ):
+        stub_videoinput.find_text = AsyncMock(return_value=[])
+        stub_videoinput.read_text = AsyncMock(return_value="wrong\ntext")
+
+        with pytest.raises(Exception) as e:
+            await stub_videoinput.match_text("hello", timeout=0)
 
         mock_log_image.assert_called()
         assert "Timed out looking for 'hello'" in str(e.value)
@@ -998,7 +1060,7 @@ class TestVideoInputBase:
         mock_log_image.assert_called_once_with(screenshot, "Debug message")
 
     @pytest.mark.asyncio
-    @patch("time.monotonic")
+    @patch("yarf.rf_libraries.libraries.video_input_base.time.monotonic")
     async def test_wait_still_screen(
         self, mock_monotonic_time, stub_videoinput, mock_logger
     ):
@@ -1022,7 +1084,7 @@ class TestVideoInputBase:
         stub_videoinput.grab_screenshot = AsyncMock(side_effect=screenshots)
 
         mock_monotonic_time.side_effect = [0, 0, 0, 1, 1, 1, 2, 3]
-        with patch("time.sleep"):
+        with patch("yarf.rf_libraries.libraries.video_input_base.time.sleep"):
             await stub_videoinput.wait_still_screen(
                 duration=5, still_duration=2, screenshot_interval=1
             )
@@ -1032,7 +1094,7 @@ class TestVideoInputBase:
         )
 
     @pytest.mark.asyncio
-    @patch("time.monotonic")
+    @patch("yarf.rf_libraries.libraries.video_input_base.time.monotonic")
     async def test_wait_still_screen_timeout(
         self, mock_monotonic_time, stub_videoinput
     ):
@@ -1082,7 +1144,10 @@ class TestVideoInputBase:
             5,
             5,
         ]
-        with patch("time.sleep"), pytest.raises(TimeoutError) as e:
+        with (
+            patch("yarf.rf_libraries.libraries.video_input_base.time.sleep"),
+            pytest.raises(TimeoutError) as e,
+        ):
             await stub_videoinput.wait_still_screen(
                 duration=5, still_duration=2, screenshot_interval=1
             )
