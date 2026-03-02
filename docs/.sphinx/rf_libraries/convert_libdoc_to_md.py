@@ -42,7 +42,7 @@ PACKAGE = {
 }
 
 
-def convert_json_to_markdown(json_file, markdown_file):
+def convert_json_to_markdown(json_file: Path, markdown_file: Path):
     """
     Converts a JSON file, which contains the documentation of Robot Framework
     resources, into a Markdown file. The JSON file should be generated using the
@@ -137,6 +137,7 @@ def convert_json_to_markdown(json_file, markdown_file):
                 if i < len(data["keywords"]) - 1:
                     md.write("<hr style=\"border:1px solid grey\">\n\n")
 
+    json_file.unlink(missing_ok=True)
 
 def fix_link_anchors(html_text):
     """
