@@ -1,0 +1,401 @@
+{
+  "specversion": 3,
+  "name": "kvm",
+  "doc": "<p>Keyword definitions for specialised functionality for Keyboard, Mouse and Video-based manipulation.</p>\n<p>These keywords rely on VideoInput and Hid libraries to be initialized using the Init keyword. The initialization is platform-specific.</p>",
+  "version": "",
+  "generated": "2026-03-02T15:26:34+00:00",
+  "type": "RESOURCE",
+  "scope": "GLOBAL",
+  "docFormat": "HTML",
+  "source": "/home/douglas/Documents/Canonical/Repos/yarf/yarf/rf_libraries/resources/kvm.resource",
+  "lineno": 1,
+  "tags": [],
+  "inits": [],
+  "keywords": [
+    {
+      "name": "Click ${button} Button",
+      "args": [],
+      "returnType": null,
+      "doc": "<p>Click a button on the virtual pointer.</p>\n<p>Embedded arguments:</p>\n<ul>\n<li>${button}: Button to click (LEFT|RIGHT|MIDDLE).</li>\n</ul>",
+      "shortdoc": "Click a button on the virtual pointer.",
+      "tags": [],
+      "source": "/home/douglas/Documents/Canonical/Repos/yarf/yarf/rf_libraries/resources/kvm.resource",
+      "lineno": 301
+    },
+    {
+      "name": "Click ${button} Button On ${destination}",
+      "args": [],
+      "returnType": null,
+      "doc": "<p>Move the virtual pointer to the destination and click the button.</p>\n<p>See <a href=\"#Move%20Pointer%20To%20%24%7Bdestination%7D\" class=\"name\">Move Pointer to ${destination}</a> for details.</p>\n<p>Embedded arguments:</p>\n<ul>\n<li>${button}: Button to click (LEFT|RIGHT|MIDDLE).</li>\n<li>${destination}: The template or location to click on.</li>\n</ul>",
+      "shortdoc": "Move the virtual pointer to the destination and click the button.",
+      "tags": [],
+      "source": "/home/douglas/Documents/Canonical/Repos/yarf/yarf/rf_libraries/resources/kvm.resource",
+      "lineno": 308
+    },
+    {
+      "name": "Displace ${point} By (${x}, ${y})",
+      "args": [],
+      "returnType": null,
+      "doc": "<p>Shift a point by the specified displacements along the x and y axes.</p>\n<p>Embedded arguments:</p>\n<ul>\n<li>${point}: Point to be displaced, as a tuple (x, y).</li>\n<li>${x}: Displacement along the x-axis.</li>\n<li>${y}: Displacement along the y-axis.</li>\n</ul>\n<p>Return: Displaced point, as a tuple (x, y) of integers.</p>",
+      "shortdoc": "Shift a point by the specified displacements along the x and y axes.",
+      "tags": [],
+      "source": "/home/douglas/Documents/Canonical/Repos/yarf/yarf/rf_libraries/resources/kvm.resource",
+      "lineno": 74
+    },
+    {
+      "name": "Drag And Drop On ${destination}",
+      "args": [
+        {
+          "name": "step_distance",
+          "type": null,
+          "defaultValue": "16",
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": false,
+          "repr": "step_distance=16"
+        },
+        {
+          "name": "delay",
+          "type": null,
+          "defaultValue": "0.01",
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": false,
+          "repr": "delay=0.01"
+        }
+      ],
+      "returnType": null,
+      "doc": "<p>Drag and drop the current target (where the pointer is) on a destination.</p>\n<p>Embedded arguments:</p>\n<ul>\n<li>${destination}: Can be a string, or the path of an image template file representing</li>\n</ul>\n<p>the target location to drop on, or a coordinate tuple (x, y) of integers representing the absolute position to drop on. For details please see <a href=\"#Walk%20Pointer%20To%20%24%7Bdestination%7D\" class=\"name\">Walk Pointer To ${destination}</a>.</p>",
+      "shortdoc": "Drag and drop the current target (where the pointer is) on a destination.",
+      "tags": [],
+      "source": "/home/douglas/Documents/Canonical/Repos/yarf/yarf/rf_libraries/resources/kvm.resource",
+      "lineno": 350
+    },
+    {
+      "name": "Ensure ${destination} Does Not Match",
+      "args": [
+        {
+          "name": "timeout",
+          "type": null,
+          "defaultValue": "2",
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": false,
+          "repr": "timeout=2"
+        }
+      ],
+      "returnType": null,
+      "doc": "<p>Ensure a given template or string doesn't match within a given timeout and number of attempts. This function is intended to be used like: \"This given template or image should, by the end of this time, not be found on the screen.\"</p>\n<p>Embedded arguments:</p>\n<ul>\n<li>${destination}: The template or string to match.</li>\n</ul>\n<p>This function ensures that the given destination is not found.</p>",
+      "shortdoc": "Ensure a given template or string doesn't match within a given timeout and number of attempts. This function is intended to be used like: \"This given template or image should, by the end of this time, not be found on the screen.\"",
+      "tags": [],
+      "source": "/home/douglas/Documents/Canonical/Repos/yarf/yarf/rf_libraries/resources/kvm.resource",
+      "lineno": 323
+    },
+    {
+      "name": "Get Center Of ${region}",
+      "args": [],
+      "returnType": null,
+      "doc": "<p>Get the center point of a region.</p>\n<p>Embedded arguments:</p>\n<ul>\n<li>${region}: Rectangular region represented by a dictionary</li>\n</ul>\n<p>of integer values for \"left\", \"right\", \"top\", and \"bottom\" keys.</p>\n<p>Return: Center of the region, as a tuple (x, y) of integers.</p>",
+      "shortdoc": "Get the center point of a region.",
+      "tags": [],
+      "source": "/home/douglas/Documents/Canonical/Repos/yarf/yarf/rf_libraries/resources/kvm.resource",
+      "lineno": 61
+    },
+    {
+      "name": "Get Position Of ${target}",
+      "args": [],
+      "returnType": null,
+      "doc": "<p>Get a position from an absolute coordinate, image template, or string.</p>\n<p>Embedded arguments:</p>\n<ul>\n<li>${target}: If ${target} is a tuple (x, y) of integers,</li>\n</ul>\n<p>the position will be the absolute position given by the tuple. Otherwise, if ${target} is the path of an image template file, the position will be the center of the first matching template region. ${target} can also be a string, and the position will be the center of the found text.</p>\n<p>Return: Absolute position as a tuple (x, y) of integers.</p>",
+      "shortdoc": "Get a position from an absolute coordinate, image template, or string.",
+      "tags": [],
+      "source": "/home/douglas/Documents/Canonical/Repos/yarf/yarf/rf_libraries/resources/kvm.resource",
+      "lineno": 88
+    },
+    {
+      "name": "Move Pointer To ${destination}",
+      "args": [],
+      "returnType": null,
+      "doc": "<p>Move the pointer to an absolute position or image template.</p>\n<p>Embedded arguments:</p>\n<ul>\n<li>${destination}: Where to move the pointer to. If ${destination}</li>\n</ul>\n<p>is a tuple (x, y) of integers, the pointer will move to the absolute position given by the tuple. Otherwise, if ${destination} is the path of an image template file, the pointer will move to the center of the first matching template region. ${destination} can also be a string, and the pointer will move to the center of the found text.</p>\n<p>Return: Absolute position of the pointer after the move, as a tuple (x, y) of integers.</p>",
+      "shortdoc": "Move the pointer to an absolute position or image template.",
+      "tags": [],
+      "source": "/home/douglas/Documents/Canonical/Repos/yarf/yarf/rf_libraries/resources/kvm.resource",
+      "lineno": 128
+    },
+    {
+      "name": "Move Pointer To ${destination} In ${domain}",
+      "args": [],
+      "returnType": null,
+      "doc": "<p>Move the pointer to an absolute position or image template.</p>\n<p>Embedded arguments:</p>\n<ul>\n<li>${destination}: Where to move the pointer to. If ${destination}</li>\n</ul>\n<p>is a tuple (x, y) of integers, the pointer will move to the absolute position given by the tuple. Otherwise, if ${destination} is the path of an image template file, the pointer will move to the center of the first matching template region. ${destination} can also be a string, and the pointer will move to the center of the found text.</p>\n<ul>\n<li>${domain}: Given region or template to search for ${destination} within.</li>\n</ul>\n<p>Return: Absolute position of the pointer after the move, as a tuple (x, y) of integers.</p>",
+      "shortdoc": "Move the pointer to an absolute position or image template.",
+      "tags": [],
+      "source": "/home/douglas/Documents/Canonical/Repos/yarf/yarf/rf_libraries/resources/kvm.resource",
+      "lineno": 148
+    },
+    {
+      "name": "Move Pointer To (${x}, ${y})",
+      "args": [],
+      "returnType": null,
+      "doc": "<p>Move the pointer to an absolute position.</p>\n<p>Embedded arguments:</p>\n<ul>\n<li>${x}: Integer absolute x-coordinate to move the pointer to.</li>\n<li>${y}: Integer absolute y-coordinate to move the pointer to.</li>\n</ul>",
+      "shortdoc": "Move the pointer to an absolute position.",
+      "tags": [],
+      "source": "/home/douglas/Documents/Canonical/Repos/yarf/yarf/rf_libraries/resources/kvm.resource",
+      "lineno": 120
+    },
+    {
+      "name": "Move Pointer To Proportional (${x}, ${y})",
+      "args": [],
+      "returnType": null,
+      "doc": "<p>Move the pointer to a destination position given as proportions to the size of the display output.</p>\n<p>Embedded arguments:</p>\n<ul>\n<li>${x}: Output-relative x-coordinate to move the pointer to.</li>\n</ul>\n<p>It must be in the range 0..1, where 0 represents the left edge, and 1 represents the right edge of the output.</p>\n<ul>\n<li>${y}: Output-relative y-coordinate to move the pointer to.</li>\n</ul>\n<p>It must be in the range 0..1, where 0 represents the top edge, and 1 represents the bottom edge of the output.</p>\n<p>Return: Absolute position of the pointer after the move, as a tuple (x, y) of integers.</p>",
+      "shortdoc": "Move the pointer to a destination position given as proportions to the size of the display output.",
+      "tags": [],
+      "source": "/home/douglas/Documents/Canonical/Repos/yarf/yarf/rf_libraries/resources/kvm.resource",
+      "lineno": 194
+    },
+    {
+      "name": "Press ${button} Button",
+      "args": [],
+      "returnType": null,
+      "doc": "<p>Press a button on the virtual pointer.</p>\n<p>Embedded arguments:</p>\n<ul>\n<li>${button}: Button to press (LEFT|RIGHT|MIDDLE).</li>\n</ul>",
+      "shortdoc": "Press a button on the virtual pointer.",
+      "tags": [],
+      "source": "/home/douglas/Documents/Canonical/Repos/yarf/yarf/rf_libraries/resources/kvm.resource",
+      "lineno": 287
+    },
+    {
+      "name": "Press And Wait For Match",
+      "args": [
+        {
+          "name": "keys-combo",
+          "type": null,
+          "defaultValue": null,
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": true,
+          "repr": "keys-combo"
+        },
+        {
+          "name": "template",
+          "type": null,
+          "defaultValue": null,
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": true,
+          "repr": "template"
+        },
+        {
+          "name": "timeout",
+          "type": null,
+          "defaultValue": "10",
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": false,
+          "repr": "timeout=10"
+        },
+        {
+          "name": "tolerance",
+          "type": null,
+          "defaultValue": "${DEFAULT_TEMPLATE_MATCHING_TOLERANCE}",
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": false,
+          "repr": "tolerance=${DEFAULT_TEMPLATE_MATCHING_TOLERANCE}"
+        }
+      ],
+      "returnType": null,
+      "doc": "",
+      "shortdoc": "",
+      "tags": [],
+      "source": "/home/douglas/Documents/Canonical/Repos/yarf/yarf/rf_libraries/resources/kvm.resource",
+      "lineno": 51
+    },
+    {
+      "name": "Press Combo And Match",
+      "args": [
+        {
+          "name": "keys-combo",
+          "type": null,
+          "defaultValue": null,
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": true,
+          "repr": "keys-combo"
+        },
+        {
+          "name": "template",
+          "type": null,
+          "defaultValue": null,
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": true,
+          "repr": "template"
+        },
+        {
+          "name": "tentatives",
+          "type": null,
+          "defaultValue": "1",
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": false,
+          "repr": "tentatives=1"
+        },
+        {
+          "name": "timeout",
+          "type": null,
+          "defaultValue": "2",
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": false,
+          "repr": "timeout=2"
+        },
+        {
+          "name": "tolerance",
+          "type": null,
+          "defaultValue": "${DEFAULT_TEMPLATE_MATCHING_TOLERANCE}",
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": false,
+          "repr": "tolerance=${DEFAULT_TEMPLATE_MATCHING_TOLERANCE}"
+        }
+      ],
+      "returnType": null,
+      "doc": "<p>If the provided template is not already matching, press a key combination until it does.</p>",
+      "shortdoc": "If the provided template is not already matching, press a key combination until it does.",
+      "tags": [],
+      "source": "/home/douglas/Documents/Canonical/Repos/yarf/yarf/rf_libraries/resources/kvm.resource",
+      "lineno": 26
+    },
+    {
+      "name": "Press Key And Match",
+      "args": [
+        {
+          "name": "key",
+          "type": null,
+          "defaultValue": null,
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": true,
+          "repr": "key"
+        },
+        {
+          "name": "template",
+          "type": null,
+          "defaultValue": null,
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": true,
+          "repr": "template"
+        },
+        {
+          "name": "tentatives",
+          "type": null,
+          "defaultValue": "1",
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": false,
+          "repr": "tentatives=1"
+        },
+        {
+          "name": "timeout",
+          "type": null,
+          "defaultValue": "2",
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": false,
+          "repr": "timeout=2"
+        }
+      ],
+      "returnType": null,
+      "doc": "<p>If the provided template is not already matching, press a key until it does.</p>",
+      "shortdoc": "If the provided template is not already matching, press a key until it does.",
+      "tags": [],
+      "source": "/home/douglas/Documents/Canonical/Repos/yarf/yarf/rf_libraries/resources/kvm.resource",
+      "lineno": 16
+    },
+    {
+      "name": "Release ${button} Button",
+      "args": [],
+      "returnType": null,
+      "doc": "<p>Release a button on the virtual pointer.</p>\n<p>Embedded arguments:</p>\n<ul>\n<li>${button}: Button to release (LEFT|RIGHT|MIDDLE).</li>\n</ul>",
+      "shortdoc": "Release a button on the virtual pointer.",
+      "tags": [],
+      "source": "/home/douglas/Documents/Canonical/Repos/yarf/yarf/rf_libraries/resources/kvm.resource",
+      "lineno": 294
+    },
+    {
+      "name": "Release Buttons",
+      "args": [],
+      "returnType": null,
+      "doc": "<p>Release all buttons on the virtual pointer.</p>",
+      "shortdoc": "Release all buttons on the virtual pointer.",
+      "tags": [],
+      "source": "/home/douglas/Documents/Canonical/Repos/yarf/yarf/rf_libraries/resources/kvm.resource",
+      "lineno": 319
+    },
+    {
+      "name": "Walk Pointer To ${destination}",
+      "args": [
+        {
+          "name": "step_distance",
+          "type": null,
+          "defaultValue": "16",
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": false,
+          "repr": "step_distance=16"
+        },
+        {
+          "name": "delay",
+          "type": null,
+          "defaultValue": "0.01",
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": false,
+          "repr": "delay=0.01"
+        }
+      ],
+      "returnType": null,
+      "doc": "<p>Moves the pointer in incremental steps from the current pointer position to an absolute position or image template.</p>\n<p>Embedded arguments:</p>\n<ul>\n<li>${destination}: Where to walk the pointer to. If ${destination}</li>\n</ul>\n<p>is a tuple (x, y) of integers, the pointer will walk to the absolute position given by the tuple. Otherwise, if ${destination} is the path of an image template file, the pointer will walk to the center of the first matching template region. ${destination} can also be a string, and the pointer will move to the center of the found text.</p>\n<ul>\n<li>${step_distance} (optional): Size of each step, in pixels.</li>\n</ul>\n<p>Default is 16.</p>\n<ul>\n<li>${delay} (optional): Time to sleep after each step, in seconds.</li>\n</ul>\n<p>Default is 0.01.</p>\n<p>Return: Absolute position of the pointer after the walk, as a tuple (x, y) of integers.</p>",
+      "shortdoc": "Moves the pointer in incremental steps from the current pointer position to an absolute position or image template.",
+      "tags": [],
+      "source": "/home/douglas/Documents/Canonical/Repos/yarf/yarf/rf_libraries/resources/kvm.resource",
+      "lineno": 230
+    },
+    {
+      "name": "Walk Pointer To (${x}, ${y})",
+      "args": [
+        {
+          "name": "step_distance",
+          "type": null,
+          "defaultValue": "16",
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": false,
+          "repr": "step_distance=16"
+        },
+        {
+          "name": "delay",
+          "type": null,
+          "defaultValue": "0.01",
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": false,
+          "repr": "delay=0.01"
+        }
+      ],
+      "returnType": null,
+      "doc": "<p>Move the pointer in incremental steps from the current pointer position to an absolute position.</p>\n<p>Embedded arguments:</p>\n<ul>\n<li>${x}: Integer absolute x-coordinate to walk the pointer to.</li>\n<li>${y}: Integer absolute y-coordinate to walk the pointer to.</li>\n<li>${step_distance} (optional): Size of each step, in pixels.</li>\n</ul>\n<p>Default is 16.</p>\n<ul>\n<li>${delay} (optional): Time to sleep after each step, in seconds.</li>\n</ul>\n<p>Default is 0.01.</p>",
+      "shortdoc": "Move the pointer in incremental steps from the current pointer position to an absolute position.",
+      "tags": [],
+      "source": "/home/douglas/Documents/Canonical/Repos/yarf/yarf/rf_libraries/resources/kvm.resource",
+      "lineno": 212
+    },
+    {
+      "name": "Walk Pointer To Proportional (${x}, ${y})",
+      "args": [
+        {
+          "name": "step_distance",
+          "type": null,
+          "defaultValue": "0.01",
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": false,
+          "repr": "step_distance=0.01"
+        },
+        {
+          "name": "delay",
+          "type": null,
+          "defaultValue": "0.01",
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": false,
+          "repr": "delay=0.01"
+        }
+      ],
+      "returnType": null,
+      "doc": "<p>Move the pointer in incremental steps from the current pointer position to a destination position given as proportions to the size of the display output.</p>\n<p>Embedded arguments:</p>\n<ul>\n<li>${x}: Output-relative x-coordinate to move the pointer to.</li>\n</ul>\n<p>It must be in the range 0..1, where 0 represents the left edge, and 1 represents the right edge of the output.</p>\n<ul>\n<li>${y}: Output-relative y-coordinate to move the pointer to.</li>\n</ul>\n<p>It must be in the range 0..1, where 0 represents the top edge, and 1 represents the bottom edge of the output.</p>\n<ul>\n<li>${step_distance} (optional): maximum distance to move per step horizontally, 0 &lt; step_distance &lt;= 1</li>\n<li>${delay} (optional): Time to sleep after each step, in seconds.</li>\n</ul>\n<p>Default is 0.01.</p>\n<p>Return: Absolute position of the pointer after the walk, as a tuple (x, y) of integers.</p>",
+      "shortdoc": "Move the pointer in incremental steps from the current pointer position to a destination position given as proportions to the size of the display output.",
+      "tags": [],
+      "source": "/home/douglas/Documents/Canonical/Repos/yarf/yarf/rf_libraries/resources/kvm.resource",
+      "lineno": 260
+    }
+  ],
+  "typedocs": []
+}

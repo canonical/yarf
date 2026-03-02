@@ -1,0 +1,162 @@
+{
+  "specversion": 3,
+  "name": "LlmClient",
+  "doc": "<p>This class provides the Robot interface for llm interactions with an LLM server.</p>",
+  "version": "",
+  "generated": "2026-03-02T15:26:34+00:00",
+  "type": "LIBRARY",
+  "scope": "TEST",
+  "docFormat": "HTML",
+  "source": "/home/douglas/Documents/Canonical/Repos/yarf/yarf/rf_libraries/libraries/llm_client/LlmClient.py",
+  "lineno": 18,
+  "tags": [],
+  "inits": [],
+  "keywords": [
+    {
+      "name": "Configure Llm Client",
+      "args": [
+        {
+          "name": "kwargs",
+          "type": {
+            "name": "Any",
+            "typedoc": "Any",
+            "nested": [],
+            "union": false
+          },
+          "defaultValue": null,
+          "kind": "VAR_NAMED",
+          "required": false,
+          "repr": "**kwargs: Any"
+        }
+      ],
+      "returnType": null,
+      "doc": "<p>Configure the LLM client with the given parameters.</p>\n<p>Args: **kwargs: Configuration parameters for the LLM client.</p>\n<p>Raises: TypeError: If unknown parameters are provided. ValueError: If parameter values are of incorrect type.</p>",
+      "shortdoc": "Configure the LLM client with the given parameters.",
+      "tags": [],
+      "source": "/home/douglas/Documents/Canonical/Repos/yarf/yarf/rf_libraries/libraries/llm_client/LlmClient.py",
+      "lineno": 32
+    },
+    {
+      "name": "Prompt Llm",
+      "args": [
+        {
+          "name": "prompt",
+          "type": {
+            "name": "str",
+            "typedoc": "string",
+            "nested": [],
+            "union": false
+          },
+          "defaultValue": null,
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": true,
+          "repr": "prompt: str"
+        },
+        {
+          "name": "image",
+          "type": {
+            "name": "Union",
+            "typedoc": null,
+            "nested": [
+              {
+                "name": "Image",
+                "typedoc": null,
+                "nested": [],
+                "union": false
+              },
+              {
+                "name": "str",
+                "typedoc": "string",
+                "nested": [],
+                "union": false
+              },
+              {
+                "name": "None",
+                "typedoc": "None",
+                "nested": [],
+                "union": false
+              }
+            ],
+            "union": true
+          },
+          "defaultValue": "None",
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": false,
+          "repr": "image: Image | str | None = None"
+        },
+        {
+          "name": "system_prompt",
+          "type": {
+            "name": "Union",
+            "typedoc": null,
+            "nested": [
+              {
+                "name": "str",
+                "typedoc": "string",
+                "nested": [],
+                "union": false
+              },
+              {
+                "name": "None",
+                "typedoc": "None",
+                "nested": [],
+                "union": false
+              }
+            ],
+            "union": true
+          },
+          "defaultValue": "None",
+          "kind": "POSITIONAL_OR_NAMED",
+          "required": false,
+          "repr": "system_prompt: str | None = None"
+        }
+      ],
+      "returnType": {
+        "name": "str",
+        "typedoc": "string",
+        "nested": [],
+        "union": false
+      },
+      "doc": "<p>Send a prompt (text-only or text+image) to the LLM and get the response.</p>\n<p>Args: prompt: The text prompt to send to the LLM. image: Optional image (PIL Image or path) to include in the prompt. system_prompt: Optional system prompt to guide the LLM.</p>\n<p>Returns: The response from the LLM.</p>",
+      "shortdoc": "Send a prompt (text-only or text+image) to the LLM and get the response.",
+      "tags": [],
+      "source": "/home/douglas/Documents/Canonical/Repos/yarf/yarf/rf_libraries/libraries/llm_client/LlmClient.py",
+      "lineno": 65
+    }
+  ],
+  "typedocs": [
+    {
+      "type": "Standard",
+      "name": "Any",
+      "doc": "<p>Any value is accepted. No conversion is done.</p>",
+      "usages": [
+        "Configure Llm Client"
+      ],
+      "accepts": [
+        "Any"
+      ]
+    },
+    {
+      "type": "Standard",
+      "name": "None",
+      "doc": "<p>String <code>NONE</code> (case-insensitive) and the empty string are converted to the Python <code>None</code> object. Other values cause an error.</p>\n<p>Converting the empty string is new in Robot Framework 7.4.</p>",
+      "usages": [
+        "Prompt Llm"
+      ],
+      "accepts": [
+        "string"
+      ]
+    },
+    {
+      "type": "Standard",
+      "name": "string",
+      "doc": "<p>All arguments are converted to Unicode strings.</p>\n<p>Most values are converted simply by using <code>str(value)</code>. An exception is that bytes are mapped directly to Unicode code points with same ordinals. This means that, for example, <code>b\"hyv\\xe4\"</code> becomes <code>\"hyv\u00e4\"</code>.</p>\n<p>Converting bytes specially is new Robot Framework 7.4.</p>",
+      "usages": [
+        "Prompt Llm"
+      ],
+      "accepts": [
+        "Any"
+      ]
+    }
+  ]
+}
