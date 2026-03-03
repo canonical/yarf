@@ -4,15 +4,11 @@ YARF command-line entry point.
 
 import contextlib
 import getpass
-import importlib.util
 import logging
-import operator
 import os
 import re
 import sys
-import tempfile
 from argparse import ArgumentParser, Namespace
-from enum import Enum
 from importlib import metadata
 from pathlib import Path
 from typing import Any, Optional, Sequence
@@ -20,18 +16,13 @@ from typing import Any, Optional, Sequence
 from owasp_logger import OWASPLogger
 from packaging import version
 from robot import rebot
-from robot.api import TestSuite, TestSuiteBuilder
-from robot.errors import DATA_ERROR, Information
-from robot.run import RobotFramework
-from RobotStackTracer import RobotStackTracer
+from robot.api import TestSuite
 
 from yarf import LABEL_PREFIX
-from yarf.errors.yarf_errors import YARFConnectionError
 from yarf.loggers.owasp_logger import get_owasp_logger
 from yarf.output import OUTPUT_FORMATS, get_outdir_path, output_converter
 from yarf.rf_libraries import robot_in_path
 from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS, PlatformBase
-from yarf.rf_libraries.libraries.metadata_listener import MetadataListener
 from yarf.rf_libraries.suite_parser import SuiteParser
 
 _owasp_logger = OWASPLogger(appid=__name__, logger=get_owasp_logger())
@@ -39,19 +30,6 @@ _logger = logging.getLogger(__name__)
 YARF_VERSION = version.parse(metadata.version("yarf"))
 VERSION_TAG_RE = re.compile(
     rf"{LABEL_PREFIX}version: +(?P<operator>[<>=!]+) +(?P<version>[0-9][0-9.]*)"
-)
-
-
-Operator = Enum(
-    "Operator",
-    [
-        (">", operator.gt),
-        ("<", operator.lt),
-        (">=", operator.ge),
-        ("<=", operator.le),
-        ("==", operator.eq),
-        ("!=", operator.ne),
-    ],
 )
 
 
@@ -69,6 +47,21 @@ def compare_version(yarf_version_tag: str) -> bool:
     Raises:
         ValueError: if the yarf version tag is invalid or the operator is not supported
     """
+    import operator
+    from enum import Enum
+
+    Operator = Enum(
+        "Operator",
+        [
+            (">", operator.gt),
+            ("<", operator.lt),
+            (">=", operator.ge),
+            ("<=", operator.le),
+            ("==", operator.eq),
+            ("!=", operator.ne),
+        ],
+    )
+
     if m := VERSION_TAG_RE.match(yarf_version_tag):
         try:
             return Operator[m.group("operator")].value(
@@ -174,6 +167,11 @@ def parse_robot_arguments(args: list[str]) -> dict[str, Any]:
         SystemExit: informational arguments
     """
 
+    import tempfile
+
+    from robot.errors import Information
+    from robot.run import RobotFramework
+
     with tempfile.NamedTemporaryFile(suffix=".robot") as stub_robot_file:
         args.append(stub_robot_file.name)
         try:
@@ -278,6 +276,8 @@ def _import_listener_from_path(path: Path, **kwargs) -> object:
     Raises:
         ImportError: If the listener cannot be imported.
     """
+    import importlib.util
+
     spec = importlib.util.spec_from_file_location(path.stem, path)
     module = importlib.util.module_from_spec(spec)  # type:ignore[arg-type]
     spec.loader.exec_module(module)  # type:ignore[union-attr]
@@ -308,6 +308,10 @@ def _import_listener_from_path(path: Path, **kwargs) -> object:
 def get_listeners(
     additional_listener_paths: list[str] | None, **kwargs
 ) -> list[object]:
+    from RobotStackTracer import RobotStackTracer
+
+    from yarf.rf_libraries.libraries.metadata_listener import MetadataListener
+
     listeners = [
         MetadataListener(),
         RobotStackTracer(),
@@ -363,6 +367,8 @@ def run_robot_suite(
     Returns:
         int: The exit code of the test
     """
+
+    from robot.errors import DATA_ERROR
 
     robot_settings = get_yarf_settings(suite)
     robot_reserved_settings = get_robot_reserved_settings(suite)
@@ -478,6 +484,10 @@ def main(argv: Optional[list[str]] = None) -> None:
     Raises:
         FileNotFoundError: If the start_console.robot file is not found
     """
+    from robot.api import TestSuiteBuilder
+
+    from yarf.errors.yarf_errors import YARFConnectionError
+
     _owasp_logger.sys_startup(getpass.getuser())
 
     args, cli_options = parse_arguments(argv)

@@ -126,7 +126,7 @@ class TestMain:
         args, _ = parse_arguments(argv)
         assert args.platform == "Vnc"
 
-    @patch("yarf.main.RobotFramework")
+    @patch("robot.run.RobotFramework")
     @patch("yarf.main._owasp_logger")
     def test_parse_robot_arguments_info(self, mock_logger, mock_rf):
         """
@@ -488,8 +488,8 @@ class TestMain:
             with pytest.raises(error):
                 get_listeners(["dummy/invalid_listener.py"])
 
-    @patch("yarf.main.RobotStackTracer")
-    @patch("yarf.main.MetadataListener")
+    @patch("RobotStackTracer.RobotStackTracer")
+    @patch("yarf.rf_libraries.libraries.metadata_listener.MetadataListener")
     @patch("yarf.main.get_robot_reserved_settings")
     @patch("yarf.main.get_yarf_settings")
     @patch("yarf.main.rebot")
@@ -783,7 +783,7 @@ class TestMain:
             output_format=None,
         )
 
-    @patch("yarf.main.TestSuiteBuilder.build")
+    @patch("robot.api.TestSuiteBuilder.build")
     def test_main_interactive_console(
         self, mock_test_suite_builder: MagicMock
     ) -> None:
