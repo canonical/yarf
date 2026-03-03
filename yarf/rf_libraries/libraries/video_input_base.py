@@ -4,24 +4,18 @@ assertion.
 """
 
 import asyncio
-import base64
 import os
 import re
-import subprocess
 import tempfile
 import time
 from abc import ABC, abstractmethod
-from dataclasses import astuple
-from types import ModuleType
-from typing import List, Optional, Sequence, Union
+from typing import TYPE_CHECKING, List, Optional, Sequence, Union
 
-from PIL import Image, ImageChops, ImageDraw
+from PIL import Image
 from robot.api import logger
 from robot.api.deco import keyword
-from robot.libraries.BuiltIn import BuiltIn
 
 from yarf import LABEL_PREFIX
-from yarf.lib.images.utils import to_RGB
 from yarf.rf_libraries.libraries.image.segmentation import SegmentationTool
 from yarf.rf_libraries.libraries.image.utils import log_image
 from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
@@ -30,8 +24,10 @@ from yarf.rf_libraries.variables.video_input_vars import (
 )
 from yarf.vendor.RPA.core.geometry import to_region
 from yarf.vendor.RPA.Images import RGB, Images, Region, to_image
-from yarf.vendor.RPA.recognition import ocr as tesseract
 from yarf.vendor.RPA.recognition.templates import ImageNotFoundError
+
+if TYPE_CHECKING:
+    from types import ModuleType
 
 DISPLAY_PATTERN = r"((?P<id>[\w-]+)\:)?(?P<resolution>\d+x\d+)(\s+|$)"
 DISPLAY_RE = re.compile(rf"{DISPLAY_PATTERN}")
@@ -58,7 +54,7 @@ class VideoInputBase(ABC):
         self.ROBOT_LIBRARY_LISTENER = self
         self._frame_count: int = 0
         self._screenshots_dir: Optional[tempfile.TemporaryDirectory] = None
-        self.ocr: RapidOCRReader | ModuleType = RapidOCRReader()
+        self.ocr: "RapidOCRReader | ModuleType" = RapidOCRReader()
         self.segmentation_tool: SegmentationTool = SegmentationTool()
 
     def _start_suite(self, data, result) -> None:
@@ -66,6 +62,8 @@ class VideoInputBase(ABC):
         self._screenshots_dir = tempfile.TemporaryDirectory()
 
     def _end_suite(self, data, result) -> None:
+        import subprocess
+
         if result.failed or os.environ.get("YARF_LOG_VIDEO") == "1":
             if self._frame_count > 0:
                 assert self._screenshots_dir
@@ -110,6 +108,8 @@ class VideoInputBase(ABC):
         if method == "rapidocr":
             self.ocr = RapidOCRReader()
         elif method == "tesseract":
+            from yarf.vendor.RPA.recognition import ocr as tesseract
+
             self.ocr = tesseract
         else:
             raise ValueError(f"Unknown OCR method: {method}")
@@ -307,6 +307,8 @@ class VideoInputBase(ABC):
         Raises:
             ValueError: If the specified text isn't found in time
         """
+        from yarf.lib.images.utils import to_RGB
+
         region = to_region(region)
         print(f"\nLooking for '{text}'")
         print(region)
@@ -547,6 +549,8 @@ class VideoInputBase(ABC):
         Args:
             video_path: Path to the video file.
         """
+        import base64
+
         with open(video_path, "rb") as f:
             logger.error(
                 '<video controls style="max-width: 50%" src="data:video/webm;base64,'
@@ -568,6 +572,8 @@ class VideoInputBase(ABC):
         Returns:
             Image with the rectangle drawn
         """
+        from PIL import ImageDraw
+
         draw = ImageDraw.Draw(image)
         draw.rectangle(
             (region.left, region.top, region.right, region.bottom),
@@ -596,6 +602,8 @@ class VideoInputBase(ABC):
         Raises:
             ValueError: if the displays metadata is not in the expected format
         """
+        from robot.libraries.BuiltIn import BuiltIn
+
         displays: list[tuple[Optional[str], str]] = []
         if (
             display_res := BuiltIn().get_variable_value("${displays}")
@@ -638,6 +646,8 @@ class VideoInputBase(ABC):
         Returns:
             List of text region coordinates [(x1, y1, x2, y2), ...]
         """
+        from dataclasses import astuple
+
         if color is None or image is None:
             return False
 
@@ -717,6 +727,8 @@ class VideoInputBase(ABC):
         Raises:
             TimeoutError: If the screen does not remain still for the required still_duration within the total duration.
         """
+        from PIL import ImageChops
+
         previous_img: Optional[Image.Image] = None
         start_time = time.monotonic()
         still_start_time = time.monotonic()

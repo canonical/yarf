@@ -865,7 +865,7 @@ class TestVideoInputBase:
             "<video controls"
         )
 
-    @patch("yarf.rf_libraries.libraries.video_input_base.ImageDraw")
+    @patch("PIL.ImageDraw")
     def test_draw_region_on_image(self, mock_draw, stub_videoinput):
         """
         Test the function draws a rectangle on the image.
@@ -932,7 +932,7 @@ class TestVideoInputBase:
         """
 
         with patch(
-            "yarf.rf_libraries.libraries.video_input_base.BuiltIn.get_variable_value"
+            "robot.libraries.BuiltIn.BuiltIn.get_variable_value"
         ) as mock_get_variable_value:
             mock_get_variable_value.return_value = displays
             display_resolutions = VideoInputBase.get_displays()
@@ -953,7 +953,7 @@ class TestVideoInputBase:
         """
 
         with patch(
-            "yarf.rf_libraries.libraries.video_input_base.BuiltIn.get_variable_value"
+            "robot.libraries.BuiltIn.BuiltIn.get_variable_value"
         ) as mock_get_variable_value:
             mock_get_variable_value.return_value = display
 
