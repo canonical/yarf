@@ -2,6 +2,16 @@
 exclude: '^docs/(doc-cheat-sheet.*|(?!.+\.(md|rst)).+)|hatch_build.py|yarf/lib/wayland/protocols/.*|yarf/vendor/.*$'
 
 repos:
+- repo: local
+  hooks:
+    - id: check-libdoc-up-to-date
+      name: Check if library docs are up to date
+      files: ^docs/
+      entry: bash -c 'make -C docs libdoc-convert && git diff --exit-code docs/'
+      language: system
+      pass_filenames: false
+      always_run: true
+
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v5.0.0
   hooks:

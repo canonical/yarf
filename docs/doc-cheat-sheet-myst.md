@@ -1,17 +1,15 @@
 ---
 orphan: true
 myst:
-    substitutions:
-      reuse_key: "This is **included** text."
-      advanced_reuse_key: "This is a substitution that includes a code block:
-                         ```
-                         code block
-                         ```"
+  substitutions:
+    reuse_key: This is **included** text.
+    advanced_reuse_key: 'This is a substitution that includes a code block: ``` code block ```'
 ---
 
 <!-- vale off -->
 
 (cheat-sheet-myst)=
+
 # Markdown/MyST cheat sheet
 
 <!-- vale on -->
@@ -44,8 +42,10 @@ Also see the [MyST documentation](https://myst-parser.readthedocs.io/en/latest/i
 
 Start a code block:
 
-    code:
-      - example: true
+```
+code:
+  - example: true
+```
 
 ```
 # Demonstrate a code block
@@ -60,6 +60,7 @@ code:
 ```
 
 (a_section_target_myst)=
+
 ## Links
 
 - [Canonical website](https://canonical.com/)
@@ -72,18 +73,20 @@ code:
 
 Use the following syntax::
 
-    ```{toctree}
-    :hidden:
+````
+```{toctree}
+:hidden:
 
-    sub-page1
-    sub-page2
-    ```
+sub-page1
+sub-page2
+```
+````
 
 ## Lists
 
 1. Step 1
    - Item 1
-      * Sub-item
+     - Sub-item
    - Item 2
      1. Sub-step 1
      1. Sub-step 2
@@ -102,23 +105,24 @@ Term 2
 
 ## Markdown tables
 
-| Header 1                           | Header 2 |
-|------------------------------------|----------|
-| Cell 1<br>Second paragraph         | Cell 2   |
-| Cell 3                             | Cell 4   |
+| Header 1                   | Header 2 |
+| -------------------------- | -------- |
+| Cell 1<br>Second paragraph | Cell 2   |
+| Cell 3                     | Cell 4   |
 
 Centred:
 
-| Header 1                           | Header 2 |
-|:----------------------------------:|:--------:|
-| Cell 1<br>Second paragraph         | Cell 2   |
-| Cell 3                             | Cell 4   |
+|          Header 1          | Header 2 |
+| :------------------------: | :------: |
+| Cell 1<br>Second paragraph |  Cell 2  |
+|           Cell 3           |  Cell 4  |
 
 ## List tables
 
 ```{list-table}
-   :header-rows: 1
-
+---
+header-rows: 1
+---
 * - Header 1
   - Header 2
 * - Cell 1
@@ -132,9 +136,10 @@ Centred:
 Centred:
 
 ```{list-table}
-   :header-rows: 1
-   :align: center
-
+---
+header-rows: 1
+align: center
+---
 * - Header 1
   - Header 2
 * - Cell 1
@@ -168,9 +173,10 @@ This might damage your hardware!
 ![Alt text](https://assets.ubuntu.com/v1/b3b72cb2-canonical-logo-166.png)
 
 ```{figure} https://assets.ubuntu.com/v1/b3b72cb2-canonical-logo-166.png
-   :width: 100px
-   :alt: Alt text
-
+---
+width: 100px
+alt: Alt text
+---
    Figure caption
 ```
 
@@ -180,15 +186,17 @@ This might damage your hardware!
 
 Keys can be defined at the top of a file, or in a `myst_substitutions` option in `conf.py`.
 
-{{reuse_key}}
+{\{reuse_key}}
 
-{{advanced_reuse_key}}
+{\{advanced_reuse_key}}
 
 ### File inclusion
 
 ```{include} index.md
-   :start-after: include_start
-   :end-before: include_end
+---
+start-after: include_start
+end-before: include_end
+---
 ```
 
 ## Tabs
@@ -217,37 +225,42 @@ some term
 ## More useful markup
 
 - ```{versionadded} X.Y
+  ```
 - {abbr}`API (Application Programming Interface)`
 
-----
+______________________________________________________________________
 
 ## Custom extensions
 
 Related links at the top of the page (surrounded by `---`):
 
-    relatedlinks: https://github.com/canonical/lxd-sphinx-extensions, [RTFM](https://www.google.com)
-    discourse: 12345
+```
+relatedlinks: https://github.com/canonical/lxd-sphinx-extensions, [RTFM](https://www.google.com)
+discourse: 12345
+```
 
 Terms that should not be checked by the spelling checker: {spellexception}`PurposelyWrong`
 
 A single-line terminal view that separates input from output:
 
 ```{terminal}
-   :input: command
-   :user: root
-   :host: vampyr
-   :dir: /home/user/directory/
-
+---
+input: command
+user: root
+host: vampyr
+dir: /home/user/directory/
+---
 the output
 ```
 
 A multi-line version of the same:
 
 ```{terminal}
-   :user: root
-   :host: vampyr
-   :dir: /home/user/directory/
-
+---
+user: root
+host: vampyr
+dir: /home/user/directory/
+---
 :input: command 1
 output 1
 :input: command 2
@@ -257,5 +270,7 @@ output 2
 A link to a YouTube video:
 
 ```{youtube} https://www.youtube.com/watch?v=iMLiK1fX4I0
-   :title: Demo
+---
+title: Demo
+---
 ```

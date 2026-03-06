@@ -145,4 +145,5 @@ ignore_packages = [
     "asyncvnc",             # Wrote GPL on setup.cfg but it actually have GPL-3.0 license
     "keysymdef",            # X11 is compatible with GPL (https://www.gnu.org/licenses/gpl-faq.en.html#GPLWrapper)
     "orderedmultidict",     # orderedmultidict is unlicensed
+    "owasp-logger",         # owasp-logger has Apache2.0 license, and is ok to include in a GPL project
 ]
