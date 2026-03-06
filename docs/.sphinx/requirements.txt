@@ -8,3 +8,4 @@ mdformat
 mdformat-black
 mdformat-gfm
 mdformat-myst
+robotframework
