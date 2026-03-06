@@ -49,7 +49,7 @@ class VideoInput(VideoInputBase):
             Pillow Image of the frame
 
         Raises:
-            TimeoutError: If unable to get a screenshot within the timeout period.
+            TimeoutError: If unable to get a screenshot within the timeout periods.
         """
         screenshot = None
         _owasp_logger.sensitive_read(
@@ -78,8 +78,14 @@ class VideoInput(VideoInputBase):
 
     @keyword
     async def stop_video_input(self) -> None:
+        """
+        Stops the video input.
+        """
         pass
 
     @keyword
     async def start_video_input(self) -> None:
+        """
+        Starts the video input.
+        """
         pass
