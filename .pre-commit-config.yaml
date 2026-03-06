@@ -1,5 +1,5 @@
 # Exclude doc starter pack (but keep .md, .rst)
-exclude: '^docs/(doc-cheat-sheet.*|(?!.+\.(md|rst)).+)|docs/reference/rf_libraries/.*|hatch_build.py|yarf/lib/wayland/protocols/.*|yarf/vendor/.*$'
+exclude: '^docs/(doc-cheat-sheet.*|(?!.+\.(md|rst)).+)|hatch_build.py|yarf/lib/wayland/protocols/.*|yarf/vendor/.*$'
 
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks

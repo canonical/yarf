@@ -15,9 +15,10 @@
 
 #### Positional and named arguments
 
-| Name | Type | Default Value | Kind | Required |
-| --- | --- | --- | --- | --- |
-| kwargs | Any |  | VAR_NAMED | No |
+| Name   | Type | Default Value | Kind      | Required |
+| ------ | ---- | ------------- | --------- | -------- |
+| kwargs | Any  |               | VAR_NAMED | No       |
+
 <hr style="border:1px solid grey">
 
 ### Prompt Llm
@@ -32,8 +33,8 @@
 
 #### Positional and named arguments
 
-| Name | Type | Default Value | Kind | Required |
-| --- | --- | --- | --- | --- |
-| prompt | string |  | POSITIONAL_OR_NAMED | Yes |
-| image | None | None | POSITIONAL_OR_NAMED | No |
-| system_prompt | None | None | POSITIONAL_OR_NAMED | No |
+| Name          | Type   | Default Value | Kind                | Required |
+| ------------- | ------ | ------------- | ------------------- | -------- |
+| prompt        | string |               | POSITIONAL_OR_NAMED | Yes      |
+| image         | None   | None          | POSITIONAL_OR_NAMED | No       |
+| system_prompt | None   | None          | POSITIONAL_OR_NAMED | No       |
