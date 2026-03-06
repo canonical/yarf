@@ -23,7 +23,7 @@
 ### Keys Combo
 
 <p>Press and release a combination of keys.</p>
-<p>Arguments: combo: first key, or a list of keys to press at the same time. *keys: remaining keys to press key key.</p>
+<p>Arguments: combo: first key, or a list of keys to press at the same time. *keys: remaining keys to press.</p>
 <p>Raises: AssertionError: If both combo and keys are provided.</p>
 
 #### Positional and named arguments

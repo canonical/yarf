@@ -40,7 +40,7 @@ class HidBase(ABC):
 
         Arguments:
             combo: first key, or a list of keys to press at the same time.
-            *keys: remaining keys to press key key.
+            *keys: remaining keys to press.
 
         Raises:
             AssertionError: If both combo and keys are provided.
