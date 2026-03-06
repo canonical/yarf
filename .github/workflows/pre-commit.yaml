@@ -35,4 +35,6 @@ jobs:
           libxkbcommon-dev \
           libwayland-dev
     - name: Run prek
-      run: uv run prek run --all-files --show-diff-on-failure
+      run: |
+        uv run prek run --all-files --hook-stage manual check-libdoc-up-to-date
+        uv run prek run --all-files --show-diff-on-failure
