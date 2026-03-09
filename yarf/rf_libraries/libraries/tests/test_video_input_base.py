@@ -668,9 +668,15 @@ class TestVideoInputBase:
         )
 
     @pytest.mark.asyncio
-    async def test_find_text_with_color(self, stub_videoinput):
+    @pytest.mark.parametrize(
+        "color",
+        [
+            RGB(red=1, green=1, blue=1),
+            (1, 1, 1),
+        ],
+    )
+    async def test_find_text_with_color(self, stub_videoinput, color):
         image = AsyncMock()
-        color = RGB(red=1, green=1, blue=1)
         stub_videoinput.ocr.find = Mock()
         stub_videoinput.ocr.find.return_value = [
             {
