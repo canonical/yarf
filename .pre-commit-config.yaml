@@ -6,11 +6,11 @@ repos:
   hooks:
     - id: check-libdoc-up-to-date
       name: Check if library docs are up to date
-      files: ^docs/
+      files: ^yarf/rf_libraries/.*\.py$
+      exclude: /(test|tests)/
       entry: bash -c 'make -C docs libdoc-convert && git diff --exit-code docs/'
       language: system
       pass_filenames: false
-      always_run: true
 
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v5.0.0
