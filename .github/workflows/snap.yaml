@@ -40,7 +40,7 @@ jobs:
           ref: ${{ inputs.commit_sha }}
           persist-credentials: false
 
-      - uses: astral-sh/setup-uv@eac588ad8def6316056a12d4907a9d4d84ff7a3b
+      - uses: astral-sh/setup-uv@5a095e7a2014a4212f075830d4f7277575a9d098
 
       - name: Set version
         env:
@@ -54,7 +54,7 @@ jobs:
         run: .github/scripts/snap/add-commit-sha.sh "${COMMIT_SHA}" "${COMMIT_SHORT_SHA}"
 
       - name: Upload updated project files
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
         with:
           name: updated-project-files
           path: |
@@ -87,7 +87,7 @@ jobs:
         persist-credentials: false
 
     - name: Download updated project files
-      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+      uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3
       with:
         name: updated-project-files
         path: .
@@ -97,7 +97,7 @@ jobs:
       id: snapcraft
 
     - name: Upload artifact
-      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
       with:
         name: yarf-${{ matrix.arch }}
         path: ${{ steps.snapcraft.outputs.snap }}
