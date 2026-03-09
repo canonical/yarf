@@ -87,6 +87,7 @@ check-lfs:
 # requires python3-tk
 libdoc-convert: install
 	. $(VENV); python3 $(SPHINXDIR)/rf_libraries/convert_libdoc_to_md.py
+	. $(VENV); mdformat .
 
 run: install check-lfs libdoc-convert
 	. $(VENV); $(VENVDIR)/bin/sphinx-autobuild -b dirhtml --host $(SPHINX_HOST) --port $(SPHINX_PORT) "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
