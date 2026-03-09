@@ -28,6 +28,29 @@
 
 <hr style="border:1px solid grey">
 
+### Find Text With Color
+
+<p>Find text regions in an image that match a specific color.</p>
+<p>Searches for text areas in the image that have colors similar to the target color.</p>
+<p>Args: image: Input image (BGR or RGB format) text: target text to search color: target color of the text. If set, matched text in the wrong color will be skipped. color_tolerance: Color tolerance threshold in % region: region to search for the text.</p>
+<p>Returns: The list of matched text regions where the text was found. Each match is a dictionary with "text", "region", and "confidence".</p>
+
+### Return
+
+{'name': 'list', 'typedoc': 'list', 'nested': \[{'name': 'dict', 'typedoc': 'dictionary', 'nested': [], 'union': False}\], 'union': False}
+
+#### Positional and named arguments
+
+| Name            | Type    | Default Value | Kind                | Required |
+| --------------- | ------- | ------------- | ------------------- | -------- |
+| image           | None    |               | POSITIONAL_OR_NAMED | Yes      |
+| text            | string  |               | POSITIONAL_OR_NAMED | Yes      |
+| color           | None    |               | POSITIONAL_OR_NAMED | Yes      |
+| color_tolerance | integer |               | POSITIONAL_OR_NAMED | Yes      |
+| region          | None    | None          | POSITIONAL_OR_NAMED | No       |
+
+<hr style="border:1px solid grey">
+
 ### Get Text Position
 
 <p>Get the center position of the best match for the specified text. The region to search can be also specified. The center position is round to the nearest integer.</p>

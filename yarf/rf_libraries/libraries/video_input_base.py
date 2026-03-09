@@ -624,6 +624,7 @@ class VideoInputBase(ABC):
 
         return displays
 
+    @keyword
     async def find_text_with_color(
         self,
         image: Optional[Image.Image],
