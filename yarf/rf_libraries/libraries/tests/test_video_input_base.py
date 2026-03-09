@@ -628,11 +628,11 @@ class TestVideoInputBase:
         """
         image = AsyncMock()
         mock_time.side_effect = [0, 1, 2]
-        stub_videoinput.find_text_with_color = AsyncMock()
+        stub_videoinput.find_text = AsyncMock()
         result = [
             {"text": "Hello", "region": Region(0, 0, 1, 1), "confidence": 0.9},
         ]
-        stub_videoinput.find_text_with_color.return_value = result
+        stub_videoinput.find_text.return_value = result
         stub_videoinput.grab_screenshot.return_value = image
         assert await stub_videoinput.match_text(
             "Hello", color=RGB(red=1, blue=1, green=1)
@@ -641,10 +641,18 @@ class TestVideoInputBase:
 
     @pytest.mark.asyncio
     async def test_find_text_with_color_none(self, stub_videoinput):
-        assert not (
-            await stub_videoinput.find_text_with_color(
-                text="oops", image=None, color=None, color_tolerance=1
+        stub_videoinput.ocr.find = Mock()
+        stub_videoinput.ocr.find.return_value = []
+        assert (
+            len(
+                await stub_videoinput.find_text(
+                    text="oops",
+                    image=AsyncMock(),
+                    color=None,
+                    color_tolerance=1,
+                )
             )
+            == 0
         )
 
     @pytest.mark.asyncio
@@ -654,7 +662,7 @@ class TestVideoInputBase:
         stub_videoinput.ocr.find = Mock()
         stub_videoinput.ocr.find.return_value = []
         assert not (
-            await stub_videoinput.find_text_with_color(
+            await stub_videoinput.find_text(
                 text="oops", image=image, color=color, color_tolerance=1
             )
         )
@@ -679,7 +687,7 @@ class TestVideoInputBase:
         stub_videoinput.segmentation_tool.is_hsv_color_similar.return_value = (
             True
         )
-        assert await stub_videoinput.find_text_with_color(
+        assert await stub_videoinput.find_text(
             text="oops", image=image, color=color, color_tolerance=1
         )
 
@@ -708,7 +716,7 @@ class TestVideoInputBase:
         stub_videoinput.segmentation_tool.is_hsv_color_similar.return_value = (
             False
         )
-        assert not await stub_videoinput.find_text_with_color(
+        assert not await stub_videoinput.find_text(
             text="oops", image=image, color=color, color_tolerance=1
         )
 
