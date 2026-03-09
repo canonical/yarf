@@ -643,7 +643,7 @@ class TestVideoInputBase:
     async def test_find_text_with_color_none(self, stub_videoinput):
         assert not (
             await stub_videoinput.find_text_with_color(
-                image=None, text="oops", color=None, color_tolerance=1
+                text="oops", image=None, color=None, color_tolerance=1
             )
         )
 
@@ -655,7 +655,7 @@ class TestVideoInputBase:
         stub_videoinput.ocr.find.return_value = []
         assert not (
             await stub_videoinput.find_text_with_color(
-                image=image, text="oops", color=color, color_tolerance=1
+                text="oops", image=image, color=color, color_tolerance=1
             )
         )
 
@@ -680,7 +680,7 @@ class TestVideoInputBase:
             True
         )
         assert await stub_videoinput.find_text_with_color(
-            image=image, text="oops", color=color, color_tolerance=1
+            text="oops", image=image, color=color, color_tolerance=1
         )
 
     @patch("yarf.rf_libraries.libraries.video_input_base.Image", new=Mock())
@@ -709,7 +709,7 @@ class TestVideoInputBase:
             False
         )
         assert not await stub_videoinput.find_text_with_color(
-            image=image, text="oops", color=color, color_tolerance=1
+            text="oops", image=image, color=color, color_tolerance=1
         )
 
     @pytest.mark.asyncio
