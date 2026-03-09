@@ -665,7 +665,12 @@ class TestVideoInputBase:
         color = RGB(red=1, green=1, blue=1)
         stub_videoinput.ocr.find = Mock()
         stub_videoinput.ocr.find.return_value = [
-            {"text": "Hello", "region": Region(0, 0, 1, 1), "confidence": 0.9},
+            {
+                "text": "Hello",
+                "region": Region(0, 0, 1, 1),
+                "confidence": 0.9,
+                "similarity": 100,
+            },
         ]
         stub_videoinput.segmentation_tool.get_mean_text_color = Mock()
         stub_videoinput.segmentation_tool.crop_and_convert_image_with_padding = Mock()
@@ -688,7 +693,12 @@ class TestVideoInputBase:
         color = RGB(red=1, green=1, blue=1)
         stub_videoinput.ocr.find = Mock()
         stub_videoinput.ocr.find.return_value = [
-            {"text": "Hello", "region": Region(0, 0, 1, 1), "confidence": 0.9},
+            {
+                "text": "Hello",
+                "region": Region(0, 0, 1, 1),
+                "confidence": 0.9,
+                "similarity": 100,
+            },
         ]
         stub_videoinput.segmentation_tool.get_mean_text_color = Mock()
         stub_videoinput.segmentation_tool.crop_and_convert_image_with_padding = Mock()

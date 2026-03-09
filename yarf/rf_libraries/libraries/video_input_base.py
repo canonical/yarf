@@ -216,6 +216,30 @@ class VideoInputBase(ABC):
 
         return self.ocr.read(image)  # type: ignore[arg-type]
 
+    def _log_text_matches(
+        self,
+        matched_text_regions: list[dict],
+        text: str,
+        image: Image.Image,
+        region: Optional[Union[Region, dict]] = None,
+    ) -> None:
+        # Log all the matches if in debug mode (If there are any matches)
+        if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
+            for match in matched_text_regions:
+                similarity = f"{match['similarity']:.2f}"
+                confidence = f"{match['confidence']:.2f}"
+                matched_image = self._draw_region_on_image(
+                    image.copy(), match["region"]
+                )
+                if region:
+                    matched_image = matched_image.crop(region.as_tuple())  # type: ignore[union-attr]
+                log_image(
+                    matched_image,
+                    f"Found text matching '{text}' with similarity "
+                    f"{similarity}, confidence {confidence}: "
+                    f"'{match['text']}'",
+                )
+
     @keyword
     async def find_text(
         self,
@@ -259,22 +283,7 @@ class VideoInputBase(ABC):
         else:
             matched_text_regions = self.ocr.find(image, text, region=region)  # type: ignore[arg-type]
 
-        # Log all the matches if in debug mode (If there are any matches)
-        if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
-            for match in matched_text_regions:
-                similarity = f"{match['similarity']:.2f}"
-                confidence = f"{match['confidence']:.2f}"
-                matched_image = self._draw_region_on_image(
-                    image.copy(), match["region"]
-                )
-                if region:
-                    matched_image = matched_image.crop(region.as_tuple())
-                log_image(
-                    matched_image,
-                    f"Found text matching '{text}' with similarity "
-                    f"{similarity}, confidence {confidence}: "
-                    f"'{match['text']}'",
-                )
+        self._log_text_matches(matched_text_regions, text, image, region)
         return matched_text_regions
 
     @keyword
@@ -622,7 +631,7 @@ class VideoInputBase(ABC):
         color: Optional[RGB],
         color_tolerance: int,
         region: Optional[Union[Region, dict]] = None,
-    ) -> bool:
+    ) -> list[dict]:
         """
         Find text regions in an image that match a specific color.
 
@@ -636,10 +645,11 @@ class VideoInputBase(ABC):
             region: region to search for the text.
 
         Returns:
-            List of text region coordinates [(x1, y1, x2, y2), ...]
+            The list of matched text regions where the text was found. Each
+            match is a dictionary with "text", "region", and "confidence".
         """
         if color is None or image is None:
-            return False
+            return []
 
         logger.info(
             "Trying to match text with a specific color {}".format(
@@ -649,42 +659,52 @@ class VideoInputBase(ABC):
         res = self.ocr.find(image, text, region=to_region(region))
         if res == [] or "region" not in res[0]:
             logger.info(f"Text '{text}' not found in the image.")
-            return False
+            return []
 
-        subregion = res[0]["region"]
-
-        # mean color of the text strokes (not the outer background ring)
-        # crop and pad
-        cropped_and_padded = (
-            self.segmentation_tool.crop_and_convert_image_with_padding(
-                image,
-                subregion,
-                pad=-2,
-            )
-        )
-
-        # get mean color in HSV
-        text_color_hsv = self.segmentation_tool.get_mean_text_color(
-            cropped_and_padded
-        )
-
-        target_color_hsv = self.segmentation_tool.convert_rgb_to_hsv(color)
-
-        logger.info(f"Target color (HSV):   {target_color_hsv}")
-        logger.info(f"Detected color (HSV): {text_color_hsv}")
-
-        is_similar = self.segmentation_tool.is_hsv_color_similar(
-            text_color_hsv, target_color_hsv, color_tolerance
-        )
-
-        if not is_similar:
-            logger.info("The colors of the detected text could not be matched")
-            log_image(
-                Image.fromarray(cropped_and_padded),
-                "The image used for color matching was:",
+        text_matches_with_color = []
+        for match in res:
+            logger.info(
+                f"Found text matching '{text}' with similarity "
+                f"{match['similarity']:.2f}, confidence {match['confidence']:.2f}: "
+                f"'{match['text']}' at region {astuple(match['region'])}"
             )
 
-        return is_similar
+            # mean color of the text strokes (not the outer background ring)
+            # crop and pad
+            cropped_and_padded = (
+                self.segmentation_tool.crop_and_convert_image_with_padding(
+                    image,
+                    match["region"],
+                    pad=-2,
+                )
+            )
+
+            # get mean color in HSV
+            text_color_hsv = self.segmentation_tool.get_mean_text_color(
+                cropped_and_padded
+            )
+
+            target_color_hsv = self.segmentation_tool.convert_rgb_to_hsv(color)
+
+            logger.info(f"Target color (HSV):   {target_color_hsv}")
+            logger.info(f"Detected color (HSV): {text_color_hsv}")
+
+            is_similar = self.segmentation_tool.is_hsv_color_similar(
+                text_color_hsv, target_color_hsv, color_tolerance
+            )
+            if is_similar:
+                text_matches_with_color.append(match)
+            else:
+                logger.info(
+                    "The colors of the detected text could not be matched"
+                )
+                log_image(
+                    Image.fromarray(cropped_and_padded),
+                    "The image used for color matching was:",
+                )
+
+        self._log_text_matches(text_matches_with_color, text, image, region)
+        return text_matches_with_color
 
     @keyword
     async def log_screenshot(self, msg: str = "") -> None:
