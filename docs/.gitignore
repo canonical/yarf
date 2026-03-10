@@ -15,7 +15,6 @@
 
 # Build outputs
 _build
-reference/rf_libraries/*
 
 # Node.js
 package*.json
