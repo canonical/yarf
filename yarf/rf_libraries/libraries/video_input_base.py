@@ -216,34 +216,12 @@ class VideoInputBase(ABC):
 
         return self.ocr.read(image)  # type: ignore[arg-type]
 
-    @keyword
-    async def find_text(
+    def _get_ocr_text_from_image(
         self,
         text: str,
-        region: Optional[Union[Region, dict]] = None,
         image: Optional[Image.Image] = None,
-    ) -> List[dict]:
-        """
-        Find the specified text in the provided image or grab a screenshot to
-        search from. The region can be specified directly in the robot file
-        using `RPA.core.geometry.to_region`
-
-        Args:
-            text: text or regex to search for, use the format `regex:<regex-string>`
-                  if the text we want to find is a regex.
-            region: region to search for the text.
-            image: image to search from.
-
-        Returns:
-            The list of matched text regions where the text was found. Each
-            match is a dictionary with "text", "region", and "confidence".
-        """
-        if isinstance(region, dict):
-            region = Region(**region)
-
-        if not image:
-            image = await self._grab_and_save_screenshot()
-
+        region: Optional[Region] = None,
+    ) -> list[dict]:
         matched_text_regions: list[dict] = []
         regex_prefix = "regex:"
         if text.startswith(regex_prefix):
@@ -259,6 +237,103 @@ class VideoInputBase(ABC):
         else:
             matched_text_regions = self.ocr.find(image, text, region=region)  # type: ignore[arg-type]
 
+        return matched_text_regions
+
+    @keyword
+    async def find_text(
+        self,
+        text: str,
+        region: Optional[Union[Region, dict]] = None,
+        image: Optional[Image.Image] = None,
+        color: Optional[Union[RGB, tuple[int, int, int]]] = None,
+        color_tolerance: int = 20,
+    ) -> List[dict]:
+        """
+        Find the specified text in the provided image or grab a screenshot to
+        search from. The region can be specified directly in the robot file
+        using `RPA.core.geometry.to_region`
+
+        Args:
+            text: text or regex to search for, use the format `regex:<regex-string>`
+                  if the text we want to find is a regex.
+            region: region to search for the text.
+            image: image to search from.
+            color: target color of the text. If set, matched text in the wrong color will be skipped.
+            color_tolerance: Color tolerance threshold in %
+
+        Returns:
+            The list of matched text regions where the text was found. Each
+            match is a dictionary with "text", "region", and "confidence".
+        """
+        if isinstance(region, dict):
+            region = Region(**region)
+
+        if not image:
+            image = await self._grab_and_save_screenshot()
+
+        matched_text_regions: list[dict] = []
+        ocr_text_regions: list[dict] = self._get_ocr_text_from_image(
+            text, image=image, region=region
+        )
+        if color is None:
+            matched_text_regions = ocr_text_regions
+        else:
+            if isinstance(color, tuple):
+                color = to_RGB(color)
+
+            logger.info(
+                "Trying to match text with a specific color {}".format(
+                    astuple(color)  # type: ignore[arg-type]
+                )
+            )
+
+            if len(ocr_text_regions) == 0:
+                logger.info(f"Text '{text}' not found in the image.")
+                return matched_text_regions
+
+            target_color_hsv = self.segmentation_tool.convert_rgb_to_hsv(
+                color  # type: ignore[arg-type]
+            )
+            for match in ocr_text_regions:
+                logger.info(
+                    f"Found text matching '{text}' with similarity "
+                    f"{match['similarity']:.2f}, confidence {match['confidence']:.2f}: "
+                    f"'{match['text']}' at region {astuple(match['region'])}"
+                )
+
+                # mean color of the text strokes (not the outer background ring)
+                # crop and pad
+                cropped_and_padded = (
+                    self.segmentation_tool.crop_and_convert_image_with_padding(
+                        image,
+                        match["region"],
+                        pad=-2,
+                    )
+                )
+
+                # get mean color in HSV
+                text_color_hsv = self.segmentation_tool.get_mean_text_color(
+                    cropped_and_padded
+                )
+
+                logger.info(f"Target color (HSV):   {target_color_hsv}")
+                logger.info(f"Detected color (HSV): {text_color_hsv}")
+
+                is_similar = self.segmentation_tool.is_hsv_color_similar(
+                    text_color_hsv, target_color_hsv, color_tolerance
+                )
+                if is_similar:
+                    matched_text_regions.append(match)
+
+                else:
+                    logger.info(
+                        "The colors of the detected text could not be matched"
+                    )
+                    log_image(
+                        Image.fromarray(cropped_and_padded),
+                        "The image used for color matching was:",
+                    )
+
         # Log all the matches if in debug mode (If there are any matches)
         if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
             for match in matched_text_regions:
@@ -268,13 +343,14 @@ class VideoInputBase(ABC):
                     image.copy(), match["region"]
                 )
                 if region:
-                    matched_image = matched_image.crop(region.as_tuple())
+                    matched_image = matched_image.crop(region.as_tuple())  # type: ignore[union-attr]
                 log_image(
                     matched_image,
                     f"Found text matching '{text}' with similarity "
                     f"{similarity}, confidence {confidence}: "
                     f"'{match['text']}'",
                 )
+
         return matched_text_regions
 
     @keyword
@@ -326,13 +402,16 @@ class VideoInputBase(ABC):
                 text_matches = await self.find_text(
                     text, image=image, region=region
                 )
+
             else:  # a color was given.
-                text_matches = await self.find_text_with_color(
-                    image=image,
+                text_matches = await self.find_text(
                     text=text,
+                    image=image,
+                    region=region,
                     color=color_rgb,
                     color_tolerance=color_tolerance,
                 )
+
             if text_matches:
                 return text_matches, cropped_image
 
@@ -614,77 +693,6 @@ class VideoInputBase(ABC):
             )
 
         return displays
-
-    async def find_text_with_color(
-        self,
-        image: Optional[Image.Image],
-        text: str,
-        color: Optional[RGB],
-        color_tolerance: int,
-        region: Optional[Union[Region, dict]] = None,
-    ) -> bool:
-        """
-        Find text regions in an image that match a specific color.
-
-        Searches for text areas in the image that have colors similar to the target color.
-
-        Args:
-            image: Input image (BGR or RGB format)
-            text: target text to search
-            color: target color of the text. If set, matched text in the wrong color will be skipped.
-            color_tolerance: Color tolerance threshold in %
-            region: region to search for the text.
-
-        Returns:
-            List of text region coordinates [(x1, y1, x2, y2), ...]
-        """
-        if color is None or image is None:
-            return False
-
-        logger.info(
-            "Trying to match text with a specific color {}".format(
-                astuple(color)
-            )
-        )
-        res = self.ocr.find(image, text, region=to_region(region))
-        if res == [] or "region" not in res[0]:
-            logger.info(f"Text '{text}' not found in the image.")
-            return False
-
-        subregion = res[0]["region"]
-
-        # mean color of the text strokes (not the outer background ring)
-        # crop and pad
-        cropped_and_padded = (
-            self.segmentation_tool.crop_and_convert_image_with_padding(
-                image,
-                subregion,
-                pad=-2,
-            )
-        )
-
-        # get mean color in HSV
-        text_color_hsv = self.segmentation_tool.get_mean_text_color(
-            cropped_and_padded
-        )
-
-        target_color_hsv = self.segmentation_tool.convert_rgb_to_hsv(color)
-
-        logger.info(f"Target color (HSV):   {target_color_hsv}")
-        logger.info(f"Detected color (HSV): {text_color_hsv}")
-
-        is_similar = self.segmentation_tool.is_hsv_color_similar(
-            text_color_hsv, target_color_hsv, color_tolerance
-        )
-
-        if not is_similar:
-            logger.info("The colors of the detected text could not be matched")
-            log_image(
-                Image.fromarray(cropped_and_padded),
-                "The image used for color matching was:",
-            )
-
-        return is_similar
 
     @keyword
     async def log_screenshot(self, msg: str = "") -> None:

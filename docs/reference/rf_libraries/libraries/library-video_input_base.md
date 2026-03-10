@@ -10,7 +10,7 @@
 ### Find Text
 
 <p>Find the specified text in the provided image or grab a screenshot to search from. The region can be specified directly in the robot file using <span class="name">RPA.core.geometry.to_region</span></p>
-<p>Args: text: text or regex to search for, use the format <span class="name">regex:&lt;regex-string&gt;</span> if the text we want to find is a regex. region: region to search for the text. image: image to search from.</p>
+<p>Args: text: text or regex to search for, use the format <span class="name">regex:&lt;regex-string&gt;</span> if the text we want to find is a regex. region: region to search for the text. image: image to search from. color: target color of the text. If set, matched text in the wrong color will be skipped. color_tolerance: Color tolerance threshold in %</p>
 <p>Returns: The list of matched text regions where the text was found. Each match is a dictionary with "text", "region", and "confidence".</p>
 
 ### Return
@@ -19,34 +19,13 @@
 
 #### Positional and named arguments
 
-| Name   | Type   | Default Value | Kind                | Required |
-| ------ | ------ | ------------- | ------------------- | -------- |
-| text   | string |               | POSITIONAL_OR_NAMED | Yes      |
-| region | None   | None          | POSITIONAL_OR_NAMED | No       |
-| image  | None   | None          | POSITIONAL_OR_NAMED | No       |
-
-<hr style="border:1px solid grey">
-
-### Find Text With Color
-
-<p>Find text regions in an image that match a specific color.</p>
-<p>Searches for text areas in the image that have colors similar to the target color.</p>
-<p>Args: image: Input image (BGR or RGB format) text: target text to search color: target color of the text. If set, matched text in the wrong color will be skipped. color_tolerance: Color tolerance threshold in % region: region to search for the text.</p>
-<p>Returns: List of text region coordinates [(x1, y1, x2, y2), ...]</p>
-
-### Return
-
-{'name': 'bool', 'typedoc': 'boolean', 'nested': [], 'union': False}
-
-#### Positional and named arguments
-
 | Name            | Type    | Default Value | Kind                | Required |
 | --------------- | ------- | ------------- | ------------------- | -------- |
-| image           | None    |               | POSITIONAL_OR_NAMED | Yes      |
 | text            | string  |               | POSITIONAL_OR_NAMED | Yes      |
-| color           | None    |               | POSITIONAL_OR_NAMED | Yes      |
-| color_tolerance | integer |               | POSITIONAL_OR_NAMED | Yes      |
 | region          | None    | None          | POSITIONAL_OR_NAMED | No       |
+| image           | None    | None          | POSITIONAL_OR_NAMED | No       |
+| color           | None    | None          | POSITIONAL_OR_NAMED | No       |
+| color_tolerance | integer | 20            | POSITIONAL_OR_NAMED | No       |
 
 <hr style="border:1px solid grey">
 

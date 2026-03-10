@@ -628,11 +628,11 @@ class TestVideoInputBase:
         """
         image = AsyncMock()
         mock_time.side_effect = [0, 1, 2]
-        stub_videoinput.find_text_with_color = AsyncMock()
+        stub_videoinput.find_text = AsyncMock()
         result = [
             {"text": "Hello", "region": Region(0, 0, 1, 1), "confidence": 0.9},
         ]
-        stub_videoinput.find_text_with_color.return_value = result
+        stub_videoinput.find_text.return_value = result
         stub_videoinput.grab_screenshot.return_value = image
         assert await stub_videoinput.match_text(
             "Hello", color=RGB(red=1, blue=1, green=1)
@@ -641,10 +641,18 @@ class TestVideoInputBase:
 
     @pytest.mark.asyncio
     async def test_find_text_with_color_none(self, stub_videoinput):
-        assert not (
-            await stub_videoinput.find_text_with_color(
-                image=None, text="oops", color=None, color_tolerance=1
+        stub_videoinput.ocr.find = Mock()
+        stub_videoinput.ocr.find.return_value = []
+        assert (
+            len(
+                await stub_videoinput.find_text(
+                    text="oops",
+                    image=AsyncMock(),
+                    color=None,
+                    color_tolerance=1,
+                )
             )
+            == 0
         )
 
     @pytest.mark.asyncio
@@ -654,18 +662,29 @@ class TestVideoInputBase:
         stub_videoinput.ocr.find = Mock()
         stub_videoinput.ocr.find.return_value = []
         assert not (
-            await stub_videoinput.find_text_with_color(
-                image=image, text="oops", color=color, color_tolerance=1
+            await stub_videoinput.find_text(
+                text="oops", image=image, color=color, color_tolerance=1
             )
         )
 
     @pytest.mark.asyncio
-    async def test_find_text_with_color(self, stub_videoinput):
+    @pytest.mark.parametrize(
+        "color",
+        [
+            RGB(red=1, green=1, blue=1),
+            (1, 1, 1),
+        ],
+    )
+    async def test_find_text_with_color(self, stub_videoinput, color):
         image = AsyncMock()
-        color = RGB(red=1, green=1, blue=1)
         stub_videoinput.ocr.find = Mock()
         stub_videoinput.ocr.find.return_value = [
-            {"text": "Hello", "region": Region(0, 0, 1, 1), "confidence": 0.9},
+            {
+                "text": "Hello",
+                "region": Region(0, 0, 1, 1),
+                "confidence": 0.9,
+                "similarity": 100,
+            },
         ]
         stub_videoinput.segmentation_tool.get_mean_text_color = Mock()
         stub_videoinput.segmentation_tool.crop_and_convert_image_with_padding = Mock()
@@ -674,8 +693,8 @@ class TestVideoInputBase:
         stub_videoinput.segmentation_tool.is_hsv_color_similar.return_value = (
             True
         )
-        assert await stub_videoinput.find_text_with_color(
-            image=image, text="oops", color=color, color_tolerance=1
+        assert await stub_videoinput.find_text(
+            text="oops", image=image, color=color, color_tolerance=1
         )
 
     @patch("yarf.rf_libraries.libraries.video_input_base.Image", new=Mock())
@@ -688,7 +707,12 @@ class TestVideoInputBase:
         color = RGB(red=1, green=1, blue=1)
         stub_videoinput.ocr.find = Mock()
         stub_videoinput.ocr.find.return_value = [
-            {"text": "Hello", "region": Region(0, 0, 1, 1), "confidence": 0.9},
+            {
+                "text": "Hello",
+                "region": Region(0, 0, 1, 1),
+                "confidence": 0.9,
+                "similarity": 100,
+            },
         ]
         stub_videoinput.segmentation_tool.get_mean_text_color = Mock()
         stub_videoinput.segmentation_tool.crop_and_convert_image_with_padding = Mock()
@@ -698,8 +722,8 @@ class TestVideoInputBase:
         stub_videoinput.segmentation_tool.is_hsv_color_similar.return_value = (
             False
         )
-        assert not await stub_videoinput.find_text_with_color(
-            image=image, text="oops", color=color, color_tolerance=1
+        assert not await stub_videoinput.find_text(
+            text="oops", image=image, color=color, color_tolerance=1
         )
 
     @pytest.mark.asyncio
