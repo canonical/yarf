@@ -291,6 +291,9 @@ class VideoInputBase(ABC):
                 logger.info(f"Text '{text}' not found in the image.")
                 return matched_text_regions
 
+            target_color_hsv = self.segmentation_tool.convert_rgb_to_hsv(
+                color  # type: ignore[arg-type]
+            )
             for match in ocr_text_regions:
                 logger.info(
                     f"Found text matching '{text}' with similarity "
@@ -311,10 +314,6 @@ class VideoInputBase(ABC):
                 # get mean color in HSV
                 text_color_hsv = self.segmentation_tool.get_mean_text_color(
                     cropped_and_padded
-                )
-
-                target_color_hsv = self.segmentation_tool.convert_rgb_to_hsv(
-                    color  # type: ignore[arg-type]
                 )
 
                 logger.info(f"Target color (HSV):   {target_color_hsv}")
