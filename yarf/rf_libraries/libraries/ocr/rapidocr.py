@@ -50,7 +50,7 @@ class RapidOCRReader:
           text matching. If the similarity between the found text and the target
           text is below this threshold, the match is discarded.
           Set ${OCR_SIMILARITY_THRESHOLD} to override.
-        DEFAULT_CONFIDENCE_THRESHOLD: Minumum confidence percentage (0-100) for
+        DEFAULT_CONFIDENCE_THRESHOLD: Minimum confidence percentage (0-100) for
           text matching. If the confidence of the found text is below this
           threshold, the match is discarded.
           Set ${OCR_CONFIDENCE_THRESHOLD} to override.
