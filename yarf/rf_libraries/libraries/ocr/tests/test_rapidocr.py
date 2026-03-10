@@ -124,7 +124,7 @@ class TestRapidOCR:
             ),
         ]
         with patch(
-            "yarf.rf_libraries.libraries.video_input_base.BuiltIn.get_variable_value"
+            "yarf.rf_libraries.libraries.ocr.rapidocr.BuiltIn.get_variable_value"
         ) as mock_get_variable_value:
             mock_get_variable_value.return_value = 80
             result = RapidOCRReader.get_matches(
@@ -145,7 +145,7 @@ class TestRapidOCR:
             OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Hello World", 90),
         ]
         with patch(
-            "yarf.rf_libraries.libraries.video_input_base.BuiltIn.get_variable_value"
+            "yarf.rf_libraries.libraries.ocr.rapidocr.BuiltIn.get_variable_value"
         ) as mock_get_variable_value:
             mock_get_variable_value.return_value = 80
             result = RapidOCRReader.get_matches(
@@ -166,7 +166,7 @@ class TestRapidOCR:
             OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Hello World", 90),
         ]
         with patch(
-            "yarf.rf_libraries.libraries.video_input_base.BuiltIn.get_variable_value"
+            "yarf.rf_libraries.libraries.ocr.rapidocr.BuiltIn.get_variable_value"
         ) as mock_get_variable_value:
             mock_get_variable_value.return_value = 80
             result = RapidOCRReader.get_matches(
@@ -190,7 +190,7 @@ class TestRapidOCR:
             OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to ...", 90),
         ]
         with patch(
-            "yarf.rf_libraries.libraries.video_input_base.BuiltIn.get_variable_value"
+            "yarf.rf_libraries.libraries.ocr.rapidocr.BuiltIn.get_variable_value"
         ) as mock_get_variable_value:
             mock_get_variable_value.return_value = 80
             result = RapidOCRReader.get_matches(
@@ -221,7 +221,7 @@ class TestRapidOCR:
             OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to ...", 90),
         ]
         with patch(
-            "yarf.rf_libraries.libraries.video_input_base.BuiltIn.get_variable_value"
+            "yarf.rf_libraries.libraries.ocr.rapidocr.BuiltIn.get_variable_value"
         ) as mock_get_variable_value:
             mock_get_variable_value.return_value = 90
             result = RapidOCRReader.get_matches(
@@ -251,7 +251,7 @@ class TestRapidOCR:
             ),
         ]
         with patch(
-            "yarf.rf_libraries.libraries.video_input_base.BuiltIn.get_variable_value"
+            "yarf.rf_libraries.libraries.ocr.rapidocr.BuiltIn.get_variable_value"
         ) as mock_get_variable_value:
             mock_get_variable_value.return_value = 80
             result = RapidOCRReader.get_matches(
