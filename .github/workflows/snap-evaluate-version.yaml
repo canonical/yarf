@@ -30,13 +30,13 @@ jobs:
           fetch-tags: true
           persist-credentials: false
 
-      - uses: gittools/actions/gitversion/setup@71a79f7569b981036febd9ce5870f87e069928e7
+      - uses: gittools/actions/gitversion/setup@e0d584e657c606912e8fd522aeed29025975705f
         with:
           versionSpec: '6.x'
 
       - name: Evaluate semantic version
         id: gv
-        uses: gittools/actions/gitversion/execute@71a79f7569b981036febd9ce5870f87e069928e7
+        uses: gittools/actions/gitversion/execute@e0d584e657c606912e8fd522aeed29025975705f
         with:
           configFilePath: GitVersion.yaml
 
