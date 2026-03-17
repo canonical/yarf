@@ -252,6 +252,47 @@ class TestRapidOCR:
             }
         ]
 
+    @pytest.mark.parametrize(
+        "variable, value",
+        [
+            ("${OCR_CONFIDENCE_THRESHOLD}", "not_a_number"),
+            ("${OCR_SIMILARITY_THRESHOLD}", "not_a_number"),
+        ],
+    )
+    def test_get_matches_invalid_threshold_string(
+        self, mock_reader, variable, value
+    ):
+        """
+        Setting a threshold variable to a non-numeric string must call
+        BuiltIn().fail() with an appropriate message.
+        """
+        items = [
+            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Hello World", 90),
+        ]
+        thresholds = {
+            "${OCR_CONFIDENCE_THRESHOLD}": 80,
+            "${OCR_SIMILARITY_THRESHOLD}": 80,
+        }
+        thresholds[variable] = value
+
+        with patch(
+            "yarf.rf_libraries.libraries.ocr.rapidocr.BuiltIn"
+        ) as mock_builtin_cls:
+            mock_builtin = mock_builtin_cls.return_value
+            mock_builtin.get_variable_value.side_effect = (
+                lambda var, *a, **kw: thresholds.get(var)
+            )
+            mock_builtin.fail.side_effect = AssertionError("fail called")
+            with pytest.raises(AssertionError):
+                RapidOCRReader.get_matches(
+                    mock_reader, items, "Hello World", False
+                )
+
+        mock_builtin.fail.assert_called_once()
+        call_args = mock_builtin.fail.call_args[0][0]
+        assert "must be a number" in call_args
+        assert value in call_args
+
     def test_asimetric_long_match(self, mock_reader):
         items = [
             OCRResult(
