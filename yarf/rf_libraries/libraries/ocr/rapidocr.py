@@ -196,7 +196,12 @@ class RapidOCRReader:
             logger.debug(
                 f"OCR similarity threshold set to {similarity_threshold_str}"
             )
-            similarity_threshold = float(similarity_threshold_str)
+            try:
+                similarity_threshold = float(similarity_threshold_str)
+            except ValueError:
+                BuiltIn().fail(
+                    f"OCR_SIMILARITY_THRESHOLD must be a number, got {similarity_threshold_str}"
+                )
 
         confidence_threshold = self.DEFAULT_CONFIDENCE_THRESHOLD
         confidence_threshold_str = BuiltIn().get_variable_value(
@@ -206,7 +211,12 @@ class RapidOCRReader:
             logger.debug(
                 f"OCR confidence threshold set to {confidence_threshold_str}"
             )
-            confidence_threshold = float(confidence_threshold_str)
+            try:
+                confidence_threshold = float(confidence_threshold_str)
+            except ValueError:
+                BuiltIn().fail(
+                    f"OCR_CONFIDENCE_THRESHOLD must be a number, got {confidence_threshold_str}"
+                )
 
         matches = []
         for item in result:
