@@ -123,9 +123,16 @@ class TestRapidOCR:
                 Quad([[0, 0], [1, 0], [1, 1], [0, 1]]), "Hello World", 90
             ),
         ]
-        result = RapidOCRReader.get_matches(
-            mock_reader, items, "Hello World", 80, 80, False
-        )
+        with patch(
+            "yarf.rf_libraries.libraries.ocr.rapidocr.BuiltIn.get_variable_value"
+        ) as mock_get_variable_value:
+            mock_get_variable_value.side_effect = lambda var, *a, **kw: {
+                "${OCR_CONFIDENCE_THRESHOLD}": 80,
+                "${OCR_SIMILARITY_THRESHOLD}": 80,
+            }.get(var)
+            result = RapidOCRReader.get_matches(
+                mock_reader, items, "Hello World", False
+            )
 
         assert result == [
             {
@@ -140,9 +147,16 @@ class TestRapidOCR:
         items = [
             OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Hello World", 90),
         ]
-        result = RapidOCRReader.get_matches(
-            mock_reader, items, "Hello", 80, 80, True
-        )
+        with patch(
+            "yarf.rf_libraries.libraries.ocr.rapidocr.BuiltIn.get_variable_value"
+        ) as mock_get_variable_value:
+            mock_get_variable_value.side_effect = lambda var, *a, **kw: {
+                "${OCR_CONFIDENCE_THRESHOLD}": 80,
+                "${OCR_SIMILARITY_THRESHOLD}": 80,
+            }.get(var)
+            result = RapidOCRReader.get_matches(
+                mock_reader, items, "Hello", True
+            )
 
         assert result == [
             {
@@ -157,9 +171,16 @@ class TestRapidOCR:
         items = [
             OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Hello World", 90),
         ]
-        result = RapidOCRReader.get_matches(
-            mock_reader, items, "Hello", 80, 90, False
-        )
+        with patch(
+            "yarf.rf_libraries.libraries.ocr.rapidocr.BuiltIn.get_variable_value"
+        ) as mock_get_variable_value:
+            mock_get_variable_value.side_effect = lambda var, *a, **kw: {
+                "${OCR_CONFIDENCE_THRESHOLD}": 90,
+                "${OCR_SIMILARITY_THRESHOLD}": 80,
+            }.get(var)
+            result = RapidOCRReader.get_matches(
+                mock_reader, items, "Hello", False
+            )
 
         assert result == []
 
@@ -177,9 +198,16 @@ class TestRapidOCR:
             OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to Trash", 90),
             OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to ...", 90),
         ]
-        result = RapidOCRReader.get_matches(
-            mock_reader, items, input_text, 80, 80, True
-        )
+        with patch(
+            "yarf.rf_libraries.libraries.ocr.rapidocr.BuiltIn.get_variable_value"
+        ) as mock_get_variable_value:
+            mock_get_variable_value.side_effect = lambda var, *a, **kw: {
+                "${OCR_CONFIDENCE_THRESHOLD}": 80,
+                "${OCR_SIMILARITY_THRESHOLD}": 80,
+            }.get(var)
+            result = RapidOCRReader.get_matches(
+                mock_reader, items, input_text, True
+            )
         for text in result_text:
             assert {
                 "text": text,
@@ -204,9 +232,16 @@ class TestRapidOCR:
             OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to Trash", 90),
             OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Move to ...", 90),
         ]
-        result = RapidOCRReader.get_matches(
-            mock_reader, items, input_text, 90, 80, True
-        )
+        with patch(
+            "yarf.rf_libraries.libraries.ocr.rapidocr.BuiltIn.get_variable_value"
+        ) as mock_get_variable_value:
+            mock_get_variable_value.side_effect = lambda var, *a, **kw: {
+                "${OCR_CONFIDENCE_THRESHOLD}": 80,
+                "${OCR_SIMILARITY_THRESHOLD}": 90,
+            }.get(var)
+            result = RapidOCRReader.get_matches(
+                mock_reader, items, input_text, True
+            )
         assert len(result) == 1
         assert result == [
             {
@@ -216,6 +251,47 @@ class TestRapidOCR:
                 "confidence": 90,
             }
         ]
+
+    @pytest.mark.parametrize(
+        "variable, value",
+        [
+            ("${OCR_CONFIDENCE_THRESHOLD}", "not_a_number"),
+            ("${OCR_SIMILARITY_THRESHOLD}", "not_a_number"),
+        ],
+    )
+    def test_get_matches_invalid_threshold_string(
+        self, mock_reader, variable, value
+    ):
+        """
+        Setting a threshold variable to a non-numeric string must call
+        BuiltIn().fail() with an appropriate message.
+        """
+        items = [
+            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Hello World", 90),
+        ]
+        thresholds = {
+            "${OCR_CONFIDENCE_THRESHOLD}": 80,
+            "${OCR_SIMILARITY_THRESHOLD}": 80,
+        }
+        thresholds[variable] = value
+
+        with patch(
+            "yarf.rf_libraries.libraries.ocr.rapidocr.BuiltIn"
+        ) as mock_builtin_cls:
+            mock_builtin = mock_builtin_cls.return_value
+            mock_builtin.get_variable_value.side_effect = (
+                lambda var, *a, **kw: thresholds.get(var)
+            )
+            mock_builtin.fail.side_effect = AssertionError("fail called")
+            with pytest.raises(AssertionError):
+                RapidOCRReader.get_matches(
+                    mock_reader, items, "Hello World", False
+                )
+
+        mock_builtin.fail.assert_called_once()
+        call_args = mock_builtin.fail.call_args[0][0]
+        assert "must be a number" in call_args
+        assert value in call_args
 
     def test_asimetric_long_match(self, mock_reader):
         items = [
@@ -230,9 +306,16 @@ class TestRapidOCR:
                 90,
             ),
         ]
-        result = RapidOCRReader.get_matches(
-            mock_reader, items, "Move to Trash!", 80, 80, True
-        )
+        with patch(
+            "yarf.rf_libraries.libraries.ocr.rapidocr.BuiltIn.get_variable_value"
+        ) as mock_get_variable_value:
+            mock_get_variable_value.side_effect = lambda var, *a, **kw: {
+                "${OCR_CONFIDENCE_THRESHOLD}": 80,
+                "${OCR_SIMILARITY_THRESHOLD}": 80,
+            }.get(var)
+            result = RapidOCRReader.get_matches(
+                mock_reader, items, "Move to Trash!", True
+            )
 
         assert result[0]["text"] == "Move to Trash"
         assert result[0]["region"] == Region(0, 0, 1, 1)
