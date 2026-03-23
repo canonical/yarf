@@ -32,7 +32,7 @@ jobs:
 
       - uses: gittools/actions/gitversion/setup@e0d584e657c606912e8fd522aeed29025975705f
         with:
-          versionSpec: '6.x'
+          versionSpec: '6.7.0'
 
       - name: Evaluate semantic version
         id: gv

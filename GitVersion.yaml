@@ -15,7 +15,5 @@ branches:
   pull-request:
     increment: Patch
 
-  feature:
-
 # PEP440 is not compatible with Semantic Versioning 🥹, therefore for non-main branches version will be set from InformationalVersion
 assembly-informational-format: '{Major}.{Minor}.{Patch}+{BranchName}.{ShortSha}'
