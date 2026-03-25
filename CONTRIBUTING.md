@@ -48,6 +48,10 @@ we run on the code:
 uv run prek install
 ```
 
+> [!NOTE]
+> We have documentation pre-commit checks. However, these checks will only run in CIs and tox, and will not be run when we commit changes.
+> To run prek with these documentation check, we can run `prek run --all-files --hook-stage manual`
+
 We can start working on the repository here.
 
 ## Build the Snap Package

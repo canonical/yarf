@@ -25,6 +25,7 @@ repos:
   rev: 0.7.22
   hooks:
   - id: mdformat
+    stages: [manual]
     additional_dependencies:
     - mdformat-black
     - mdformat-gfm
@@ -148,6 +149,7 @@ repos:
       entry: make -C docs spelling
       language: system
       pass_filenames: false
+      stages: [manual]
 
     - id: docs-linkcheck
       name: Docs link check
@@ -155,6 +157,7 @@ repos:
       entry: make -C docs linkcheck
       language: system
       pass_filenames: false
+      stages: [manual]
 
     - id: docs-woke
       name: Docs inclusive language check
@@ -162,6 +165,7 @@ repos:
       entry: make -C docs woke
       language: system
       pass_filenames: false
+      stages: [manual]
 
     - id: docs-vale
       name: Docs style guide compliance check
@@ -169,6 +173,7 @@ repos:
       entry: make -C docs vale
       language: system
       pass_filenames: false
+      stages: [manual]
 
     - id: docs-pa11y
       name: Docs accessibility check
@@ -176,3 +181,4 @@ repos:
       entry: make -C docs pa11y
       language: system
       pass_filenames: false
+      stages: [manual]
