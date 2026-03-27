@@ -121,7 +121,7 @@ To run with the Mir platform, you need to run a Mir compositor with additional W
 ---
 caption: `yarf` command for Mir
 ---
-export WAYLAND_DISPLAY=wayland-99
+export WAYLAND_DISPLAY=/run/user/$(id -u ${USERNAME})/wayland-99
 export MIR_SERVER_ADD_WAYLAND_EXTENSIONS=zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1
 
 mir-test-tools.demo-server &  # starts the demo Mir compositor
