@@ -87,6 +87,9 @@ parts:
 
       find "$CRAFT_PRIME" -type d -empty -delete
 
+      sed -i -e "s|/snap/gnome-46-2404-sdk/current||g" ${CRAFT_PRIME}/pyvenv.cfg
+      sed -i -E "s|/snap/gnome-46-2404-sdk/[0-9]+||g" ${CRAFT_PRIME}/pyvenv.cfg
+
 apps:
   yarf:
     extensions:
