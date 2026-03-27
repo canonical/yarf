@@ -68,6 +68,7 @@ parts:
       - -usr/share/X11
       - -usr/share/lintian
       - -usr/share/man
+      - -pyvenv.cfg
 
   cleanup:
     after: [ yarf ]
