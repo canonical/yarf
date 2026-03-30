@@ -1725,11 +1725,11 @@ wheels = [
 
 [[package]]
 name = "robotframework"
-version = "7.4"
+version = "7.4.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/8e/e4/3b945f1dce19258d03a124fc68f9310453b6dad0c6d6231bf9d1ed50c309/robotframework-7.4.tar.gz", hash = "sha256:d559c8152cb39df8e62e6224d0c2c9146826ac74c0aa6fd51c82b843f05f0071", size = 653870, upload-time = "2025-12-12T11:10:04.396Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/19/f3/ad51daf85d95848831601851598640f951a47a9f9de88039235cf58c5bb9/robotframework-7.4.2.tar.gz", hash = "sha256:1c934e7f43600de407860cd2bd2fdc41adad4a4a785d8b46b1ed485fdc0f6c9f", size = 654405, upload-time = "2026-03-03T16:28:54.899Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4b/51/ddb8389daf889c5f82c08f3cac89a6b866db01b6c3d536ce3c33eec8fb06/robotframework-7.4-py3-none-any.whl", hash = "sha256:5225ab52198001df4bb642b1a6869c046d726a61f3dd1a84b768587b7230d845", size = 806481, upload-time = "2025-12-12T11:10:00.878Z" },
+    { url = "https://files.pythonhosted.org/packages/ef/35/fd2385b15f6d814f1801bcbd3d54b4c61a1bfc3a1a0fe023dc15551c5fe4/robotframework-7.4.2-py3-none-any.whl", hash = "sha256:6e80f84cdc997bdde2abb6b729ac3531457ecf6d2e41abfb87a541877ab367bf", size = 807056, upload-time = "2026-03-03T16:28:51.638Z" },
 ]
 
 [[package]]
@@ -2107,7 +2107,7 @@ requires-dist = [
     { name = "pywayland" },
     { name = "rapidfuzz", specifier = ">=3.12.1" },
     { name = "rapidocr", specifier = "~=3.7.0" },
-    { name = "robotframework", specifier = "~=7.4.0" },
+    { name = "robotframework", specifier = "==7.4.2" },
     { name = "robotframework-sshlibrary", specifier = "~=3.8.0" },
     { name = "robotframework-stacktrace", specifier = "==0.4.1" },
     { name = "typing-extensions", specifier = "~=4.15.0" },

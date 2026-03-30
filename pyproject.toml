@@ -34,7 +34,7 @@ dependencies = [
     "pywayland",
     "rapidfuzz>=3.12.1",
     "rapidocr~=3.7.0",
-    "robotframework~=7.4.0",
+    "robotframework==7.4.2",
     "robotframework-sshlibrary~=3.8.0",
     "robotframework-stacktrace==0.4.1",
     "prompt-toolkit>=3.0.38",
