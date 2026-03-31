@@ -48,8 +48,8 @@ Assert Type String Events
     ${n}=                   Get Length              ${trace}
     ${idx}=                 Set Variable            0
     FOR    ${key_int}    IN    @{key_ints}
-        ${modifier_before_press_pattern}=    Set Variable
-        ...    ^.*zwp_virtual_keyboard_v1[#@]\\d+\\.modifiers\\(${modifier}, \\d+, \\d+, ${modifier}\\)$
+        ${modifier_before_press_pattern}=               Set Variable
+        ...                     ^.*zwp_virtual_keyboard_v1[#@]\\d+\\.modifiers\\(${modifier}, \\d+, \\d+, ${modifier}\\)$
         ${key_down_pattern}=    Set Variable
         ...                     ^.*zwp_virtual_keyboard_v1[#@]\\d+\\.key\\(\\d+, ${key_int}, 1\\)$
         ${key_up_pattern}=      Set Variable
