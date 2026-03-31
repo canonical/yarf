@@ -5,6 +5,7 @@ from robot.libdocpkg.robotbuilder import (
     KeywordDocBuilder,
     LibraryDocBuilder,
     ResourceDocBuilder,
+    TypeDocBuilder,
 )
 from robot.libraries import STDLIBS
 from robot.libraries.BuiltIn import BuiltIn
@@ -63,5 +64,5 @@ class ImportedLibraryDocBuilder(LibraryDocBuilder):
         )
         libdoc.inits = self._get_initializers(lib)
         libdoc.keywords = KeywordDocBuilder().build_keywords(lib)
-        libdoc.type_docs = self._get_type_docs(libdoc.inits + libdoc.keywords, lib.converters)
+        libdoc.type_docs = TypeDocBuilder().build(libdoc.inits + libdoc.keywords, lib.converters)
         return libdoc
