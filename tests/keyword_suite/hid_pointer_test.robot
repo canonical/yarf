@@ -90,8 +90,8 @@ Test Keyword Walk Pointer
     ...                     0.01
 
 Assert Test Keyword Walk Pointer
-    ${movements}=    Evaluate
-    ...    [(22, 17), (44, 35) ,(67, 53), (89, 71), (100, 89), (100, 100), (87, 89), (74, 79), (61, 69), (48, 59), (36, 48), (23, 38), (10, 28), (0, 18), (0, 7), (0, 0)]
+    ${movements}=           Evaluate
+    ...                     [(22, 17), (44, 35) ,(67, 53), (89, 71), (100, 89), (100, 100), (87, 89), (74, 79), (61, 69), (48, 59), (36, 48), (23, 38), (10, 28), (0, 18), (0, 7), (0, 0)]
     Assert Pointer Movement Events                  ${movements}
 
 Test Keyword Click Button On Destination
@@ -118,6 +118,6 @@ Assert Test Keyword Drag And Drop On Destination
     ...                     272=release
     Assert Pointer Button Events                    ${actions}
 
-    ${movements}=    Evaluate
-    ...    [(17, 14), (35,28), (53, 42), (71, 57), (89, 71), (107, 85), (125, 100), (143, 114), (160, 128), (178, 143), (196, 157), (200, 171), (200, 186), (200, 200)]
+    ${movements}=           Evaluate
+    ...                     [(17, 14), (35,28), (53, 42), (71, 57), (89, 71), (107, 85), (125, 100), (143, 114), (160, 128), (178, 143), (196, 157), (200, 171), (200, 186), (200, 200)]
     Assert Pointer Movement Events                  ${movements}

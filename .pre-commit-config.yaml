@@ -63,23 +63,39 @@ repos:
     - yarf/vendor/.*
     - .
 
-- repo: https://github.com/MarketSquare/robotframework-tidy
-  rev: 4.16.0
+- repo: https://github.com/MarketSquare/robotframework-robocop
+  rev: v8.2.4
   hooks:
-  - id: robotidy
+  - id: robocop-format
     args:
-    - --configure
-    - RenameTestCases:enabled=true
-    - --configure
-    - RenameVariables:enabled=true
-    - --configure
-    - IndentNestedKeywords:enabled=true
-    - --configure
-    - AlignKeywordsSection:enabled=true
-    - --configure
-    - AlignTestCasesSection:enabled=true
-    - --configure
-    - AlignTemplatedTestCases:enabled=true
+    - --select
+    - RenameTestCases
+    - --select
+    - RenameVariables
+    - --select
+    - IndentNestedKeywords
+    - --select
+    - AlignKeywordsSection
+    - --select
+    - AlignTestCasesSection
+    - --select
+    - AlignTemplatedTestCases
+  - id: robocop
+    args:
+    - --select
+    - NAME02
+    - --select
+    - NAME07
+    - --select
+    - NAME08
+    - --select
+    - SPC08
+    - --select
+    - SPC11
+    - --select
+    - SPC15
+    - --select
+    - SPC17
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.11.0

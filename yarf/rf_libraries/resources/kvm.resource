@@ -67,8 +67,8 @@ Get Center Of ${region}
     ...
     ...    Return:
     ...    Center of the region, as a tuple (x, y) of integers.
-    ${point}=    Evaluate
-    ...    (int((${region}[left] + ${region}[right]) / 2), int((${region}[top] + ${region}[bottom]) / 2))
+    ${point}=               Evaluate
+    ...                     (int((${region}[left] + ${region}[right]) / 2), int((${region}[top] + ${region}[bottom]) / 2))
     RETURN                  ${point}
 
 Displace ${point} By (${x}, ${y})

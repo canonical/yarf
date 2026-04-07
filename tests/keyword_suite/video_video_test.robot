@@ -16,12 +16,8 @@ Task Tags
 Test Keyword Wait Still Screen Expect Timeout
     [Tags]                  yarf:certification_status: blocker
     [Setup]                 Start Video             20
-    Run Keyword And Expect Error
-    ...                     *
-    ...                     Wait Still Screen
-    ...                     duration=20
-    ...                     still_duration=5
-    ...                     screenshot_interval=1
+    Run Keyword And Expect Error                    *
+    ...                     Wait Still Screen       duration=20             still_duration=5        screenshot_interval=1
 
 Test Keyword Wait Still Screen Expect Success
     [Tags]                  yarf:certification_status: blocker
