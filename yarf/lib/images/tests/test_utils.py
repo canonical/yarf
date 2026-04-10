@@ -15,6 +15,20 @@ class TestUtils:
         image.convert.assert_called_with("RGB")
 
         converted_image = image.convert.return_value
+        converted_image.save.assert_called_with(
+            ANY, format="WEBP", quality=80, method=4
+        )
+
+    def test_to_base64_with_explicit_format(self):
+        """
+        Test the function passes through an explicit image format.
+        """
+        image = Mock()
+
+        to_base64(image, format="PNG")
+        image.convert.assert_called_with("RGB")
+
+        converted_image = image.convert.return_value
         converted_image.save.assert_called_with(ANY, format="PNG")
 
     def test_to_RGB(self):

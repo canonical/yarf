@@ -43,4 +43,4 @@ Default Server with image
     Should Contain          ${out}                  port 11434
     Should Contain          ${out}                  model qwen3-vl:2b-instruct
     Should Contain          ${out}                  This is my prompt
-    Should Contain          ${out}                  data:image/png;base64
+    Should Contain          ${out}                  data:image/webp;base64

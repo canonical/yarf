@@ -24,7 +24,7 @@ class TestImageUtils:
         mock_to_image.return_value = image
         log_image(image, "Debug message")
 
-        mock_base_64.assert_called_once_with(image)
+        mock_base_64.assert_called_once_with(image, format="WEBP")
         mock_logger.info.assert_called_once_with(ANY, html=True)
         assert mock_logger.info.call_args.args[0].startswith("Debug message")
 

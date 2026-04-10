@@ -139,7 +139,7 @@ class TestLlmClient:
         assert content[1]["type"] == "image_url"
 
         assert content[1]["image_url"]["url"].startswith(
-            "data:image/png;base64,"
+            "data:image/webp;base64,"
         )
 
     def test_prompt_with_reasoning(self, mock_post):
@@ -162,7 +162,7 @@ class TestLlmClient:
         mock_client = MagicMock()
         image = Image.new("RGB", (10, 10))
         encoded = LlmClient._encode_image(mock_client, image)
-        assert encoded.startswith("data:image/png;base64,")
+        assert encoded.startswith("data:image/webp;base64,")
 
     def test_get_lib_instance(self):
         client = LlmClient()

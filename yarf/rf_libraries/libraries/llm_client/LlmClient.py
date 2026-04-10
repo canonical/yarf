@@ -156,8 +156,8 @@ class LlmClient:
             The base64 encoded image string.
         """
 
-        b64 = to_base64(image)
-        return f"data:image/png;base64,{b64}"
+        b64 = to_base64(image, format="WEBP")
+        return f"data:image/webp;base64,{b64}"
 
     def _get_lib_instance(self, lib_name: str) -> Any:
         """
