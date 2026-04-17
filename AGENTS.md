@@ -40,19 +40,19 @@ Notes:
   `pre-commit`).
 - Pytest runs with `--doctest-modules` and `-n=auto` (pytest-xdist) in tox, so
   tests must be safe for parallel execution.
-- System packages are required before `uv sync` will succeed:
-  `sudo apt install -y build-essential libxkbcommon-dev tesseract-ocr`
-  (see `CONTRIBUTING.md` for the full setup guide).
+- For local runs/tests, install the system packages from `CONTRIBUTING.md`,
+  for example:
+  `sudo apt install -y build-essential libxkbcommon-dev tesseract-ocr`.
+  Optional: `python3-tk`. See `CONTRIBUTING.md` for the full setup guide.
 
 ## Mir / Wayland caveat
 
 The Mir platform uses `os.memfd_create`, which is missing from uv-managed
 Python builds. If you need to run or test Mir/Wayland code, create the venv
-with system Python:
+with system Python (this matches the command in `CONTRIBUTING.md`):
 
 ```bash
-uv venv --python "/usr/bin/python3" --python-preference=only-system \
-    --system-site-packages
+uv --no-managed-python venv --system-site-packages
 uv sync
 ```
 
