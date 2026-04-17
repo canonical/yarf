@@ -31,7 +31,7 @@ def get_memfd() -> int:
             "os.memfd_create is not available in this Python build. "
             + "This is a known issue with uv Python builds. "
             + "To fix this, use system Python instead: "
-            + "`uv venv --python 3.12 --python-preference=only-system`"
+            + "`uv --no-managed-python venv --system-site-packages`"
         )
 
     assert open_result >= 0, (
