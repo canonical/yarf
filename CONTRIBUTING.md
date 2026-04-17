@@ -77,6 +77,15 @@ the repository directory. To install it use the command:
 sudo snap install --dangerous yarf_{version}_{architecture}.snap
 ```
 
+To compute the current SemVer locally (using the same [GitVersion]
+configuration as CI), run:
+
+```shell
+./scripts/semver.sh
+```
+
+This requires Docker and `jq`.
+
 ## Tests
 
 [`tox`][tox] is used to automate quality control tasks in YARF, including:
@@ -125,6 +134,7 @@ And add a comment explaining why we should skip this in the keyword test coverag
 The YARF documentation is maintained under the [`docs/`](./docs/) subdirectory.
 To submit changes to the documentation, please read the [documentation contributing guide](./docs/CONTRIBUTING.md).
 
+[gitversion]: https://gitversion.net/
 [pytest]: https://docs.pytest.org/en/stable/
 [python]: https://www.python.org/downloads/release/python-3125/
 [ruff]: https://docs.astral.sh/ruff/
