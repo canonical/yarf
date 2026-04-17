@@ -77,7 +77,7 @@ the repository directory. To install it use the command:
 sudo snap install --dangerous yarf_{version}_{architecture}.snap
 ```
 
-To compute the current SemVer locally (using the same [GitVersion][gitversion]
+To compute the current SemVer locally (using the same [GitVersion]
 configuration as CI), run:
 
 ```shell
