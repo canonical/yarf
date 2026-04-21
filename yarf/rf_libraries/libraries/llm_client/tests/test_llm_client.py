@@ -178,7 +178,6 @@ class TestLlmClient:
         {
             "corrupted": True,
             "description": "noise in top-left corner",
-            "votes": 7,
         }
     )
 
@@ -192,11 +191,12 @@ class TestLlmClient:
             ".asyncio.to_thread",
             return_value=self.VALID_RESPONSE,
         ):
-            result = await client.detect_corrupted_image(image=image)
+            result = await client.check_for_visual_corruption(
+                image=image,
+            )
 
         assert result["corrupted"] is True
         assert result["description"] == "noise in top-left corner"
-        assert result["votes"] == 7
 
     @pytest.mark.asyncio
     async def test_custom_prompt(self, mock_post):
@@ -208,7 +208,7 @@ class TestLlmClient:
             ".asyncio.to_thread",
             return_value=self.VALID_RESPONSE,
         ) as mock_thread:
-            await client.detect_corrupted_image(
+            await client.check_for_visual_corruption(
                 image=image, custom_prompt="Is this broken?"
             )
 
@@ -235,7 +235,7 @@ class TestLlmClient:
                 return_value=self.VALID_RESPONSE,
             ),
         ):
-            result = await client.detect_corrupted_image()
+            result = await client.check_for_visual_corruption()
 
         assert result["corrupted"] is True
         mock_video.grab_screenshot.assert_awaited_once()
@@ -255,7 +255,7 @@ class TestLlmClient:
             ),
             pytest.raises(ValueError, match="Failed to grab screenshot"),
         ):
-            await client.detect_corrupted_image()
+            await client.check_for_visual_corruption()
 
     @pytest.mark.asyncio
     async def test_raises_on_invalid_json(self, mock_post):
@@ -268,70 +268,92 @@ class TestLlmClient:
                 ".asyncio.to_thread",
                 return_value="not json at all",
             ),
-            pytest.raises(ValueError, match="Failed to parse LLM response"),
+            pytest.raises(RuntimeError, match="Failed to parse LLM response"),
         ):
-            await client.detect_corrupted_image(image=image)
+            await client.check_for_visual_corruption(image=image)
 
     @pytest.mark.asyncio
-    async def test_raises_on_non_dict_json(self, mock_post):
+    async def test_retries_on_wrong_type(self, mock_post):
         client = LlmClient()
         image = Image.new("RGB", (10, 10))
+        bad = json.dumps({"corrupted": "yes", "description": "ok"})
 
-        with (
-            patch(
-                "yarf.rf_libraries.libraries.llm_client.LlmClient"
-                ".asyncio.to_thread",
-                return_value=json.dumps([1, 2, 3]),
-            ),
-            pytest.raises(ValueError, match="non-dict JSON response"),
-        ):
-            await client.detect_corrupted_image(image=image)
+        with patch(
+            "yarf.rf_libraries.libraries.llm_client.LlmClient"
+            ".asyncio.to_thread",
+            side_effect=[bad, self.VALID_RESPONSE],
+        ) as mock_thread:
+            result = await client.check_for_visual_corruption(
+                image=image,
+            )
 
-    @pytest.mark.asyncio
-    async def test_raises_on_missing_keys(self, mock_post):
-        client = LlmClient()
-        image = Image.new("RGB", (10, 10))
-
-        with (
-            patch(
-                "yarf.rf_libraries.libraries.llm_client.LlmClient"
-                ".asyncio.to_thread",
-                return_value=json.dumps({"corrupted": True}),
-            ),
-            pytest.raises(ValueError, match="missing keys"),
-        ):
-            await client.detect_corrupted_image(image=image)
+        assert mock_thread.call_count == 2
+        assert result["corrupted"] is True
+        assert result["description"] == "noise in top-left corner"
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
-        "bad_response, match",
+        "bad_response",
         [
-            (
-                {"corrupted": "yes", "description": "x", "votes": 1},
-                "invalid type for 'corrupted'",
-            ),
-            (
-                {"corrupted": True, "description": 123, "votes": 1},
-                "invalid type for 'description'",
-            ),
-            (
-                {"corrupted": True, "description": "x", "votes": "a"},
-                "invalid type for 'votes'",
-            ),
+            {"corrupted": "yes", "description": "x"},
+            {"corrupted": True, "description": 123},
         ],
     )
-    async def test_raises_on_wrong_value_type(
-        self, mock_post, bad_response, match
-    ):
+    async def test_retries_on_wrong_value_type(self, mock_post, bad_response):
         client = LlmClient()
         image = Image.new("RGB", (10, 10))
 
-        with (
-            patch(
-                "yarf.rf_libraries.libraries.llm_client.LlmClient"
-                ".asyncio.to_thread",
-                return_value=json.dumps(bad_response),
-            ),
-            pytest.raises(ValueError, match=match),
-        ):
-            await client.detect_corrupted_image(image=image)
+        with patch(
+            "yarf.rf_libraries.libraries.llm_client.LlmClient"
+            ".asyncio.to_thread",
+            side_effect=[
+                json.dumps(bad_response),
+                self.VALID_RESPONSE,
+            ],
+        ) as mock_thread:
+            result = await client.check_for_visual_corruption(
+                image=image,
+            )
+
+        assert mock_thread.call_count == 2
+        assert result["corrupted"] is True
+
+    def test_verify_llm_json_valid(self):
+        client = LlmClient()
+        raw = json.dumps({"corrupted": True, "description": "ok"})
+        parsed, errors = client._verify_llm_json_response(
+            raw,
+            {"corrupted", "description"},
+            {"corrupted": bool, "description": str},
+        )
+        assert parsed == {"corrupted": True, "description": "ok"}
+        assert errors == ""
+
+    def test_verify_llm_json_missing_keys(self):
+        client = LlmClient()
+        raw = json.dumps({"corrupted": True})
+        parsed, errors = client._verify_llm_json_response(
+            raw,
+            {"corrupted", "description"},
+            {"corrupted": bool},
+        )
+        assert "missing keys" in errors
+
+    def test_verify_llm_json_wrong_type(self):
+        client = LlmClient()
+        raw = json.dumps({"corrupted": "yes", "description": "ok"})
+        parsed, errors = client._verify_llm_json_response(
+            raw,
+            {"corrupted", "description"},
+            {"corrupted": bool, "description": str},
+        )
+        assert "invalid type for 'corrupted'" in errors
+
+    def test_verify_llm_json_parse_error(self):
+        client = LlmClient()
+        with pytest.raises(RuntimeError, match="Failed to parse LLM response"):
+            client._verify_llm_json_response(
+                "not json",
+                {"corrupted"},
+                {"corrupted": bool},
+            )

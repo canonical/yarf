@@ -7,24 +7,10 @@
 
 ## Keywords
 
-### Configure Llm Client
-
-<p>Configure the LLM client with the given parameters.</p>
-<p>Args: **kwargs: Configuration parameters for the LLM client.</p>
-<p>Raises: TypeError: If unknown parameters are provided. ValueError: If parameter values are of incorrect type.</p>
-
-#### Positional and named arguments
-
-| Name   | Type | Default Value | Kind      | Required |
-| ------ | ---- | ------------- | --------- | -------- |
-| kwargs | Any  |               | VAR_NAMED | No       |
-
-<hr style="border:1px solid grey">
-
-### Detect Corrupted Image
+### Check For Visual Corruption
 
 <p>Detect if an image is corrupted.</p>
-<p>Args: image: The image to check (PIL Image or path). custom_prompt: Optional custom prompt to guide the LLM.</p>
+<p>Args: image: The image to check (PIL Image or path). If no image is provided, a new screenshot is grabbed. custom_prompt: Optional custom prompt to guide the LLM.</p>
 <p>Returns: A dict containing the LLM's assessment of whether the image is corrupted, a description, and the number of votes.</p>
 <p>Raises: ValueError: If the screenshot could not be grabbed or if the LLM response is invalid.</p>
 
@@ -38,6 +24,20 @@
 | ------------- | ---- | ------------- | ------------------- | -------- |
 | image         | None | None          | POSITIONAL_OR_NAMED | No       |
 | custom_prompt | None | None          | POSITIONAL_OR_NAMED | No       |
+
+<hr style="border:1px solid grey">
+
+### Configure Llm Client
+
+<p>Configure the LLM client with the given parameters.</p>
+<p>Args: **kwargs: Configuration parameters for the LLM client.</p>
+<p>Raises: TypeError: If unknown parameters are provided. ValueError: If parameter values are of incorrect type.</p>
+
+#### Positional and named arguments
+
+| Name   | Type | Default Value | Kind      | Required |
+| ------ | ---- | ------------- | --------- | -------- |
+| kwargs | Any  |               | VAR_NAMED | No       |
 
 <hr style="border:1px solid grey">
 

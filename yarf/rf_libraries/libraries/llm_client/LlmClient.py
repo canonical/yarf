@@ -155,7 +155,7 @@ class LlmClient:
         return BuiltIn().get_library_instance(lib_name)
 
     @keyword
-    async def detect_corrupted_image(
+    async def check_for_visual_corruption(
         self,
         image: Image.Image | str | None = None,
         custom_prompt: str | None = None,
@@ -164,7 +164,7 @@ class LlmClient:
         Detect if an image is corrupted.
 
         Args:
-            image: The image to check (PIL Image or path).
+            image: The image to check (PIL Image or path). If no image is provided, a new screenshot is grabbed.
             custom_prompt: Optional custom prompt to guide the LLM.
 
         Returns:
@@ -189,10 +189,44 @@ class LlmClient:
             This will probably be shown as noise in some parts of the image.
             Output your answer in dict format with a short description (on 1 line)
             and the confidence score. Return JSON only.
-            Example: {"corrupted": true, "description": "...", "votes": 13}.
+            Example: {"corrupted": true, "description": "..."}.
             """,
         )
 
+        required_keys = {"corrupted", "description"}
+        expected_types = {
+            "corrupted": bool,
+            "description": str,
+        }
+        parsed, error_messages = self._verify_llm_json_response(
+            result, required_keys, expected_types
+        )
+        if len(error_messages) > 0:
+            result = await asyncio.to_thread(
+                self.prompt_llm,
+                prompt=f"""
+                Please correct the previous response and output the correct JSON.
+                Previous response: {result}
+                Error details: {error_messages}
+                """,
+                system_prompt="""
+                You are a helpful assistant that can understand error outputs.
+                Output your answer in JSON format only.
+                Example: {"corrupted": true, "description": "..."}.
+                """,
+            )
+            parsed, _ = self._verify_llm_json_response(
+                result, required_keys, expected_types
+            )
+
+        return parsed
+
+    def _verify_llm_json_response(
+        self,
+        result: str,
+        required_keys: set[str],
+        expected_types: dict[str, type],
+    ) -> tuple[dict[str, Any], str]:
         try:
             parsed = json.loads(result)
         except json.JSONDecodeError as exc:
@@ -200,30 +234,20 @@ class LlmClient:
                 f"Failed to parse LLM response as JSON: {result}"
             ) from exc
 
-        if not isinstance(parsed, dict):
-            raise ValueError(
-                f"LLM returned a non-dict JSON response: {parsed}"
-            )
-
-        required_keys = {"corrupted", "description", "votes"}
+        error_messages = ""
         missing_keys = required_keys - parsed.keys()
         if missing_keys:
-            raise ValueError(
+            error_messages += (
                 "LLM returned an invalid response format; missing keys: "
                 f"{sorted(missing_keys)}. Response: {parsed}"
             )
 
-        expected_types = {
-            "corrupted": bool,
-            "description": str,
-            "votes": int,
-        }
         for key, expected in expected_types.items():
             if not isinstance(parsed[key], expected):
-                raise ValueError(
+                error_messages += (
                     f"LLM returned an invalid type for '{key}'; "
                     f"expected {expected.__name__}, "
                     f"got {type(parsed[key]).__name__}."
                 )
 
-        return parsed
+        return parsed, error_messages
