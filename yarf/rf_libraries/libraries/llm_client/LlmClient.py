@@ -196,7 +196,7 @@ class LlmClient:
         try:
             parsed = json.loads(result)
         except json.JSONDecodeError as exc:
-            raise ValueError(
+            raise RuntimeError(
                 f"Failed to parse LLM response as JSON: {result}"
             ) from exc
 
