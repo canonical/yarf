@@ -157,7 +157,7 @@ class LlmClient:
     @keyword
     async def detect_corrupted_image(
         self,
-        image: Image.Image | None = None,
+        image: Image.Image | str | None = None,
         custom_prompt: str | None = None,
     ) -> dict[str, Any]:
         """
@@ -193,34 +193,44 @@ class LlmClient:
             """,
         )
 
-        # Use LLM to verify the response format and parse it as JSON
-        verification_prompt = f"""
-        Verify if the following response is in the correct format
-        (a dict with keys 'corrupted', 'description', and 'votes')
-        and can be parsed as JSON.
-        If it is correct, return the original response.
-        If it is incorrect, return False.
-        Response to verify: {result}
-        """
-
-        verified = await asyncio.to_thread(
-            self.prompt_llm,
-            prompt=verification_prompt,
-            system_prompt=(
-                "You are a JSON validator. Return only the valid"
-                " JSON dict or the word False. No extra text."
-            ),
-        )
-
-        if verified.strip().lower() == "false":
-            raise ValueError(
-                f"LLM returned an invalid response format: {result}"
-            )
-
         try:
-            return json.loads(verified)
-
-        except json.JSONDecodeError:
+            parsed = json.loads(result)
+        except json.JSONDecodeError as exc:
             raise ValueError(
-                f"Failed to parse verified LLM response as JSON: {verified}"
+                f"Failed to parse LLM response as JSON: {result}"
+            ) from exc
+
+        if not isinstance(parsed, dict):
+            raise ValueError(
+                f"LLM returned a non-dict JSON response: {parsed}"
             )
+
+        required_keys = {"corrupted", "description", "votes"}
+        missing_keys = required_keys - parsed.keys()
+        if missing_keys:
+            raise ValueError(
+                "LLM returned an invalid response format; missing keys: "
+                f"{sorted(missing_keys)}. Response: {parsed}"
+            )
+
+        if not isinstance(parsed["corrupted"], bool):
+            raise ValueError(
+                "LLM returned an invalid type for 'corrupted'; "
+                f"expected bool, got {type(parsed['corrupted']).__name__}."
+            )
+
+        if not isinstance(parsed["description"], str):
+            raise ValueError(
+                "LLM returned an invalid type for 'description'; "
+                f"expected str, got {type(parsed['description']).__name__}."
+            )
+
+        if not isinstance(parsed["votes"], int) or isinstance(
+            parsed["votes"], bool
+        ):
+            raise ValueError(
+                "LLM returned an invalid type for 'votes'; "
+                f"expected int, got {type(parsed['votes']).__name__}."
+            )
+
+        return parsed
