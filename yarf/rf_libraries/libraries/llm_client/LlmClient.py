@@ -188,7 +188,7 @@ class LlmClient:
             You have to assess if the provided image is corrupted or not.
             This will probably be shown as noise in some parts of the image.
             Output your answer in dict format with a short description (on 1 line)
-            and the number of votes.
+            and the confidence score. Return JSON only.
             Example: {"corrupted": true, "description": "...", "votes": 13}.
             """,
         )
@@ -213,24 +213,17 @@ class LlmClient:
                 f"{sorted(missing_keys)}. Response: {parsed}"
             )
 
-        if not isinstance(parsed["corrupted"], bool):
-            raise ValueError(
-                "LLM returned an invalid type for 'corrupted'; "
-                f"expected bool, got {type(parsed['corrupted']).__name__}."
-            )
-
-        if not isinstance(parsed["description"], str):
-            raise ValueError(
-                "LLM returned an invalid type for 'description'; "
-                f"expected str, got {type(parsed['description']).__name__}."
-            )
-
-        if not isinstance(parsed["votes"], int) or isinstance(
-            parsed["votes"], bool
-        ):
-            raise ValueError(
-                "LLM returned an invalid type for 'votes'; "
-                f"expected int, got {type(parsed['votes']).__name__}."
-            )
+        expected_types = {
+            "corrupted": bool,
+            "description": str,
+            "votes": int,
+        }
+        for key, expected in expected_types.items():
+            if not isinstance(parsed[key], expected):
+                raise ValueError(
+                    f"LLM returned an invalid type for '{key}'; "
+                    f"expected {expected.__name__}, "
+                    f"got {type(parsed[key]).__name__}."
+                )
 
         return parsed
