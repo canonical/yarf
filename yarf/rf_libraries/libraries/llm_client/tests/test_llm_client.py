@@ -158,6 +158,22 @@ class TestLlmClient:
         encoded = LlmClient._encode_image(mock_client, image)
         assert encoded.startswith("data:image/png;base64,")
 
+    def test_get_lib_instance(self):
+        client = LlmClient()
+        sentinel = object()
+        with patch(
+            "yarf.rf_libraries.libraries.llm_client.LlmClient.BuiltIn"
+        ) as mock_builtin_cls:
+            mock_builtin_cls.return_value.get_library_instance.return_value = (
+                sentinel
+            )
+            result = client._get_lib_instance("VideoInput")
+
+        mock_builtin_cls.return_value.get_library_instance.assert_called_once_with(
+            "VideoInput"
+        )
+        assert result is sentinel
+
     VALID_RESPONSE = json.dumps(
         {
             "corrupted": True,
