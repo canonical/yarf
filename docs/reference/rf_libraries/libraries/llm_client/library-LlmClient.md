@@ -21,6 +21,26 @@
 
 <hr style="border:1px solid grey">
 
+### Detect Corrupted Image
+
+<p>Detect if an image is corrupted.</p>
+<p>Args: image: The image to check (PIL Image or path). custom_prompt: Optional custom prompt to guide the LLM.</p>
+<p>Returns: A dict containing the LLM's assessment of whether the image is corrupted, a description, and the number of votes.</p>
+<p>Raises: ValueError: If the screenshot could not be grabbed or if the LLM response is invalid.</p>
+
+### Return
+
+{'name': 'dict', 'typedoc': 'dictionary', 'nested': \[{'name': 'str', 'typedoc': 'string', 'nested': [], 'union': False}, {'name': 'Any', 'typedoc': 'Any', 'nested': [], 'union': False}\], 'union': False}
+
+#### Positional and named arguments
+
+| Name          | Type | Default Value | Kind                | Required |
+| ------------- | ---- | ------------- | ------------------- | -------- |
+| image         | None | None          | POSITIONAL_OR_NAMED | No       |
+| custom_prompt | None | None          | POSITIONAL_OR_NAMED | No       |
+
+<hr style="border:1px solid grey">
+
 ### Prompt Llm
 
 <p>Send a prompt (text-only or text+image) to the LLM and get the response.</p>

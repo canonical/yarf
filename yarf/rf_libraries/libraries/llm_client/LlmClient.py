@@ -3,12 +3,14 @@ This module provides the Robot Framework library for interacting with an LLM
 server using OpenAPI.
 """
 
+import json
 from typing import Any
 
 import requests
 from PIL import Image
 from robot.api import logger
 from robot.api.deco import keyword, library
+from robot.libraries.BuiltIn import BuiltIn
 
 from yarf.lib.images.utils import to_base64
 from yarf.vendor.RPA.recognition.utils import to_image
@@ -137,3 +139,85 @@ class LlmClient:
 
         b64 = to_base64(image)
         return f"data:image/png;base64,{b64}"
+
+    def _get_lib_instance(self, lib_name: str) -> Any:
+        """
+        Helper function to get an instance of a library imported in Robot
+        Framework.
+
+        Args:
+            lib_name: The name of the library to get an instance of.
+
+        Returns:
+            An instance of the specified library.
+        """
+        return BuiltIn().get_library_instance(lib_name)
+
+    @keyword
+    async def detect_corrupted_image(
+        self,
+        image: Image.Image | None = None,
+        custom_prompt: str | None = None,
+    ) -> dict[str, Any]:
+        """
+        Detect if an image is corrupted.
+
+        Args:
+            image: The image to check (PIL Image or path).
+            custom_prompt: Optional custom prompt to guide the LLM.
+
+        Returns:
+            A dict containing the LLM's assessment of whether the image is
+            corrupted, a description, and the number of votes.
+
+        Raises:
+            ValueError: If the screenshot could not be grabbed or if the LLM response is invalid.
+        """
+        if image is None:
+            platform_video_input = self._get_lib_instance("VideoInput")
+            if (image := await platform_video_input.grab_screenshot()) is None:
+                raise ValueError("Failed to grab screenshot.")
+
+        result = self.prompt_llm(
+            prompt=custom_prompt or "Detect if the image is corrupted.",
+            image=image,
+            system_prompt="""
+            You are a helpful assistant that can understand images and texts.
+            You have to assess if the provided image is corrupted or not.
+            This will probably be shown as noise in some parts of the image.
+            Output your answer in dict format with a short description (on 1 line)
+            and the number of votes.
+            Example: {"corrupted": true, "description": "...", "votes": 13}.
+            """,
+        )
+
+        # Use LLM to verify the response format and parse it as JSON
+        verification_prompt = f"""
+        Verify if the following response is in the correct format
+        (a dict with keys 'corrupted', 'description', and 'votes')
+        and can be parsed as JSON.
+        If it is correct, return the original response.
+        If it is incorrect, return False.
+        Response to verify: {result}
+        """
+
+        verified = self.prompt_llm(
+            prompt=verification_prompt,
+            system_prompt=(
+                "You are a JSON validator. Return only the valid"
+                " JSON dict or the word False. No extra text."
+            ),
+        )
+
+        if verified.strip().lower() == "false":
+            raise ValueError(
+                f"LLM returned an invalid response format: {result}"
+            )
+
+        try:
+            return json.loads(verified)
+
+        except json.JSONDecodeError:
+            raise ValueError(
+                f"Failed to parse verified LLM response as JSON: {verified}"
+            )
