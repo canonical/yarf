@@ -250,4 +250,5 @@ class LlmClient:
                     f"got {type(parsed[key]).__name__}."
                 )
 
+        logger.warn(f"LLM response validation errors: {error_messages}")
         return parsed, error_messages
