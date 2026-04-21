@@ -1,4 +1,5 @@
-from unittest.mock import MagicMock, patch
+import json
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from PIL import Image
@@ -45,20 +46,25 @@ class TestLlmClient:
         assert client.endpoint == "/custom/endpoint"
         assert client.max_tokens == 1000
 
-    def test_configure_llm_client_unknown_param(self):
+    @pytest.mark.parametrize(
+        "kwargs, exc_type, match",
+        [
+            (
+                {"unknown_param": "value"},
+                TypeError,
+                "Unknown argument\\(s\\): unknown_param",
+            ),
+            (
+                {"max_tokens": "not_an_int"},
+                ValueError,
+                "Invalid value for max_tokens: not_an_int. Expected type int",
+            ),
+        ],
+    )
+    def test_configure_llm_client_error(self, kwargs, exc_type, match):
         client = LlmClient()
-        with pytest.raises(TypeError) as exc:
-            client.configure_llm_client(unknown_param="value")
-        assert "Unknown argument(s): unknown_param" in str(exc.value)
-
-    def test_configure_llm_client_invalid_type(self):
-        client = LlmClient()
-        with pytest.raises(ValueError) as exc:
-            client.configure_llm_client(max_tokens="not_an_int")
-        assert (
-            "Invalid value for max_tokens: not_an_int. Expected type int"
-            in str(exc.value)
-        )
+        with pytest.raises(exc_type, match=match):
+            client.configure_llm_client(**kwargs)
 
     def test_prompt_text_without_system_prompt(self, mock_post):
         mock_client = MagicMock()
@@ -151,3 +157,165 @@ class TestLlmClient:
         image = Image.new("RGB", (10, 10))
         encoded = LlmClient._encode_image(mock_client, image)
         assert encoded.startswith("data:image/png;base64,")
+
+    VALID_RESPONSE = json.dumps(
+        {
+            "corrupted": True,
+            "description": "noise in top-left corner",
+            "votes": 7,
+        }
+    )
+
+    @pytest.mark.asyncio
+    async def test_valid_response(self, mock_post):
+        client = LlmClient()
+        image = Image.new("RGB", (10, 10))
+
+        with patch(
+            "yarf.rf_libraries.libraries.llm_client.LlmClient"
+            ".asyncio.to_thread",
+            return_value=self.VALID_RESPONSE,
+        ):
+            result = await client.detect_corrupted_image(image=image)
+
+        assert result["corrupted"] is True
+        assert result["description"] == "noise in top-left corner"
+        assert result["votes"] == 7
+
+    @pytest.mark.asyncio
+    async def test_custom_prompt(self, mock_post):
+        client = LlmClient()
+        image = Image.new("RGB", (10, 10))
+
+        with patch(
+            "yarf.rf_libraries.libraries.llm_client.LlmClient"
+            ".asyncio.to_thread",
+            return_value=self.VALID_RESPONSE,
+        ) as mock_thread:
+            await client.detect_corrupted_image(
+                image=image, custom_prompt="Is this broken?"
+            )
+
+        mock_thread.assert_called_once()
+        assert mock_thread.call_args.kwargs["prompt"] == ("Is this broken?")
+
+    @pytest.mark.asyncio
+    async def test_grabs_screenshot_when_no_image(self, mock_post):
+        client = LlmClient()
+        screenshot = Image.new("RGB", (10, 10))
+
+        mock_video = MagicMock()
+        mock_video.grab_screenshot = AsyncMock(return_value=screenshot)
+
+        with (
+            patch.object(
+                client,
+                "_get_lib_instance",
+                return_value=mock_video,
+            ),
+            patch(
+                "yarf.rf_libraries.libraries.llm_client.LlmClient"
+                ".asyncio.to_thread",
+                return_value=self.VALID_RESPONSE,
+            ),
+        ):
+            result = await client.detect_corrupted_image()
+
+        assert result["corrupted"] is True
+        mock_video.grab_screenshot.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_raises_when_screenshot_fails(self, mock_post):
+        client = LlmClient()
+
+        mock_video = MagicMock()
+        mock_video.grab_screenshot = AsyncMock(return_value=None)
+
+        with (
+            patch.object(
+                client,
+                "_get_lib_instance",
+                return_value=mock_video,
+            ),
+            pytest.raises(ValueError, match="Failed to grab screenshot"),
+        ):
+            await client.detect_corrupted_image()
+
+    @pytest.mark.asyncio
+    async def test_raises_on_invalid_json(self, mock_post):
+        client = LlmClient()
+        image = Image.new("RGB", (10, 10))
+
+        with (
+            patch(
+                "yarf.rf_libraries.libraries.llm_client.LlmClient"
+                ".asyncio.to_thread",
+                return_value="not json at all",
+            ),
+            pytest.raises(ValueError, match="Failed to parse LLM response"),
+        ):
+            await client.detect_corrupted_image(image=image)
+
+    @pytest.mark.asyncio
+    async def test_raises_on_non_dict_json(self, mock_post):
+        client = LlmClient()
+        image = Image.new("RGB", (10, 10))
+
+        with (
+            patch(
+                "yarf.rf_libraries.libraries.llm_client.LlmClient"
+                ".asyncio.to_thread",
+                return_value=json.dumps([1, 2, 3]),
+            ),
+            pytest.raises(ValueError, match="non-dict JSON response"),
+        ):
+            await client.detect_corrupted_image(image=image)
+
+    @pytest.mark.asyncio
+    async def test_raises_on_missing_keys(self, mock_post):
+        client = LlmClient()
+        image = Image.new("RGB", (10, 10))
+
+        with (
+            patch(
+                "yarf.rf_libraries.libraries.llm_client.LlmClient"
+                ".asyncio.to_thread",
+                return_value=json.dumps({"corrupted": True}),
+            ),
+            pytest.raises(ValueError, match="missing keys"),
+        ):
+            await client.detect_corrupted_image(image=image)
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "bad_response, match",
+        [
+            (
+                {"corrupted": "yes", "description": "x", "votes": 1},
+                "invalid type for 'corrupted'",
+            ),
+            (
+                {"corrupted": True, "description": 123, "votes": 1},
+                "invalid type for 'description'",
+            ),
+            (
+                {"corrupted": True, "description": "x", "votes": "a"},
+                "invalid type for 'votes'",
+            ),
+        ],
+    )
+    async def test_raises_on_wrong_value_type(
+        self, mock_post, bad_response, match
+    ):
+        client = LlmClient()
+        image = Image.new("RGB", (10, 10))
+
+        with (
+            patch(
+                "yarf.rf_libraries.libraries.llm_client.LlmClient"
+                ".asyncio.to_thread",
+                return_value=json.dumps(bad_response),
+            ),
+            pytest.raises(ValueError, match=match),
+        ):
+            await client.detect_corrupted_image(image=image)
