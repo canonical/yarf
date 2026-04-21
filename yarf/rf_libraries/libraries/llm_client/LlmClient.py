@@ -3,6 +3,7 @@ This module provides the Robot Framework library for interacting with an LLM
 server using OpenAPI.
 """
 
+import asyncio
 import json
 from typing import Any
 
@@ -178,7 +179,8 @@ class LlmClient:
             if (image := await platform_video_input.grab_screenshot()) is None:
                 raise ValueError("Failed to grab screenshot.")
 
-        result = self.prompt_llm(
+        result = await asyncio.to_thread(
+            self.prompt_llm,
             prompt=custom_prompt or "Detect if the image is corrupted.",
             image=image,
             system_prompt="""
@@ -201,7 +203,8 @@ class LlmClient:
         Response to verify: {result}
         """
 
-        verified = self.prompt_llm(
+        verified = await asyncio.to_thread(
+            self.prompt_llm,
             prompt=verification_prompt,
             system_prompt=(
                 "You are a JSON validator. Return only the valid"
