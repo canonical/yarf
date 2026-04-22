@@ -235,8 +235,15 @@ class LlmClient:
         required_keys: set[str],
         expected_types: dict[str, type],
     ) -> tuple[dict[str, Any], str]:
+        json_start = result.find("{")
+        json_end = result.rfind("}") + 1
+        if json_start == -1 or json_end == -1:
+            raise RuntimeError(
+                f"LLM response does not contain valid JSON: {result}"
+            )
+
         try:
-            parsed = json.loads(result)
+            parsed = json.loads(result[json_start:json_end])
         except json.JSONDecodeError as exc:
             raise RuntimeError(
                 f"Failed to parse LLM response as JSON: {result}"

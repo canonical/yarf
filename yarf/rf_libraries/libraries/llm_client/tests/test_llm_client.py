@@ -295,7 +295,10 @@ class TestLlmClient:
                 ".asyncio.to_thread",
                 return_value="not json at all",
             ),
-            pytest.raises(RuntimeError, match="Failed to parse LLM response"),
+            pytest.raises(
+                RuntimeError,
+                match="does not contain valid JSON",
+            ),
         ):
             await client.check_for_visual_corruption(image=image)
 
@@ -376,11 +379,34 @@ class TestLlmClient:
         )
         assert "invalid type for 'corrupted'" in errors
 
-    def test_verify_llm_json_parse_error(self):
+    def test_verify_llm_json_no_braces(self):
         client = LlmClient()
-        with pytest.raises(RuntimeError, match="Failed to parse LLM response"):
+        with pytest.raises(
+            RuntimeError,
+            match="does not contain valid JSON",
+        ):
             client._verify_llm_json_response(
                 "not json",
                 {"corrupted"},
                 {"corrupted": bool},
             )
+
+    def test_verify_llm_json_parse_error(self):
+        client = LlmClient()
+        with pytest.raises(RuntimeError, match="Failed to parse LLM response"):
+            client._verify_llm_json_response(
+                "{not json}",
+                {"corrupted"},
+                {"corrupted": bool},
+            )
+
+    def test_verify_llm_json_extracts_from_text(self):
+        client = LlmClient()
+        raw = 'Here is the result: {"corrupted": false, "description": "ok"}'
+        parsed, errors = client._verify_llm_json_response(
+            raw,
+            {"corrupted", "description"},
+            {"corrupted": bool, "description": str},
+        )
+        assert parsed == {"corrupted": False, "description": "ok"}
+        assert errors == ""
