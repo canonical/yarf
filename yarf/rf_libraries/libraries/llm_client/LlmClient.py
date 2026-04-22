@@ -189,9 +189,11 @@ class LlmClient:
             You are a helpful assistant that can understand images and texts.
             You have to assess if the provided image is corrupted or not.
             This will probably be shown as noise in some parts of the image.
-            Output your answer in dict format with a short description (on 1 line)
-            and the confidence score. Return JSON only.
-            Example: {"corrupted": true, "description": "..."}.
+            Output your answer in pure JSON format with the followings only:
+            1. corrupted: a boolean indicating if the image is corrupted
+            2. description: a short description (on 1 line)
+            Example output: {"corrupted": true, "description": "..."}.
+            Do not add markdown syntax or any other text.
             """,
         )
 
