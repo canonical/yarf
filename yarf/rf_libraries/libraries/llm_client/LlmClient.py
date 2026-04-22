@@ -169,7 +169,7 @@ class LlmClient:
 
         Returns:
             A dict containing the LLM's assessment of whether the image is
-            corrupted, a description, and the number of votes.
+            corrupted and a description.
 
         Raises:
             ValueError: If the screenshot could not be grabbed or if the LLM response is invalid.
@@ -198,7 +198,7 @@ class LlmClient:
             "description": str,
         }
         parsed, error_messages = self._verify_llm_json_response(
-            result, required_keys, expected_types
+            result, set(required_keys.keys()), required_keys
         )
         if len(error_messages) > 0:
             result = await asyncio.to_thread(
@@ -215,7 +215,7 @@ class LlmClient:
                 """,
             )
             parsed, _ = self._verify_llm_json_response(
-                result, required_keys, expected_types
+                result, set(required_keys.keys()), required_keys
             )
 
         return parsed
