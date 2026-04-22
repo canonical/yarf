@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from PIL import Image
 
-from yarf.errors.yarf_errors import YARFValidationError
+from yarf.errors.yarf_errors import VQAValidationError
 from yarf.rf_libraries.libraries.llm_client.LlmClient import LlmClient
 
 
@@ -218,7 +218,7 @@ class TestLlmClient:
                 return_value=self.CORRUPTED_RESPONSE,
             ),
             pytest.raises(
-                YARFValidationError,
+                VQAValidationError,
                 match="Image is corrupted",
             ),
         ):

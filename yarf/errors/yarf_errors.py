@@ -32,7 +32,7 @@ class YARFConnectionError(YARFError):
     exit_code: YARFExitCode = YARFExitCode.CONNECTION_ERROR
 
 
-class YARFValidationError(Exception):
+class VQAValidationError(Exception):
     """
     Raised when validation fails.
     """
