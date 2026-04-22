@@ -193,8 +193,7 @@ class LlmClient:
             """,
         )
 
-        required_keys = {"corrupted", "description"}
-        expected_types = {
+        required_keys = {
             "corrupted": bool,
             "description": str,
         }
