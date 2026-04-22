@@ -173,13 +173,13 @@ class LlmClient:
             corrupted and a description.
 
         Raises:
-            ValueError: If the screenshot could not be grabbed or if the LLM response is invalid.
+            RuntimeError: If the screenshot could not be grabbed or if the LLM response is invalid.
             VQAValidationError: If the image is assessed as corrupted by the LLM.
         """
         if image is None:
             platform_video_input = self._get_lib_instance("VideoInput")
             if (image := await platform_video_input.grab_screenshot()) is None:
-                raise ValueError("Failed to grab screenshot.")
+                raise RuntimeError("Failed to grab screenshot.")
 
         result = await asyncio.to_thread(
             self.prompt_llm,

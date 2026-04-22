@@ -280,7 +280,7 @@ class TestLlmClient:
                 "_get_lib_instance",
                 return_value=mock_video,
             ),
-            pytest.raises(ValueError, match="Failed to grab screenshot"),
+            pytest.raises(RuntimeError, match="Failed to grab screenshot"),
         ):
             await client.check_for_visual_corruption()
 

@@ -12,7 +12,7 @@
 <p>Detect if an image is corrupted.</p>
 <p>Args: image: The image to check (PIL Image or path). If no image is provided, a new screenshot is grabbed. custom_prompt: Optional custom prompt to guide the LLM.</p>
 <p>Returns: A dict containing the LLM's assessment of whether the image is corrupted and a description.</p>
-<p>Raises: ValueError: If the screenshot could not be grabbed or if the LLM response is invalid. VQAValidationError: If the image is assessed as corrupted by the LLM.</p>
+<p>Raises: RuntimeError: If the screenshot could not be grabbed or if the LLM response is invalid. VQAValidationError: If the image is assessed as corrupted by the LLM.</p>
 
 ### Return
 
