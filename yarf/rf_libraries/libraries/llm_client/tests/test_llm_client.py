@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from PIL import Image
 
+from yarf.errors.yarf_errors import YARFValidationError
 from yarf.rf_libraries.libraries.llm_client.LlmClient import LlmClient
 
 
@@ -176,6 +177,13 @@ class TestLlmClient:
 
     VALID_RESPONSE = json.dumps(
         {
+            "corrupted": False,
+            "description": "image looks normal",
+        }
+    )
+
+    CORRUPTED_RESPONSE = json.dumps(
+        {
             "corrupted": True,
             "description": "noise in top-left corner",
         }
@@ -195,8 +203,26 @@ class TestLlmClient:
                 image=image,
             )
 
-        assert result["corrupted"] is True
-        assert result["description"] == "noise in top-left corner"
+        assert result["corrupted"] is False
+        assert result["description"] == "image looks normal"
+
+    @pytest.mark.asyncio
+    async def test_raises_on_corrupted_image(self, mock_post):
+        client = LlmClient()
+        image = Image.new("RGB", (10, 10))
+
+        with (
+            patch(
+                "yarf.rf_libraries.libraries.llm_client.LlmClient"
+                ".asyncio.to_thread",
+                return_value=self.CORRUPTED_RESPONSE,
+            ),
+            pytest.raises(
+                YARFValidationError,
+                match="Image is corrupted",
+            ),
+        ):
+            await client.check_for_visual_corruption(image=image)
 
     @pytest.mark.asyncio
     async def test_custom_prompt(self, mock_post):
@@ -208,12 +234,13 @@ class TestLlmClient:
             ".asyncio.to_thread",
             return_value=self.VALID_RESPONSE,
         ) as mock_thread:
-            await client.check_for_visual_corruption(
+            result = await client.check_for_visual_corruption(
                 image=image, custom_prompt="Is this broken?"
             )
 
         mock_thread.assert_called_once()
         assert mock_thread.call_args.kwargs["prompt"] == ("Is this broken?")
+        assert result["corrupted"] is False
 
     @pytest.mark.asyncio
     async def test_grabs_screenshot_when_no_image(self, mock_post):
@@ -237,7 +264,7 @@ class TestLlmClient:
         ):
             result = await client.check_for_visual_corruption()
 
-        assert result["corrupted"] is True
+        assert result["corrupted"] is False
         mock_video.grab_screenshot.assert_awaited_once()
 
     @pytest.mark.asyncio
@@ -288,8 +315,8 @@ class TestLlmClient:
             )
 
         assert mock_thread.call_count == 2
-        assert result["corrupted"] is True
-        assert result["description"] == "noise in top-left corner"
+        assert result["corrupted"] is False
+        assert result["description"] == "image looks normal"
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -316,7 +343,7 @@ class TestLlmClient:
             )
 
         assert mock_thread.call_count == 2
-        assert result["corrupted"] is True
+        assert result["corrupted"] is False
 
     def test_verify_llm_json_valid(self):
         client = LlmClient()

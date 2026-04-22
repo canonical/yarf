@@ -13,6 +13,7 @@ from robot.api import logger
 from robot.api.deco import keyword, library
 from robot.libraries.BuiltIn import BuiltIn
 
+from yarf.errors.yarf_errors import YARFValidationError
 from yarf.lib.images.utils import to_base64
 from yarf.vendor.RPA.recognition.utils import to_image
 
@@ -173,6 +174,7 @@ class LlmClient:
 
         Raises:
             ValueError: If the screenshot could not be grabbed or if the LLM response is invalid.
+            YARFValidationError: If the image is assessed as corrupted by the LLM.
         """
         if image is None:
             platform_video_input = self._get_lib_instance("VideoInput")
@@ -216,6 +218,11 @@ class LlmClient:
             )
             parsed, _ = self._verify_llm_json_response(
                 result, set(required_keys.keys()), required_keys
+            )
+
+        if parsed["corrupted"]:
+            raise YARFValidationError(
+                f"Image is corrupted: {parsed['description']}"
             )
 
         return parsed
