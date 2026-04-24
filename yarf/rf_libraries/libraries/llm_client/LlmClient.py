@@ -218,9 +218,11 @@ class LlmClient:
                 Example: {"corrupted": true, "description": "..."}.
                 """,
             )
-            parsed, _ = self._verify_llm_json_response(
+            parsed, errors = self._verify_llm_json_response(
                 result, set(required_keys.keys()), required_keys
             )
+            if errors:
+                raise RuntimeError("Failing to get a valid response from LLM")
 
         if parsed["corrupted"]:
             raise VQAValidationError(
@@ -265,5 +267,6 @@ class LlmClient:
                     f"got {type(parsed[key]).__name__}."
                 )
 
-        logger.warn(f"LLM response validation errors: {error_messages}")
+        if error_messages:
+            logger.warn(f"LLM response validation errors: {error_messages}")
         return parsed, error_messages
