@@ -34,7 +34,7 @@ class YARFConnectionError(YARFError):
 
 class VQAValidationError(Exception):
     """
-    Raised when validation fails.
+    Raised when VQA-driven validation fails.
     """
 
     pass
