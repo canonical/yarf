@@ -225,6 +225,9 @@ class LlmClient:
                 raise RuntimeError("Failing to get a valid response from LLM")
 
         if parsed["corrupted"]:
+            log_image(
+                image, "Corrupted image detected: " + parsed["description"]
+            )
             raise VQAValidationError(
                 f"Image is corrupted: {parsed['description']}"
             )
