@@ -202,7 +202,7 @@ class LlmClient:
             "description": str,
         }
         parsed, error_messages = self._verify_llm_json_response(
-            result, set(required_keys.keys()), required_keys
+            result, set(required_keys.keys())
         )
         if len(error_messages) > 0:
             result = await asyncio.to_thread(
@@ -219,7 +219,7 @@ class LlmClient:
                 """,
             )
             parsed, errors = self._verify_llm_json_response(
-                result, set(required_keys.keys()), required_keys
+                result, set(required_keys.keys())
             )
             if errors:
                 raise RuntimeError("Failing to get a valid response from LLM")
@@ -235,7 +235,6 @@ class LlmClient:
         self,
         result: str,
         required_keys: set[str],
-        expected_types: dict[str, type],
     ) -> tuple[dict[str, Any], str]:
         json_start = result.find("{")
         json_end = result.rfind("}")
@@ -245,7 +244,9 @@ class LlmClient:
             )
 
         try:
-            parsed = json.loads(result[json_start:json_end+1])
+            parsed: dict[str, Any] = json.loads(
+                result[json_start : json_end + 1]
+            )
         except json.JSONDecodeError as exc:
             raise RuntimeError(
                 f"Failed to parse LLM response as JSON: {result}"
@@ -259,7 +260,7 @@ class LlmClient:
                 f"{sorted(missing_keys)}. Response: {parsed}"
             )
 
-        for key, expected in expected_types.items():
+        for key, expected in parsed.items():
             if not isinstance(parsed[key], expected):
                 error_messages += (
                     f"LLM returned an invalid type for '{key}'; "
