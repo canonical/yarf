@@ -3,14 +3,19 @@ This module provides the Robot Framework library for interacting with an LLM
 server using OpenAPI.
 """
 
+import asyncio
+import json
 from typing import Any
 
 import requests
 from PIL import Image
 from robot.api import logger
 from robot.api.deco import keyword, library
+from robot.libraries.BuiltIn import BuiltIn
 
+from yarf.errors.yarf_errors import VQAValidationError
 from yarf.lib.images.utils import to_base64
+from yarf.rf_libraries.libraries.image.utils import log_image
 from yarf.vendor.RPA.recognition.utils import to_image
 
 
@@ -137,3 +142,138 @@ class LlmClient:
 
         b64 = to_base64(image)
         return f"data:image/png;base64,{b64}"
+
+    def _get_lib_instance(self, lib_name: str) -> Any:
+        """
+        Helper function to get an instance of a library imported in Robot
+        Framework.
+
+        Args:
+            lib_name: The name of the library to get an instance of.
+
+        Returns:
+            An instance of the specified library.
+        """
+        return BuiltIn().get_library_instance(lib_name)
+
+    @keyword
+    async def check_for_visual_corruption(
+        self,
+        image: Image.Image | str | None = None,
+        custom_prompt: str | None = None,
+    ) -> dict[str, Any]:
+        """
+        Detect if an image is corrupted.
+
+        Args:
+            image: The image to check (PIL Image or path). If no image is provided, a new screenshot is grabbed.
+            custom_prompt: Optional custom prompt to guide the LLM.
+
+        Returns:
+            A dict containing the LLM's assessment of whether the image is
+            corrupted and a description.
+
+        Raises:
+            RuntimeError: If the screenshot could not be grabbed or if the LLM response is invalid.
+            VQAValidationError: If the image is assessed as corrupted by the LLM.
+        """
+        if image is None:
+            platform_video_input = self._get_lib_instance("VideoInput")
+            if (image := await platform_video_input.grab_screenshot()) is None:
+                raise RuntimeError("Failed to grab screenshot.")
+
+        result = await asyncio.to_thread(
+            self.prompt_llm,
+            prompt=custom_prompt or "Detect if the image is corrupted.",
+            image=image,
+            system_prompt="""
+            You are a helpful assistant that can understand images and texts.
+            You have to assess if the provided image is corrupted or not.
+            This will probably be shown as noise in some parts of the image.
+            Output your answer in pure JSON format with the followings only:
+            1. corrupted: a boolean indicating if the image is corrupted
+            2. description: a short description (on 1 line)
+            Example output: {"corrupted": true, "description": "..."}.
+            Do not add markdown syntax or any other text.
+            """,
+        )
+
+        required_keys = {
+            "corrupted": bool,
+            "description": str,
+        }
+        parsed, error_messages = self._verify_llm_json_response(
+            result, required_keys
+        )
+        if len(error_messages) > 0:
+            result = await asyncio.to_thread(
+                self.prompt_llm,
+                prompt=f"""
+                Please correct the previous response and output the correct JSON.
+                Previous response: {result}
+                Error details: {error_messages}
+                """,
+                system_prompt="""
+                You are a helpful assistant that can understand error outputs.
+                Output your answer in JSON format only.
+                Example: {"corrupted": true, "description": "..."}.
+                """,
+            )
+            parsed, errors = self._verify_llm_json_response(
+                result, required_keys
+            )
+            if errors:
+                raise RuntimeError("Failing to get a valid response from LLM")
+
+        if parsed["corrupted"]:
+            log_image(
+                image, "Corrupted image detected: " + parsed["description"]
+            )
+            raise VQAValidationError(
+                f"Image is corrupted: {parsed['description']}"
+            )
+
+        return parsed
+
+    def _verify_llm_json_response(
+        self,
+        result: str,
+        required_keys: dict[str, type],
+    ) -> tuple[dict[str, Any], str]:
+        json_start = result.find("{")
+        json_end = result.rfind("}")
+        if json_start == -1 or json_end == -1:
+            raise RuntimeError(
+                f"LLM response does not contain valid JSON: {result}"
+            )
+
+        try:
+            parsed: dict[str, Any] = json.loads(
+                result[json_start : json_end + 1]
+            )
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(
+                f"Failed to parse LLM response as JSON: {result}"
+            ) from exc
+
+        error_messages = ""
+        missing_keys = required_keys.keys() - parsed.keys()
+        if missing_keys:
+            error_messages += (
+                "LLM returned an invalid response format; missing keys: "
+                f"{sorted(missing_keys)}. Response: {parsed}"
+            )
+
+        for key, value in parsed.items():
+            if key in required_keys and not isinstance(
+                value, required_keys[key]
+            ):
+                error_messages += (
+                    f"LLM returned an invalid type for '{key}'; "
+                    f"expected {required_keys[key].__name__}, "
+                    f"got {type(value).__name__}."
+                )
+
+        if error_messages:
+            logger.warn(f"LLM response validation errors: {error_messages}")
+        return parsed, error_messages
