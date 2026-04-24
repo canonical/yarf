@@ -348,6 +348,27 @@ class TestLlmClient:
         assert mock_thread.call_count == 2
         assert result["corrupted"] is False
 
+    @pytest.mark.asyncio
+    async def test_raises_after_retry_fails(self, mock_post):
+        client = LlmClient()
+        image = Image.new("RGB", (10, 10))
+        bad = json.dumps({"corrupted": "yes", "description": "ok"})
+
+        with (
+            patch(
+                "yarf.rf_libraries.libraries.llm_client.LlmClient"
+                ".asyncio.to_thread",
+                side_effect=[bad, bad],
+            ) as mock_thread,
+            pytest.raises(
+                RuntimeError,
+                match="Failing to get a valid response from LLM",
+            ),
+        ):
+            await client.check_for_visual_corruption(image=image)
+
+        assert mock_thread.call_count == 2
+
     def test_verify_llm_json_valid(self):
         client = LlmClient()
         raw = json.dumps({"corrupted": True, "description": "ok"})
