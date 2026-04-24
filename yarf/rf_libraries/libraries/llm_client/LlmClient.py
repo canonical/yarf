@@ -15,6 +15,7 @@ from robot.libraries.BuiltIn import BuiltIn
 
 from yarf.errors.yarf_errors import VQAValidationError
 from yarf.lib.images.utils import to_base64
+from yarf.rf_libraries.libraries.image.utils import log_image
 from yarf.vendor.RPA.recognition.utils import to_image
 
 
