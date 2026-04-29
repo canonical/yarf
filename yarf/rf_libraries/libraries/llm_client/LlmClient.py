@@ -17,7 +17,10 @@ from robot.libraries.BuiltIn import BuiltIn
 
 from yarf.errors.yarf_errors import VQAValidationError
 from yarf.lib.images.utils import to_base64
-from yarf.rf_libraries.libraries.image.utils import draw_point_on_image, log_image
+from yarf.rf_libraries.libraries.image.utils import (
+    draw_point_on_image,
+    log_image,
+)
 from yarf.vendor.RPA.recognition.utils import to_image
 
 
@@ -398,3 +401,58 @@ class LlmClient:
             log_image(image, f"LLM indicated point for: {description}")
 
         return point
+
+    @keyword
+    async def assert_state(
+        self,
+        description: str,
+        image: Image.Image | str | None = None,
+        custom_system_prompt: str | None = None,
+    ) -> None:
+        """
+        Assert that the screen matches a state description.
+
+        Args:
+            description: Description of the expected screen state.
+            image: Image to inspect. If omitted, a screenshot is grabbed.
+            custom_system_prompt: Optional system prompt override.
+
+        Raises:
+            RuntimeError: If a screenshot could not be grabbed.
+            AssertionError: If the state does not match the description.
+        """
+
+        if image is None:
+            platform_video_input = self._get_lib_instance("VideoInput")
+            if (image := await platform_video_input.grab_screenshot()) is None:
+                raise RuntimeError("Failed to grab screenshot.")
+
+        system_prompt = textwrap.dedent("""
+            You are a GUI agent. Check whether the screenshot matches the
+            description of an expected screen state.
+
+            Return only a valid JSON object with this exact schema:
+            {
+                "matches_description": true | false,
+                "reasoning": "explanation of why the state is present or not"
+            }
+            Do not add markdown syntax or any other text.
+            """)
+
+        llm_output = await asyncio.to_thread(
+            self.prompt_llm,
+            prompt=f"Check if this state is present on the screen: {description}",
+            image=image,
+            system_prompt=custom_system_prompt or system_prompt,
+        )
+
+        parsed = await self._verify_llm_json_response(
+            llm_output,
+            {"matches_description": bool, "reasoning": str},
+        )
+
+        if not parsed["matches_description"]:
+            raise AssertionError(
+                f"State does NOT match description: {description}. "
+                f"Reasoning: {parsed['reasoning']}"
+            )

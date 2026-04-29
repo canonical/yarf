@@ -193,6 +193,12 @@ class TestLlmClient:
 
     OBJECT_FOUND_RESPONSE = json.dumps({"point_2d": [250, 500]})
     OBJECT_NOT_FOUND_RESPONSE = json.dumps({"point_2d": [-100, -100]})
+    STATE_MATCH_RESPONSE = json.dumps(
+        {"matches_description": True, "reasoning": "state is present"}
+    )
+    STATE_MISMATCH_RESPONSE = json.dumps(
+        {"matches_description": False, "reasoning": "state is absent"}
+    )
 
     @pytest.mark.asyncio
     async def test_valid_response(self, mock_post):
@@ -576,4 +582,89 @@ class TestLlmClient:
         mock_log_image.assert_called_once_with(
             annotated,
             "LLM indicated point for: the OK button",
+        )
+
+    @pytest.mark.asyncio
+    async def test_assert_state_passes_when_state_matches(self):
+        client = LlmClient()
+        image = Image.new("RGB", (10, 10))
+
+        with patch.object(
+            client,
+            "prompt_llm",
+            return_value=self.STATE_MATCH_RESPONSE,
+        ) as mock_prompt:
+            result = await client.assert_state("desktop is visible", image)
+
+        assert result is None
+        mock_prompt.assert_called_once()
+        assert mock_prompt.call_args.kwargs["image"] is image
+        assert mock_prompt.call_args.kwargs["prompt"] == (
+            "Check if this state is present on the screen: desktop is visible"
+        )
+
+    @pytest.mark.asyncio
+    async def test_assert_state_raises_when_state_does_not_match(self):
+        client = LlmClient()
+        image = Image.new("RGB", (10, 10))
+
+        with (
+            patch.object(
+                client,
+                "prompt_llm",
+                return_value=self.STATE_MISMATCH_RESPONSE,
+            ),
+            pytest.raises(
+                AssertionError,
+                match=(
+                    "State does NOT match description: desktop is visible. "
+                    "Reasoning: state is absent"
+                ),
+            ),
+        ):
+            await client.assert_state("desktop is visible", image)
+
+    @pytest.mark.asyncio
+    async def test_assert_state_grabs_screenshot_when_no_image(self):
+        client = LlmClient()
+        screenshot = Image.new("RGB", (10, 10))
+
+        mock_video = MagicMock()
+        mock_video.grab_screenshot = AsyncMock(return_value=screenshot)
+
+        with (
+            patch.object(
+                client,
+                "_get_lib_instance",
+                return_value=mock_video,
+            ),
+            patch.object(
+                client,
+                "prompt_llm",
+                return_value=self.STATE_MATCH_RESPONSE,
+            ) as mock_prompt,
+        ):
+            await client.assert_state("desktop is visible")
+
+        assert mock_prompt.call_args.kwargs["image"] is screenshot
+        mock_video.grab_screenshot.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_assert_state_uses_custom_system_prompt(self):
+        client = LlmClient()
+        image = Image.new("RGB", (10, 10))
+
+        with patch.object(
+            client,
+            "prompt_llm",
+            return_value=self.STATE_MATCH_RESPONSE,
+        ) as mock_prompt:
+            await client.assert_state(
+                "desktop is visible",
+                image,
+                custom_system_prompt="Only answer JSON.",
+            )
+
+        assert mock_prompt.call_args.kwargs["system_prompt"] == (
+            "Only answer JSON."
         )
