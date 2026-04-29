@@ -7,10 +7,26 @@
 
 ## Keywords
 
+### Assert State
+
+<p>Assert that the screen matches a state description.</p>
+<p>Args: description: Description of the expected screen state. image: Image to inspect. If omitted, a screenshot is grabbed. custom_system_prompt: Optional system prompt override.</p>
+<p>Raises: RuntimeError: If a screenshot could not be grabbed. AssertionError: If the state does not match the description.</p>
+
+#### Positional and named arguments
+
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| description | string | | POSITIONAL_OR_NAMED | Yes |
+| image | None | None | POSITIONAL_OR_NAMED | No |
+| custom_system_prompt | None | None | POSITIONAL_OR_NAMED | No |
+
+<hr style="border:1px solid grey">
+
 ### Check For Visual Corruption
 
 <p>Detect if an image is corrupted.</p>
-<p>Args: image: The image to check (PIL Image or path). If no image is provided, a new screenshot is grabbed. custom_prompt: Optional custom prompt to guide the LLM.</p>
+<p>Args: image: The image to check. If no image is provided, a new screenshot is grabbed. custom_prompt: Optional custom prompt to guide the LLM.</p>
 <p>Returns: A dict containing the LLM's assessment of whether the image is corrupted and a description.</p>
 <p>Raises: RuntimeError: If the screenshot could not be grabbed or if the LLM response is invalid. VQAValidationError: If the image is assessed as corrupted by the LLM.</p>
 
@@ -20,10 +36,10 @@
 
 #### Positional and named arguments
 
-| Name          | Type | Default Value | Kind                | Required |
-| ------------- | ---- | ------------- | ------------------- | -------- |
-| image         | None | None          | POSITIONAL_OR_NAMED | No       |
-| custom_prompt | None | None          | POSITIONAL_OR_NAMED | No       |
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| image | None | None | POSITIONAL_OR_NAMED | No |
+| custom_prompt | None | None | POSITIONAL_OR_NAMED | No |
 
 <hr style="border:1px solid grey">
 
@@ -35,9 +51,65 @@
 
 #### Positional and named arguments
 
-| Name   | Type | Default Value | Kind      | Required |
-| ------ | ---- | ------------- | --------- | -------- |
-| kwargs | Any  |               | VAR_NAMED | No       |
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| kwargs | Any | | VAR_NAMED | No |
+
+<hr style="border:1px solid grey">
+
+### Execute Gui Action
+
+<p>Execute a GUI action as specified by the LLM response.</p>
+<p>Args: action: A dict containing the action_type, text, and point_2d.</p>
+<p>Raises: ValueError: If the action type is unsupported or if required fields are missing.</p>
+
+#### Positional and named arguments
+
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| action | dictionary | | POSITIONAL_OR_NAMED | Yes |
+
+<hr style="border:1px solid grey">
+
+### Get Object Position
+
+<p>Get the position of an object on the screen.</p>
+<p>Args: description: Description of the object to locate. image: Image to inspect. If omitted, a screenshot is grabbed. custom_system_prompt: Optional system prompt override.</p>
+<p>Returns: The model point as <code>[x, y]</code> on a 1000x1000 grid, or <code>[-100, -100]</code> if the object was not found.</p>
+<p>Raises: RuntimeError: If a screenshot could not be grabbed or if the LLM response is invalid. VQAValidationError: If the LLM indicates that the object was not</p>
+
+### Return
+
+{'name': 'list', 'typedoc': 'list', 'nested': \[{'name': 'Any', 'typedoc': 'Any', 'nested': [], 'union': False}\], 'union': False}
+
+#### Positional and named arguments
+
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| description | string | | POSITIONAL_OR_NAMED | Yes |
+| image | None | None | POSITIONAL_OR_NAMED | No |
+| custom_system_prompt | None | None | POSITIONAL_OR_NAMED | No |
+
+<hr style="border:1px solid grey">
+
+### Get Single Gui Action
+
+<p>Get a single GUI action from the LLM.</p>
+<p>Args: task: The task description to provide to the LLM. image: Image to inspect. If omitted, a screenshot is grabbed. custom_system_prompt: Optional system prompt override.</p>
+<p>Returns: The next GUI action with normalized pointer coordinates.</p>
+<p>Raises: RuntimeError: If a screenshot could not be grabbed or if the LLM response is invalid. ValueError: If the LLM response contains an unsupported action type or is missing required fields.</p>
+
+### Return
+
+{'name': 'dict', 'typedoc': 'dictionary', 'nested': \[{'name': 'str', 'typedoc': 'string', 'nested': [], 'union': False}, {'name': 'Any', 'typedoc': 'Any', 'nested': [], 'union': False}\], 'union': False}
+
+#### Positional and named arguments
+
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| task | string | | POSITIONAL_OR_NAMED | Yes |
+| image | None | None | POSITIONAL_OR_NAMED | No |
+| custom_system_prompt | None | None | POSITIONAL_OR_NAMED | No |
 
 <hr style="border:1px solid grey">
 
@@ -53,8 +125,8 @@
 
 #### Positional and named arguments
 
-| Name          | Type   | Default Value | Kind                | Required |
-| ------------- | ------ | ------------- | ------------------- | -------- |
-| prompt        | string |               | POSITIONAL_OR_NAMED | Yes      |
-| image         | None   | None          | POSITIONAL_OR_NAMED | No       |
-| system_prompt | None   | None          | POSITIONAL_OR_NAMED | No       |
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| prompt | string | | POSITIONAL_OR_NAMED | Yes |
+| image | None | None | POSITIONAL_OR_NAMED | No |
+| system_prompt | None | None | POSITIONAL_OR_NAMED | No |
