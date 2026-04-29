@@ -5,6 +5,7 @@ server using OpenAPI.
 
 import asyncio
 import json
+import textwrap
 from typing import Any
 
 import requests
@@ -182,11 +183,11 @@ class LlmClient:
             if (image := await platform_video_input.grab_screenshot()) is None:
                 raise RuntimeError("Failed to grab screenshot.")
 
-        result = await asyncio.to_thread(
+        llm_output = await asyncio.to_thread(
             self.prompt_llm,
             prompt=custom_prompt or "Detect if the image is corrupted.",
             image=image,
-            system_prompt="""
+            system_prompt=textwrap.dedent("""
             You are a helpful assistant that can understand images and texts.
             You have to assess if the provided image is corrupted or not.
             This will probably be shown as noise in some parts of the image.
@@ -195,35 +196,14 @@ class LlmClient:
             2. description: a short description (on 1 line)
             Example output: {"corrupted": true, "description": "..."}.
             Do not add markdown syntax or any other text.
-            """,
+            """),
         )
 
-        required_keys = {
-            "corrupted": bool,
-            "description": str,
-        }
-        parsed, error_messages = self._verify_llm_json_response(
-            result, required_keys
+        required_keys = {"corrupted": bool, "description": str}
+
+        parsed = await self._verify_llm_json_response(
+            llm_output, required_keys
         )
-        if len(error_messages) > 0:
-            result = await asyncio.to_thread(
-                self.prompt_llm,
-                prompt=f"""
-                Please correct the previous response and output the correct JSON.
-                Previous response: {result}
-                Error details: {error_messages}
-                """,
-                system_prompt="""
-                You are a helpful assistant that can understand error outputs.
-                Output your answer in JSON format only.
-                Example: {"corrupted": true, "description": "..."}.
-                """,
-            )
-            parsed, errors = self._verify_llm_json_response(
-                result, required_keys
-            )
-            if errors:
-                raise RuntimeError("Failing to get a valid response from LLM")
 
         if parsed["corrupted"]:
             log_image(
@@ -232,39 +212,112 @@ class LlmClient:
             raise VQAValidationError(
                 f"Image is corrupted: {parsed['description']}"
             )
-
         return parsed
 
-    def _verify_llm_json_response(
+    async def _verify_llm_json_response(
         self,
-        result: str,
+        llm_output: str,
         required_keys: dict[str, type],
-    ) -> tuple[dict[str, Any], str]:
-        json_start = result.find("{")
-        json_end = result.rfind("}")
-        if json_start == -1 or json_end == -1:
-            raise RuntimeError(
-                f"LLM response does not contain valid JSON: {result}"
+    ) -> dict[str, Any]:
+        """
+        Verify that the LLM response is a valid JSON object with the required
+        keys and expected types. If there are validation errors, an attempt is
+        made to correct the
+
+        Args:
+            result: The raw string response from the LLM.
+            required_keys: A dict mapping keys to their expected types.
+
+        Returns:
+            The parsed JSON object if it is valid.
+        """
+
+        parsed_output, errors = self._parse_llm_json_response(
+            llm_output, required_keys
+        )
+
+        if errors:
+            logger.warn(
+                f"LLM response had validation errors: {errors}\n"
+                "Trying to fix them with a verification prompt"
             )
+
+            corrected_output = await asyncio.to_thread(
+                self.prompt_llm,
+                prompt=textwrap.dedent(f"""
+                Please correct the previous response and output the correct
+                JSON.
+                Previous response: {llm_output}
+                Error details: {errors}
+                """),
+                system_prompt=textwrap.dedent("""
+                Your task is to understand error outputs and try to fix them
+                by understanding the response.
+                Rules:
+                 - You have to make sure the output is a valid JSON and follows
+                   the required schema.
+                 - The output must be the JSON object without any extra text or
+                   markdown.
+                 - All the brackets and quotes must be properly closed.
+                """),
+            )
+
+            parsed_output, verifier_errors = self._parse_llm_json_response(
+                corrected_output, required_keys
+            )
+
+            if verifier_errors:
+                msg = textwrap.dedent(f"""
+                    LLM response could not be validated even after correction.
+                    Original response: {llm_output}
+                    Errors: {errors}
+                    Corrected response: {corrected_output}
+                    Errors: {verifier_errors}
+                    """)
+                raise RuntimeError(msg)
+
+        return parsed_output
+
+    def _parse_llm_json_response(
+        self, llm_output: str, required_keys: dict[str, type]
+    ) -> tuple[dict[str, Any], str]:
+        """
+        Parse the LLM output as JSON and validate it against the required keys
+        and their expected types.
+        Args:
+            llm_output: The raw string response from the LLM.
+            required_keys: A dict mapping keys to their expected types.
+        Returns:
+            A tuple containing the parsed JSON object and a string of error
+            messages (empty if no errors).
+        """
+        json_start = llm_output.find("{")
+        json_end = llm_output.rfind("}")
+        if json_start == -1 or json_end == -1:
+            error_messages = (
+                f"LLM response does not contain valid JSON: {llm_output}"
+            )
+            return {}, error_messages
 
         try:
-            parsed: dict[str, Any] = json.loads(
-                result[json_start : json_end + 1]
+            parsed_output: dict[str, Any] = json.loads(
+                llm_output[json_start : json_end + 1]
             )
-        except json.JSONDecodeError as exc:
-            raise RuntimeError(
-                f"Failed to parse LLM response as JSON: {result}"
-            ) from exc
+        except json.JSONDecodeError:
+            error_messages = (
+                f"Failed to parse LLM response as JSON: {llm_output}"
+            )
+            return {}, error_messages
 
         error_messages = ""
-        missing_keys = required_keys.keys() - parsed.keys()
+        missing_keys = required_keys.keys() - parsed_output.keys()
         if missing_keys:
             error_messages += (
                 "LLM returned an invalid response format; missing keys: "
-                f"{sorted(missing_keys)}. Response: {parsed}"
+                f"{sorted(missing_keys)}. Response: {parsed_output}"
             )
 
-        for key, value in parsed.items():
+        for key, value in parsed_output.items():
             if key in required_keys and not isinstance(
                 value, required_keys[key]
             ):
@@ -274,6 +327,4 @@ class LlmClient:
                     f"got {type(value).__name__}."
                 )
 
-        if error_messages:
-            logger.warn(f"LLM response validation errors: {error_messages}")
-        return parsed, error_messages
+        return parsed_output, error_messages
