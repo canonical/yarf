@@ -20,6 +20,7 @@ from yarf.lib.images.utils import to_base64
 from yarf.rf_libraries.libraries.image.utils import (
     draw_point_on_image,
     log_image,
+    normalize_point,
 )
 from yarf.vendor.RPA.recognition.utils import to_image
 
@@ -394,7 +395,7 @@ class LlmClient:
             raise VQAValidationError(f"Object was not found: {description}")
 
         # Normalize the point to have relative coordinates
-        point = [coord / 1000 for coord in point]
+        point = normalize_point(point)
 
         if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
             image = draw_point_on_image(image, point, label=description)
@@ -441,7 +442,9 @@ class LlmClient:
 
         llm_output = await asyncio.to_thread(
             self.prompt_llm,
-            prompt=f"Check if this state is present on the screen: {description}",
+            prompt=(
+                f"Check if this state is present on the screen: {description}"
+            ),
             image=image,
             system_prompt=custom_system_prompt or system_prompt,
         )
@@ -456,3 +459,143 @@ class LlmClient:
                 f"State does NOT match description: {description}. "
                 f"Reasoning: {parsed['reasoning']}"
             )
+
+    @keyword
+    async def get_single_gui_action(
+        self,
+        task: str,
+        image: Image.Image | str | None = None,
+        custom_system_prompt: str | None = None,
+    ) -> dict[str, Any]:
+        """
+        Get a single GUI action from the LLM.
+
+        Args:
+            task: The task description to provide to the LLM.
+            image: Image to inspect. If omitted, a screenshot is grabbed.
+            custom_system_prompt: Optional system prompt override.
+
+        Returns:
+            The next GUI action with normalized pointer coordinates.
+        """
+
+        if image is None:
+            platform_video_input = self._get_lib_instance("VideoInput")
+            if (image := await platform_video_input.grab_screenshot()) is None:
+                raise RuntimeError("Failed to grab screenshot.")
+
+        if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
+            log_image(
+                image, msg="Screenshot provided to LLM for GUI action decision"
+            )
+
+        system_prompt = textwrap.dedent("""
+            You are a GUI agent. You are given a task and a screenshot of the
+            screen. Choose exactly one next action.
+
+            Available actions:
+
+            action_type: Left Click, text: null, point_2d: [x, y]
+                Explanation: Left click a specific UI element and provide
+                coordinates on a 1000x1000 grid.
+
+            action_type: Right Click, text: null, point_2d: [x, y]
+                Explanation: Right click a specific UI element and provide
+                coordinates on a 1000x1000 grid.
+
+            action_type: Double Click, text: null, point_2d: [x, y]
+                Explanation: Double click a specific UI element and provide
+                coordinates on a 1000x1000 grid.
+
+            action_type: Write, text: Text to enter, point_2d: [-100, -100]
+                Explanation: Type text without moving the pointer.
+
+            Return only a valid JSON object with this exact schema:
+            {
+                "action_type": "one of the available action types",
+                "text": "text to be written, or null if not applicable",
+                "point_2d": [x, y]
+            }
+
+            Rules:
+            - Return point_2d on a 1000x1000 grid where [0, 0] is the top-left
+              and [1000, 1000] is the bottom-right of the image.
+            - Use [-100, -100] when coordinates are not applicable.
+            - Do not add markdown syntax or any other text.
+            """)
+
+        llm_output = await asyncio.to_thread(
+            self.prompt_llm,
+            prompt=task,
+            image=image,
+            system_prompt=custom_system_prompt or system_prompt,
+        )
+
+        parsed = await self._verify_llm_json_response(
+            llm_output,
+            {"action_type": str, "point_2d": list},
+        )
+        action_type = parsed["action_type"]
+        allowed_actions = {
+            "Left Click",
+            "Right Click",
+            "Double Click",
+            "Write",
+        }
+        if action_type not in allowed_actions:
+            raise ValueError(f"Unsupported GUI action: {action_type}")
+
+        if action_type == "Write":
+            if not isinstance(parsed.get("text"), str):
+                raise ValueError("Write actions must include text.")
+            return parsed
+
+        if parsed["point_2d"] == [-100.0, -100.0]:
+            raise ValueError(f"{action_type} actions must include a point.")
+
+        if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
+            point = normalize_point(parsed["point_2d"])
+            annotated = draw_point_on_image(image, point, label=action_type)
+            log_image(annotated, f"LLM indicated action point for: {task}")
+
+        return parsed
+
+    @keyword
+    async def execute_gui_action(self, action: dict[str, Any]) -> None:
+        """
+        Execute a GUI action as specified by the LLM response.
+        Args:
+            action: A dict containing the action_type, text, and point_2d.
+        """
+
+        hid = self._get_lib_instance("HID")
+        action_type = action["action_type"]
+        logger.info(f"Executing action: {action_type}")
+
+        if action_type in {"Left Click", "Right Click", "Double Click"}:
+            x, y = normalize_point(action["point_2d"])
+            await hid.move_pointer_to_proportional(x, y)
+            await asyncio.sleep(0.5)
+
+            if action_type == "Left Click":
+                await hid.click_pointer_button("LEFT")
+            elif action_type == "Right Click":
+                await hid.click_pointer_button("RIGHT")
+            else:
+                await hid.click_pointer_button("LEFT")
+                await asyncio.sleep(0.1)
+                await hid.click_pointer_button("LEFT")
+
+        elif action_type == "Write":
+            if not isinstance(action.get("text"), str):
+                raise ValueError("Write actions must include text.")
+            await hid.type_string(action["text"])
+
+        else:
+            raise ValueError(f"Unsupported GUI action: {action_type}")
+
+        if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
+            platform_video_input = self._get_lib_instance("VideoInput")
+            image = await platform_video_input.grab_screenshot()
+            logger.info(f"Executed action: {action_type}")
+            log_image(image=image, msg="Screenshot after executing action")

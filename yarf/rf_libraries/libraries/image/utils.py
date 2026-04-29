@@ -28,6 +28,35 @@ def log_image(image: Image.Image | str, msg: str = "") -> None:
     logger.info(image_string, html=True)
 
 
+def normalize_point(point: list) -> list[float]:
+    """
+    Normalize a point to proportional screen coordinates.
+
+    Args:
+        point: A point as [x, y] on a 1000x1000 grid
+
+    Returns:
+        The point as normalized ``[x, y]`` coordinates.
+    """
+    if len(point) != 2:
+        raise ValueError("Point must contain exactly two coordinates.")
+
+    try:
+        x = float(point[0])
+        y = float(point[1])
+    except (TypeError, ValueError) as exc:
+        raise ValueError("Point coordinates must be numeric.") from exc
+
+    if [x, y] == [-100.0, -100.0]:
+        raise ValueError("Point indicates object was not found.")
+
+    if not 0 <= x <= 1000 or not 0 <= y <= 1000:
+        raise ValueError("Point coordinates must be inside the screen.")
+
+    point = [x / 1000, y / 1000]
+    return point
+
+
 def draw_point_on_image(
     image: Image.Image,
     point: list[float] | list[int],

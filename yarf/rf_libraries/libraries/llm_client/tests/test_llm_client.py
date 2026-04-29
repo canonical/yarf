@@ -172,9 +172,10 @@ class TestLlmClient:
             )
             result = client._get_lib_instance("VideoInput")
 
-        mock_builtin_cls.return_value.get_library_instance.assert_called_once_with(
-            "VideoInput"
+        get_library_instance = (
+            mock_builtin_cls.return_value.get_library_instance
         )
+        get_library_instance.assert_called_once_with("VideoInput")
         assert result is sentinel
 
     VALID_RESPONSE = json.dumps(
@@ -198,6 +199,20 @@ class TestLlmClient:
     )
     STATE_MISMATCH_RESPONSE = json.dumps(
         {"matches_description": False, "reasoning": "state is absent"}
+    )
+    CLICK_ACTION_RESPONSE = json.dumps(
+        {
+            "action_type": "Left Click",
+            "text": None,
+            "point_2d": [250, 500],
+        }
+    )
+    WRITE_ACTION_RESPONSE = json.dumps(
+        {
+            "action_type": "Write",
+            "text": "hello",
+            "point_2d": [-100, -100],
+        }
     )
 
     @pytest.mark.asyncio
@@ -668,3 +683,176 @@ class TestLlmClient:
         assert mock_prompt.call_args.kwargs["system_prompt"] == (
             "Only answer JSON."
         )
+
+    @pytest.mark.asyncio
+    async def test_get_single_gui_action_returns_normalized_click_action(self):
+        client = LlmClient()
+        image = Image.new("RGB", (10, 10))
+
+        with (
+            patch(f"{self.LLM_PATH}.log_image"),
+            patch(f"{self.LLM_PATH}.draw_point_on_image"),
+            patch.object(
+                client,
+                "prompt_llm",
+                return_value=self.CLICK_ACTION_RESPONSE,
+            ) as mock_prompt,
+        ):
+            action = await client.get_single_gui_action("click OK", image)
+
+        assert action == {
+            "action_type": "Left Click",
+            "text": None,
+            "point_2d": [250, 500],
+        }
+        mock_prompt.assert_called_once()
+        assert mock_prompt.call_args.kwargs["image"] is image
+        assert mock_prompt.call_args.kwargs["prompt"] == "click OK"
+
+    @pytest.mark.asyncio
+    async def test_get_single_gui_action_returns_write_action(self):
+        client = LlmClient()
+        image = Image.new("RGB", (10, 10))
+
+        with patch.object(
+            client,
+            "prompt_llm",
+            return_value=self.WRITE_ACTION_RESPONSE,
+        ):
+            action = await client.get_single_gui_action("type hello", image)
+
+        assert action == {
+            "action_type": "Write",
+            "text": "hello",
+            "point_2d": [-100.0, -100.0],
+        }
+
+    @pytest.mark.asyncio
+    async def test_get_single_gui_action_grabs_screenshot_when_no_image(self):
+        client = LlmClient()
+        screenshot = Image.new("RGB", (10, 10))
+
+        mock_video = MagicMock()
+        mock_video.grab_screenshot = AsyncMock(return_value=screenshot)
+
+        with (
+            patch.object(
+                client,
+                "_get_lib_instance",
+                return_value=mock_video,
+            ),
+            patch.object(
+                client,
+                "prompt_llm",
+                return_value=self.CLICK_ACTION_RESPONSE,
+            ) as mock_prompt,
+        ):
+            action = await client.get_single_gui_action("click OK")
+
+        assert action["point_2d"] == [250, 500]
+        assert mock_prompt.call_args.kwargs["image"] is screenshot
+        mock_video.grab_screenshot.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_get_single_gui_action_rejects_unsupported_action(self):
+        client = LlmClient()
+        image = Image.new("RGB", (10, 10))
+        response = json.dumps(
+            {"action_type": "Wait", "text": None, "point_2d": [-100, -100]}
+        )
+
+        with (
+            patch.object(client, "prompt_llm", return_value=response),
+            pytest.raises(ValueError, match="Unsupported GUI action: Wait"),
+        ):
+            await client.get_single_gui_action("wait", image)
+
+    @pytest.mark.asyncio
+    async def test_execute_gui_action_left_click_uses_normalized_point(self):
+        client = LlmClient()
+        mock_hid = MagicMock()
+        mock_hid.move_pointer_to_proportional = AsyncMock()
+        mock_hid.click_pointer_button = AsyncMock()
+
+        mock_video = MagicMock()
+        mock_video.grab_screenshot = AsyncMock(
+            return_value=Image.new("RGB", (10, 10))
+        )
+
+        def get_library(name):
+            return {"HID": mock_hid, "VideoInput": mock_video}[name]
+
+        with patch.object(
+            client, "_get_lib_instance", side_effect=get_library
+        ):
+            await client.execute_gui_action(
+                {
+                    "action_type": "Left Click",
+                    "text": None,
+                    "point_2d": [250, 500],
+                }
+            )
+
+        mock_hid.move_pointer_to_proportional.assert_awaited_once_with(
+            0.25, 0.5
+        )
+        mock_hid.click_pointer_button.assert_awaited_once_with("LEFT")
+        mock_video.grab_screenshot.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_execute_gui_action_accepts_legacy_grid_point(self):
+        client = LlmClient()
+        mock_hid = MagicMock()
+        mock_hid.move_pointer_to_proportional = AsyncMock()
+        mock_hid.click_pointer_button = AsyncMock()
+
+        mock_video = MagicMock()
+        mock_video.grab_screenshot = AsyncMock(
+            return_value=Image.new("RGB", (10, 10))
+        )
+
+        def get_library(name):
+            return {"HID": mock_hid, "VideoInput": mock_video}[name]
+
+        with patch.object(
+            client, "_get_lib_instance", side_effect=get_library
+        ):
+            await client.execute_gui_action(
+                {
+                    "action_type": "Right Click",
+                    "text": None,
+                    "point_2d": [250, 500],
+                }
+            )
+
+        mock_hid.move_pointer_to_proportional.assert_awaited_once_with(
+            0.25, 0.5
+        )
+        mock_hid.click_pointer_button.assert_awaited_once_with("RIGHT")
+
+    @pytest.mark.asyncio
+    async def test_execute_gui_action_writes_text(self):
+        client = LlmClient()
+        mock_hid = MagicMock()
+        mock_hid.type_string = AsyncMock()
+
+        mock_video = MagicMock()
+        mock_video.grab_screenshot = AsyncMock(
+            return_value=Image.new("RGB", (10, 10))
+        )
+
+        def get_library(name):
+            return {"HID": mock_hid, "VideoInput": mock_video}[name]
+
+        with patch.object(
+            client, "_get_lib_instance", side_effect=get_library
+        ):
+            await client.execute_gui_action(
+                {
+                    "action_type": "Write",
+                    "text": "hello",
+                    "point_2d": [-100, -100],
+                }
+            )
+
+        mock_hid.type_string.assert_awaited_once_with("hello")
