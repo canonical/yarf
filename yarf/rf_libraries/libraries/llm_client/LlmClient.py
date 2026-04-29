@@ -618,6 +618,8 @@ class LlmClient:
             raise ValueError(f"Unsupported GUI action: {action_type}")
 
         if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
+            # Wait for a moment to let the screen update after the action
+            await asyncio.sleep(1)
             image = await self._grab_screenshot()
             logger.info(f"Executed action: {action_type}")
             log_image(image=image, msg="Screenshot after executing action")
