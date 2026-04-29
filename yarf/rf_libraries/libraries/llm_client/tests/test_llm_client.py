@@ -790,6 +790,55 @@ class TestLlmClient:
         }
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "task, response, expected_error",
+        [
+            (
+                "type hello",
+                {
+                    "action_type": "Write",
+                    "text": None,
+                    "point_2d": [-100, -100],
+                },
+                "Write actions must include text.",
+            ),
+            (
+                "wait",
+                {
+                    "action_type": "Wait",
+                    "text": None,
+                    "point_2d": [-100, -100],
+                },
+                "Unsupported GUI action: Wait",
+            ),
+            (
+                "click OK",
+                {
+                    "action_type": "Left Click",
+                    "text": None,
+                    "point_2d": [-100, -100],
+                },
+                "Left Click actions must include a point.",
+            ),
+        ],
+    )
+    async def test_get_single_gui_action_rejects_invalid_action(
+        self, task, response, expected_error
+    ):
+        client = LlmClient()
+        image = Image.new("RGB", (10, 10))
+
+        with (
+            patch.object(
+                client,
+                "prompt_llm",
+                return_value=json.dumps(response),
+            ),
+            pytest.raises(ValueError, match=expected_error),
+        ):
+            await client.get_single_gui_action(task, image)
+
+    @pytest.mark.asyncio
     async def test_get_single_gui_action_grabs_screenshot_when_no_image(self):
         client = LlmClient()
         screenshot = Image.new("RGB", (10, 10))
@@ -836,40 +885,65 @@ class TestLlmClient:
         )
 
     @pytest.mark.asyncio
-    async def test_get_single_gui_action_rejects_unsupported_action(self):
+    async def test_get_single_gui_action_logs_point_in_debug(self):
         client = LlmClient()
         image = Image.new("RGB", (10, 10))
-        response = json.dumps(
-            {"action_type": "Wait", "text": None, "point_2d": [-100, -100]}
-        )
+        annotated = Image.new("RGB", (10, 10))
 
         with (
-            patch.object(client, "prompt_llm", return_value=response),
-            pytest.raises(ValueError, match="Unsupported GUI action: Wait"),
+            patch.dict("os.environ", {"YARF_LOG_LEVEL": "DEBUG"}),
+            patch(f"{self.LLM_PATH}.log_image") as mock_log_image,
+            patch(
+                f"{self.LLM_PATH}.draw_point_on_image",
+                return_value=annotated,
+            ) as mock_draw_point,
+            patch.object(
+                client,
+                "prompt_llm",
+                return_value=self.CLICK_ACTION_RESPONSE,
+            ),
         ):
-            await client.get_single_gui_action("wait", image)
+            action = await client.get_single_gui_action("click OK", image)
+
+        assert action["point_2d"] == [250, 500]
+        mock_draw_point.assert_called_once_with(
+            image,
+            [0.25, 0.5],
+            label="Left Click",
+        )
+        mock_log_image.assert_any_call(
+            image,
+            msg="Screenshot provided to LLM for GUI action decision",
+        )
+        mock_log_image.assert_any_call(
+            annotated,
+            "LLM indicated action point for: click OK",
+        )
 
     @pytest.mark.asyncio
-    async def test_execute_gui_action_left_click_uses_normalized_point(self):
+    @pytest.mark.parametrize(
+        "action_type, expected_buttons",
+        [
+            ("Left Click", ["LEFT"]),
+            ("Right Click", ["RIGHT"]),
+            ("Double Click", ["LEFT", "LEFT"]),
+        ],
+    )
+    async def test_execute_gui_action_pointer_actions(
+        self, action_type, expected_buttons
+    ):
         client = LlmClient()
         mock_hid = MagicMock()
         mock_hid.move_pointer_to_proportional = AsyncMock()
         mock_hid.click_pointer_button = AsyncMock()
 
-        mock_video = MagicMock()
-        mock_video.grab_screenshot = AsyncMock(
-            return_value=Image.new("RGB", (10, 10))
-        )
-
-        def get_library(name):
-            return {"HID": mock_hid, "VideoInput": mock_video}[name]
-
-        with patch.object(
-            client, "_get_lib_instance", side_effect=get_library
+        with (
+            patch.object(client, "_get_lib_instance", return_value=mock_hid),
+            patch(f"{self.LLM_PATH}.asyncio.sleep", AsyncMock()),
         ):
             await client.execute_gui_action(
                 {
-                    "action_type": "Left Click",
+                    "action_type": action_type,
                     "text": None,
                     "point_2d": [250, 500],
                 }
@@ -878,39 +952,8 @@ class TestLlmClient:
         mock_hid.move_pointer_to_proportional.assert_awaited_once_with(
             0.25, 0.5
         )
-        mock_hid.click_pointer_button.assert_awaited_once_with("LEFT")
-        mock_video.grab_screenshot.assert_not_awaited()
-
-    @pytest.mark.asyncio
-    async def test_execute_gui_action_accepts_legacy_grid_point(self):
-        client = LlmClient()
-        mock_hid = MagicMock()
-        mock_hid.move_pointer_to_proportional = AsyncMock()
-        mock_hid.click_pointer_button = AsyncMock()
-
-        mock_video = MagicMock()
-        mock_video.grab_screenshot = AsyncMock(
-            return_value=Image.new("RGB", (10, 10))
-        )
-
-        def get_library(name):
-            return {"HID": mock_hid, "VideoInput": mock_video}[name]
-
-        with patch.object(
-            client, "_get_lib_instance", side_effect=get_library
-        ):
-            await client.execute_gui_action(
-                {
-                    "action_type": "Right Click",
-                    "text": None,
-                    "point_2d": [250, 500],
-                }
-            )
-
-        mock_hid.move_pointer_to_proportional.assert_awaited_once_with(
-            0.25, 0.5
-        )
-        mock_hid.click_pointer_button.assert_awaited_once_with("RIGHT")
+        click_args = mock_hid.click_pointer_button.await_args_list
+        assert [call.args[0] for call in click_args] == expected_buttons
 
     @pytest.mark.asyncio
     async def test_execute_gui_action_writes_text(self):
@@ -918,17 +961,7 @@ class TestLlmClient:
         mock_hid = MagicMock()
         mock_hid.type_string = AsyncMock()
 
-        mock_video = MagicMock()
-        mock_video.grab_screenshot = AsyncMock(
-            return_value=Image.new("RGB", (10, 10))
-        )
-
-        def get_library(name):
-            return {"HID": mock_hid, "VideoInput": mock_video}[name]
-
-        with patch.object(
-            client, "_get_lib_instance", side_effect=get_library
-        ):
+        with patch.object(client, "_get_lib_instance", return_value=mock_hid):
             await client.execute_gui_action(
                 {
                     "action_type": "Write",
@@ -938,3 +971,74 @@ class TestLlmClient:
             )
 
         mock_hid.type_string.assert_awaited_once_with("hello")
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "action, expected_error",
+        [
+            (
+                {
+                    "action_type": "Write",
+                    "text": None,
+                    "point_2d": [-100, -100],
+                },
+                "Write actions must include text.",
+            ),
+            (
+                {
+                    "action_type": "Wait",
+                    "text": None,
+                    "point_2d": [-100, -100],
+                },
+                "Unsupported GUI action: Wait",
+            ),
+        ],
+    )
+    async def test_execute_gui_action_rejects_invalid_action(
+        self, action, expected_error
+    ):
+        client = LlmClient()
+        mock_hid = MagicMock()
+
+        with (
+            patch.object(client, "_get_lib_instance", return_value=mock_hid),
+            pytest.raises(ValueError, match=expected_error),
+        ):
+            await client.execute_gui_action(action)
+
+    @pytest.mark.asyncio
+    async def test_execute_gui_action_logs_screenshot_in_debug(self):
+        client = LlmClient()
+        screenshot = Image.new("RGB", (10, 10))
+        mock_hid = MagicMock()
+        mock_hid.move_pointer_to_proportional = AsyncMock()
+        mock_hid.click_pointer_button = AsyncMock()
+        mock_video = MagicMock()
+        mock_video.grab_screenshot = AsyncMock(return_value=screenshot)
+
+        def get_library(name):
+            return {"HID": mock_hid, "VideoInput": mock_video}[name]
+
+        with (
+            patch.dict("os.environ", {"YARF_LOG_LEVEL": "DEBUG"}),
+            patch.object(
+                client,
+                "_get_lib_instance",
+                side_effect=get_library,
+            ),
+            patch(f"{self.LLM_PATH}.asyncio.sleep", AsyncMock()),
+            patch(f"{self.LLM_PATH}.log_image") as mock_log_image,
+        ):
+            await client.execute_gui_action(
+                {
+                    "action_type": "Left Click",
+                    "text": None,
+                    "point_2d": [250, 500],
+                }
+            )
+
+        mock_video.grab_screenshot.assert_awaited_once()
+        mock_log_image.assert_called_once_with(
+            image=screenshot,
+            msg="Screenshot after executing action",
+        )
