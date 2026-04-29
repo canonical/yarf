@@ -11,7 +11,7 @@
 
 <p>Assert that the screen matches a state description.</p>
 <p>Args: description: Description of the expected screen state. image: Image to inspect. If omitted, a screenshot is grabbed. custom_system_prompt: Optional system prompt override.</p>
-<p>Raises: RuntimeError: If a screenshot could not be grabbed. AssertionError: If the state does not match the description.</p>
+<p>Raises: AssertionError: If the state does not match the description.</p>
 
 #### Positional and named arguments
 
