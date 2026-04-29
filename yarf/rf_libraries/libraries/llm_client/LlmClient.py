@@ -618,7 +618,6 @@ class LlmClient:
             raise ValueError(f"Unsupported GUI action: {action_type}")
 
         if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
-            platform_video_input = self._get_lib_instance("VideoInput")
-            image = await platform_video_input.grab_screenshot()
+            image = await self._grab_screenshot()
             logger.info(f"Executed action: {action_type}")
             log_image(image=image, msg="Screenshot after executing action")
