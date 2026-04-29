@@ -197,8 +197,6 @@ class LlmClient:
             corrupted and a description.
 
         Raises:
-            RuntimeError: If the screenshot could not be grabbed or if the LLM
-                response is invalid.
             VQAValidationError: If the image is assessed as corrupted by the
                 LLM.
         """
@@ -375,8 +373,6 @@ class LlmClient:
 
 
         Raises:
-            RuntimeError: If a screenshot could not be grabbed or if the LLM
-                response is invalid.
             VQAValidationError: If the LLM indicates that the object was not
         """
         if image is None:
@@ -440,7 +436,6 @@ class LlmClient:
             custom_system_prompt: Optional system prompt override.
 
         Raises:
-            RuntimeError: If a screenshot could not be grabbed.
             AssertionError: If the state does not match the description.
         """
 
@@ -500,8 +495,6 @@ class LlmClient:
             actions, `point_2d` contains the raw coordinates from the LLM's
             1000x1000 grid.
         Raises:
-            RuntimeError: If a screenshot could not be grabbed or if the LLM
-                response is invalid.
             ValueError: If the LLM response contains an unsupported action type
                 or is missing required fields.
         """

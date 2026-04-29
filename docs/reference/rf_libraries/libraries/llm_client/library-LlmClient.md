@@ -28,7 +28,7 @@
 <p>Detect if an image is corrupted.</p>
 <p>Args: image: The image to check. If no image is provided, a new screenshot is grabbed. custom_prompt: Optional custom prompt to guide the LLM.</p>
 <p>Returns: A dict containing the LLM's assessment of whether the image is corrupted and a description.</p>
-<p>Raises: RuntimeError: If the screenshot could not be grabbed or if the LLM response is invalid. VQAValidationError: If the image is assessed as corrupted by the LLM.</p>
+<p>Raises: VQAValidationError: If the image is assessed as corrupted by the LLM.</p>
 
 ### Return
 
@@ -76,7 +76,7 @@
 <p>Get the position of an object on the screen in relative coordinates.</p>
 <p>Args: description: Description of the object to locate. image: Image to inspect. If omitted, a screenshot is grabbed. custom_system_prompt: Optional system prompt override.</p>
 <p>Returns: The object position as normalized relative coordinates <code>[x, y]</code>, where each value is typically in the range <code>0..1</code>.</p>
-<p>Raises: RuntimeError: If a screenshot could not be grabbed or if the LLM response is invalid. VQAValidationError: If the LLM indicates that the object was not</p>
+<p>Raises: VQAValidationError: If the LLM indicates that the object was not</p>
 
 ### Return
 
@@ -96,7 +96,7 @@
 
 <p>Get a single GUI action from the LLM.</p>
 <p>Args: task: The task description to provide to the LLM. image: Image to inspect. If omitted, a screenshot is grabbed. custom_system_prompt: Optional system prompt override.</p>
-<p>Returns: The next GUI action as returned by the LLM. For pointer-based actions, <span class="name">point_2d</span> contains the raw coordinates from the LLM's 1000x1000 grid. Raises: RuntimeError: If a screenshot could not be grabbed or if the LLM response is invalid. ValueError: If the LLM response contains an unsupported action type or is missing required fields.</p>
+<p>Returns: The next GUI action as returned by the LLM. For pointer-based actions, <span class="name">point_2d</span> contains the raw coordinates from the LLM's 1000x1000 grid. Raises: ValueError: If the LLM response contains an unsupported action type or is missing required fields.</p>
 
 ### Return
 
