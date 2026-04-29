@@ -23,6 +23,8 @@ def mock_logger():
 
 
 class TestLlmClient:
+    LLM_PATH = "yarf.rf_libraries.libraries.llm_client.LlmClient"
+
     def _mock_response(
         self, content: str = "ok", reasoning: str | None = None
     ) -> MagicMock:
@@ -188,6 +190,9 @@ class TestLlmClient:
             "description": "noise in top-left corner",
         }
     )
+
+    OBJECT_FOUND_RESPONSE = json.dumps({"point_2d": [250, 500]})
+    OBJECT_NOT_FOUND_RESPONSE = json.dumps({"point_2d": [-100, -100]})
 
     @pytest.mark.asyncio
     async def test_valid_response(self, mock_post):
@@ -475,3 +480,100 @@ class TestLlmClient:
             {"corrupted": bool},
         )
         assert "Failed to parse LLM response" in errors
+
+    @pytest.mark.asyncio
+    @patch(f"{LLM_PATH}.log_image", MagicMock())
+    @patch(f"{LLM_PATH}.draw_point_on_image", MagicMock())
+    async def test_get_object_position_returns_point(self):
+        client = LlmClient()
+        image = Image.new("RGB", (10, 10))
+
+        with patch.object(
+            client,
+            "prompt_llm",
+            return_value=self.OBJECT_FOUND_RESPONSE,
+        ) as mock_prompt:
+            point = await client.get_object_position("the OK button", image)
+
+        assert point == [0.25, 0.5]
+        mock_prompt.assert_called_once()
+        assert mock_prompt.call_args.kwargs["image"] is image
+        assert mock_prompt.call_args.kwargs["prompt"] == (
+            "Find the position of this object: the OK button"
+        )
+
+    @pytest.mark.asyncio
+    async def test_get_object_position_raises_when_object_not_found(self):
+        client = LlmClient()
+        image = Image.new("RGB", (10, 10))
+
+        with (
+            patch.object(
+                client,
+                "prompt_llm",
+                return_value=self.OBJECT_NOT_FOUND_RESPONSE,
+            ),
+            pytest.raises(
+                VQAValidationError,
+                match="Object was not found: missing thing",
+            ),
+        ):
+            await client.get_object_position("missing thing", image)
+
+    @pytest.mark.asyncio
+    async def test_get_object_position_grabs_screenshot_when_no_image(self):
+        client = LlmClient()
+        screenshot = Image.new("RGB", (10, 10))
+
+        mock_video = MagicMock()
+        mock_video.grab_screenshot = AsyncMock(return_value=screenshot)
+
+        with (
+            patch.object(
+                client,
+                "_get_lib_instance",
+                return_value=mock_video,
+            ),
+            patch.object(
+                client,
+                "prompt_llm",
+                return_value=self.OBJECT_FOUND_RESPONSE,
+            ) as mock_prompt,
+        ):
+            point = await client.get_object_position("the OK button")
+
+        assert point == [0.25, 0.5]
+        assert mock_prompt.call_args.kwargs["image"] is screenshot
+        mock_video.grab_screenshot.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    @patch(f"{LLM_PATH}.log_image")
+    @patch(f"{LLM_PATH}.draw_point_on_image")
+    async def test_get_object_position_logs_point_in_debug_mode(
+        self, mock_draw_image, mock_log_image
+    ):
+        client = LlmClient()
+        image = Image.new("RGB", (10, 10))
+        annotated = Image.new("RGB", (10, 10))
+
+        mock_draw_image.return_value = annotated
+        with (
+            patch.dict("os.environ", {"YARF_LOG_LEVEL": "DEBUG"}),
+            patch.object(
+                client,
+                "prompt_llm",
+                return_value=self.OBJECT_FOUND_RESPONSE,
+            ),
+        ):
+            point = await client.get_object_position("the OK button", image)
+
+        assert point == [0.25, 0.5]
+        mock_draw_image.assert_called_once_with(
+            image,
+            [0.25, 0.5],
+            label="the OK button",
+        )
+        mock_log_image.assert_called_once_with(
+            annotated,
+            "LLM indicated point for: the OK button",
+        )

@@ -5,6 +5,7 @@ server using OpenAPI.
 
 import asyncio
 import json
+import os
 import textwrap
 from typing import Any
 
@@ -16,7 +17,7 @@ from robot.libraries.BuiltIn import BuiltIn
 
 from yarf.errors.yarf_errors import VQAValidationError
 from yarf.lib.images.utils import to_base64
-from yarf.rf_libraries.libraries.image.utils import log_image
+from yarf.rf_libraries.libraries.image.utils import draw_point_on_image, log_image
 from yarf.vendor.RPA.recognition.utils import to_image
 
 
@@ -167,7 +168,8 @@ class LlmClient:
         Detect if an image is corrupted.
 
         Args:
-            image: The image to check (PIL Image or path). If no image is provided, a new screenshot is grabbed.
+            image: The image to check. If no image is provided, a new
+                screenshot is grabbed.
             custom_prompt: Optional custom prompt to guide the LLM.
 
         Returns:
@@ -175,8 +177,10 @@ class LlmClient:
             corrupted and a description.
 
         Raises:
-            RuntimeError: If the screenshot could not be grabbed or if the LLM response is invalid.
-            VQAValidationError: If the image is assessed as corrupted by the LLM.
+            RuntimeError: If the screenshot could not be grabbed or if the LLM
+                response is invalid.
+            VQAValidationError: If the image is assessed as corrupted by the
+                LLM.
         """
         if image is None:
             platform_video_input = self._get_lib_instance("VideoInput")
@@ -328,3 +332,69 @@ class LlmClient:
                 )
 
         return parsed_output, error_messages
+
+    @keyword
+    async def get_object_position(
+        self,
+        description: str,
+        image: Image.Image | str | None = None,
+        custom_system_prompt: str | None = None,
+    ) -> list[Any]:
+        """
+        Get the position of an object on the screen.
+
+        Args:
+            description: Description of the object to locate.
+            image: Image to inspect. If omitted, a screenshot is grabbed.
+            custom_system_prompt: Optional system prompt override.
+
+        Returns:
+            The model point as ``[x, y]`` on a 1000x1000 grid, or
+            ``[-100, -100]`` if the object was not found.
+        """
+        if image is None:
+            platform_video_input = self._get_lib_instance("VideoInput")
+            if (image := await platform_video_input.grab_screenshot()) is None:
+                raise RuntimeError("Failed to grab screenshot.")
+
+        system_prompt = textwrap.dedent("""
+            You are a GUI agent. Find the position of an object on the screen
+            from a description and a screenshot.
+
+            Return only a valid JSON object with this exact schema:
+            {
+                "point_2d": [x, y]
+            }
+
+            Use a 1000x1000 coordinate grid where [0, 0] is the top-left and
+            [1000, 1000] is the bottom-right of the image.
+
+            If the object is not found, return {"point_2d": [-100, -100]}.
+            Do not add markdown syntax or any other text.
+            """)
+
+        llm_output = await asyncio.to_thread(
+            self.prompt_llm,
+            prompt=f"Find the position of this object: {description}",
+            image=image,
+            system_prompt=custom_system_prompt or system_prompt,
+        )
+
+        parsed = await self._verify_llm_json_response(
+            llm_output,
+            {"point_2d": list},
+        )
+        point = parsed["point_2d"]
+
+        logger.info(f"LLM indicated point: {point}")
+        if point == [-100, -100]:
+            raise VQAValidationError(f"Object was not found: {description}")
+
+        # Normalize the point to have relative coordinates
+        point = [coord / 1000 for coord in point]
+
+        if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
+            image = draw_point_on_image(image, point, label=description)
+            log_image(image, f"LLM indicated point for: {description}")
+
+        return point
