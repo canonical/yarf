@@ -223,21 +223,23 @@ class LlmClient:
         return parsed
 
     async def _verify_llm_json_response(
-        self,
-        llm_output: str,
-        required_keys: dict[str, type],
+        self, llm_output: str, required_keys: dict[str, type]
     ) -> dict[str, Any]:
         """
         Verify that the LLM response is a valid JSON object with the required
         keys and expected types. If there are validation errors, an attempt is
-        made to correct the
+        made to correct the.
 
         Args:
-            result: The raw string response from the LLM.
+            llm_output: The raw string response from the LLM.
             required_keys: A dict mapping keys to their expected types.
 
         Returns:
             The parsed JSON object if it is valid.
+
+        Raises:
+            RuntimeError: If the LLM response cannot be validated even after
+                correction attempts.
         """
 
         parsed_output, errors = self._parse_llm_json_response(
@@ -292,6 +294,7 @@ class LlmClient:
         """
         Parse the LLM output as JSON and validate it against the required keys
         and their expected types.
+
         Args:
             llm_output: The raw string response from the LLM.
             required_keys: A dict mapping keys to their expected types.
@@ -355,6 +358,11 @@ class LlmClient:
         Returns:
             The model point as ``[x, y]`` on a 1000x1000 grid, or
             ``[-100, -100]`` if the object was not found.
+
+        Raises:
+            RuntimeError: If a screenshot could not be grabbed or if the LLM
+                response is invalid.
+            VQAValidationError: If the LLM indicates that the object was not
         """
         if image is None:
             platform_video_input = self._get_lib_instance("VideoInput")
@@ -455,6 +463,7 @@ class LlmClient:
         )
 
         if not parsed["matches_description"]:
+            log_image(image=image, msg="Current state")
             raise AssertionError(
                 f"State does NOT match description: {description}. "
                 f"Reasoning: {parsed['reasoning']}"
@@ -477,6 +486,12 @@ class LlmClient:
 
         Returns:
             The next GUI action with normalized pointer coordinates.
+
+        Raises:
+            RuntimeError: If a screenshot could not be grabbed or if the LLM
+                response is invalid.
+            ValueError: If the LLM response contains an unsupported action type
+                or is missing required fields.
         """
 
         if image is None:
@@ -564,8 +579,13 @@ class LlmClient:
     async def execute_gui_action(self, action: dict[str, Any]) -> None:
         """
         Execute a GUI action as specified by the LLM response.
+
         Args:
             action: A dict containing the action_type, text, and point_2d.
+
+        Raises:
+            ValueError: If the action type is unsupported or if required fields
+                are missing.
         """
 
         hid = self._get_lib_instance("HID")

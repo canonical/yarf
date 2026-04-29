@@ -37,6 +37,9 @@ def normalize_point(point: list) -> list[float]:
 
     Returns:
         The point as normalized ``[x, y]`` coordinates.
+
+    Raises:
+        ValueError: If the point is not valid.
     """
     if len(point) != 2:
         raise ValueError("Point must contain exactly two coordinates.")
@@ -70,11 +73,13 @@ def draw_point_on_image(
         image: Pillow image to annotate.
         point: Point in image or relative coordinates to draw
         label: Optional text label to draw near the marker.
-        coordinate_grid: Size of the model coordinate grid.
-        radius: Radius of the circular marker.
+        size: Size of the marker.
 
     Returns:
         Annotated image copy.
+
+    Raises:
+        ValueError: If the point is not valid.
     """
     if len(point) != 2:
         raise ValueError("Point must contain exactly two coordinates.")
