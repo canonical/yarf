@@ -162,6 +162,22 @@ class LlmClient:
         """
         return BuiltIn().get_library_instance(lib_name)
 
+    async def _grab_screenshot(self) -> Image.Image:
+        """
+        Helper function to grab a screenshot using the VideoInput library.
+
+        Returns:
+            A PIL Image of the screenshot.
+
+        Raises:
+            RuntimeError: If the screenshot could not be grabbed.
+        """
+        platform_video_input = self._get_lib_instance("VideoInput")
+        image = await platform_video_input.grab_screenshot()
+        if image is None:
+            raise RuntimeError("Failed to grab screenshot.")
+        return image
+
     @keyword
     async def check_for_visual_corruption(
         self,
@@ -187,9 +203,7 @@ class LlmClient:
                 LLM.
         """
         if image is None:
-            platform_video_input = self._get_lib_instance("VideoInput")
-            if (image := await platform_video_input.grab_screenshot()) is None:
-                raise RuntimeError("Failed to grab screenshot.")
+            image = await self._grab_screenshot()
 
         llm_output = await asyncio.to_thread(
             self.prompt_llm,
@@ -366,9 +380,7 @@ class LlmClient:
             VQAValidationError: If the LLM indicates that the object was not
         """
         if image is None:
-            platform_video_input = self._get_lib_instance("VideoInput")
-            if (image := await platform_video_input.grab_screenshot()) is None:
-                raise RuntimeError("Failed to grab screenshot.")
+            image = await self._grab_screenshot()
 
         system_prompt = textwrap.dedent("""
             You are a GUI agent. Find the position of an object on the screen
@@ -433,9 +445,7 @@ class LlmClient:
         """
 
         if image is None:
-            platform_video_input = self._get_lib_instance("VideoInput")
-            if (image := await platform_video_input.grab_screenshot()) is None:
-                raise RuntimeError("Failed to grab screenshot.")
+            image = await self._grab_screenshot()
 
         system_prompt = textwrap.dedent("""
             You are a GUI agent. Check whether the screenshot matches the
@@ -497,9 +507,7 @@ class LlmClient:
         """
 
         if image is None:
-            platform_video_input = self._get_lib_instance("VideoInput")
-            if (image := await platform_video_input.grab_screenshot()) is None:
-                raise RuntimeError("Failed to grab screenshot.")
+            image = await self._grab_screenshot()
 
         if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
             log_image(
@@ -603,7 +611,7 @@ class LlmClient:
                 await hid.click_pointer_button("LEFT")
             elif action_type == "Right Click":
                 await hid.click_pointer_button("RIGHT")
-            else:
+            elif action_type == "Double Click":
                 await hid.click_pointer_button("LEFT")
                 await asyncio.sleep(0.1)
                 await hid.click_pointer_button("LEFT")

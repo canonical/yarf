@@ -178,6 +178,41 @@ class TestLlmClient:
         get_library_instance.assert_called_once_with("VideoInput")
         assert result is sentinel
 
+    @pytest.mark.asyncio
+    async def test_grab_screenshot(self):
+        client = LlmClient()
+        screenshot = Image.new("RGB", (10, 10))
+
+        mock_video = MagicMock()
+        mock_video.grab_screenshot = AsyncMock(return_value=screenshot)
+
+        with patch.object(
+            client,
+            "_get_lib_instance",
+            return_value=mock_video,
+        ):
+            result = await client._grab_screenshot()
+
+        assert result is screenshot
+        mock_video.grab_screenshot.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_grab_screenshot_raises_when_screenshot_fails(self):
+        client = LlmClient()
+
+        mock_video = MagicMock()
+        mock_video.grab_screenshot = AsyncMock(return_value=None)
+
+        with (
+            patch.object(
+                client,
+                "_get_lib_instance",
+                return_value=mock_video,
+            ),
+            pytest.raises(RuntimeError, match="Failed to grab screenshot"),
+        ):
+            await client._grab_screenshot()
+
     VALID_RESPONSE = json.dumps(
         {
             "corrupted": False,
@@ -267,12 +302,13 @@ class TestLlmClient:
         client = LlmClient()
         screenshot = Image.new("RGB", (10, 10))
 
-        mock_video = MagicMock()
-        mock_video.grab_screenshot = AsyncMock(return_value=screenshot)
-
         # LLM returns valid response for grabbed screenshot
         with (
-            patch.object(client, "_get_lib_instance", return_value=mock_video),
+            patch.object(
+                client,
+                "_grab_screenshot",
+                AsyncMock(return_value=screenshot),
+            ) as mock_grab,
             patch.object(
                 client, "prompt_llm", return_value=self.VALID_RESPONSE
             ),
@@ -280,18 +316,20 @@ class TestLlmClient:
             result = await client.check_for_visual_corruption()
 
         assert result["corrupted"] is False
-        mock_video.grab_screenshot.assert_awaited_once()
+        mock_grab.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_raises_when_screenshot_fails(self, mock_post):
         client = LlmClient()
-
-        mock_video = MagicMock()
-        mock_video.grab_screenshot = AsyncMock(return_value=None)
+        exc = RuntimeError("Failed to grab screenshot")
 
         # LLM check raises error when screenshot cannot be grabbed
         with (
-            patch.object(client, "_get_lib_instance", return_value=mock_video),
+            patch.object(
+                client,
+                "_grab_screenshot",
+                AsyncMock(side_effect=exc),
+            ),
             pytest.raises(RuntimeError, match="Failed to grab screenshot"),
         ):
             await client.check_for_visual_corruption()
@@ -546,15 +584,12 @@ class TestLlmClient:
         client = LlmClient()
         screenshot = Image.new("RGB", (10, 10))
 
-        mock_video = MagicMock()
-        mock_video.grab_screenshot = AsyncMock(return_value=screenshot)
-
         with (
             patch.object(
                 client,
-                "_get_lib_instance",
-                return_value=mock_video,
-            ),
+                "_grab_screenshot",
+                AsyncMock(return_value=screenshot),
+            ) as mock_grab,
             patch.object(
                 client,
                 "prompt_llm",
@@ -565,7 +600,22 @@ class TestLlmClient:
 
         assert point == [0.25, 0.5]
         assert mock_prompt.call_args.kwargs["image"] is screenshot
-        mock_video.grab_screenshot.assert_awaited_once()
+        mock_grab.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_get_object_position_raises_when_screenshot_fails(self):
+        client = LlmClient()
+        exc = RuntimeError("Failed to grab screenshot")
+
+        with (
+            patch.object(
+                client,
+                "_grab_screenshot",
+                AsyncMock(side_effect=exc),
+            ),
+            pytest.raises(RuntimeError, match="Failed to grab screenshot"),
+        ):
+            await client.get_object_position("the OK button")
 
     @pytest.mark.asyncio
     @patch(f"{LLM_PATH}.log_image")
@@ -644,15 +694,12 @@ class TestLlmClient:
         client = LlmClient()
         screenshot = Image.new("RGB", (10, 10))
 
-        mock_video = MagicMock()
-        mock_video.grab_screenshot = AsyncMock(return_value=screenshot)
-
         with (
             patch.object(
                 client,
-                "_get_lib_instance",
-                return_value=mock_video,
-            ),
+                "_grab_screenshot",
+                AsyncMock(return_value=screenshot),
+            ) as mock_grab,
             patch.object(
                 client,
                 "prompt_llm",
@@ -662,7 +709,22 @@ class TestLlmClient:
             await client.assert_state("desktop is visible")
 
         assert mock_prompt.call_args.kwargs["image"] is screenshot
-        mock_video.grab_screenshot.assert_awaited_once()
+        mock_grab.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_assert_state_raises_when_screenshot_fails(self):
+        client = LlmClient()
+        exc = RuntimeError("Failed to grab screenshot")
+
+        with (
+            patch.object(
+                client,
+                "_grab_screenshot",
+                AsyncMock(side_effect=exc),
+            ),
+            pytest.raises(RuntimeError, match="Failed to grab screenshot"),
+        ):
+            await client.assert_state("desktop is visible")
 
     @pytest.mark.asyncio
     async def test_assert_state_uses_custom_system_prompt(self):
@@ -732,15 +794,12 @@ class TestLlmClient:
         client = LlmClient()
         screenshot = Image.new("RGB", (10, 10))
 
-        mock_video = MagicMock()
-        mock_video.grab_screenshot = AsyncMock(return_value=screenshot)
-
         with (
             patch.object(
                 client,
-                "_get_lib_instance",
-                return_value=mock_video,
-            ),
+                "_grab_screenshot",
+                AsyncMock(return_value=screenshot),
+            ) as mock_grab,
             patch.object(
                 client,
                 "prompt_llm",
@@ -751,7 +810,30 @@ class TestLlmClient:
 
         assert action["point_2d"] == [250, 500]
         assert mock_prompt.call_args.kwargs["image"] is screenshot
-        mock_video.grab_screenshot.assert_awaited_once()
+        mock_grab.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    @patch(f"{LLM_PATH}.log_image")
+    async def test_get_single_gui_action_logs_screenshot_in_debug(
+        self, mock_log_image
+    ):
+        client = LlmClient()
+        image = Image.new("RGB", (10, 10))
+
+        with (
+            patch.dict("os.environ", {"YARF_LOG_LEVEL": "DEBUG"}),
+            patch.object(
+                client,
+                "prompt_llm",
+                return_value=self.WRITE_ACTION_RESPONSE,
+            ),
+        ):
+            await client.get_single_gui_action("type hello", image)
+
+        mock_log_image.assert_called_once_with(
+            image,
+            msg="Screenshot provided to LLM for GUI action decision",
+        )
 
     @pytest.mark.asyncio
     async def test_get_single_gui_action_rejects_unsupported_action(self):
