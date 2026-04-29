@@ -685,7 +685,7 @@ class TestLlmClient:
         )
 
     @pytest.mark.asyncio
-    async def test_get_single_gui_action_returns_normalized_click_action(self):
+    async def test_get_single_gui_action_returns_click_action(self):
         client = LlmClient()
         image = Image.new("RGB", (10, 10))
 
@@ -724,7 +724,7 @@ class TestLlmClient:
         assert action == {
             "action_type": "Write",
             "text": "hello",
-            "point_2d": [-100.0, -100.0],
+            "point_2d": [-100, -100],
         }
 
     @pytest.mark.asyncio

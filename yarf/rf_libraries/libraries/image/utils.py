@@ -107,6 +107,4 @@ def draw_point_on_image(
             font_size=size * 2,
         )
 
-    annotated.show()  # Show the image for debugging purposes
-
     return annotated

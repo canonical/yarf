@@ -227,8 +227,8 @@ class LlmClient:
     ) -> dict[str, Any]:
         """
         Verify that the LLM response is a valid JSON object with the required
-        keys and expected types. If there are validation errors, an attempt is
-        made to correct the.
+        keys and expected types. If there are validation errors, it tries to
+        correct its previous response, then validates the corrected JSON.
 
         Args:
             llm_output: The raw string response from the LLM.
@@ -348,7 +348,7 @@ class LlmClient:
         custom_system_prompt: str | None = None,
     ) -> list[Any]:
         """
-        Get the position of an object on the screen.
+        Get the position of an object on the screen in relative coordinates.
 
         Args:
             description: Description of the object to locate.
@@ -356,8 +356,9 @@ class LlmClient:
             custom_system_prompt: Optional system prompt override.
 
         Returns:
-            The model point as ``[x, y]`` on a 1000x1000 grid, or
-            ``[-100, -100]`` if the object was not found.
+            The object position as normalized relative coordinates
+            ``[x, y]``, where each value is typically in the range ``0..1``.
+
 
         Raises:
             RuntimeError: If a screenshot could not be grabbed or if the LLM
@@ -485,8 +486,9 @@ class LlmClient:
             custom_system_prompt: Optional system prompt override.
 
         Returns:
-            The next GUI action with normalized pointer coordinates.
-
+            The next GUI action as returned by the LLM. For pointer-based
+            actions, `point_2d` contains the raw coordinates from the LLM's
+            1000x1000 grid.
         Raises:
             RuntimeError: If a screenshot could not be grabbed or if the LLM
                 response is invalid.
