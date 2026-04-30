@@ -5,7 +5,10 @@ import pytest
 from PIL import Image
 
 from yarf.errors.yarf_errors import VQAValidationError
-from yarf.rf_libraries.libraries.llm_client.LlmClient import LlmClient
+from yarf.rf_libraries.libraries.llm_client.LlmClient import (
+    HistoryItem,
+    LlmClient,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -246,6 +249,21 @@ class TestLlmClient:
         {
             "action_type": "Write",
             "text": "hello",
+            "point_2d": [-100, -100],
+        }
+    )
+    WAIT_ACTION_RESPONSE = json.dumps(
+        {
+            "action_type": "Wait",
+            "text": None,
+            "point_2d": [-100, -100],
+        }
+    )
+    FINISH_ACTION_RESPONSE = json.dumps(
+        {
+            "description": "Task is complete",
+            "action_type": "Finish",
+            "text": None,
             "point_2d": [-100, -100],
         }
     )
@@ -803,15 +821,6 @@ class TestLlmClient:
                 "Write actions must include text.",
             ),
             (
-                "wait",
-                {
-                    "action_type": "Wait",
-                    "text": None,
-                    "point_2d": [-100, -100],
-                },
-                "Unsupported GUI action: Wait",
-            ),
-            (
                 "click OK",
                 {
                     "action_type": "Left Click",
@@ -837,6 +846,24 @@ class TestLlmClient:
             pytest.raises(ValueError, match=expected_error),
         ):
             await client.get_single_gui_action(task, image)
+
+    @pytest.mark.asyncio
+    async def test_get_single_gui_action_returns_wait_action(self):
+        client = LlmClient()
+        image = Image.new("RGB", (10, 10))
+
+        with patch.object(
+            client,
+            "prompt_llm",
+            return_value=self.WAIT_ACTION_RESPONSE,
+        ):
+            action = await client.get_single_gui_action("wait", image)
+
+        assert action == {
+            "action_type": "Wait",
+            "text": None,
+            "point_2d": [-100, -100],
+        }
 
     @pytest.mark.asyncio
     async def test_get_single_gui_action_grabs_screenshot_when_no_image(self):
@@ -885,18 +912,14 @@ class TestLlmClient:
         )
 
     @pytest.mark.asyncio
-    async def test_get_single_gui_action_logs_point_in_debug(self):
+    async def test_get_single_gui_action_logs_screenshot_only_in_debug(self):
         client = LlmClient()
         image = Image.new("RGB", (10, 10))
-        annotated = Image.new("RGB", (10, 10))
 
         with (
             patch.dict("os.environ", {"YARF_LOG_LEVEL": "DEBUG"}),
             patch(f"{self.LLM_PATH}.log_image") as mock_log_image,
-            patch(
-                f"{self.LLM_PATH}.draw_point_on_image",
-                return_value=annotated,
-            ) as mock_draw_point,
+            patch(f"{self.LLM_PATH}.draw_point_on_image") as mock_draw_point,
             patch.object(
                 client,
                 "prompt_llm",
@@ -906,18 +929,10 @@ class TestLlmClient:
             action = await client.get_single_gui_action("click OK", image)
 
         assert action["point_2d"] == [250, 500]
-        mock_draw_point.assert_called_once_with(
-            image,
-            [0.25, 0.5],
-            label="Left Click",
-        )
-        mock_log_image.assert_any_call(
+        mock_draw_point.assert_not_called()
+        mock_log_image.assert_called_once_with(
             image,
             msg="Screenshot provided to LLM for GUI action decision",
-        )
-        mock_log_image.assert_any_call(
-            annotated,
-            "LLM indicated action point for: click OK",
         )
 
     @pytest.mark.asyncio
@@ -973,6 +988,21 @@ class TestLlmClient:
         mock_hid.type_string.assert_awaited_once_with("hello")
 
     @pytest.mark.asyncio
+    async def test_execute_gui_action_waits(self):
+        client = LlmClient()
+
+        with patch(f"{self.LLM_PATH}.asyncio.sleep", AsyncMock()) as sleep:
+            await client.execute_gui_action(
+                {
+                    "action_type": "Wait",
+                    "text": None,
+                    "point_2d": [-100, -100],
+                }
+            )
+
+        sleep.assert_awaited_once_with(5)
+
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "action, expected_error",
         [
@@ -986,11 +1016,11 @@ class TestLlmClient:
             ),
             (
                 {
-                    "action_type": "Wait",
+                    "action_type": "Finish",
                     "text": None,
                     "point_2d": [-100, -100],
                 },
-                "Unsupported GUI action: Wait",
+                "Unsupported GUI action: Finish",
             ),
         ],
     )
@@ -1010,6 +1040,7 @@ class TestLlmClient:
     async def test_execute_gui_action_logs_screenshot_in_debug(self):
         client = LlmClient()
         screenshot = Image.new("RGB", (10, 10))
+        annotated = Image.new("RGB", (10, 10))
         mock_hid = MagicMock()
         mock_hid.move_pointer_to_proportional = AsyncMock()
         mock_hid.click_pointer_button = AsyncMock()
@@ -1027,6 +1058,10 @@ class TestLlmClient:
                 side_effect=get_library,
             ),
             patch(f"{self.LLM_PATH}.asyncio.sleep", AsyncMock()),
+            patch(
+                f"{self.LLM_PATH}.draw_point_on_image",
+                return_value=annotated,
+            ) as mock_draw_point,
             patch(f"{self.LLM_PATH}.log_image") as mock_log_image,
         ):
             await client.execute_gui_action(
@@ -1037,8 +1072,216 @@ class TestLlmClient:
                 }
             )
 
-        mock_video.grab_screenshot.assert_awaited_once()
-        mock_log_image.assert_called_once_with(
+        assert mock_video.grab_screenshot.await_count == 2
+        mock_draw_point.assert_called_once_with(
+            screenshot,
+            [0.25, 0.5],
+            label="Left Click",
+        )
+        mock_log_image.assert_any_call(
+            annotated,
+            "LLM indicated action point for: Left Click",
+        )
+        mock_log_image.assert_any_call(
             image=screenshot,
             msg="Screenshot after executing action",
         )
+
+    def test_history_item_stringifies_action_with_step(self):
+        item = HistoryItem(
+            step=2,
+            action={"action_type": "Wait", "point_2d": [-100, -100]},
+        )
+
+        assert str(item) == (
+            'Step 2:\n{\n  "action_type": "Wait",\n'
+            '  "point_2d": [\n    -100,\n    -100\n  ]\n}'
+        )
+
+    @pytest.mark.asyncio
+    async def test_multiple_step_action_stops_on_finish(self):
+        client = LlmClient()
+        history_item = HistoryItem(
+            step=1,
+            action={
+                "description": "Task is complete",
+                "action_type": "Finish",
+                "text": None,
+                "point_2d": [-100, -100],
+            },
+        )
+
+        with patch.object(
+            client,
+            "_run_step",
+            AsyncMock(return_value=history_item),
+        ) as run_step:
+            await client.multiple_step_action(
+                "open settings",
+                custom_system_prompt="Custom prompt",
+                max_steps=3,
+            )
+
+        run_step.assert_awaited_once()
+        assert run_step.await_args.args[0] == 1
+        assert "Main task:\nopen settings" in run_step.await_args.args[1]
+        assert run_step.await_args.kwargs["system_prompt"] == "Custom prompt"
+
+    @pytest.mark.asyncio
+    async def test_multiple_step_action_includes_history_in_next_prompt(self):
+        client = LlmClient()
+        first = HistoryItem(
+            step=1,
+            action={
+                "description": "Wait for loading",
+                "action_type": "Wait",
+                "text": None,
+                "point_2d": [-100, -100],
+            },
+        )
+        second = HistoryItem(
+            step=2,
+            action={
+                "description": "Task is complete",
+                "action_type": "Finish",
+                "text": None,
+                "point_2d": [-100, -100],
+            },
+        )
+
+        with patch.object(
+            client,
+            "_run_step",
+            AsyncMock(side_effect=[first, second]),
+        ) as run_step:
+            await client.multiple_step_action("wait for desktop", max_steps=2)
+
+        second_prompt = run_step.await_args_list[1].args[1]
+        assert "Step 1:" in second_prompt
+        assert '"description": "Wait for loading"' in second_prompt
+        assert '"action_type": "Wait"' in second_prompt
+
+    @pytest.mark.asyncio
+    async def test_multiple_step_action_raises_when_max_steps_exhausted(self):
+        client = LlmClient()
+        screenshot = Image.new("RGB", (10, 10))
+        history_item = HistoryItem(
+            step=1,
+            action={
+                "description": "Still loading",
+                "action_type": "Wait",
+                "text": None,
+                "point_2d": [-100, -100],
+            },
+        )
+
+        with (
+            patch.object(
+                client,
+                "_run_step",
+                AsyncMock(return_value=history_item),
+            ),
+            patch.object(
+                client,
+                "_grab_screenshot",
+                AsyncMock(return_value=screenshot),
+            ) as grab_screenshot,
+            patch(f"{self.LLM_PATH}.log_image") as mock_log_image,
+            pytest.raises(
+                RuntimeError,
+                match="without reaching Finish action after max_steps=1",
+            ),
+        ):
+            await client.multiple_step_action("wait forever", max_steps=1)
+
+        grab_screenshot.assert_awaited_once()
+        mock_log_image.assert_called_once_with(
+            screenshot,
+            msg="Final screenshot after multiple step action",
+        )
+
+    @pytest.mark.asyncio
+    async def test_run_step_executes_non_finish_action(self):
+        client = LlmClient()
+        screenshot = Image.new("RGB", (10, 10))
+        action = {
+            "description": "Wait for loading",
+            "action_type": "Wait",
+            "text": None,
+            "point_2d": [-100, -100],
+        }
+
+        with (
+            patch.object(
+                client,
+                "_grab_screenshot",
+                AsyncMock(return_value=screenshot),
+            ) as grab_screenshot,
+            patch.object(client, "prompt_llm", return_value=json.dumps(action)),
+            patch.object(
+                client,
+                "execute_gui_action",
+                AsyncMock(),
+            ) as execute_action,
+            patch(f"{self.LLM_PATH}.asyncio.sleep", AsyncMock()) as sleep,
+        ):
+            item = await client._run_step(3, "next action", "system prompt")
+
+        grab_screenshot.assert_awaited_once()
+        execute_action.assert_awaited_once_with(action)
+        sleep.assert_awaited_once_with(1)
+        assert item == HistoryItem(step=3, action=action)
+
+    @pytest.mark.asyncio
+    async def test_run_step_returns_finish_without_executing_action(self):
+        client = LlmClient()
+        screenshot = Image.new("RGB", (10, 10))
+        action = json.loads(self.FINISH_ACTION_RESPONSE)
+
+        with (
+            patch.object(
+                client,
+                "_grab_screenshot",
+                AsyncMock(return_value=screenshot),
+            ),
+            patch.object(
+                client,
+                "prompt_llm",
+                return_value=self.FINISH_ACTION_RESPONSE,
+            ),
+            patch.object(
+                client,
+                "execute_gui_action",
+                AsyncMock(),
+            ) as execute_action,
+            patch(f"{self.LLM_PATH}.asyncio.sleep", AsyncMock()) as sleep,
+        ):
+            item = await client._run_step(1, "next action", "system prompt")
+
+        execute_action.assert_not_awaited()
+        sleep.assert_not_awaited()
+        assert item == HistoryItem(step=1, action=action)
+
+    @pytest.mark.asyncio
+    async def test_run_step_retries_and_raises_after_three_failures(self):
+        client = LlmClient()
+        screenshot = Image.new("RGB", (10, 10))
+
+        with (
+            patch.object(
+                client,
+                "_grab_screenshot",
+                AsyncMock(return_value=screenshot),
+            ) as grab_screenshot,
+            patch.object(client, "prompt_llm", return_value="not json"),
+            pytest.raises(
+                RuntimeError,
+                match=(
+                    "Failed to get a valid action from the LLM after "
+                    "3 attempts on step 4."
+                ),
+            ),
+        ):
+            await client._run_step(4, "next action", "system prompt")
+
+        assert grab_screenshot.await_count == 3

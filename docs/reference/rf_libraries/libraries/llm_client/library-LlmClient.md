@@ -60,7 +60,7 @@
 ### Execute Gui Action
 
 <p>Execute a GUI action as specified by the LLM response.</p>
-<p>Args: action: A dict containing the action_type, text, and point_2d.</p>
+<p>Args: action: A dict containing the action_type, text, and point_2d. Supported action types are Left Click, Right Click, Double Click, Write, and Wait.</p>
 <p>Raises: ValueError: If the action type is unsupported or if required fields are missing.</p>
 
 #### Positional and named arguments
@@ -109,6 +109,27 @@
 | task                 | string |               | POSITIONAL_OR_NAMED | Yes      |
 | image                | None   | None          | POSITIONAL_OR_NAMED | No       |
 | custom_system_prompt | None   | None          | POSITIONAL_OR_NAMED | No       |
+
+<hr style="border:1px solid grey">
+
+### Multiple Step Action
+
+<p>Perform a multiple step action by prompting the LLM iteratively until a "Finish" action is returned.</p>
+<p>Args: task: The task description to complete. custom_system_prompt: Optional system prompt override. max_steps: Maximum number of actions to attempt before failing.</p>
+<p>Returns: A dictionary containing the completion state and action history.</p>
+<p>Raises: RuntimeError: If the LLM cannot return a valid action or the task does not finish within <code>max_steps</code>. ValueError: If the LLM returns an unsupported action.</p>
+
+### Return
+
+{'name': 'dict', 'typedoc': 'dictionary', 'nested': \[{'name': 'str', 'typedoc': 'string', 'nested': [], 'union': False}, {'name': 'Any', 'typedoc': 'Any', 'nested': [], 'union': False}\], 'union': False}
+
+#### Positional and named arguments
+
+| Name                 | Type    | Default Value | Kind                | Required |
+| -------------------- | ------- | ------------- | ------------------- | -------- |
+| task                 | string  |               | POSITIONAL_OR_NAMED | Yes      |
+| custom_system_prompt | None    | None          | POSITIONAL_OR_NAMED | No       |
+| max_steps            | integer | 50            | POSITIONAL_OR_NAMED | No       |
 
 <hr style="border:1px solid grey">
 
