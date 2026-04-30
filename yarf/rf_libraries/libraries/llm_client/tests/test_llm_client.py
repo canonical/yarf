@@ -1003,6 +1003,27 @@ class TestLlmClient:
         sleep.assert_awaited_once_with(5)
 
     @pytest.mark.asyncio
+    async def test_execute_gui_action_rejects_unsupported_action_defensively(
+        self,
+    ):
+        client = LlmClient()
+
+        with (
+            patch.object(client, "validate_gui_action"),
+            pytest.raises(
+                ValueError,
+                match="Unsupported GUI action: Unsupported",
+            ),
+        ):
+            await client.execute_gui_action(
+                {
+                    "action_type": "Unsupported",
+                    "text": None,
+                    "point_2d": [-100, -100],
+                }
+            )
+
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "action, expected_error",
         [
@@ -1263,6 +1284,34 @@ class TestLlmClient:
         execute_action.assert_not_awaited()
         sleep.assert_not_awaited()
         assert item == HistoryItem(step=1, action=action)
+
+    @pytest.mark.asyncio
+    async def test_run_step_logs_screenshot_in_debug_mode(self):
+        client = LlmClient()
+        screenshot = Image.new("RGB", (10, 10))
+        action = json.loads(self.FINISH_ACTION_RESPONSE)
+
+        with (
+            patch.dict("os.environ", {"YARF_LOG_LEVEL": "DEBUG"}),
+            patch.object(
+                client,
+                "_grab_screenshot",
+                AsyncMock(return_value=screenshot),
+            ),
+            patch.object(
+                client,
+                "prompt_llm",
+                return_value=self.FINISH_ACTION_RESPONSE,
+            ),
+            patch(f"{self.LLM_PATH}.log_image") as mock_log_image,
+        ):
+            item = await client._run_step(5, "next action", "system prompt")
+
+        mock_log_image.assert_called_once_with(
+            screenshot,
+            msg="Screenshot for step 5",
+        )
+        assert item == HistoryItem(step=5, action=action)
 
     @pytest.mark.asyncio
     async def test_run_step_retries_and_raises_after_three_failures(self):
