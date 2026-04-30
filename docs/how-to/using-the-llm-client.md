@@ -11,6 +11,7 @@ In this guide, we will cover:
 1. [Basic text prompting](#basic-text-prompting)
 1. [Using images in prompts](#using-images-in-prompts)
 1. [Using LLM GUI keywords](#using-llm-gui-keywords)
+1. [Using multi-step GUI navigation](#using-multi-step-gui-navigation)
 1. [Configuring the client](#configuring-the-client)
 
 ## Setting up an LLM server
@@ -290,6 +291,7 @@ Supported action types are:
 - `Right Click`
 - `Double Click`
 - `Write`
+- `Wait`
 
 ```{code-block} robotframework
 ---
@@ -321,6 +323,41 @@ Type A Search Query
 When `YARF_LOG_LEVEL` is set to `DEBUG`, the GUI action keywords log the
 screenshot sent to the model, the point selected by the model, and the
 screenshot after an executed action.
+
+## Using multi-step GUI navigation
+
+`Multiple Step Action` lets the model drive a GUI task across several
+screenshots. On each step, the keyword:
+
+1. grabs a screenshot from `VideoInput`;
+1. asks the model for the next action;
+1. executes the action through `HID`;
+1. keeps a history of previous actions for the next prompt.
+
+The sequence stops when the model returns a `Finish` action. If the model does
+not finish within `max_steps`, the keyword logs a final screenshot and raises a
+`RuntimeError`.
+
+This approach may be slower than template-based navigation, but it allows the
+model to adapt to unexpected screen states, such as popups or loading screens,
+and recover from them.
+
+```{code-block} robotframework
+---
+caption: Open an application settings panel with multi-step navigation
+---
+*** Test Cases ***
+Open Settings Panel
+    Multiple Step Action
+    ...    Open the Settings application and show the Network panel
+    ...    max_steps=12
+
+    Assert State    the Settings application is open on the Network panel
+```
+
+You can use multi-step navigation for workflows where the exact number of
+clicks depends on the current UI state.
+
 
 ## Configuring the client
 
