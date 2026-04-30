@@ -4,6 +4,7 @@ server using OpenAPI.
 """
 
 import asyncio
+from dataclasses import dataclass
 import json
 import os
 import textwrap
@@ -11,6 +12,7 @@ from typing import Any
 
 import requests
 from PIL import Image
+from robot import result
 from robot.api import logger
 from robot.api.deco import keyword, library
 from robot.libraries.BuiltIn import BuiltIn
@@ -23,6 +25,12 @@ from yarf.rf_libraries.libraries.image.utils import (
     normalize_point,
 )
 from yarf.vendor.RPA.recognition.utils import to_image
+
+
+@dataclass
+class HistoryItem:
+    step: int
+    action: dict[str, Any]
 
 
 @library
@@ -558,7 +566,7 @@ class LlmClient:
             "Left Click",
             "Right Click",
             "Double Click",
-            "Write",
+            "Write"
         }
         if action_type not in allowed_actions:
             raise ValueError(f"Unsupported GUI action: {action_type}")
@@ -593,10 +601,40 @@ class LlmClient:
 
         hid = self._get_lib_instance("HID")
         action_type = action["action_type"]
+        executable_actions = {
+            "Left Click",
+            "Right Click",
+            "Double Click",
+            "Write",
+            "Wait",
+        }
+        if action_type not in executable_actions:
+            raise ValueError(f"Unsupported GUI action: {action_type}")
+        if action_type == "Write" and not isinstance(action.get("text"), str):
+            raise ValueError("Write actions must include text.")
+        if action_type in {
+            "Left Click",
+            "Right Click",
+            "Double Click",
+        } and action["point_2d"] == [-100, -100]:
+            raise ValueError(f"{action_type} actions must include a point.")
+
         logger.info(f"Executing action: {action_type}")
 
         if action_type in {"Left Click", "Right Click", "Double Click"}:
             x, y = normalize_point(action["point_2d"])
+            # For click actions, draw the point on the image and log it before
+            # executing
+            if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
+                image = await self._grab_screenshot()
+                annotated = draw_point_on_image(
+                    image, [x, y], label=action["description"]
+                )
+                log_image(
+                    annotated,
+                    f"LLM indicated action point for: {action['description']}",
+                )
+
             await hid.move_pointer_to_proportional(x, y)
             await asyncio.sleep(0.5)
 
@@ -614,6 +652,10 @@ class LlmClient:
                 raise ValueError("Write actions must include text.")
             await hid.type_string(action["text"])
 
+        elif action_type == "Wait":
+            # For now, this is a fixed wait.
+            await asyncio.sleep(5)
+
         else:
             raise ValueError(f"Unsupported GUI action: {action_type}")
 
@@ -623,3 +665,206 @@ class LlmClient:
             image = await self._grab_screenshot()
             logger.info(f"Executed action: {action_type}")
             log_image(image=image, msg="Screenshot after executing action")
+
+    @keyword
+    async def multiple_step_action(
+        self,
+        task: str,
+        custom_system_prompt: str | None = None,
+        max_steps: int = 50,
+    ) -> dict[str, Any]:
+        """
+        Perform a multiple step action by prompting the LLM iteratively until a
+        "Finish" action is returned.
+
+        Args:
+            task: The task description to complete.
+            custom_system_prompt: Optional system prompt override.
+            max_steps: Maximum number of actions to attempt before failing.
+
+        Returns:
+            A dictionary containing the completion state and action history.
+
+        Raises:
+            RuntimeError: If the LLM cannot return a valid action or the task
+                does not finish within ``max_steps``.
+            ValueError: If the LLM returns an unsupported action.
+        """
+
+        system_prompt = textwrap.dedent("""
+        You are a GUI navigation agent controlling a computer from screenshots.
+
+        You receive:
+        - The user's main task.
+        - A screenshot of the current UI.
+        - A list of actions already performed.
+
+        Your job:
+        Return exactly one next action that advances the task.
+
+        Available actions:
+
+        action_type: Left Click, text: null, point_2d: [x, y]
+        Explanation: Left click a specific UI element and provide coordinates
+        on a 1000x1000 grid.
+
+        action_type: Right Click, text: null, point_2d: [x, y]
+        Explanation: Right click a specific UI element and provide coordinates
+        on a 1000x1000 grid.
+
+        action_type: Double Click, text: null, point_2d: [x, y]
+        Explanation: Double click a specific UI element and provide coordinates
+        on a 1000x1000 grid.
+
+        action_type: Write, text: Text to enter, point_2d: [-100, -100]
+        Explanation: Type text using the keyboard. Use this only when a text
+        field is already focused.
+
+        action_type: Wait, text: null, point_2d: [-100, -100]
+        Explanation: Wait briefly when the UI is loading, processing,
+        animating, or a task is not ready yet.
+
+        action_type: Finish, text: null, point_2d: [-100, -100]
+        Explanation: Mark the task as completed when the visible UI confirms
+        the goal is done.
+
+        Coordinate rules:
+        - point_2d is normalized to a 1000x1000 grid relative to the
+          screenshot.
+        - [0, 0] is the top-left of the screenshot.
+        - [1000, 1000] is the bottom-right of the screenshot.
+        - For pointer actions, choose the center of the target UI element.
+        - For Write, Wait, and Finish, always use [-100, -100].
+
+        Behavior rules:
+        - Each step should contain a description of the chosen action to help
+          guide the next step.
+        - Be deliberate. Prefer one precise action at a time.
+        - Do not repeat the same failed click endlessly; use history to adjust.
+        - If a field must be typed into, first click/focus it, then on the next
+          step use Write.
+        - If the screen is changing or a result is loading, use Wait.
+        - Use Finish only when the task is visibly complete or impossible to
+          improve further.
+        - Do not include explanations, markdown, code fences, comments, or
+          extra keys.
+
+        Return only a valid JSON object with this exact schema:
+        {
+            "description": "brief description for the chosen action",
+            "action_type": "one of the available action types",
+            "text": "text to be written, or null",
+            "point_2d": [x, y]
+        }
+        """)
+
+        user_prompt_template = textwrap.dedent("""
+        Main task:
+        {task}
+
+        Action history:
+        {history_json}
+
+        Decide the next single action. Return only valid JSON.
+        """)
+
+        logger.warn(f"Starting multiple step action sequence for task: {task}")
+
+        history: list[HistoryItem] = []
+        image: Image.Image | None = None
+        for step in range(1, max_steps + 1):
+            action: dict[str, Any] | None = None
+            for attempt in range(1, 4):
+                try:
+                    # Grab a screnshot at the start of each step
+                    image = await self._grab_screenshot()
+
+                    # Log the screenshot for debugging
+                    if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
+                        log_image(image, msg=f"Screenshot for step {step}")
+
+                    # Create the prompt with the task and action history
+                    prompt = user_prompt_template.format(
+                        task=task,
+                        history_json=json.dumps(history),
+                    )
+
+                    # Get the next action from the LLM
+                    logger.info("Prompt to LLM:\n" + prompt)
+                    llm_output = await asyncio.to_thread(
+                        self.prompt_llm,
+                        prompt=prompt,
+                        image=image,
+                        system_prompt=custom_system_prompt or system_prompt,
+                    )
+                    logger.info(f"LLM proposed action: {llm_output}")
+
+                    # Verify and parse the LLM response
+                    action = await self._verify_llm_json_response(
+                        llm_output,
+                        {
+                            "description": str,
+                            "action_type": str,
+                            "point_2d": list,
+                        },
+                    )
+
+                    if action["action_type"] == "Finish":
+                        logger.warn("Multiple step action sequence finished.")
+                        return
+
+                    # Execute the action
+                    await self.execute_gui_action(action)
+
+                    break
+
+                except Exception as e:
+                    logger.error(
+                        "Error parsing LLM response on step "
+                        f"{step}, attempt {attempt + 1}: {e}"
+                    )
+                    if attempt == 3:
+                        raise RuntimeError(
+                            "Failed to get a valid action from LLM after "
+                            f"3 attempts on step {step}."
+                        ) from e
+
+            if action is None:
+                raise RuntimeError(
+                    f"Failed to get a valid action from LLM on step {step}."
+                )
+
+            action_type = action["action_type"]
+            if (
+                action_type in {"Left Click", "Right Click", "Double Click"}
+                and os.getenv("YARF_LOG_LEVEL") == "DEBUG"
+            ):
+                assert image is not None
+                point = normalize_point(action["point_2d"])
+                annotated = draw_point_on_image(
+                    image, point, label=action_type
+                )
+                log_image(
+                    annotated,
+                    f"LLM indicated action point for step {step}: {task}",
+                )
+
+            history.append(HistoryItem(step=step, action=action))
+
+            if action_type == "Wait":
+                await asyncio.sleep(1)
+            else:
+                await self.execute_gui_action(action)
+
+            await asyncio.sleep(1)
+
+        if image is not None:
+            log_image(
+                image,
+                msg="Screenshot after final multiple step action attempt",
+            )
+
+        raise RuntimeError(
+            "Multiple step action sequence completed without reaching Finish "
+            f"action after max_steps={max_steps}."
+        )
