@@ -15,7 +15,7 @@ from robot.api import logger
 from robot.api.deco import keyword, library
 from robot.libraries.BuiltIn import BuiltIn
 
-from yarf.errors.yarf_errors import VQAValidationError
+from yarf.errors.yarf_errors import VQAValidationError, VQADetectionError
 from yarf.lib.images.utils import to_base64
 from yarf.rf_libraries.libraries.image.utils import (
     draw_point_on_image,
@@ -373,7 +373,7 @@ class LlmClient:
 
 
         Raises:
-            VQAValidationError: If the LLM indicates that the object was not
+            VQADetectionError: If the LLM indicates that the object was not
         """
         if image is None:
             image = await self._grab_screenshot()
@@ -409,7 +409,7 @@ class LlmClient:
 
         logger.info(f"LLM indicated point: {point}")
         if point == [-100, -100]:
-            raise VQAValidationError(f"Object was not found: {description}")
+            raise VQADetectionError(f"Object was not found: {description}")
 
         # Normalize the point to have relative coordinates
         point = normalize_point(point)
