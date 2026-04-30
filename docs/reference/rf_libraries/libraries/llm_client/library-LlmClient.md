@@ -80,7 +80,7 @@
 
 ### Return
 
-{'name': 'list', 'typedoc': 'list', 'nested': \[{'name': 'Any', 'typedoc': 'Any', 'nested': [], 'union': False}\], 'union': False}
+{'name': 'list', 'typedoc': 'list', 'nested': \[{'name': 'float', 'typedoc': 'float', 'nested': [], 'union': False}\], 'union': False}
 
 #### Positional and named arguments
 
