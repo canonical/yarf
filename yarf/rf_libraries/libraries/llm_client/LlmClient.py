@@ -17,7 +17,7 @@ from robot.api import logger
 from robot.api.deco import keyword, library
 from robot.libraries.BuiltIn import BuiltIn
 
-from yarf.errors.yarf_errors import VQAValidationError
+from yarf.errors.yarf_errors import VQADetectionError, VQAValidationError
 from yarf.lib.images.utils import to_base64
 from yarf.rf_libraries.libraries.image.utils import (
     draw_point_on_image,
@@ -271,7 +271,7 @@ class LlmClient:
 
         if errors:
             logger.warn(
-                f"LLM response had validation errors: {errors}\n"
+                f"LLM response had validation errors: \n{errors}\n"
                 "Trying to fix them with a verification prompt"
             )
 
@@ -328,25 +328,21 @@ class LlmClient:
         json_start = llm_output.find("{")
         json_end = llm_output.rfind("}")
         if json_start == -1 or json_end == -1:
-            error_messages = (
-                f"LLM response does not contain valid JSON: {llm_output}"
-            )
-            return {}, error_messages
+            error = f"LLM response does not contain valid JSON: {llm_output}"
+            return {}, error
 
         try:
             parsed_output: dict[str, Any] = json.loads(
                 llm_output[json_start : json_end + 1]
             )
         except json.JSONDecodeError:
-            error_messages = (
-                f"Failed to parse LLM response as JSON: {llm_output}"
-            )
-            return {}, error_messages
+            error = f"Failed to parse LLM response as JSON: {llm_output}"
+            return {}, error
 
-        error_messages = ""
+        error_messages: list[str] = []
         missing_keys = required_keys.keys() - parsed_output.keys()
         if missing_keys:
-            error_messages += (
+            error_messages.append(
                 "LLM returned an invalid response format; missing keys: "
                 f"{sorted(missing_keys)}. Response: {parsed_output}"
             )
@@ -355,13 +351,13 @@ class LlmClient:
             if key in required_keys and not isinstance(
                 value, required_keys[key]
             ):
-                error_messages += (
+                error_messages.append(
                     f"LLM returned an invalid type for '{key}'; "
                     f"expected {required_keys[key].__name__}, "
                     f"got {type(value).__name__}."
                 )
 
-        return parsed_output, error_messages
+        return parsed_output, "\n".join(error_messages)
 
     @keyword
     async def get_object_position(
@@ -369,7 +365,7 @@ class LlmClient:
         description: str,
         image: Image.Image | str | None = None,
         custom_system_prompt: str | None = None,
-    ) -> list[Any]:
+    ) -> list[float]:
         """
         Get the position of an object on the screen in relative coordinates.
 
@@ -384,7 +380,7 @@ class LlmClient:
 
 
         Raises:
-            VQAValidationError: If the LLM indicates that the object was not
+            VQADetectionError: If the LLM indicates that the object was not
         """
         if image is None:
             image = await self._grab_screenshot()
@@ -420,7 +416,7 @@ class LlmClient:
 
         logger.info(f"LLM indicated point: {point}")
         if point == [-100, -100]:
-            raise VQAValidationError(f"Object was not found: {description}")
+            raise VQADetectionError(f"Object was not found: {description}")
 
         # Normalize the point to have relative coordinates
         point = normalize_point(point)

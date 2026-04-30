@@ -38,3 +38,11 @@ class VQAValidationError(Exception):
     """
 
     pass
+
+
+class VQADetectionError(Exception):
+    """
+    Raised when VQA-driven detection fails.
+    """
+
+    pass

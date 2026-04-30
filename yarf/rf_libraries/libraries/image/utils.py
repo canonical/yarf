@@ -50,9 +50,6 @@ def normalize_point(point: list) -> list[float]:
     except (TypeError, ValueError) as exc:
         raise ValueError("Point coordinates must be numeric.") from exc
 
-    if [x, y] == [-100.0, -100.0]:
-        raise ValueError("Point indicates object was not found.")
-
     if not 0 <= x <= 1000 or not 0 <= y <= 1000:
         raise ValueError("Point coordinates must be inside the screen.")
 
@@ -61,7 +58,7 @@ def normalize_point(point: list) -> list[float]:
 
 
 def draw_point_on_image(
-    image: Image.Image,
+    image: Image.Image | str,
     point: list[float] | list[int],
     label: str | None = None,
     size: int = 10,
@@ -81,6 +78,8 @@ def draw_point_on_image(
     Raises:
         ValueError: If the point is not valid.
     """
+    image = to_image(image)
+
     if len(point) != 2:
         raise ValueError("Point must contain exactly two coordinates.")
 
