@@ -354,7 +354,7 @@ class LlmClient:
         description: str,
         image: Image.Image | str | None = None,
         custom_system_prompt: str | None = None,
-    ) -> list[Any]:
+    ) -> list[float]:
         """
         Get the position of an object on the screen in relative coordinates.
 
