@@ -754,7 +754,7 @@ class LlmClient:
         Decide the next single action. Return only valid JSON.
         """)
 
-        logger.warn(f"Starting multiple step action sequence for task: {task}")
+        logger.info(f"Starting multiple step action sequence for task: {task}")
 
         history: list[HistoryItem] = []
         for step in range(1, max_steps + 1):
