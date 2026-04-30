@@ -1217,7 +1217,9 @@ class TestLlmClient:
                 "_grab_screenshot",
                 AsyncMock(return_value=screenshot),
             ) as grab_screenshot,
-            patch.object(client, "prompt_llm", return_value=json.dumps(action)),
+            patch.object(
+                client, "prompt_llm", return_value=json.dumps(action)
+            ),
             patch.object(
                 client,
                 "execute_gui_action",

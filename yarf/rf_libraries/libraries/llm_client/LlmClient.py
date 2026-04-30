@@ -4,15 +4,14 @@ server using OpenAPI.
 """
 
 import asyncio
-from dataclasses import dataclass
 import json
 import os
 import textwrap
+from dataclasses import dataclass
 from typing import Any
 
 import requests
 from PIL import Image
-from robot import result
 from robot.api import logger
 from robot.api.deco import keyword, library
 from robot.libraries.BuiltIn import BuiltIn
@@ -501,9 +500,6 @@ class LlmClient:
             The next GUI action as returned by the LLM. For pointer-based
             actions, `point_2d` contains the raw coordinates from the LLM's
             1000x1000 grid.
-        Raises:
-            ValueError: If the LLM response contains an unsupported action type
-                or is missing required fields.
         """
 
         if image is None:
@@ -676,9 +672,7 @@ class LlmClient:
             max_steps: Number of actions to attempt before stopping.
 
         Raises:
-            RuntimeError: If the LLM cannot return a valid action or the task
-                does not finish within ``max_steps``.
-            ValueError: If the LLM returns an unsupported action.
+            RuntimeError: If the LLM cannot finish within ``max_steps``.
         """
 
         system_prompt = textwrap.dedent("""
@@ -791,7 +785,9 @@ class LlmClient:
             f"action after max_steps={max_steps}."
         )
 
-    async def _run_step(self, step, prompt, system_prompt) -> HistoryItem:
+    async def _run_step(
+        self, step: int, prompt: str, system_prompt: str
+    ) -> HistoryItem:
         """
         Run a single step of the multiple step action sequence with retries.
 
@@ -805,7 +801,7 @@ class LlmClient:
 
         Raises:
             RuntimeError: If a valid action cannot be obtained from the LLM
-            after multiple attempts.
+                after multiple attempts.
         """
 
         MAX_ATTEMPTS = 3

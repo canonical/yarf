@@ -60,7 +60,7 @@
 ### Execute Gui Action
 
 <p>Execute a GUI action as specified by the LLM response.</p>
-<p>Args: action: A dict containing the action_type, text, and point_2d. Supported action types are Left Click, Right Click, Double Click, Write, and Wait.</p>
+<p>Args: action: A dict containing the action_type, text, and point_2d.</p>
 <p>Raises: ValueError: If the action type is unsupported or if required fields are missing.</p>
 
 #### Positional and named arguments
@@ -96,7 +96,7 @@
 
 <p>Get a single GUI action from the LLM.</p>
 <p>Args: task: The task description to provide to the LLM. image: Image to inspect. If omitted, a screenshot is grabbed. custom_system_prompt: Optional system prompt override.</p>
-<p>Returns: The next GUI action as returned by the LLM. For pointer-based actions, <span class="name">point_2d</span> contains the raw coordinates from the LLM's 1000x1000 grid. Raises: ValueError: If the LLM response contains an unsupported action type or is missing required fields.</p>
+<p>Returns: The next GUI action as returned by the LLM. For pointer-based actions, <span class="name">point_2d</span> contains the raw coordinates from the LLM's 1000x1000 grid.</p>
 
 ### Return
 
@@ -115,13 +115,8 @@
 ### Multiple Step Action
 
 <p>Perform a multiple step action by prompting the LLM iteratively until a "Finish" action is returned.</p>
-<p>Args: task: The task description to complete. custom_system_prompt: Optional system prompt override. max_steps: Maximum number of actions to attempt before failing.</p>
-<p>Returns: A dictionary containing the completion state and action history.</p>
-<p>Raises: RuntimeError: If the LLM cannot return a valid action or the task does not finish within <code>max_steps</code>. ValueError: If the LLM returns an unsupported action.</p>
-
-### Return
-
-{'name': 'dict', 'typedoc': 'dictionary', 'nested': \[{'name': 'str', 'typedoc': 'string', 'nested': [], 'union': False}, {'name': 'Any', 'typedoc': 'Any', 'nested': [], 'union': False}\], 'union': False}
+<p>Args: task: The task description to complete. custom_system_prompt: Optional system prompt override. max_steps: Number of actions to attempt before stopping.</p>
+<p>Raises: RuntimeError: If the LLM cannot finish within <code>max_steps</code>.</p>
 
 #### Positional and named arguments
 
