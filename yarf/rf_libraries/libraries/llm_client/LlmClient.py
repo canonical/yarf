@@ -260,7 +260,7 @@ class LlmClient:
 
         if errors:
             logger.warn(
-                f"LLM response had validation errors: {errors}\n"
+                f"LLM response had validation errors: \n{errors}\n"
                 "Trying to fix them with a verification prompt"
             )
 
@@ -332,10 +332,10 @@ class LlmClient:
             )
             return {}, error_messages
 
-        error_messages = ""
+        error_messages = []
         missing_keys = required_keys.keys() - parsed_output.keys()
         if missing_keys:
-            error_messages += (
+            error_messages.append(
                 "LLM returned an invalid response format; missing keys: "
                 f"{sorted(missing_keys)}. Response: {parsed_output}"
             )
@@ -344,13 +344,13 @@ class LlmClient:
             if key in required_keys and not isinstance(
                 value, required_keys[key]
             ):
-                error_messages += (
+                error_messages.append(
                     f"LLM returned an invalid type for '{key}'; "
                     f"expected {required_keys[key].__name__}, "
                     f"got {type(value).__name__}."
                 )
 
-        return parsed_output, error_messages
+        return parsed_output, '\n'.join(error_messages)
 
     @keyword
     async def get_object_position(
