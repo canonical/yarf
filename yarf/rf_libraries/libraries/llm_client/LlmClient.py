@@ -32,6 +32,9 @@ class HistoryItem:
     step: int
     action: dict[str, Any]
 
+    def __str__(self) -> str:
+        return f"Step {self.step}:\n{json.dumps(self.action, indent=2)}"
+
 
 @library
 class LlmClient:
@@ -565,7 +568,7 @@ class LlmClient:
         self.validate_gui_action(parsed)
         return parsed
 
-    def validate_gui_action(self, action: dict[str, Any]):
+    def validate_gui_action(self, action: dict[str, Any]) -> None:
         """
         Validate a GUI action dictionary.
 
@@ -666,7 +669,7 @@ class LlmClient:
         task: str,
         custom_system_prompt: str | None = None,
         max_steps: int = 50,
-    ) -> dict[str, Any]:
+    ) -> None:
         """
         Perform a multiple step action by prompting the LLM iteratively until a
         "Finish" action is returned.
@@ -674,10 +677,7 @@ class LlmClient:
         Args:
             task: The task description to complete.
             custom_system_prompt: Optional system prompt override.
-            max_steps: Maximum number of actions to attempt before failing.
-
-        Returns:
-            A dictionary containing the completion state and action history.
+            max_steps: Number of actions to attempt before stopping.
 
         Raises:
             RuntimeError: If the LLM cannot return a valid action or the task
@@ -738,6 +738,8 @@ class LlmClient:
         - If a field must be typed into, first click/focus it, then on the next
           step use Write.
         - If the screen is changing or a result is loading, use Wait.
+        - Usually, to open a folder, you would double click it. To open a
+          context menu, you would right click it.
         - Use Finish only when the task is visibly complete or impossible to
           improve further.
         - Do not include explanations, markdown, code fences, comments, or
@@ -757,7 +759,7 @@ class LlmClient:
         {task}
 
         Action history:
-        {history_json}
+        {history}
 
         Decide the next single action. Return only valid JSON.
         """)
@@ -765,100 +767,95 @@ class LlmClient:
         logger.warn(f"Starting multiple step action sequence for task: {task}")
 
         history: list[HistoryItem] = []
-        image: Image.Image | None = None
         for step in range(1, max_steps + 1):
-            action: dict[str, Any] | None = None
-            for attempt in range(1, 4):
-                try:
-                    # Grab a screnshot at the start of each step
-                    image = await self._grab_screenshot()
-
-                    # Log the screenshot for debugging
-                    if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
-                        log_image(image, msg=f"Screenshot for step {step}")
-
-                    # Create the prompt with the task and action history
-                    prompt = user_prompt_template.format(
-                        task=task,
-                        history_json=json.dumps(history),
-                    )
-
-                    # Get the next action from the LLM
-                    logger.info("Prompt to LLM:\n" + prompt)
-                    llm_output = await asyncio.to_thread(
-                        self.prompt_llm,
-                        prompt=prompt,
-                        image=image,
-                        system_prompt=custom_system_prompt or system_prompt,
-                    )
-                    logger.info(f"LLM proposed action: {llm_output}")
-
-                    # Verify and parse the LLM response
-                    action = await self._verify_llm_json_response(
-                        llm_output,
-                        {
-                            "description": str,
-                            "action_type": str,
-                            "point_2d": list,
-                        },
-                    )
-
-                    if action["action_type"] == "Finish":
-                        logger.warn("Multiple step action sequence finished.")
-                        return
-
-                    # Execute the action
-                    await self.execute_gui_action(action)
-
-                    break
-
-                except Exception as e:
-                    logger.error(
-                        "Error parsing LLM response on step "
-                        f"{step}, attempt {attempt + 1}: {e}"
-                    )
-                    if attempt == 3:
-                        raise RuntimeError(
-                            "Failed to get a valid action from LLM after "
-                            f"3 attempts on step {step}."
-                        ) from e
-
-            if action is None:
-                raise RuntimeError(
-                    f"Failed to get a valid action from LLM on step {step}."
-                )
-
-            action_type = action["action_type"]
-            if (
-                action_type in {"Left Click", "Right Click", "Double Click"}
-                and os.getenv("YARF_LOG_LEVEL") == "DEBUG"
-            ):
-                assert image is not None
-                point = normalize_point(action["point_2d"])
-                annotated = draw_point_on_image(
-                    image, point, label=action_type
-                )
-                log_image(
-                    annotated,
-                    f"LLM indicated action point for step {step}: {task}",
-                )
-
-            history.append(HistoryItem(step=step, action=action))
-
-            if action_type == "Wait":
-                await asyncio.sleep(1)
-            else:
-                await self.execute_gui_action(action)
-
-            await asyncio.sleep(1)
-
-        if image is not None:
-            log_image(
-                image,
-                msg="Screenshot after final multiple step action attempt",
+            llm_prompt = user_prompt_template.format(
+                task=task,
+                history="\n".join(str(item) for item in history),
             )
+            history_item = await self._run_step(
+                step,
+                llm_prompt,
+                system_prompt=custom_system_prompt or system_prompt,
+            )
+            history.append(history_item)
+
+            if history_item.action["action_type"] == "Finish":
+                logger.info(
+                    f"Task finished successfully in {step} steps. History:\n"
+                    + "\n".join(str(item) for item in history)
+                )
+                return
+
+        # Grab a final screenshot to log the end state
+        image = await self._grab_screenshot()
+        log_image(image, msg="Final screenshot after multiple step action")
 
         raise RuntimeError(
             "Multiple step action sequence completed without reaching Finish "
             f"action after max_steps={max_steps}."
+        )
+
+    async def _run_step(self, step, prompt, system_prompt) -> HistoryItem:
+        """
+        Run a single step of the multiple step action sequence with retries.
+
+        Args:
+            step: The current step number (for logging).
+            prompt: The prompt to send to the LLM for this step.
+            system_prompt: The system prompt to guide the LLM's response.
+
+        Returns:
+            A HistoryItem containing the executed action for this step.
+
+        Raises:
+            RuntimeError: If a valid action cannot be obtained from the LLM
+            after multiple attempts.
+        """
+
+        MAX_ATTEMPTS = 3
+
+        for attempt in range(MAX_ATTEMPTS):
+            try:
+                # Grab a screnshot at the start of each step
+                image = await self._grab_screenshot()
+
+                # Log the screenshot for debugging
+                if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
+                    log_image(image, msg=f"Screenshot for step {step}")
+
+                # Get the next action from the LLM
+                logger.info("Prompt to LLM:\n" + prompt)
+                llm_output = await asyncio.to_thread(
+                    self.prompt_llm,
+                    prompt=prompt,
+                    image=image,
+                    system_prompt=system_prompt,
+                )
+                logger.info(f"LLM proposed action: {llm_output}")
+
+                # Verify and parse the LLM response
+                action = await self._verify_llm_json_response(
+                    llm_output,
+                    {
+                        "description": str,
+                        "action_type": str,
+                        "point_2d": list,
+                    },
+                )
+
+                if action["action_type"] != "Finish":
+                    await self.execute_gui_action(action)
+                    await asyncio.sleep(1)
+
+                return HistoryItem(step=step, action=action)
+
+            except Exception as e:
+                logger.error(
+                    "Error parsing LLM response on step "
+                    f"{step}, attempt {attempt + 1}: {e}"
+                )
+
+        raise RuntimeError(
+            "Failed to get a valid action from the LLM after "
+            f"{MAX_ATTEMPTS} attempts on step {step}."
         )
