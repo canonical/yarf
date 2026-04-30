@@ -76,7 +76,7 @@
 <p>Get the position of an object on the screen in relative coordinates.</p>
 <p>Args: description: Description of the object to locate. image: Image to inspect. If omitted, a screenshot is grabbed. custom_system_prompt: Optional system prompt override.</p>
 <p>Returns: The object position as normalized relative coordinates <code>[x, y]</code>, where each value is typically in the range <code>0..1</code>.</p>
-<p>Raises: VQAValidationError: If the LLM indicates that the object was not</p>
+<p>Raises: VQADetectionError: If the LLM indicates that the object was not</p>
 
 ### Return
 

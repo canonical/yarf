@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from PIL import Image
 
-from yarf.errors.yarf_errors import VQAValidationError, VQADetectionError
+from yarf.errors.yarf_errors import VQADetectionError, VQAValidationError
 from yarf.rf_libraries.libraries.llm_client.LlmClient import LlmClient
 
 

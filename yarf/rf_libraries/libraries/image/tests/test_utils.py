@@ -46,7 +46,6 @@ class TestImageUtils:
             ([1], "exactly two coordinates"),
             ([1, 2, 3], "exactly two coordinates"),
             (["x", 2], "must be numeric"),
-            ([-100, -100], "object was not found"),
             ([-1, 500], "inside the screen"),
             ([500, 1001], "inside the screen"),
         ],

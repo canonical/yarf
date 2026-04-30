@@ -15,7 +15,7 @@ from robot.api import logger
 from robot.api.deco import keyword, library
 from robot.libraries.BuiltIn import BuiltIn
 
-from yarf.errors.yarf_errors import VQAValidationError, VQADetectionError
+from yarf.errors.yarf_errors import VQADetectionError, VQAValidationError
 from yarf.lib.images.utils import to_base64
 from yarf.rf_libraries.libraries.image.utils import (
     draw_point_on_image,
@@ -317,22 +317,18 @@ class LlmClient:
         json_start = llm_output.find("{")
         json_end = llm_output.rfind("}")
         if json_start == -1 or json_end == -1:
-            error_messages = (
-                f"LLM response does not contain valid JSON: {llm_output}"
-            )
-            return {}, error_messages
+            error = f"LLM response does not contain valid JSON: {llm_output}"
+            return {}, error
 
         try:
             parsed_output: dict[str, Any] = json.loads(
                 llm_output[json_start : json_end + 1]
             )
         except json.JSONDecodeError:
-            error_messages = (
-                f"Failed to parse LLM response as JSON: {llm_output}"
-            )
-            return {}, error_messages
+            error = f"Failed to parse LLM response as JSON: {llm_output}"
+            return {}, error
 
-        error_messages = []
+        error_messages: list[str] = []
         missing_keys = required_keys.keys() - parsed_output.keys()
         if missing_keys:
             error_messages.append(
@@ -350,7 +346,7 @@ class LlmClient:
                     f"got {type(value).__name__}."
                 )
 
-        return parsed_output, '\n'.join(error_messages)
+        return parsed_output, "\n".join(error_messages)
 
     @keyword
     async def get_object_position(

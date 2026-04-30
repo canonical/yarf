@@ -79,7 +79,7 @@ def draw_point_on_image(
         ValueError: If the point is not valid.
     """
     image = to_image(image)
-    
+
     if len(point) != 2:
         raise ValueError("Point must contain exactly two coordinates.")
 
