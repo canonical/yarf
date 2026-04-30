@@ -765,7 +765,41 @@ class TestLlmClient:
         )
 
     @pytest.mark.asyncio
-    async def test_get_single_gui_action_returns_click_action(self):
+    @pytest.mark.parametrize(
+        "task, response_attr, expected_action",
+        [
+            (
+                "click OK",
+                "CLICK_ACTION_RESPONSE",
+                {
+                    "action_type": "Left Click",
+                    "text": None,
+                    "point_2d": [250, 500],
+                },
+            ),
+            (
+                "type hello",
+                "WRITE_ACTION_RESPONSE",
+                {
+                    "action_type": "Write",
+                    "text": "hello",
+                    "point_2d": [-100, -100],
+                },
+            ),
+            (
+                "wait",
+                "WAIT_ACTION_RESPONSE",
+                {
+                    "action_type": "Wait",
+                    "text": None,
+                    "point_2d": [-100, -100],
+                },
+            ),
+        ],
+    )
+    async def test_get_single_gui_action_returns_action(
+        self, task, response_attr, expected_action
+    ):
         client = LlmClient()
         image = Image.new("RGB", (10, 10))
 
@@ -775,37 +809,15 @@ class TestLlmClient:
             patch.object(
                 client,
                 "prompt_llm",
-                return_value=self.CLICK_ACTION_RESPONSE,
+                return_value=getattr(self, response_attr),
             ) as mock_prompt,
         ):
-            action = await client.get_single_gui_action("click OK", image)
+            action = await client.get_single_gui_action(task, image)
 
-        assert action == {
-            "action_type": "Left Click",
-            "text": None,
-            "point_2d": [250, 500],
-        }
+        assert action == expected_action
         mock_prompt.assert_called_once()
         assert mock_prompt.call_args.kwargs["image"] is image
-        assert mock_prompt.call_args.kwargs["prompt"] == "click OK"
-
-    @pytest.mark.asyncio
-    async def test_get_single_gui_action_returns_write_action(self):
-        client = LlmClient()
-        image = Image.new("RGB", (10, 10))
-
-        with patch.object(
-            client,
-            "prompt_llm",
-            return_value=self.WRITE_ACTION_RESPONSE,
-        ):
-            action = await client.get_single_gui_action("type hello", image)
-
-        assert action == {
-            "action_type": "Write",
-            "text": "hello",
-            "point_2d": [-100, -100],
-        }
+        assert mock_prompt.call_args.kwargs["prompt"] == task
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -848,24 +860,6 @@ class TestLlmClient:
             await client.get_single_gui_action(task, image)
 
     @pytest.mark.asyncio
-    async def test_get_single_gui_action_returns_wait_action(self):
-        client = LlmClient()
-        image = Image.new("RGB", (10, 10))
-
-        with patch.object(
-            client,
-            "prompt_llm",
-            return_value=self.WAIT_ACTION_RESPONSE,
-        ):
-            action = await client.get_single_gui_action("wait", image)
-
-        assert action == {
-            "action_type": "Wait",
-            "text": None,
-            "point_2d": [-100, -100],
-        }
-
-    @pytest.mark.asyncio
     async def test_get_single_gui_action_grabs_screenshot_when_no_image(self):
         client = LlmClient()
         screenshot = Image.new("RGB", (10, 10))
@@ -889,30 +883,16 @@ class TestLlmClient:
         mock_grab.assert_awaited_once()
 
     @pytest.mark.asyncio
-    @patch(f"{LLM_PATH}.log_image")
+    @pytest.mark.parametrize(
+        "task, response_attr",
+        [
+            ("click OK", "CLICK_ACTION_RESPONSE"),
+            ("type hello", "WRITE_ACTION_RESPONSE"),
+        ],
+    )
     async def test_get_single_gui_action_logs_screenshot_in_debug(
-        self, mock_log_image
+        self, task, response_attr
     ):
-        client = LlmClient()
-        image = Image.new("RGB", (10, 10))
-
-        with (
-            patch.dict("os.environ", {"YARF_LOG_LEVEL": "DEBUG"}),
-            patch.object(
-                client,
-                "prompt_llm",
-                return_value=self.WRITE_ACTION_RESPONSE,
-            ),
-        ):
-            await client.get_single_gui_action("type hello", image)
-
-        mock_log_image.assert_called_once_with(
-            image,
-            msg="Screenshot provided to LLM for GUI action decision",
-        )
-
-    @pytest.mark.asyncio
-    async def test_get_single_gui_action_logs_screenshot_only_in_debug(self):
         client = LlmClient()
         image = Image.new("RGB", (10, 10))
 
@@ -923,12 +903,11 @@ class TestLlmClient:
             patch.object(
                 client,
                 "prompt_llm",
-                return_value=self.CLICK_ACTION_RESPONSE,
+                return_value=getattr(self, response_attr),
             ),
         ):
-            action = await client.get_single_gui_action("click OK", image)
+            await client.get_single_gui_action(task, image)
 
-        assert action["point_2d"] == [250, 500]
         mock_draw_point.assert_not_called()
         mock_log_image.assert_called_once_with(
             image,
