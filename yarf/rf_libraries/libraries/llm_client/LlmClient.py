@@ -561,30 +561,42 @@ class LlmClient:
             llm_output,
             {"action_type": str, "point_2d": list},
         )
-        action_type = parsed["action_type"]
+
+        self.validate_gui_action(parsed)
+        return parsed
+
+    def validate_gui_action(self, action: dict[str, Any]):
+        """
+        Validate a GUI action dictionary.
+
+        Args:
+            action: A dict containing action_type, text, and point_2d.
+
+        Raises:
+            ValueError: If the action type is unsupported or if required fields
+                are missing.
+        """
+
         allowed_actions = {
             "Left Click",
             "Right Click",
             "Double Click",
-            "Write"
+            "Write",
+            "Wait",
         }
+
+        action_type = action["action_type"]
         if action_type not in allowed_actions:
             raise ValueError(f"Unsupported GUI action: {action_type}")
 
-        if action_type == "Write":
-            if not isinstance(parsed.get("text"), str):
-                raise ValueError("Write actions must include text.")
-            return parsed
+        if action_type == "Write" and not isinstance(action.get("text"), str):
+            raise ValueError("Write actions must include text.")
 
-        if parsed["point_2d"] == [-100.0, -100.0]:
-            raise ValueError(f"{action_type} actions must include a point.")
-
-        if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
-            point = normalize_point(parsed["point_2d"])
-            annotated = draw_point_on_image(image, point, label=action_type)
-            log_image(annotated, f"LLM indicated action point for: {task}")
-
-        return parsed
+        if action_type in {"Left Click", "Right Click", "Double Click"}:
+            if action["point_2d"] == [-100, -100]:
+                raise ValueError(
+                    f"{action_type} actions must include a point."
+                )
 
     @keyword
     async def execute_gui_action(self, action: dict[str, Any]) -> None:
@@ -599,40 +611,23 @@ class LlmClient:
                 are missing.
         """
 
-        hid = self._get_lib_instance("HID")
+        self.validate_gui_action(action)
         action_type = action["action_type"]
-        executable_actions = {
-            "Left Click",
-            "Right Click",
-            "Double Click",
-            "Write",
-            "Wait",
-        }
-        if action_type not in executable_actions:
-            raise ValueError(f"Unsupported GUI action: {action_type}")
-        if action_type == "Write" and not isinstance(action.get("text"), str):
-            raise ValueError("Write actions must include text.")
-        if action_type in {
-            "Left Click",
-            "Right Click",
-            "Double Click",
-        } and action["point_2d"] == [-100, -100]:
-            raise ValueError(f"{action_type} actions must include a point.")
 
-        logger.info(f"Executing action: {action_type}")
+        logger.info(f"Executing action: {action}")
 
         if action_type in {"Left Click", "Right Click", "Double Click"}:
+            hid = self._get_lib_instance("HID")
             x, y = normalize_point(action["point_2d"])
             # For click actions, draw the point on the image and log it before
             # executing
             if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
                 image = await self._grab_screenshot()
-                annotated = draw_point_on_image(
-                    image, [x, y], label=action["description"]
-                )
+                label = action.get("description", action_type)
+                annotated = draw_point_on_image(image, [x, y], label=label)
                 log_image(
                     annotated,
-                    f"LLM indicated action point for: {action['description']}",
+                    f"LLM indicated action point for: {label}",
                 )
 
             await hid.move_pointer_to_proportional(x, y)
@@ -648,8 +643,7 @@ class LlmClient:
                 await hid.click_pointer_button("LEFT")
 
         elif action_type == "Write":
-            if not isinstance(action.get("text"), str):
-                raise ValueError("Write actions must include text.")
+            hid = self._get_lib_instance("HID")
             await hid.type_string(action["text"])
 
         elif action_type == "Wait":
