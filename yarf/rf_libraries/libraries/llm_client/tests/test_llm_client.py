@@ -228,7 +228,7 @@ class TestLlmClient:
     )
 
     OBJECT_FOUND_RESPONSE = json.dumps({"point_2d": [250, 500]})
-    OBJECT_NOT_FOUND_RESPONSE = json.dumps({"point_2d": [-100, -100]})
+    OBJECT_NOT_FOUND_RESPONSE = json.dumps({"point_2d": None})
     STATE_MATCH_RESPONSE = json.dumps(
         {"matches_description": True, "reasoning": "state is present"}
     )
@@ -246,7 +246,7 @@ class TestLlmClient:
         {
             "action_type": "Write",
             "text": "hello",
-            "point_2d": [-100, -100],
+            "point_2d": None,
         }
     )
 
@@ -786,7 +786,7 @@ class TestLlmClient:
         assert action == {
             "action_type": "Write",
             "text": "hello",
-            "point_2d": [-100, -100],
+            "point_2d": None,
         }
 
     @pytest.mark.asyncio
@@ -798,7 +798,7 @@ class TestLlmClient:
                 {
                     "action_type": "Write",
                     "text": None,
-                    "point_2d": [-100, -100],
+                    "point_2d": None,
                 },
                 "Write actions must include text.",
             ),
@@ -807,16 +807,25 @@ class TestLlmClient:
                 {
                     "action_type": "Wait",
                     "text": None,
-                    "point_2d": [-100, -100],
+                    "point_2d": None,
                 },
                 "Unsupported GUI action: Wait",
+            ),
+            (
+                "fail",
+                {
+                    "action_type": "Failed",
+                    "text": None,
+                    "point_2d": None,
+                },
+                "LLM indicated task can't be completed: fail.",
             ),
             (
                 "click OK",
                 {
                     "action_type": "Left Click",
                     "text": None,
-                    "point_2d": [-100, -100],
+                    "point_2d": None,
                 },
                 "Left Click actions must include a point.",
             ),
@@ -966,7 +975,7 @@ class TestLlmClient:
                 {
                     "action_type": "Write",
                     "text": "hello",
-                    "point_2d": [-100, -100],
+                    "point_2d": None,
                 }
             )
 
@@ -980,7 +989,7 @@ class TestLlmClient:
                 {
                     "action_type": "Write",
                     "text": None,
-                    "point_2d": [-100, -100],
+                    "point_2d": None,
                 },
                 "Write actions must include text.",
             ),
@@ -988,7 +997,7 @@ class TestLlmClient:
                 {
                     "action_type": "Wait",
                     "text": None,
-                    "point_2d": [-100, -100],
+                    "point_2d": None,
                 },
                 "Unsupported GUI action: Wait",
             ),
