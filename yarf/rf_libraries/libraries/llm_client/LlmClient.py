@@ -535,6 +535,10 @@ class LlmClient:
             action_type: Write, text: Text to enter, point_2d: null
                 Explanation: Type text without moving the pointer.
 
+            action_type: Failed, text: null, point_2d: null
+                Explanation: An action is impossible and cannot be performed.
+                This should whenever the model can't determine a valid action.
+
             Return only a valid JSON object with this exact schema:
             {
                 "action_type": "one of the available action types",
@@ -547,6 +551,8 @@ class LlmClient:
               and [1000, 1000] is the bottom-right of the image.
             - Use null when coordinates are not applicable.
             - Do not add markdown syntax or any other text.
+            - If you determine that the task cannot be completed, return:
+              {"action_type": "Failed", "text": null, "point_2d": null}.
             """)
 
         llm_output = await asyncio.to_thread(
@@ -566,9 +572,13 @@ class LlmClient:
             "Right Click",
             "Double Click",
             "Write",
+            "Failed",
         }
         if action_type not in allowed_actions:
             raise ValueError(f"Unsupported GUI action: {action_type}")
+
+        if action_type == "Failed":
+            raise ValueError(f"LLM indicated task can't be completed: {task}.")
 
         if action_type == "Write":
             if not isinstance(parsed.get("text"), str):
