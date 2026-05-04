@@ -414,7 +414,7 @@ class TestLlmClient:
         raw = json.dumps({"corrupted": True, "description": "ok"})
         parsed = await client._verify_llm_json_response(
             raw,
-            {"corrupted": bool, "description": str},
+            {"corrupted": [bool], "description": [str]},
         )
         assert parsed == {"corrupted": True, "description": "ok"}
 
@@ -429,7 +429,7 @@ class TestLlmClient:
         ) as mock_prompt:
             parsed = await client._verify_llm_json_response(
                 raw,
-                {"corrupted": bool, "description": str},
+                {"corrupted": [bool], "description": [str]},
             )
 
         mock_prompt.assert_called_once()
@@ -449,7 +449,7 @@ class TestLlmClient:
         ) as mock_prompt:
             parsed = await client._verify_llm_json_response(
                 raw,
-                {"corrupted": bool, "description": str},
+                {"corrupted": [bool], "description": [str]},
             )
 
         mock_prompt.assert_called_once()
@@ -472,7 +472,7 @@ class TestLlmClient:
         ):
             await client._verify_llm_json_response(
                 "not json",
-                {"corrupted": bool},
+                {"corrupted": [bool]},
             )
 
     @pytest.mark.asyncio
@@ -491,7 +491,7 @@ class TestLlmClient:
         ):
             await client._verify_llm_json_response(
                 "{not json}",
-                {"corrupted": bool},
+                {"corrupted": [bool]},
             )
 
     @pytest.mark.asyncio
@@ -502,7 +502,7 @@ class TestLlmClient:
         # LLM returns valid JSON embedded in text
         parsed = await client._verify_llm_json_response(
             raw,
-            {"corrupted": bool, "description": str},
+            {"corrupted": [bool], "description": [str]},
         )
         assert parsed == {"corrupted": False, "description": "ok"}
 
@@ -511,7 +511,7 @@ class TestLlmClient:
         raw = json.dumps({"corrupted": True})
         _parsed, errors = client._parse_llm_json_response(
             raw,
-            {"corrupted": bool, "description": str},
+            {"corrupted": [bool], "description": [str]},
         )
         assert "missing keys" in errors
 
@@ -520,7 +520,7 @@ class TestLlmClient:
         raw = json.dumps({"corrupted": "yes", "description": "ok"})
         _parsed, errors = client._parse_llm_json_response(
             raw,
-            {"corrupted": bool, "description": str},
+            {"corrupted": [bool], "description": [str]},
         )
         assert "invalid type for 'corrupted'" in errors
 
@@ -528,7 +528,7 @@ class TestLlmClient:
         client = LlmClient()
         _parsed, errors = client._parse_llm_json_response(
             "not json",
-            {"corrupted": bool},
+            {"corrupted": [bool]},
         )
         assert "does not contain valid JSON" in errors
 
@@ -536,7 +536,7 @@ class TestLlmClient:
         client = LlmClient()
         _parsed, errors = client._parse_llm_json_response(
             "{not json}",
-            {"corrupted": bool},
+            {"corrupted": [bool]},
         )
         assert "Failed to parse LLM response" in errors
 
