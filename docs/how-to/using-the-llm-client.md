@@ -358,7 +358,6 @@ Open Settings Panel
 You can use multi-step navigation for workflows where the exact number of
 clicks depends on the current UI state.
 
-
 ## Configuring the client
 
 The LLM Client can be configured to work with different servers, models, and
