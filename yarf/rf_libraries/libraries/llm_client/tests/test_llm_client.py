@@ -231,7 +231,7 @@ class TestLlmClient:
     )
 
     OBJECT_FOUND_RESPONSE = json.dumps({"point_2d": [250, 500]})
-    OBJECT_NOT_FOUND_RESPONSE = json.dumps({"point_2d": [-100, -100]})
+    OBJECT_NOT_FOUND_RESPONSE = json.dumps({"point_2d": None})
     STATE_MATCH_RESPONSE = json.dumps(
         {"matches_description": True, "reasoning": "state is present"}
     )
@@ -249,7 +249,7 @@ class TestLlmClient:
         {
             "action_type": "Write",
             "text": "hello",
-            "point_2d": [-100, -100],
+            "point_2d": None,
         }
     )
     WAIT_ACTION_RESPONSE = json.dumps(
@@ -817,7 +817,25 @@ class TestLlmClient:
         assert action == expected_action
         mock_prompt.assert_called_once()
         assert mock_prompt.call_args.kwargs["image"] is image
-        assert mock_prompt.call_args.kwargs["prompt"] == task
+        assert mock_prompt.call_args.kwargs["prompt"] == "task"
+
+    @pytest.mark.asyncio
+    async def test_get_single_gui_action_returns_write_action(self):
+        client = LlmClient()
+        image = Image.new("RGB", (10, 10))
+
+        with patch.object(
+            client,
+            "prompt_llm",
+            return_value=self.WRITE_ACTION_RESPONSE,
+        ):
+            action = await client.get_single_gui_action("type hello", image)
+
+        assert action == {
+            "action_type": "Write",
+            "text": "hello",
+            "point_2d": None,
+        }
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -828,16 +846,34 @@ class TestLlmClient:
                 {
                     "action_type": "Write",
                     "text": None,
-                    "point_2d": [-100, -100],
+                    "point_2d": None,
                 },
                 "Write actions must include text.",
+            ),
+            (
+                "wait",
+                {
+                    "action_type": "Wait",
+                    "text": None,
+                    "point_2d": None,
+                },
+                "Unsupported GUI action: Wait",
+            ),
+            (
+                "fail",
+                {
+                    "action_type": "Failed",
+                    "text": None,
+                    "point_2d": None,
+                },
+                "LLM indicated task can't be completed: fail.",
             ),
             (
                 "click OK",
                 {
                     "action_type": "Left Click",
                     "text": None,
-                    "point_2d": [-100, -100],
+                    "point_2d": None,
                 },
                 "Left Click actions must include a point.",
             ),
@@ -960,7 +996,7 @@ class TestLlmClient:
                 {
                     "action_type": "Write",
                     "text": "hello",
-                    "point_2d": [-100, -100],
+                    "point_2d": None,
                 }
             )
 
@@ -1010,7 +1046,7 @@ class TestLlmClient:
                 {
                     "action_type": "Write",
                     "text": None,
-                    "point_2d": [-100, -100],
+                    "point_2d": None,
                 },
                 "Write actions must include text.",
             ),
@@ -1018,7 +1054,7 @@ class TestLlmClient:
                 {
                     "action_type": "Finish",
                     "text": None,
-                    "point_2d": [-100, -100],
+                    "point_2d": None,
                 },
                 "Unsupported GUI action: Finish",
             ),

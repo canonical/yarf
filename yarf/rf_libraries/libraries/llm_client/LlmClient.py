@@ -385,19 +385,30 @@ class LlmClient:
             image = await self._grab_screenshot()
 
         system_prompt = textwrap.dedent("""
-            You are a GUI agent. Find the position of an object on the screen
-            from a description and a screenshot.
+            You are a GUI localization agent. Given an object description and a
+            screenshot, identify the object's location in the screenshot.
 
             Return only a valid JSON object with this exact schema:
-            {
-                "point_2d": [x, y]
-            }
+            {"point_2d": [x, y]}
+            or:
+            {"point_2d": null}
+            if the object is not present or not confidently identified.
 
-            Use a 1000x1000 coordinate grid where [0, 0] is the top-left and
-            [1000, 1000] is the bottom-right of the image.
-
-            If the object is not found, return {"point_2d": [-100, -100]}.
-            Do not add markdown syntax or any other text.
+            Rules:
+            - Use a normalized 1000x1000 coordinate grid, where [0, 0] is the
+              top-left of the screenshot and [1000, 1000] is the bottom-right.
+            - Return the approximate center point of the described object.
+            - Coordinates must be integers.
+            - If the object is partially visible, return the center of the
+              visible portion.
+            - If multiple matching objects are present, return the best match
+              based on the description and surrounding context.
+            - If the object is not visible, or you are not confident it is
+              present, return: {"point_2d": null}
+            - Do not guess. Prefer null over a low-confidence false
+              positive.
+            - Do not include markdown, explanations, comments, or any text
+              outside the JSON object.
             """)
 
         llm_output = await asyncio.to_thread(
@@ -409,12 +420,12 @@ class LlmClient:
 
         parsed = await self._verify_llm_json_response(
             llm_output,
-            {"point_2d": list},
+            {"point_2d": list | None},
         )
         point = parsed["point_2d"]
 
         logger.info(f"LLM indicated point: {point}")
-        if point == [-100, -100]:
+        if point is None:
             raise VQADetectionError(f"Object was not found: {description}")
 
         # Normalize the point to have relative coordinates
@@ -528,21 +539,27 @@ class LlmClient:
                 Explanation: Double click a specific UI element and provide
                 coordinates on a 1000x1000 grid.
 
-            action_type: Write, text: Text to enter, point_2d: [-100, -100]
+            action_type: Write, text: Text to enter, point_2d: null
                 Explanation: Type text without moving the pointer.
+
+            action_type: Failed, text: null, point_2d: null
+                Explanation: An action is impossible and cannot be performed.
+                This should whenever the model can't determine a valid action.
 
             Return only a valid JSON object with this exact schema:
             {
                 "action_type": "one of the available action types",
                 "text": "text to be written, or null if not applicable",
-                "point_2d": [x, y]
+                "point_2d": "[x, y], or null if not applicable"
             }
 
             Rules:
             - Return point_2d on a 1000x1000 grid where [0, 0] is the top-left
               and [1000, 1000] is the bottom-right of the image.
-            - Use [-100, -100] when coordinates are not applicable.
+            - Use null when coordinates are not applicable.
             - Do not add markdown syntax or any other text.
+            - If you determine that the task cannot be completed, return:
+              {"action_type": "Failed", "text": null, "point_2d": null}.
             """)
 
         llm_output = await asyncio.to_thread(
@@ -554,7 +571,7 @@ class LlmClient:
 
         parsed = await self._verify_llm_json_response(
             llm_output,
-            {"action_type": str, "point_2d": list},
+            {"action_type": str, "point_2d": list | None, "text": str | None},
         )
 
         self.validate_gui_action(parsed)
@@ -578,20 +595,30 @@ class LlmClient:
             "Double Click",
             "Write",
             "Wait",
+            "Failed",
         }
 
         action_type = action["action_type"]
         if action_type not in allowed_actions:
             raise ValueError(f"Unsupported GUI action: {action_type}")
 
-        if action_type == "Write" and not isinstance(action.get("text"), str):
-            raise ValueError("Write actions must include text.")
+        if action_type == "Failed":
+            raise ValueError(f"LLM indicated task can't be completed: {task}.")
 
-        if action_type in {"Left Click", "Right Click", "Double Click"}:
-            if action["point_2d"] == [-100, -100]:
-                raise ValueError(
-                    f"{action_type} actions must include a point."
-                )
+        if action_type == "Write":
+            if not isinstance(parsed.get("text"), str):
+                raise ValueError("Write actions must include text.")
+            return parsed
+
+        if parsed["point_2d"] is None:
+            raise ValueError(f"{action_type} actions must include a point.")
+
+        if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
+            point = normalize_point(parsed["point_2d"])
+            annotated = draw_point_on_image(image, point, label=action_type)
+            log_image(annotated, f"LLM indicated action point for: {task}")
+
+        return parsed
 
     @keyword
     async def execute_gui_action(self, action: dict[str, Any]) -> None:
