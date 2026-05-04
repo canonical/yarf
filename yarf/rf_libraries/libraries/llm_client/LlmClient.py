@@ -229,7 +229,10 @@ class LlmClient:
             """),
         )
 
-        required_keys = {"corrupted": bool, "description": str}
+        required_keys: dict[str, list[type]] = {
+            "corrupted": [bool],
+            "description": [str],
+        }
 
         parsed = await self._verify_llm_json_response(
             llm_output, required_keys
@@ -245,7 +248,9 @@ class LlmClient:
         return parsed
 
     async def _verify_llm_json_response(
-        self, llm_output: str, required_keys: dict[str, type]
+        self,
+        llm_output: str,
+        required_keys: dict[str, list[type]],
     ) -> dict[str, Any]:
         """
         Verify that the LLM response is a valid JSON object with the required
@@ -310,8 +315,13 @@ class LlmClient:
 
         return parsed_output
 
+    def _format_expected_types(self, expected_types: list[type]) -> str:
+        return " | ".join(t.__name__ for t in expected_types)
+
     def _parse_llm_json_response(
-        self, llm_output: str, required_keys: dict[str, type]
+        self,
+        llm_output: str,
+        required_keys: dict[str, list[type]],
     ) -> tuple[dict[str, Any], str]:
         """
         Parse the LLM output as JSON and validate it against the required keys
@@ -346,13 +356,16 @@ class LlmClient:
                 f"{sorted(missing_keys)}. Response: {parsed_output}"
             )
 
-        for key, value in parsed_output.items():
-            if key in required_keys and not isinstance(
-                value, required_keys[key]
-            ):
+        for key, expected_types in required_keys.items():
+            if key not in parsed_output:
+                continue
+
+            value = parsed_output[key]
+
+            if not isinstance(value, tuple(expected_types)):
                 error_messages.append(
                     f"LLM returned an invalid type for '{key}'; "
-                    f"expected {required_keys[key].__name__}, "
+                    f"expected {self._format_expected_types(expected_types)}, "
                     f"got {type(value).__name__}."
                 )
 
@@ -420,7 +433,7 @@ class LlmClient:
 
         parsed = await self._verify_llm_json_response(
             llm_output,
-            {"point_2d": list | None},
+            {"point_2d": [list, type(None)]},
         )
         point = parsed["point_2d"]
 
@@ -482,7 +495,7 @@ class LlmClient:
 
         parsed = await self._verify_llm_json_response(
             llm_output,
-            {"matches_description": bool, "reasoning": str},
+            {"matches_description": [bool], "reasoning": [str]},
         )
 
         if not parsed["matches_description"]:
@@ -571,7 +584,11 @@ class LlmClient:
 
         parsed = await self._verify_llm_json_response(
             llm_output,
-            {"action_type": str, "point_2d": list | None, "text": str | None},
+            {
+                "action_type": [str],
+                "point_2d": [list, type(None)],
+                "text": [str, type(None)],
+            },
         )
 
         self.validate_gui_action(parsed, task)
