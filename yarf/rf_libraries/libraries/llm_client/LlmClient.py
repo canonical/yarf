@@ -574,15 +574,16 @@ class LlmClient:
             {"action_type": str, "point_2d": list | None, "text": str | None},
         )
 
-        self.validate_gui_action(parsed)
+        self.validate_gui_action(parsed, task)
         return parsed
 
-    def validate_gui_action(self, action: dict[str, Any]) -> None:
+    def validate_gui_action(self, action: dict[str, Any], task: str) -> None:
         """
         Validate a GUI action dictionary.
 
         Args:
             action: A dict containing action_type, text, and point_2d.
+            task: The task description provided to the LLM.
 
         Raises:
             ValueError: If the action type is unsupported or if required fields
@@ -603,37 +604,39 @@ class LlmClient:
             raise ValueError(f"Unsupported GUI action: {action_type}")
 
         if action_type == "Failed":
-            raise ValueError(f"LLM indicated task can't be completed: {task}.")
+            raise ValueError(
+                f"LLM indicated action can't be completed: {task}."
+            )
 
-        if action_type == "Write":
-            if not isinstance(parsed.get("text"), str):
-                raise ValueError("Write actions must include text.")
-            return parsed
+        if action_type == "Write" and not isinstance(action.get("text"), str):
+            raise ValueError("Write actions must include text.")
 
-        if parsed["point_2d"] is None:
+        if action_type in {
+            "Left Click",
+            "Right Click",
+            "Double Click",
+        } and not isinstance(action.get("point_2d"), list):
             raise ValueError(f"{action_type} actions must include a point.")
 
-        if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
-            point = normalize_point(parsed["point_2d"])
-            annotated = draw_point_on_image(image, point, label=action_type)
-            log_image(annotated, f"LLM indicated action point for: {task}")
-
-        return parsed
+        return action
 
     @keyword
-    async def execute_gui_action(self, action: dict[str, Any]) -> None:
+    async def execute_gui_action(
+        self, action: dict[str, Any], description: str = ""
+    ) -> None:
         """
         Execute a GUI action as specified by the LLM response.
 
         Args:
             action: A dict containing the action_type, text, and point_2d.
+            description: The description provided to the LLM.
 
         Raises:
             ValueError: If the action type is unsupported or if required fields
                 are missing.
         """
 
-        self.validate_gui_action(action)
+        self.validate_gui_action(action, description)
         action_type = action["action_type"]
 
         logger.info(f"Executing action: {action}")
@@ -727,15 +730,15 @@ class LlmClient:
         Explanation: Double click a specific UI element and provide coordinates
         on a 1000x1000 grid.
 
-        action_type: Write, text: Text to enter, point_2d: [-100, -100]
+        action_type: Write, text: Text to enter, point_2d: null
         Explanation: Type text using the keyboard. Use this only when a text
         field is already focused.
 
-        action_type: Wait, text: null, point_2d: [-100, -100]
+        action_type: Wait, text: null, point_2d: null
         Explanation: Wait briefly when the UI is loading, processing,
         animating, or a task is not ready yet.
 
-        action_type: Finish, text: null, point_2d: [-100, -100]
+        action_type: Finish, text: null, point_2d: null
         Explanation: Mark the task as completed when the visible UI confirms
         the goal is done.
 
@@ -745,7 +748,7 @@ class LlmClient:
         - [0, 0] is the top-left of the screenshot.
         - [1000, 1000] is the bottom-right of the screenshot.
         - For pointer actions, choose the center of the target UI element.
-        - For Write, Wait, and Finish, always use [-100, -100].
+        - For Write, Wait, and Finish, always use null.
 
         Behavior rules:
         - Each step should contain a description of the chosen action to help
@@ -858,12 +861,14 @@ class LlmClient:
                     {
                         "description": str,
                         "action_type": str,
-                        "point_2d": list,
+                        "text": str | None,
+                        "point_2d": list | None,
                     },
                 )
 
                 if action["action_type"] != "Finish":
-                    await self.execute_gui_action(action)
+                    description = action.get("description", "No description")
+                    await self.execute_gui_action(action, description)
                     await asyncio.sleep(1)
 
                 return HistoryItem(step=step, action=action)

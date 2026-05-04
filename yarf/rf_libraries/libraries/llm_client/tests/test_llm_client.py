@@ -256,7 +256,7 @@ class TestLlmClient:
         {
             "action_type": "Wait",
             "text": None,
-            "point_2d": [-100, -100],
+            "point_2d": None,
         }
     )
     FINISH_ACTION_RESPONSE = json.dumps(
@@ -264,7 +264,7 @@ class TestLlmClient:
             "description": "Task is complete",
             "action_type": "Finish",
             "text": None,
-            "point_2d": [-100, -100],
+            "point_2d": None,
         }
     )
 
@@ -783,7 +783,7 @@ class TestLlmClient:
                 {
                     "action_type": "Write",
                     "text": "hello",
-                    "point_2d": [-100, -100],
+                    "point_2d": None,
                 },
             ),
             (
@@ -792,7 +792,7 @@ class TestLlmClient:
                 {
                     "action_type": "Wait",
                     "text": None,
-                    "point_2d": [-100, -100],
+                    "point_2d": None,
                 },
             ),
         ],
@@ -817,7 +817,7 @@ class TestLlmClient:
         assert action == expected_action
         mock_prompt.assert_called_once()
         assert mock_prompt.call_args.kwargs["image"] is image
-        assert mock_prompt.call_args.kwargs["prompt"] == "task"
+        assert mock_prompt.call_args.kwargs["prompt"] == task
 
     @pytest.mark.asyncio
     async def test_get_single_gui_action_returns_write_action(self):
@@ -851,22 +851,13 @@ class TestLlmClient:
                 "Write actions must include text.",
             ),
             (
-                "wait",
-                {
-                    "action_type": "Wait",
-                    "text": None,
-                    "point_2d": None,
-                },
-                "Unsupported GUI action: Wait",
-            ),
-            (
-                "fail",
+                "fail the task",
                 {
                     "action_type": "Failed",
                     "text": None,
                     "point_2d": None,
                 },
-                "LLM indicated task can't be completed: fail.",
+                "LLM indicated action can't be completed: fail the task",
             ),
             (
                 "click OK",
@@ -1011,7 +1002,7 @@ class TestLlmClient:
                 {
                     "action_type": "Wait",
                     "text": None,
-                    "point_2d": [-100, -100],
+                    "point_2d": None,
                 }
             )
 
@@ -1034,7 +1025,7 @@ class TestLlmClient:
                 {
                     "action_type": "Unsupported",
                     "text": None,
-                    "point_2d": [-100, -100],
+                    "point_2d": None,
                 }
             )
 
@@ -1126,12 +1117,12 @@ class TestLlmClient:
     def test_history_item_stringifies_action_with_step(self):
         item = HistoryItem(
             step=2,
-            action={"action_type": "Wait", "point_2d": [-100, -100]},
+            action={"action_type": "Wait", "point_2d": None},
         )
 
         assert str(item) == (
             'Step 2:\n{\n  "action_type": "Wait",\n'
-            '  "point_2d": [\n    -100,\n    -100\n  ]\n}'
+            '  "point_2d": null\n}'
         )
 
     @pytest.mark.asyncio
@@ -1143,7 +1134,7 @@ class TestLlmClient:
                 "description": "Task is complete",
                 "action_type": "Finish",
                 "text": None,
-                "point_2d": [-100, -100],
+                "point_2d": None,
             },
         )
 
@@ -1172,7 +1163,7 @@ class TestLlmClient:
                 "description": "Wait for loading",
                 "action_type": "Wait",
                 "text": None,
-                "point_2d": [-100, -100],
+                "point_2d": None,
             },
         )
         second = HistoryItem(
@@ -1181,7 +1172,7 @@ class TestLlmClient:
                 "description": "Task is complete",
                 "action_type": "Finish",
                 "text": None,
-                "point_2d": [-100, -100],
+                "point_2d": None,
             },
         )
 
@@ -1207,7 +1198,7 @@ class TestLlmClient:
                 "description": "Still loading",
                 "action_type": "Wait",
                 "text": None,
-                "point_2d": [-100, -100],
+                "point_2d": None,
             },
         )
 
@@ -1244,7 +1235,7 @@ class TestLlmClient:
             "description": "Wait for loading",
             "action_type": "Wait",
             "text": None,
-            "point_2d": [-100, -100],
+            "point_2d": None,
         }
 
         with (
@@ -1261,13 +1252,11 @@ class TestLlmClient:
                 "execute_gui_action",
                 AsyncMock(),
             ) as execute_action,
-            patch(f"{self.LLM_PATH}.asyncio.sleep", AsyncMock()) as sleep,
         ):
             item = await client._run_step(3, "next action", "system prompt")
 
         grab_screenshot.assert_awaited_once()
-        execute_action.assert_awaited_once_with(action)
-        sleep.assert_awaited_once_with(1)
+        execute_action.assert_awaited_once_with(action, "Wait for loading")
         assert item == HistoryItem(step=3, action=action)
 
     @pytest.mark.asyncio
@@ -1292,12 +1281,10 @@ class TestLlmClient:
                 "execute_gui_action",
                 AsyncMock(),
             ) as execute_action,
-            patch(f"{self.LLM_PATH}.asyncio.sleep", AsyncMock()) as sleep,
         ):
             item = await client._run_step(1, "next action", "system prompt")
 
         execute_action.assert_not_awaited()
-        sleep.assert_not_awaited()
         assert item == HistoryItem(step=1, action=action)
 
     @pytest.mark.asyncio
