@@ -1091,7 +1091,6 @@ class TestLlmClient:
                 }
             )
 
-
     @pytest.mark.asyncio
     async def test_execute_gui_action_logs_screenshot_in_debug(self):
         client = LlmClient()
