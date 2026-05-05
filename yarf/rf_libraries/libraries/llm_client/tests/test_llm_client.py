@@ -820,24 +820,6 @@ class TestLlmClient:
         assert mock_prompt.call_args.kwargs["prompt"] == task
 
     @pytest.mark.asyncio
-    async def test_get_single_gui_action_returns_write_action(self):
-        client = LlmClient()
-        image = Image.new("RGB", (10, 10))
-
-        with patch.object(
-            client,
-            "prompt_llm",
-            return_value=self.WRITE_ACTION_RESPONSE,
-        ):
-            action = await client.get_single_gui_action("type hello", image)
-
-        assert action == {
-            "action_type": "Write",
-            "text": "hello",
-            "point_2d": None,
-        }
-
-    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "task, response, expected_error",
         [
@@ -941,6 +923,86 @@ class TestLlmClient:
             msg="Screenshot provided to LLM for GUI action decision",
         )
 
+    @pytest.mark.parametrize(
+        "action",
+        [
+            {
+                "action_type": "Left Click",
+                "text": None,
+                "point_2d": [250, 500],
+            },
+            {
+                "action_type": "Right Click",
+                "text": None,
+                "point_2d": [250, 500],
+            },
+            {
+                "action_type": "Double Click",
+                "text": None,
+                "point_2d": [250, 500],
+            },
+            {
+                "action_type": "Write",
+                "text": "hello",
+                "point_2d": None,
+            },
+            {
+                "action_type": "Wait",
+                "text": None,
+                "point_2d": None,
+            },
+        ],
+    )
+    def test_validate_gui_action_accepts_valid_actions(self, action):
+        client = LlmClient()
+
+        assert client.validate_gui_action(action, "test task") is None
+
+    @pytest.mark.parametrize(
+        "action, expected_error",
+        [
+            (
+                {
+                    "action_type": "Unsupported",
+                    "text": None,
+                    "point_2d": None,
+                },
+                "Unsupported GUI action: Unsupported",
+            ),
+            (
+                {
+                    "action_type": "Failed",
+                    "text": None,
+                    "point_2d": None,
+                },
+                "LLM indicated action can't be completed: test task",
+            ),
+            (
+                {
+                    "action_type": "Write",
+                    "text": None,
+                    "point_2d": None,
+                },
+                "Write actions must include text.",
+            ),
+            (
+                {
+                    "action_type": "Left Click",
+                    "text": None,
+                    "point_2d": None,
+                },
+                "Left Click actions must include a point.",
+            ),
+        ],
+    )
+    def test_validate_gui_action_rejects_invalid_actions(
+        self, action, expected_error
+    ):
+        client = LlmClient()
+
+        with pytest.raises(ValueError, match=expected_error):
+            client.validate_gui_action(action, "test task")
+
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "action_type, expected_buttons",
@@ -1029,34 +1091,6 @@ class TestLlmClient:
                 }
             )
 
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize(
-        "action, expected_error",
-        [
-            (
-                {
-                    "action_type": "Write",
-                    "text": None,
-                    "point_2d": None,
-                },
-                "Write actions must include text.",
-            ),
-            (
-                {
-            ),
-        ],
-    )
-    async def test_execute_gui_action_rejects_invalid_action(
-        self, action, expected_error
-    ):
-        client = LlmClient()
-        mock_hid = MagicMock()
-
-        with (
-            patch.object(client, "_get_lib_instance", return_value=mock_hid),
-            pytest.raises(ValueError, match=expected_error),
-        ):
-            await client.execute_gui_action(action)
 
     @pytest.mark.asyncio
     async def test_execute_gui_action_logs_screenshot_in_debug(self):
