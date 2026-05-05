@@ -890,7 +890,7 @@ class LlmClient:
 
             except Exception as e:
                 logger.error(
-                    "Error parsing LLM response on step "
+                    "Error while processing step "
                     f"{step}, attempt {attempt + 1}: {e}"
                 )
 
