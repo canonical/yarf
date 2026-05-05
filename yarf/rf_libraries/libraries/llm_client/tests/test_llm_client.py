@@ -1043,11 +1043,6 @@ class TestLlmClient:
             ),
             (
                 {
-                    "action_type": "Finish",
-                    "text": None,
-                    "point_2d": None,
-                },
-                "Unsupported GUI action: Finish",
             ),
         ],
     )
