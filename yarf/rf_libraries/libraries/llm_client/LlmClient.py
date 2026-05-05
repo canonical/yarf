@@ -635,8 +635,6 @@ class LlmClient:
         } and not isinstance(action.get("point_2d"), list):
             raise ValueError(f"{action_type} actions must include a point.")
 
-        return action
-
     @keyword
     async def execute_gui_action(
         self, action: dict[str, Any], description: str = ""
@@ -876,10 +874,10 @@ class LlmClient:
                 action = await self._verify_llm_json_response(
                     llm_output,
                     {
-                        "description": str,
-                        "action_type": str,
-                        "text": str | None,
-                        "point_2d": list | None,
+                        "description": [str],
+                        "action_type": [str],
+                        "text": [str, type(None)],
+                        "point_2d": [list, type(None)],
                     },
                 )
 

@@ -60,14 +60,15 @@
 ### Execute Gui Action
 
 <p>Execute a GUI action as specified by the LLM response.</p>
-<p>Args: action: A dict containing the action_type, text, and point_2d.</p>
+<p>Args: action: A dict containing the action_type, text, and point_2d. description: The description provided to the LLM.</p>
 <p>Raises: ValueError: If the action type is unsupported or if required fields are missing.</p>
 
 #### Positional and named arguments
 
-| Name   | Type       | Default Value | Kind                | Required |
-| ------ | ---------- | ------------- | ------------------- | -------- |
-| action | dictionary |               | POSITIONAL_OR_NAMED | Yes      |
+| Name        | Type       | Default Value | Kind                | Required |
+| ----------- | ---------- | ------------- | ------------------- | -------- |
+| action      | dictionary |               | POSITIONAL_OR_NAMED | Yes      |
+| description | string     |               | POSITIONAL_OR_NAMED | No       |
 
 <hr style="border:1px solid grey">
 

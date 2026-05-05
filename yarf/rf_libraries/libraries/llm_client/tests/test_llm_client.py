@@ -1121,8 +1121,7 @@ class TestLlmClient:
         )
 
         assert str(item) == (
-            'Step 2:\n{\n  "action_type": "Wait",\n'
-            '  "point_2d": null\n}'
+            'Step 2:\n{\n  "action_type": "Wait",\n  "point_2d": null\n}'
         )
 
     @pytest.mark.asyncio
