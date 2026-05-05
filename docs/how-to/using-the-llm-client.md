@@ -10,6 +10,7 @@ In this guide, we will cover:
 1. [Setting up an LLM server](#setting-up-an-llm-server)
 1. [Basic text prompting](#basic-text-prompting)
 1. [Using images in prompts](#using-images-in-prompts)
+1. [Using LLM GUI keywords](#using-llm-gui-keywords)
 1. [Configuring the client](#configuring-the-client)
 
 ## Setting up an LLM server
@@ -172,6 +173,10 @@ Structured Response
 The LLM Client supports multi-modal prompts that include both text and images.
 This is particularly useful for visual testing scenarios.
 
+Several image-based keywords can either receive an explicit image or grab a
+fresh screenshot automatically. When the `image` argument is omitted, the LLM
+Client uses the active `VideoInput` library to capture the current screen.
+
 ### Image from file path
 
 ```{code-block} robotframework
@@ -209,6 +214,113 @@ Validate Installation Screen
     
     Should Start With   ${validation}    YES
 ```
+
+## Using VQA GUI keywords
+
+The LLM Client includes keywords that leverage the model's vision capabilities
+to perform visual validation and assertions on the current screen.
+
+### Checking for visual corruption
+
+`Check For Visual Corruption` asks the model whether an image contains visual
+artifacts or corruption. If no image is provided, the keyword grabs a
+screenshot from `VideoInput`.
+
+```{code-block} robotframework
+---
+caption: Check the current screen for visual corruption
+---
+*** Test Cases ***
+Current Screen Is Not Corrupted
+    Check For Visual Corruption
+```
+
+If the model reports corruption, the keyword raises a `VQAValidationError`.
+
+### Asserting screen state
+
+`Assert State` verifies that the screen matches a natural-language description.
+This is useful for checks that are difficult to express with template matching
+or OCR alone.
+
+```{code-block} robotframework
+---
+caption: Assert that the current screen matches an expected state
+---
+*** Test Cases ***
+Desktop Is Visible
+    Assert State    desktop is visible and ready for input
+```
+
+If the model decides that the state does not match, the keyword raises an
+`AssertionError` and includes the model's reasoning in the failure message.
+
+## Using LLM GUI keywords
+
+The LLM Client also provides higher-level keywords for GUI testing. These
+keywords ask a vision-capable model to inspect the current screen and return
+structured results that can be used in Robot Framework tests.
+
+### Locating an object
+
+`Get Object Position` finds a described object on the screen and returns a
+normalized point as `[x, y]`, where each value is relative to the screen size.
+For example, `[0.5, 0.5]` is the center of the screen.
+
+```{code-block} robotframework
+---
+caption: Locate a GUI element with the LLM
+---
+*** Test Cases ***
+Find OK Button
+    ${point}=    Get Object Position    the OK button
+    Log         ${point}
+```
+
+If the object is not found, the keyword raises a `VQAValidationError`.
+
+### Choosing and executing a GUI action
+
+`Get Single Gui Action` asks the model to choose one action for a task. The
+returned action can then be passed to `Execute Gui Action`.
+
+Supported action types are:
+
+- `Left Click`
+- `Right Click`
+- `Double Click`
+- `Write`
+
+```{code-block} robotframework
+---
+caption: Let the LLM choose and execute one GUI action
+---
+*** Test Cases ***
+Click The OK Button
+    ${action}=    Get Single Gui Action    click the OK button
+    Execute Gui Action    ${action}
+```
+
+Pointer actions returned by `Get Single Gui Action` use the model's 1000x1000
+coordinate grid internally. `Execute Gui Action` normalizes that point before
+moving the pointer with the active `HID` library.
+
+For typing text directly, the action contains `action_type=Write` and the text
+to enter:
+
+```{code-block} robotframework
+---
+caption: Ask the LLM to type text into the active field
+---
+*** Test Cases ***
+Type A Search Query
+    ${action}=    Get Single Gui Action    type "network settings"
+    Execute Gui Action    ${action}
+```
+
+When `YARF_LOG_LEVEL` is set to `DEBUG`, the GUI action keywords log the
+screenshot sent to the model, the point selected by the model, and the
+screenshot after an executed action.
 
 ## Configuring the client
 
