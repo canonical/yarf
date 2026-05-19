@@ -145,7 +145,7 @@ def parse_yarf_arguments(argv: list[str]) -> Namespace:
     top_level_parser.add_argument(
         "--log-video",
         action="store_true",
-        help="Log video even if test succeeds - you can alternatively the YARF_LOG_VIDEO env variable to 1.",
+        help="Log video even if test succeeds. Alternatively, set YARF_LOG_VIDEO environment variable: '1' to always log video, '0' to never log video (even on failure), or unset for default behavior (log only on failure).",
     )
 
     top_level_parser.add_argument(
