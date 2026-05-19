@@ -377,6 +377,41 @@ class TestVideoInputBase:
         mock_logger.warn.assert_called_once()
 
     @pytest.mark.asyncio
+    @pytest.mark.start_suite
+    async def test_match_fail_does_not_log_video_when_disabled(
+        self, stub_videoinput, mock_time, mock_run
+    ):
+        """
+        Check that video is NOT logged on test failure when YARF_LOG_VIDEO=0.
+        """
+        with patch.dict(os.environ, {"YARF_LOG_VIDEO": "0"}):
+            stub_videoinput._log_failed_match = Mock()
+
+            stub_videoinput._rpa_images.find_template_in_image.side_effect = (
+                ImageNotFoundError
+            )
+            mock_time.side_effect = [0, 0, 0, 2]
+
+            with pytest.raises(ImageNotFoundError):
+                await stub_videoinput.match("path", timeout=1)
+
+            # Screenshots should still be saved
+            assert (
+                stub_videoinput.grab_screenshot.return_value.save.call_args_list
+                == [
+                    call(
+                        "sentinel.tempdir/0000000001.png", compress_level=ANY
+                    ),
+                    call(
+                        "sentinel.tempdir/0000000002.png", compress_level=ANY
+                    ),
+                ]
+            )
+            # But video should NOT be created when YARF_LOG_VIDEO=0
+            stub_videoinput._end_suite(None, Mock(passed=False))
+            mock_run.assert_not_called()
+
+    @pytest.mark.asyncio
     async def test_match_converts_to_rgb(self, mock_to_image, stub_videoinput):
         """
         Check the Match keyword accepts non-RGB images and converts them.
