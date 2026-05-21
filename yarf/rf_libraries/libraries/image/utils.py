@@ -22,8 +22,8 @@ def log_image(image: Image.Image | str, msg: str = "") -> None:
     pil_image = to_image(image)
     image_string = (
         f"{msg}<br />"
-        '<img style="max-width: 100%" src="data:image/png;base64,'
-        f'{to_base64(pil_image)}" />'
+        '<img style="max-width: 100%" src="data:image/webp;base64,'
+        f'{to_base64(pil_image, format="WEBP")}" />'
     )
     logger.info(image_string, html=True)
 
