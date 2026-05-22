@@ -49,42 +49,22 @@ jobs:
     - name: Sync Python dependencies
       run: uv sync --python 3.10
 
-  test-noble:
-    name: Test on Noble
-    # We use GitHub hosted runners for this job as Pa11y needs working Chrome support
+  unit-tests-noble:
+    name: Unit tests on Noble
     runs-on: ubuntu-24.04
     steps:
-    - name: Install dependencies
-      run: |
-        sudo apt update -qq
-        sudo apt install -y \
-          git-lfs \
-          libgl1 \
-          libxkbcommon-dev \
-          jq \
-          clang \
-          python3-tk \
-          tesseract-ocr
-
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    - uses: ./.github/actions/setup-yarf-noble
       with:
-        lfs: true
-        fetch-depth: 0
-        persist-credentials: false
-    - name: Set up Python
-      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
-      with:
-        python-version: "3.12"
+        fetch-depth: "0"
 
-    - name: Install uv and json schema
-      run: pip install uv check-jsonschema
+    - name: Install json schema validator
+      run: pip install check-jsonschema
 
     - name: Check uv.lock file
       run: uv lock --check
 
-    - name: Run tests
-      run: |
-        uv tool run tox
+    - name: Run unit tests
+      run: uv tool run tox
 
     - name: Upload Coverage Report
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -93,29 +73,31 @@ jobs:
         path: ./coverage.xml
         retention-days: 5
 
-    - name: Install integration dependencies
-      run: |
-        sudo snap install mir-test-tools
-        sudo apt-get --yes --no-install-recommends install \
-          ffmpeg \
-          inotify-tools \
-          gnome-calculator
+    - if: failure()
+      name: Collect test results
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: yarf-output-unit
+        path: /tmp/yarf-outdir/*
+        retention-days: 5
+        if-no-files-found: ignore
 
-    - name: Start Global Mir Server
-      run: |
-        export WAYLAND_DISPLAY=wayland-99
+    - if: failure() && runner.debug
+      name: Setup upterm session (restart with "Enable debug logging" to activate)
+      uses: canonical/action-tmate@a0e8caed3bba2ccb98901a274553bf1284ad96c2  # zizmor: ignore[stale-action-refs]
+      with:
+        limit-access-to-actor: true
 
-        # Start Mir on a virtual display (doesn't require graphics hardware)
-        mir-test-tools.demo-server \
-          --add-wayland-extensions zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1 \
-          --platform-display-libs mir:virtual \
-          --virtual-output 1280x1024 &
+  integration-tests-noble:
+    name: Integration tests on Noble
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: ./.github/actions/setup-yarf-noble
+      with:
+        with-mir: "true"
 
-        # Wait for the compositor to start
-        inotifywait --event create --include "^$XDG_RUNTIME_DIR/wayland-99\$" $XDG_RUNTIME_DIR
-
-        # Persist the variable for all future steps
-        echo "WAYLAND_DISPLAY=wayland-99" >> $GITHUB_ENV
+    - name: Install json schema validator
+      run: pip install check-jsonschema
 
     - name: Run integration tests
       run: |
@@ -126,6 +108,35 @@ jobs:
         version=$(jq -r '.version' /tmp/yarf-outdir/TestSubmissionSchema_output.json)
         check-jsonschema --schemafile https://raw.githubusercontent.com/canonical/test-submission-schema/refs/heads/main/test_submission_schema/schemas/v${version}.json /tmp/yarf-outdir/TestSubmissionSchema_output.json
 
+    - if: failure()
+      name: Collect test results
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: yarf-output-integration
+        path: /tmp/yarf-outdir/*
+        retention-days: 5
+        if-no-files-found: ignore
+
+    - if: failure() && runner.debug
+      name: Setup upterm session (restart with "Enable debug logging" to activate)
+      uses: canonical/action-tmate@a0e8caed3bba2ccb98901a274553bf1284ad96c2  # zizmor: ignore[stale-action-refs]
+      with:
+        limit-access-to-actor: true
+
+  tutorial-tests-noble:
+    name: Tutorial tests on Noble (${{ matrix.variant || 'default' }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: ""
+          - variant: "light"
+    steps:
+    - uses: ./.github/actions/setup-yarf-noble
+      with:
+        with-mir: "true"
+
     - name: Install tutorial dependencies
       run: |
         sudo apt-get --yes --no-install-recommends install \
@@ -134,13 +145,56 @@ jobs:
           libadwaita-1-dev \
           gir1.2-adw-1
 
-    - name: Run tutorial examples
+    - name: Prepare tutorial venv
       run: |
         uv venv --python=/usr/bin/python3 --system-site-packages --project=$(pwd)/examples/yarf-example-simple-counter
-        uv run yarf --platform Mir examples/yarf-example-simple-counter/yarf_tests
 
-        export SIMPLE_COUNTER_THEME=light
-        uv run yarf --platform Mir --variant light examples/yarf-example-simple-counter/yarf_tests
+    - name: Run tutorial examples
+      env:
+        VARIANT: ${{ matrix.variant }}
+      run: |
+        if [ -n "$VARIANT" ]; then
+          export SIMPLE_COUNTER_THEME=$VARIANT
+          uv run yarf --platform Mir --variant "$VARIANT" examples/yarf-example-simple-counter/yarf_tests
+        else
+          uv run yarf --platform Mir examples/yarf-example-simple-counter/yarf_tests
+        fi
+
+    - if: failure()
+      name: Collect test results
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: yarf-output-tutorial-${{ matrix.variant || 'default' }}
+        path: /tmp/yarf-outdir/*
+        retention-days: 5
+        if-no-files-found: ignore
+
+    - if: failure() && runner.debug
+      name: Setup upterm session (restart with "Enable debug logging" to activate)
+      uses: canonical/action-tmate@a0e8caed3bba2ccb98901a274553bf1284ad96c2  # zizmor: ignore[stale-action-refs]
+      with:
+        limit-access-to-actor: true
+
+  keyword-tests-noble:
+    name: Keyword tests on Noble (${{ matrix.suite }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - video_image_test
+          - video_text_test
+          - video_video_test
+          - hid_keyboard_test
+          - hid_pointer_test
+          - kvm_test
+          - llm_client_test
+    env:
+      KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
+    steps:
+    - uses: ./.github/actions/setup-yarf-noble
+      with:
+        with-mir: "true"
 
     - name: Install keyword suite dependencies
       run: |
@@ -149,69 +203,61 @@ jobs:
           mpv
         uv pip install asttokens
 
-    - name: Run Keyword tests - VideoInput imaging
-      env:
-        KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
-      run: |
-        uv run yarf --platform Mir tests/keyword_suite -- --suite video_image_test --listener ${KEYWORDS_LISTENER_PATH}
+    - name: Run keyword suite
+      run: ./.github/scripts/yarf/run-keyword-suite.sh ${{ matrix.suite }}
 
-    - name: Run Keyword tests - VideoInput text
-      env:
-        KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
-      run: |
-        uv run yarf --platform Mir tests/keyword_suite -- --suite video_text_test --listener ${KEYWORDS_LISTENER_PATH}
-
-    - name: Run Keyword tests - VideoInput Video
-      env:
-        KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
-      run: |
-        uv run yarf --platform Mir tests/keyword_suite -- --suite video_video_test --listener ${KEYWORDS_LISTENER_PATH}
-
-    - name: Run Keyword tests - Hid keyboard
-      env:
-        KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
-      run: |
-        export WAYLAND_DEBUG=client
-        uv run yarf --platform Mir tests/keyword_suite -- --suite hid_keyboard_test --listener ${KEYWORDS_LISTENER_PATH} 2> ~/wayland.trace
-
-    - name: Run Keyword tests - Hid pointer
-      env:
-        KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
-      run: |
-        export WAYLAND_DEBUG=client
-        uv run yarf --platform Mir tests/keyword_suite -- --suite hid_pointer_test --listener ${KEYWORDS_LISTENER_PATH} 2> ~/wayland.trace
-
-    - name: Run Keyword tests - KVM
-      env:
-        KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
-      run: |
-        uv run yarf --platform Mir tests/keyword_suite -- --suite kvm_test --listener ${KEYWORDS_LISTENER_PATH}
-
-    - name: Run Keyword tests - LLM client
-      env:
-        KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
-      run: |
-        python3 tests/keyword_suite/server/llm_stub_server.py  &
-        uv run yarf --platform Mir tests/keyword_suite -- --suite llm_client_test --listener ${KEYWORDS_LISTENER_PATH}
-        pkill -f llm_stub_server.py || true
-
-    - name: Check Keywords coverage
-      env:
-        KEYWORDS_COVERAGE_CHECKER: .github/scripts/yarf/check_unused_keywords.py
-      run: |
-        pip install tabulate
-        python3 ${KEYWORDS_COVERAGE_CHECKER}
+    - name: Upload per-suite keyword coverage
+      if: always()
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: keywords-coverage-${{ matrix.suite }}
+        path: keywords_coverage.json
+        retention-days: 1
+        if-no-files-found: ignore
 
     - if: failure()
       name: Collect test results
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
       with:
-        name: yarf-output
+        name: yarf-output-keyword-${{ matrix.suite }}
         path: /tmp/yarf-outdir/*
         retention-days: 5
+        if-no-files-found: ignore
 
     - if: failure() && runner.debug
       name: Setup upterm session (restart with "Enable debug logging" to activate)
       uses: canonical/action-tmate@a0e8caed3bba2ccb98901a274553bf1284ad96c2  # zizmor: ignore[stale-action-refs]
       with:
         limit-access-to-actor: true
+
+  keyword-coverage-noble:
+    name: Keyword coverage check on Noble
+    runs-on: ubuntu-24.04
+    needs: keyword-tests-noble
+    if: always()
+    env:
+      KEYWORDS_COVERAGE_CHECKER: .github/scripts/yarf/check_unused_keywords.py
+      COVERAGE_MERGER: .github/scripts/yarf/merge-keywords-coverage.py
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      with:
+        persist-credentials: false
+
+    - name: Set up Python
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+      with:
+        python-version: "3.12"
+
+    - name: Download per-suite coverage artifacts
+      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      with:
+        path: coverage-artifacts
+        pattern: keywords-coverage-*
+
+    - name: Merge keyword coverage
+      run: python3 ${COVERAGE_MERGER} coverage-artifacts
+
+    - name: Check Keywords coverage
+      run: |
+        pip install tabulate
+        python3 ${KEYWORDS_COVERAGE_CHECKER}
