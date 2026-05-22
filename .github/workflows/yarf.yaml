@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   install-jammy:
-    name: Install and test on Jammy
+    name: Jammy - Install and sync
     runs-on: [self-hosted, linux, jammy, x64, large]
     steps:
     - name: Install dependencies
@@ -56,54 +56,54 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Unit tests on Noble
+          - name: Noble - Unit tests
             slug: unit
             script: run-unit-tests.sh
             with-mir: "false"
             fetch-depth: "0"
-          - name: Integration tests on Noble
+          - name: Noble - Integration tests
             slug: integration
             script: run-integration-tests.sh
             with-mir: "true"
-          - name: Tutorial tests on Noble (default)
+          - name: Noble - Tutorial tests (default)
             slug: tutorial-default
             script: run-tutorial-tests.sh
             with-mir: "true"
-          - name: Tutorial tests on Noble (light)
+          - name: Noble - Tutorial tests (light)
             slug: tutorial-light
             script: run-tutorial-tests.sh light
             with-mir: "true"
-          - name: Keyword tests on Noble (video_image_test)
+          - name: Noble - Keyword tests (video_image_test)
             slug: keyword-video_image_test
             script: run-keyword-suite.sh video_image_test
             with-mir: "true"
             keyword-coverage: "true"
-          - name: Keyword tests on Noble (video_text_test)
+          - name: Noble - Keyword tests (video_text_test)
             slug: keyword-video_text_test
             script: run-keyword-suite.sh video_text_test
             with-mir: "true"
             keyword-coverage: "true"
-          - name: Keyword tests on Noble (video_video_test)
+          - name: Noble - Keyword tests (video_video_test)
             slug: keyword-video_video_test
             script: run-keyword-suite.sh video_video_test
             with-mir: "true"
             keyword-coverage: "true"
-          - name: Keyword tests on Noble (hid_keyboard_test)
+          - name: Noble - Keyword tests (hid_keyboard_test)
             slug: keyword-hid_keyboard_test
             script: run-keyword-suite.sh hid_keyboard_test
             with-mir: "true"
             keyword-coverage: "true"
-          - name: Keyword tests on Noble (hid_pointer_test)
+          - name: Noble - Keyword tests (hid_pointer_test)
             slug: keyword-hid_pointer_test
             script: run-keyword-suite.sh hid_pointer_test
             with-mir: "true"
             keyword-coverage: "true"
-          - name: Keyword tests on Noble (kvm_test)
+          - name: Noble - Keyword tests (kvm_test)
             slug: keyword-kvm_test
             script: run-keyword-suite.sh kvm_test
             with-mir: "true"
             keyword-coverage: "true"
-          - name: Keyword tests on Noble (llm_client_test)
+          - name: Noble - Keyword tests (llm_client_test)
             slug: keyword-llm_client_test
             script: run-keyword-suite.sh llm_client_test
             with-mir: "true"
@@ -157,7 +157,7 @@ jobs:
         limit-access-to-actor: true
 
   keyword-coverage-noble:
-    name: Keyword coverage check on Noble
+    name: Noble - Keyword coverage check
     runs-on: ubuntu-24.04
     needs: tests-noble
     if: always()
