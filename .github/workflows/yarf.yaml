@@ -122,7 +122,10 @@ jobs:
         with-mir: ${{ matrix.with-mir }}
 
     - name: Run ${{ matrix.name }}
-      run: ./.github/scripts/yarf/${{ matrix.script }}
+      env:
+        SCRIPT: ${{ matrix.script }}
+      # shellcheck disable=SC2086  # SCRIPT may include the script's argument
+      run: ./.github/scripts/yarf/${SCRIPT}
 
     - if: matrix.slug == 'unit'
       name: Upload Coverage Report
