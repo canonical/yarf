@@ -3,10 +3,11 @@ set -euo pipefail
 
 SUITE=${1:?usage: run-keyword-suite.sh <suite-name>}
 LISTENER=${KEYWORDS_LISTENER_PATH:-.github/scripts/yarf/keywords_listener.py}
-MAX_ATTEMPTS=${KEYWORD_SUITE_MAX_ATTEMPTS:-3}
 
-# shellcheck source=.github/scripts/yarf/_retry.sh
-. "$(dirname "$0")/_retry.sh"
+# Fresh coverage file on every invocation: the listener loads the
+# existing file and removes used keywords from it, so leftover state
+# from a previous (failed) attempt would skew the result.
+rm -f keywords_coverage.json
 
 sudo apt-get update -qq
 sudo apt-get --yes --no-install-recommends install eog mpv
@@ -19,28 +20,17 @@ run_yarf() {
     --suite "$SUITE" --listener "$LISTENER" "$@"
 }
 
-attempt_suite() {
-  # Fresh coverage file each attempt: the listener loads the existing
-  # file and removes used keywords from it, so leftover state from a
-  # partial previous attempt would skew the result.
-  rm -f keywords_coverage.json
-
-  case "$SUITE" in
-    hid_keyboard_test|hid_pointer_test)
-      WAYLAND_DEBUG=client run_yarf 2> ~/wayland.trace
-      ;;
-    llm_client_test)
-      python3 tests/keyword_suite/server/llm_stub_server.py &
-      local stub_pid=$!
-      local ec=0
-      run_yarf || ec=$?
-      kill "$stub_pid" 2>/dev/null || true
-      return $ec
-      ;;
-    *)
-      run_yarf
-      ;;
-  esac
-}
-
-retry_attempts "Keyword suite '$SUITE'" "$MAX_ATTEMPTS" attempt_suite
+case "$SUITE" in
+  hid_keyboard_test|hid_pointer_test)
+    WAYLAND_DEBUG=client run_yarf 2> ~/wayland.trace
+    ;;
+  llm_client_test)
+    python3 tests/keyword_suite/server/llm_stub_server.py &
+    STUB_PID=$!
+    trap 'kill "$STUB_PID" 2>/dev/null || true' EXIT
+    run_yarf
+    ;;
+  *)
+    run_yarf
+    ;;
+esac

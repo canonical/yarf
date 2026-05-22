@@ -65,49 +65,59 @@ jobs:
             slug: integration
             script: run-integration-tests.sh
             with-mir: "true"
+            attempts: "3"
           - name: Noble - Tutorial tests (default)
             slug: tutorial-default
             script: run-tutorial-tests.sh
             with-mir: "true"
+            attempts: "3"
           - name: Noble - Tutorial tests (light)
             slug: tutorial-light
             script: run-tutorial-tests.sh light
             with-mir: "true"
+            attempts: "3"
           - name: Noble - Keyword tests (video_image_test)
             slug: keyword-video_image_test
             script: run-keyword-suite.sh video_image_test
             with-mir: "true"
             keyword-coverage: "true"
+            attempts: "3"
           - name: Noble - Keyword tests (video_text_test)
             slug: keyword-video_text_test
             script: run-keyword-suite.sh video_text_test
             with-mir: "true"
             keyword-coverage: "true"
+            attempts: "3"
           - name: Noble - Keyword tests (video_video_test)
             slug: keyword-video_video_test
             script: run-keyword-suite.sh video_video_test
             with-mir: "true"
             keyword-coverage: "true"
+            attempts: "3"
           - name: Noble - Keyword tests (hid_keyboard_test)
             slug: keyword-hid_keyboard_test
             script: run-keyword-suite.sh hid_keyboard_test
             with-mir: "true"
             keyword-coverage: "true"
+            attempts: "3"
           - name: Noble - Keyword tests (hid_pointer_test)
             slug: keyword-hid_pointer_test
             script: run-keyword-suite.sh hid_pointer_test
             with-mir: "true"
             keyword-coverage: "true"
+            attempts: "3"
           - name: Noble - Keyword tests (kvm_test)
             slug: keyword-kvm_test
             script: run-keyword-suite.sh kvm_test
             with-mir: "true"
             keyword-coverage: "true"
+            attempts: "3"
           - name: Noble - Keyword tests (llm_client_test)
             slug: keyword-llm_client_test
             script: run-keyword-suite.sh llm_client_test
             with-mir: "true"
             keyword-coverage: "true"
+            attempts: "3"
     env:
       KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
     steps:
@@ -124,8 +134,20 @@ jobs:
     - name: Run ${{ matrix.name }}
       env:
         SCRIPT: ${{ matrix.script }}
+        NAME: ${{ matrix.name }}
+        MAX_ATTEMPTS: ${{ matrix.attempts || '1' }}
       # shellcheck disable=SC2086  # SCRIPT may include the script's argument
-      run: ./.github/scripts/yarf/${SCRIPT}
+      run: |
+        set -uo pipefail
+        for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
+          if ./.github/scripts/yarf/${SCRIPT}; then
+            [ "$attempt" -gt 1 ] && echo "::notice::$NAME passed on attempt $attempt/$MAX_ATTEMPTS"
+            exit 0
+          fi
+          echo "::warning::$NAME failed on attempt $attempt/$MAX_ATTEMPTS"
+        done
+        echo "::error::$NAME failed after $MAX_ATTEMPTS attempts"
+        exit 1
 
     - if: matrix.slug == 'unit'
       name: Upload Coverage Report
