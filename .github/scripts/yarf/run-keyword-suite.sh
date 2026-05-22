@@ -5,10 +5,12 @@ SUITE=${1:?usage: run-keyword-suite.sh <suite-name>}
 LISTENER=${KEYWORDS_LISTENER_PATH:-.github/scripts/yarf/keywords_listener.py}
 
 sudo apt-get --yes --no-install-recommends install eog mpv
-pip install asttokens
 
+# asttokens is imported by the keywords listener, which runs inside
+# the yarf uv-managed venv. `uv run --with` makes uv add the
+# dependency to that runtime environment.
 run_yarf() {
-  uv run yarf --platform Mir tests/keyword_suite -- \
+  uv run --with asttokens yarf --platform Mir tests/keyword_suite -- \
     --suite "$SUITE" --listener "$LISTENER" "$@"
 }
 
