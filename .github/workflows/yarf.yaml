@@ -142,7 +142,7 @@ jobs:
         name: keywords-coverage-${{ matrix.slug }}
         path: keywords_coverage.json
         retention-days: 1
-        if-no-files-found: ignore
+        if-no-files-found: error
 
     - if: failure()
       name: Collect test results
