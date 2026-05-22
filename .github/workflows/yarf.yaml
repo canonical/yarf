@@ -53,9 +53,12 @@ jobs:
     name: Unit tests on Noble
     runs-on: ubuntu-24.04
     steps:
-    - uses: ./.github/actions/setup-yarf-noble
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
-        fetch-depth: "0"
+        lfs: true
+        fetch-depth: 0
+        persist-credentials: false
+    - uses: ./.github/actions/setup-yarf-noble
 
     - name: Install json schema validator
       run: pip install check-jsonschema
@@ -92,6 +95,10 @@ jobs:
     name: Integration tests on Noble
     runs-on: ubuntu-24.04
     steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      with:
+        lfs: true
+        persist-credentials: false
     - uses: ./.github/actions/setup-yarf-noble
       with:
         with-mir: "true"
@@ -133,6 +140,10 @@ jobs:
           - variant: ""
           - variant: "light"
     steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      with:
+        lfs: true
+        persist-credentials: false
     - uses: ./.github/actions/setup-yarf-noble
       with:
         with-mir: "true"
@@ -192,6 +203,10 @@ jobs:
     env:
       KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
     steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      with:
+        lfs: true
+        persist-credentials: false
     - uses: ./.github/actions/setup-yarf-noble
       with:
         with-mir: "true"
