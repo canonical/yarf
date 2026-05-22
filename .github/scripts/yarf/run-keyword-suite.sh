@@ -4,6 +4,9 @@ set -euo pipefail
 SUITE=${1:?usage: run-keyword-suite.sh <suite-name>}
 LISTENER=${KEYWORDS_LISTENER_PATH:-.github/scripts/yarf/keywords_listener.py}
 
+sudo apt-get --yes --no-install-recommends install eog mpv
+pip install asttokens
+
 run_yarf() {
   uv run yarf --platform Mir tests/keyword_suite -- \
     --suite "$SUITE" --listener "$LISTENER" "$@"
