@@ -6,4 +6,6 @@ sudo apt-get update -qq
 sudo apt-get --yes --no-install-recommends install \
   ffmpeg \
   inotify-tools \
-  gnome-calculator
+  gnome-calculator \
+  eog \
+  mpv

@@ -9,9 +9,6 @@ LISTENER=${KEYWORDS_LISTENER_PATH:-.github/scripts/yarf/keywords_listener.py}
 # from a previous (failed) attempt would skew the result.
 rm -f keywords_coverage.json
 
-sudo apt-get update -qq
-sudo apt-get --yes --no-install-recommends install eog mpv
-
 # asttokens is imported by the keywords listener, which runs inside
 # the yarf uv-managed venv. `uv run --with` makes uv add the
 # dependency to that runtime environment.

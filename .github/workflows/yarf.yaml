@@ -136,7 +136,7 @@ jobs:
         retention-days: 5
         overwrite: true
 
-    - if: matrix.keyword-coverage == 'true' && always()
+    - if: matrix.keyword-coverage == 'true'
       name: Upload per-suite keyword coverage
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
       with:
