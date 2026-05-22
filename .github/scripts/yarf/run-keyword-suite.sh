@@ -5,6 +5,9 @@ SUITE=${1:?usage: run-keyword-suite.sh <suite-name>}
 LISTENER=${KEYWORDS_LISTENER_PATH:-.github/scripts/yarf/keywords_listener.py}
 MAX_ATTEMPTS=${KEYWORD_SUITE_MAX_ATTEMPTS:-3}
 
+# shellcheck source=.github/scripts/yarf/_retry.sh
+. "$(dirname "$0")/_retry.sh"
+
 sudo apt-get update -qq
 sudo apt-get --yes --no-install-recommends install eog mpv
 
@@ -40,15 +43,4 @@ attempt_suite() {
   esac
 }
 
-for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
-  if attempt_suite; then
-    if [ "$attempt" -gt 1 ]; then
-      echo "::notice::Keyword suite '$SUITE' passed on attempt $attempt/$MAX_ATTEMPTS"
-    fi
-    exit 0
-  fi
-  echo "::warning::Keyword suite '$SUITE' failed on attempt $attempt/$MAX_ATTEMPTS"
-done
-
-echo "::error::Keyword suite '$SUITE' failed after $MAX_ATTEMPTS attempts"
-exit 1
+retry_attempts "Keyword suite '$SUITE'" "$MAX_ATTEMPTS" attempt_suite
