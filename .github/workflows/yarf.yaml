@@ -13,7 +13,6 @@ on:
 
 permissions:
   contents: read  # Required to check out repository code
-  actions: write  # Required by rerun-failed-noble to call the re-run API
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -194,29 +193,3 @@ jobs:
       run: |
         pip install tabulate
         python3 ${KEYWORDS_COVERAGE_CHECKER}
-
-  rerun-failed-noble:
-    name: Re-run failed Noble jobs
-    runs-on: ubuntu-24.04
-    needs: [tests-noble, keyword-coverage-noble]
-    # Trigger only if something upstream failed, and cap total attempts at 3
-    # (initial + up to 2 reruns). `exit 1` at the end keeps this job itself
-    # eligible for re-run, so the third attempt can still be triggered.
-    if: failure() && fromJSON(github.run_attempt) < 3
-    permissions:
-      actions: write
-    steps:
-    - name: Re-run failed jobs
-      env:
-        GH_TOKEN: ${{ github.token }}
-        REPO: ${{ github.repository }}
-        RUN_ID: ${{ github.run_id }}
-        ATTEMPT: ${{ github.run_attempt }}
-      run: |
-        echo "::warning::Noble jobs failed on attempt ${ATTEMPT}/3, triggering re-run of failed jobs"
-        # Brief delay so the run's failed state is fully registered
-        sleep 15
-        gh api -X POST "/repos/${REPO}/actions/runs/${RUN_ID}/rerun-failed-jobs"
-        # Mark this job failed so it is included in the next rerun-failed-jobs
-        # call, enabling a third overall attempt.
-        exit 1
