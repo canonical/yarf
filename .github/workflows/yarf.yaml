@@ -49,11 +49,25 @@ jobs:
     - name: Sync Python dependencies
       run: uv sync --python 3.10
 
+  install-noble:
+    name: Noble - Install and sync
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      with:
+        persist-credentials: false
+
+    - uses: ./.github/actions/setup-yarf-noble
+
+    - name: Sync Python dependencies
+      run: uv sync --python 3.12
+
   tests-noble:
     name: ${{ matrix.name }}
     runs-on: ubuntu-24.04
+    needs: install-noble
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         include:
           - name: Noble - Unit tests
@@ -73,41 +87,6 @@ jobs:
             slug: tutorial-light
             script: run-tutorial-tests.sh light
             with-mir: "true"
-          - name: Noble - Keyword tests (video_image_test)
-            slug: keyword-video_image_test
-            script: run-keyword-suite.sh video_image_test
-            with-mir: "true"
-            keyword-coverage: "true"
-          - name: Noble - Keyword tests (video_text_test)
-            slug: keyword-video_text_test
-            script: run-keyword-suite.sh video_text_test
-            with-mir: "true"
-            keyword-coverage: "true"
-          - name: Noble - Keyword tests (video_video_test)
-            slug: keyword-video_video_test
-            script: run-keyword-suite.sh video_video_test
-            with-mir: "true"
-            keyword-coverage: "true"
-          - name: Noble - Keyword tests (hid_keyboard_test)
-            slug: keyword-hid_keyboard_test
-            script: run-keyword-suite.sh hid_keyboard_test
-            with-mir: "true"
-            keyword-coverage: "true"
-          - name: Noble - Keyword tests (hid_pointer_test)
-            slug: keyword-hid_pointer_test
-            script: run-keyword-suite.sh hid_pointer_test
-            with-mir: "true"
-            keyword-coverage: "true"
-          - name: Noble - Keyword tests (kvm_test)
-            slug: keyword-kvm_test
-            script: run-keyword-suite.sh kvm_test
-            with-mir: "true"
-            keyword-coverage: "true"
-          - name: Noble - Keyword tests (llm_client_test)
-            slug: keyword-llm_client_test
-            script: run-keyword-suite.sh llm_client_test
-            with-mir: "true"
-            keyword-coverage: "true"
     env:
       KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
     steps:
@@ -136,16 +115,6 @@ jobs:
         retention-days: 5
         overwrite: true
 
-    - if: matrix.keyword-coverage == 'true'
-      name: Upload per-suite keyword coverage
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-      with:
-        name: keywords-coverage-${{ matrix.slug }}
-        path: keywords_coverage.json
-        retention-days: 1
-        if-no-files-found: error
-        overwrite: true
-
     - if: failure()
       name: Collect test results
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -162,10 +131,67 @@ jobs:
       with:
         limit-access-to-actor: true
 
+  keyword-tests-noble:
+    name: Noble - Keyword tests (${{ matrix.suite }})
+    runs-on: ubuntu-24.04
+    needs: install-noble
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - video_image_test
+          - video_text_test
+          - video_video_test
+          - hid_keyboard_test
+          - hid_pointer_test
+          - kvm_test
+          - llm_client_test
+    env:
+      KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      with:
+        lfs: true
+        persist-credentials: false
+
+    - uses: ./.github/actions/setup-yarf-noble
+      with:
+        with-mir: "true"
+
+    - name: Run Noble - Keyword tests (${{ matrix.suite }})
+      env:
+        SUITE: ${{ matrix.suite }}
+      run: ./.github/scripts/yarf/run-keyword-suite.sh "${SUITE}"
+
+    - name: Upload per-suite keyword coverage
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: keywords-coverage-keyword-${{ matrix.suite }}
+        path: keywords_coverage.json
+        retention-days: 1
+        if-no-files-found: error
+        overwrite: true
+
+    - if: failure()
+      name: Collect test results
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: yarf-output-keyword-${{ matrix.suite }}
+        path: /tmp/yarf-outdir/*
+        retention-days: 5
+        if-no-files-found: ignore
+        overwrite: true
+
+    - if: failure() && runner.debug
+      name: Setup upterm session (restart with "Enable debug logging" to activate)
+      uses: canonical/action-tmate@a0e8caed3bba2ccb98901a274553bf1284ad96c2  # zizmor: ignore[stale-action-refs]
+      with:
+        limit-access-to-actor: true
+
   keyword-coverage-noble:
     name: Noble - Keyword coverage check
     runs-on: ubuntu-latest
-    needs: tests-noble
+    needs: keyword-tests-noble
     if: always()
     env:
       KEYWORDS_COVERAGE_CHECKER: .github/scripts/yarf/check_unused_keywords.py
