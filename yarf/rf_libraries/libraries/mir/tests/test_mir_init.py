@@ -49,7 +49,7 @@ class TestMir:
                 new_callable=AsyncMock,
             ),
             patch(
-                "yarf.rf_libraries.libraries.mir.screencopy.Screencopy.disconnect",
+                "yarf.rf_libraries.libraries.mir.WaylandClient.disconnect",
                 new_callable=AsyncMock,
             ),
             patch(
@@ -71,9 +71,7 @@ class TestMir:
 
         mir = Mir()
         with (
-            patch(
-                "yarf.rf_libraries.libraries.mir.asyncio.get_event_loop"
-            ) as mock_get_event_loop,
+            patch("yarf.rf_libraries.libraries.mir.asyncio.get_running_loop"),
             patch(
                 "yarf.rf_libraries.libraries.mir.asyncio.run_coroutine_threadsafe"
             ),
@@ -90,7 +88,7 @@ class TestMir:
                 new_callable=AsyncMock,
             ),
             patch(
-                "yarf.rf_libraries.libraries.mir.screencopy.Screencopy.disconnect",
+                "yarf.rf_libraries.libraries.mir.WaylandClient.disconnect",
                 new_callable=AsyncMock,
             ),
             patch(
@@ -102,5 +100,4 @@ class TestMir:
                 new_callable=AsyncMock,
             ),
         ):
-            mock_get_event_loop.return_value.is_running.return_value = True
             mir.check_connection()

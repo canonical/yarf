@@ -665,7 +665,7 @@ class VideoInputBase(ABC):
         """
         Listener method called when the library goes out of scope.
         """
-        asyncio.get_event_loop().run_until_complete(self.stop_video_input())
+        asyncio.run(self.stop_video_input())
 
     @staticmethod
     def get_displays() -> list[tuple[Optional[str], str]]:

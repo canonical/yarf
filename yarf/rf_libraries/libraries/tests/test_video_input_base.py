@@ -902,13 +902,11 @@ class TestVideoInputBase:
             (0, 0, 1, 1), outline="red", width=2
         )
 
-    @patch("asyncio.get_event_loop")
-    def test_close(self, mock_loop, stub_videoinput):
+    @patch("asyncio.run")
+    def test_close(self, mock_run, stub_videoinput):
         with patch.object(stub_videoinput, "stop_video_input", Mock()) as m:
             stub_videoinput._close()
-            mock_loop().run_until_complete.assert_called_once_with(
-                m.return_value
-            )
+            mock_run.assert_called_once_with(m.return_value)
 
     @pytest.mark.parametrize(
         "displays,expected",
