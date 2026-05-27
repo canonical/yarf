@@ -49,7 +49,7 @@ class TestMir:
                 new_callable=AsyncMock,
             ),
             patch(
-                "yarf.rf_libraries.libraries.mir.screencopy.Screencopy.disconnect",
+                "yarf.rf_libraries.libraries.mir.WaylandClient.disconnect",
                 new_callable=AsyncMock,
             ),
             patch(
@@ -88,7 +88,7 @@ class TestMir:
                 new_callable=AsyncMock,
             ),
             patch(
-                "yarf.rf_libraries.libraries.mir.screencopy.Screencopy.disconnect",
+                "yarf.rf_libraries.libraries.mir.WaylandClient.disconnect",
                 new_callable=AsyncMock,
             ),
             patch(
