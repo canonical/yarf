@@ -67,9 +67,6 @@ repos:
   rev: v8.2.4
   hooks:
   - id: robocop-format
-    # robocop imports click directly but doesn't declare it; see
-    # https://github.com/MarketSquare/robotframework-robocop pyproject.toml
-    additional_dependencies: [click]
     args:
     - --select
     - RenameTestCases
@@ -84,7 +81,6 @@ repos:
     - --select
     - AlignTemplatedTestCases
   - id: robocop
-    additional_dependencies: [click]
     args:
     - --select
     - NAME02
