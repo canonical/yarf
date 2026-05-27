@@ -39,12 +39,9 @@ class TestVnc:
         vnc = Vnc()
         with (
             patch("yarf.rf_libraries.libraries.vnc.connect"),
-            patch(
-                "yarf.rf_libraries.libraries.vnc.asyncio.get_event_loop"
-            ) as mock_get_event_loop,
+            patch("yarf.rf_libraries.libraries.vnc.asyncio.get_running_loop"),
             patch(
                 "yarf.rf_libraries.libraries.vnc.asyncio.run_coroutine_threadsafe"
             ),
         ):
-            mock_get_event_loop.return_value.is_running.return_value = True
             vnc.check_connection()

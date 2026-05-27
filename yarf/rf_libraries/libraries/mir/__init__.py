@@ -26,6 +26,12 @@ class Mir(PlatformBase):
 
     @staticmethod
     def get_pkg_path() -> str:
+        """
+        Get the path to the Mir library package.
+
+        Returns:
+            str: The path to the Mir library package.
+        """
         return str(Path(__file__).parent)
 
     def check_connection(self) -> None:
@@ -55,15 +61,16 @@ class Mir(PlatformBase):
                     await virtual_keyboard.disconnect()
 
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                asyncio.run(_async_connection_check())
+            else:
                 # If a loop is already running, we run the task and wait
                 future = asyncio.run_coroutine_threadsafe(
                     _async_connection_check(), loop
                 )
                 future.result()
-            else:
-                loop.run_until_complete(_async_connection_check())
             _owasp_logger.sys_monitor_enabled("system", "mir")
 
         except (ValueError, AssertionError, RuntimeError) as e:

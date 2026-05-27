@@ -61,15 +61,16 @@ class Vnc(PlatformBase):
                 pass
 
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                asyncio.run(perform_check())
+            else:
                 # If a loop is already running, we run the task and wait
                 future = asyncio.run_coroutine_threadsafe(
                     perform_check(), loop
                 )
                 future.result()
-            else:
-                loop.run_until_complete(perform_check())
 
         except (ConnectionRefusedError, OSError) as e:
             raise YARFConnectionError(f"Failed to connect to VNC server: {e}")
