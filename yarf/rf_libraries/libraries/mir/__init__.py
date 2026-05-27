@@ -13,6 +13,7 @@ from yarf.errors.yarf_errors import YARFConnectionError
 from yarf.lib.wayland import screencopy
 from yarf.lib.wayland.virtual_keyboard import VirtualKeyboard
 from yarf.lib.wayland.virtual_pointer import VirtualPointer
+from yarf.lib.wayland.wayland_client import WaylandClient
 from yarf.loggers.owasp_logger import get_owasp_logger
 from yarf.rf_libraries.libraries import PlatformBase
 
@@ -44,6 +45,10 @@ class Mir(PlatformBase):
         display_name = os.environ.get("WAYLAND_DISPLAY", "wayland-0")
 
         async def _async_connection_check():
+            """
+            Asynchronously check connection to the screen, pointer, and
+            keyboard.
+            """
             can_connect = False
             virtual_screen = screencopy.Screencopy(display_name)
             virtual_pointer = VirtualPointer(display_name)
@@ -56,7 +61,10 @@ class Mir(PlatformBase):
                 can_connect = True
             finally:
                 if can_connect:
-                    await virtual_screen.disconnect()
+                    # Screencopy.disconnect() is a no-op when no frame
+                    # has been captured; call WaylandClient.disconnect
+                    # directly to release the display resources.
+                    await WaylandClient.disconnect(virtual_screen)
                     await virtual_pointer.disconnect()
                     await virtual_keyboard.disconnect()
 
