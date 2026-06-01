@@ -36,7 +36,7 @@ class WaylandClient(ABC):
             self.display.dispatch(block=False)
         except Exception as e:
             _owasp_logger.sys_crash(f"Wayland dispatch error: {e}")
-            asyncio.get_event_loop().remove_writer(self.display.get_fd())
+            asyncio.get_running_loop().remove_writer(self.display.get_fd())
             raise e
 
     def timestamp(self) -> int:
@@ -105,7 +105,7 @@ class WaylandClient(ABC):
             registry.dispatcher["global"] = self.registry_global
             self.display.roundtrip()
             self.connected()
-            asyncio.get_event_loop().add_writer(
+            asyncio.get_running_loop().add_writer(
                 self.display.get_fd(), self._dispatch
             )
             return self
@@ -120,7 +120,7 @@ class WaylandClient(ABC):
         """
         Stop the connection to the compositor.
         """
-        asyncio.get_event_loop().remove_writer(self.display.get_fd())
+        asyncio.get_running_loop().remove_writer(self.display.get_fd())
         self.display.roundtrip()
         self.display.disconnect()
         self.disconnected()

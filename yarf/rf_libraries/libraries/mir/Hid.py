@@ -51,7 +51,7 @@ class Hid(HidBase):
             *_args: unused
         """
         if not self._connected:
-            asyncio.get_event_loop().run_until_complete(self._connect())
+            asyncio.run(self._connect())
 
     async def _keys_combo(self, combo: Sequence[str]) -> None:
         """
@@ -149,4 +149,4 @@ class Hid(HidBase):
         """
         Listener method called when the library goes out of scope.
         """
-        asyncio.get_event_loop().run_until_complete(self._disconnect())
+        asyncio.run(self._disconnect())

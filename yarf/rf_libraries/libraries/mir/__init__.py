@@ -13,6 +13,7 @@ from yarf.errors.yarf_errors import YARFConnectionError
 from yarf.lib.wayland import screencopy
 from yarf.lib.wayland.virtual_keyboard import VirtualKeyboard
 from yarf.lib.wayland.virtual_pointer import VirtualPointer
+from yarf.lib.wayland.wayland_client import WaylandClient
 from yarf.loggers.owasp_logger import get_owasp_logger
 from yarf.rf_libraries.libraries import PlatformBase
 
@@ -26,6 +27,12 @@ class Mir(PlatformBase):
 
     @staticmethod
     def get_pkg_path() -> str:
+        """
+        Get the path to the Mir library package.
+
+        Returns:
+            str: The path to the Mir library package.
+        """
         return str(Path(__file__).parent)
 
     def check_connection(self) -> None:
@@ -38,6 +45,10 @@ class Mir(PlatformBase):
         display_name = os.environ.get("WAYLAND_DISPLAY", "wayland-0")
 
         async def _async_connection_check():
+            """
+            Asynchronously check connection to the screen, pointer, and
+            keyboard.
+            """
             can_connect = False
             virtual_screen = screencopy.Screencopy(display_name)
             virtual_pointer = VirtualPointer(display_name)
@@ -50,20 +61,24 @@ class Mir(PlatformBase):
                 can_connect = True
             finally:
                 if can_connect:
-                    await virtual_screen.disconnect()
+                    # Screencopy.disconnect() is a no-op when no frame
+                    # has been captured; call WaylandClient.disconnect
+                    # directly to release the display resources.
+                    await WaylandClient.disconnect(virtual_screen)
                     await virtual_pointer.disconnect()
                     await virtual_keyboard.disconnect()
 
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                asyncio.run(_async_connection_check())
+            else:
                 # If a loop is already running, we run the task and wait
                 future = asyncio.run_coroutine_threadsafe(
                     _async_connection_check(), loop
                 )
                 future.result()
-            else:
-                loop.run_until_complete(_async_connection_check())
             _owasp_logger.sys_monitor_enabled("system", "mir")
 
         except (ValueError, AssertionError, RuntimeError) as e:
