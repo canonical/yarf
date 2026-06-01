@@ -8,7 +8,7 @@ Framework for visual and platform test automation. The CLI entry point is
 `yarf/rf_libraries/`, with support code in `yarf/lib/` and custom exceptions
 in `yarf/errors/`.
 
----
+______________________________________________________________________
 
 ## Code review checklist
 
@@ -83,7 +83,7 @@ by the current change.
 - [ ] Versioning or release changes account for the GitVersion-based SemVer
   flow used by `scripts/semver.sh` and the release workflows.
 
----
+______________________________________________________________________
 
 ## Component-specific notes
 
