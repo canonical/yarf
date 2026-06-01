@@ -109,7 +109,6 @@ Get Position Of ${target}
             Log
             ...                     Assuming ${target} is a string as it isn't a file which exists.
             ...                     html=true
-            ...                     console=true
             ${position}=            Get Text Position       text=${target}
         END
     ELSE
@@ -339,7 +338,6 @@ Ensure ${destination} Does Not Match
         Log
         ...                     Assuming ${destination} is a string as it isn't a file which exists.
         ...                     html=true
-        ...                     console=true
         ${match}=               Run Keyword And Return Status
         ...                     Match Text              ${destination}          timeout=${timeout}
     END
