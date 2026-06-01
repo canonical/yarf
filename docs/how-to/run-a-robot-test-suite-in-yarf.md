@@ -171,3 +171,13 @@ When any test fails, YARF adds two important features here:
 - For the whole suite, it will log a video with all screenshots taken leading up to the failure.
   You'll be able to see what went wrong _before_ the test failed and hopefully identify the problem
   directly from the log file, without having to look at the test run live.
+
+### Controlling video logging
+
+You can control when YARF logs videos using the `YARF_LOG_VIDEO` environment variable:
+
+- **Unset** (default): Log video only when tests fail
+- **`YARF_LOG_VIDEO=1`**: Always log video, even when tests succeed
+- **`YARF_LOG_VIDEO=0`**: Never log video, even when tests fail
+
+Alternatively, use the `--log-video` CLI flag to always log video (equivalent to `YARF_LOG_VIDEO=1`).
