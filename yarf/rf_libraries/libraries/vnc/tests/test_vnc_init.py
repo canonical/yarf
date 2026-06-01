@@ -26,9 +26,13 @@ class TestVnc:
 
     def test_check_connection(self) -> None:
         vnc = Vnc()
-        with pytest.raises(YARFConnectionError) as exc_info:
-            vnc.check_connection()
-        assert exc_info.value.exit_code == YARFExitCode.CONNECTION_ERROR
+        with patch(
+            "yarf.rf_libraries.libraries.vnc.connect",
+            side_effect=ConnectionRefusedError("Connection refused"),
+        ):
+            with pytest.raises(YARFConnectionError) as exc_info:
+                vnc.check_connection()
+            assert exc_info.value.exit_code == YARFExitCode.CONNECTION_ERROR
 
     def test_check_connection_success(self) -> None:
         vnc = Vnc()
@@ -39,12 +43,9 @@ class TestVnc:
         vnc = Vnc()
         with (
             patch("yarf.rf_libraries.libraries.vnc.connect"),
-            patch(
-                "yarf.rf_libraries.libraries.vnc.asyncio.get_event_loop"
-            ) as mock_get_event_loop,
+            patch("yarf.rf_libraries.libraries.vnc.asyncio.get_running_loop"),
             patch(
                 "yarf.rf_libraries.libraries.vnc.asyncio.run_coroutine_threadsafe"
             ),
         ):
-            mock_get_event_loop.return_value.is_running.return_value = True
             vnc.check_connection()
