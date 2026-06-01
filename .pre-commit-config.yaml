@@ -67,6 +67,8 @@ repos:
   rev: v8.2.4
   hooks:
   - id: robocop-format
+    additional_dependencies:
+    - click>=8.0.0
     args:
     - --select
     - RenameTestCases
@@ -81,6 +83,8 @@ repos:
     - --select
     - AlignTemplatedTestCases
   - id: robocop
+    additional_dependencies:
+    - click>=8.0.0
     args:
     - --select
     - NAME02

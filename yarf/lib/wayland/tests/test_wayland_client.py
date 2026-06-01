@@ -46,7 +46,7 @@ class TestWaylandClient:
         stub_wc.display.attach_mock(mock_get_loop, "get_loop")
         stub_wc.display.attach_mock(stub_wc.connected, "connected")
 
-        with patch("asyncio.get_event_loop", mock_get_loop):
+        with patch("asyncio.get_running_loop", mock_get_loop):
             await stub_wc.connect()
 
         stub_wc.display.assert_has_calls(
@@ -73,7 +73,7 @@ class TestWaylandClient:
         stub_wc.disconnect = AsyncMock()
 
         with (
-            patch("asyncio.get_event_loop"),
+            patch("asyncio.get_running_loop"),
             pytest.raises(RuntimeError, match="DisplayFail"),
         ):
             await stub_wc.connect()
@@ -85,7 +85,7 @@ class TestWaylandClient:
         stub_wc.display.attach_mock(mock_get_loop, "get_loop")
         stub_wc.display.attach_mock(stub_wc.disconnected, "disconnected")
 
-        with patch("asyncio.get_event_loop", mock_get_loop):
+        with patch("asyncio.get_running_loop", mock_get_loop):
             await stub_wc.disconnect()
 
         stub_wc.display.assert_has_calls(
@@ -101,7 +101,7 @@ class TestWaylandClient:
     async def test_dispatch(self, stub_wc):
         mock_get_loop = Mock()
 
-        with patch("asyncio.get_event_loop", mock_get_loop):
+        with patch("asyncio.get_running_loop", mock_get_loop):
             await stub_wc.connect()
 
         mock_get_loop().add_writer.call_args.args[1]()
@@ -121,11 +121,11 @@ class TestWaylandClient:
         )
         mock_get_loop = Mock()
 
-        with patch("asyncio.get_event_loop", mock_get_loop):
+        with patch("asyncio.get_running_loop", mock_get_loop):
             await stub_wc.connect()
 
         with (
-            patch("asyncio.get_event_loop"),
+            patch("asyncio.get_running_loop"),
             pytest.raises(RuntimeError, match="DisplayFail"),
         ):
             mock_get_loop().add_writer.call_args.args[1]()
