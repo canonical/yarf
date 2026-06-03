@@ -191,7 +191,7 @@ sitemap_show_lastmod = True
 #######################
 
 #html_static_path = [".sphinx/_static"]
-#templates_path = [".sphinx/_templates"]
+templates_path = [".sphinx/_templates"]
 
 
 #############
@@ -284,12 +284,16 @@ exclude_patterns = [
 
 # Adds custom CSS files, located under 'html_static_path'
 
-# html_css_files = []
+html_css_files = [
+    "https://assets.ubuntu.com/v1/d86746ef-cookie_banner.css", # Google Analytics cookie banner
+]
 
 
 # Adds custom JavaScript files, located under 'html_static_path'
 
-# html_js_files = []
+html_js_files = [
+    "https://assets.ubuntu.com/v1/287a5e8f-bundle.js"   # Google Analytics cookie banner
+]
 
 
 # Specifies a reST snippet to be appended to each .rst file
