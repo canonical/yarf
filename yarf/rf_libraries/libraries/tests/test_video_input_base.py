@@ -1018,6 +1018,79 @@ class TestVideoInputBase:
                 VideoInputBase.get_displays()
 
     @pytest.mark.asyncio
+    async def test_find_mouse_position_grabs_screenshot_when_no_image(
+        self, stub_videoinput
+    ):
+        stub_videoinput.mouse_detector.detect = Mock(return_value=None)
+        await stub_videoinput.find_mouse_position()
+        stub_videoinput.grab_screenshot.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_find_mouse_position_uses_provided_image(
+        self, stub_videoinput
+    ):
+        image = Mock()
+        stub_videoinput.mouse_detector.detect = Mock(return_value=None)
+        await stub_videoinput.find_mouse_position(image=image)
+        stub_videoinput.grab_screenshot.assert_not_called()
+        stub_videoinput.mouse_detector.detect.assert_called_once_with(
+            image, confidence_threshold=0.80
+        )
+
+    @pytest.mark.asyncio
+    async def test_find_mouse_position_returns_none_when_not_found(
+        self, stub_videoinput
+    ):
+        stub_videoinput.mouse_detector.detect = Mock(return_value=None)
+        assert await stub_videoinput.find_mouse_position() is None
+
+    @pytest.mark.asyncio
+    async def test_find_mouse_position_returns_rounded_coordinates(
+        self, stub_videoinput
+    ):
+        stub_videoinput.mouse_detector.detect = Mock(
+            return_value=(100.7, 200.3)
+        )
+        assert await stub_videoinput.find_mouse_position() == (101, 200)
+
+    @pytest.mark.asyncio
+    @patch("yarf.rf_libraries.libraries.video_input_base.log_image")
+    @patch("yarf.rf_libraries.libraries.video_input_base.ImageDraw")
+    async def test_find_mouse_position_logs_debug_when_detected(
+        self, mock_draw, mock_log_image, stub_videoinput
+    ):
+        stub_videoinput.mouse_detector.detect = Mock(return_value=(50.0, 60.0))
+        with patch.dict(os.environ, {"YARF_LOG_LEVEL": "DEBUG"}):
+            await stub_videoinput.find_mouse_position(confidence=0.9)
+        mock_draw.Draw.return_value.ellipse.assert_called_once_with(
+            (40.0, 50.0, 60.0, 70.0), outline="red", width=2
+        )
+        mock_log_image.assert_called_once()
+        assert "50" in mock_log_image.call_args.args[1]
+        assert "60" in mock_log_image.call_args.args[1]
+
+    @pytest.mark.asyncio
+    @patch("yarf.rf_libraries.libraries.video_input_base.log_image")
+    @patch("yarf.rf_libraries.libraries.video_input_base.ImageDraw")
+    async def test_find_mouse_position_logs_debug_when_not_detected(
+        self, mock_draw, mock_log_image, stub_videoinput
+    ):
+        stub_videoinput.mouse_detector.detect = Mock(return_value=None)
+        with patch.dict(os.environ, {"YARF_LOG_LEVEL": "DEBUG"}):
+            await stub_videoinput.find_mouse_position()
+        mock_log_image.assert_called_once_with(ANY, "Mouse not detected.")
+
+    @pytest.mark.asyncio
+    @patch("yarf.rf_libraries.libraries.video_input_base.log_image")
+    async def test_find_mouse_position_no_debug_log_outside_debug_level(
+        self, mock_log_image, stub_videoinput
+    ):
+        stub_videoinput.mouse_detector.detect = Mock(return_value=(10.0, 20.0))
+        with patch.dict(os.environ, {"YARF_LOG_LEVEL": "INFO"}):
+            await stub_videoinput.find_mouse_position()
+        mock_log_image.assert_not_called()
+
+    @pytest.mark.asyncio
     @patch("yarf.rf_libraries.libraries.video_input_base.log_image")
     async def test_log_screenshot(self, mock_log_image, stub_videoinput):
         """
