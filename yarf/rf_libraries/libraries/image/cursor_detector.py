@@ -1,5 +1,5 @@
 """
-Mouse cursor detection using a YOLO ONNX model.
+Cursor detection using a YOLO ONNX model.
 """
 
 from dataclasses import dataclass
@@ -20,8 +20,8 @@ class CursorType(IntEnum):
 
 
 @dataclass
-class MouseDetection:
-    """Result of a mouse cursor detection.
+class CursorDetection:
+    """Result of a cursor detection.
 
     Attributes:
         x: Horizontal pixel coordinate in the original image.
@@ -46,13 +46,13 @@ _CURSOR_OFFSETS: dict[CursorType, tuple[float, float]] = {
 }
 
 
-class MouseDetector:
+class CursorDetector:
     """
-    Detects mouse cursor position in images using a YOLO ONNX model.
+    Detects cursor position in images using a YOLO ONNX model.
     Singleton to avoid loading the model multiple times.
     """
 
-    def __new__(cls) -> "MouseDetector":
+    def __new__(cls) -> "CursorDetector":
         if not hasattr(cls, "instance"):
             cls.instance = super().__new__(cls)
         return cls.instance
@@ -71,16 +71,16 @@ class MouseDetector:
         self,
         image: Image.Image,
         confidence_threshold: float = 0.85,
-    ) -> MouseDetection | None:
+    ) -> CursorDetection | None:
         """
-        Detect mouse cursor in image and return its position and type.
+        Detect cursor in image and return its position and type.
 
         Args:
             image: PIL Image to search.
             confidence_threshold: Minimum confidence (0-1) to accept a detection.
 
         Returns:
-            MouseDetection with pixel coordinates and cursor type, or None.
+            CursorDetection with pixel coordinates and cursor type, or None.
         """
         orig_w, orig_h = image.size
         blob = self._preprocess(image)
@@ -101,7 +101,7 @@ class MouseDetector:
         orig_w: int,
         orig_h: int,
         threshold: float,
-    ) -> MouseDetection | None:
+    ) -> CursorDetection | None:
         """
         Parse YOLO output and return the best detection.
 
@@ -134,12 +134,11 @@ class MouseDetector:
         x_adj = x1 + x_frac * (x2 - x1)
         y_adj = y1 + y_frac * (y2 - y1)
 
-        return MouseDetection(
+        return CursorDetection(
             x=x_adj / self._input_w * orig_w,
             y=y_adj / self._input_h * orig_h,
             cursor_type=cursor_type,
         )
-
 
 
 if __name__ == "__main__":
@@ -148,15 +147,18 @@ if __name__ == "__main__":
     from PIL import ImageDraw
 
     if len(sys.argv) < 2:
-        print("Usage: python mouse_detector.py <image_path>")
+        print("Usage: python cursor_detector.py <image_path>")
         sys.exit(1)
 
     image_path = sys.argv[1]
     image = Image.open(image_path)
-    detector = MouseDetector()
+    detector = CursorDetector()
     result = detector.detect(image, confidence_threshold=0.8)
     if result is not None:
-        print(f"Mouse detected at: ({result.x:.2f}, {result.y:.2f})  type={result.cursor_type.name}")
+        print(
+            f"Cursor detected at: ({result.x:.2f}, {result.y:.2f})"
+            f"  type={result.cursor_type.name}"
+        )
         draw = ImageDraw.Draw(image)
         r = 10
         draw.ellipse(
@@ -164,6 +166,6 @@ if __name__ == "__main__":
             outline="red",
             width=2,
         )
-        image.save("mouse_detected.png")
+        image.save("cursor_detected.png")
     else:
-        print("Mouse cursor not detected.")
+        print("Cursor not detected.")

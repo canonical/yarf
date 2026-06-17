@@ -22,7 +22,7 @@ from robot.libraries.BuiltIn import BuiltIn
 
 from yarf import LABEL_PREFIX
 from yarf.lib.images.utils import to_RGB
-from yarf.rf_libraries.libraries.image.mouse_detector import MouseDetector
+from yarf.rf_libraries.libraries.image.cursor_detector import CursorDetector
 from yarf.rf_libraries.libraries.image.segmentation import SegmentationTool
 from yarf.rf_libraries.libraries.image.utils import log_image
 from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
@@ -67,7 +67,7 @@ class VideoInputBase(ABC):
         self._screenshots_dir: Optional[tempfile.TemporaryDirectory] = None
         self.ocr: RapidOCRReader | ModuleType = RapidOCRReader()
         self.segmentation_tool: SegmentationTool = SegmentationTool()
-        self.mouse_detector: MouseDetector = MouseDetector()
+        self.cursor_detector: CursorDetector = CursorDetector()
 
     def _start_suite(self, data, result) -> None:
         self._frame_count = 0
@@ -504,13 +504,13 @@ class VideoInputBase(ABC):
         """
 
     @keyword
-    async def find_mouse_position(
+    async def find_cursor_position(
         self,
         image: Optional[Image.Image] = None,
         confidence: float = 0.80,
     ) -> Optional[tuple[int, int]]:
         """
-        Detect the mouse cursor in the provided image or a new screenshot.
+        Detect the cursor in the provided image or a new screenshot.
 
         Args:
             image: Image to search; grabs a screenshot if not provided.
@@ -521,7 +521,7 @@ class VideoInputBase(ABC):
         """
         if image is None:
             image = await self._grab_and_save_screenshot()
-        result = self.mouse_detector.detect(
+        result = self.cursor_detector.detect(
             image, confidence_threshold=confidence
         )
         if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
@@ -540,12 +540,12 @@ class VideoInputBase(ABC):
                 )
                 log_image(
                     debug_image,
-                    f"Mouse detected at ({result.x}, {result.y})"
+                    f"Cursor detected at ({result.x}, {result.y})"
                     f" [{result.cursor_type.name}]"
                     f" with conf >= {confidence}",
                 )
             else:
-                log_image(debug_image, "Mouse not detected.")
+                log_image(debug_image, "Cursor not detected.")
 
         if result is None:
             return None
