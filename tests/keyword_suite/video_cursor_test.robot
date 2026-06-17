@@ -57,7 +57,7 @@ Test Text Cursor Detection On Document
     ...    ${272}
 
 
-Test Mouse Cursor Detection On App
+Test Hand Cursor Detection On App
     [Tags]                  yarf:certification_status: blocker
     Detect Cursor In Image
     ...    ${CURDIR}/gui/hand_cursor_app.jpg
