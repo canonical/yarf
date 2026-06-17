@@ -17,10 +17,9 @@
 
 #### Positional and named arguments
 
-| Name   | Type   | Default Value | Kind                | Required |
-| ------ | ------ | ------------- | ------------------- | -------- |
-| button | string |               | POSITIONAL_OR_NAMED | Yes      |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| button | string |  | POSITIONAL_OR_NAMED | Yes |
 <hr style="border:1px solid grey">
 
 ### Keys Combo
@@ -31,11 +30,10 @@
 
 #### Positional and named arguments
 
-| Name  | Type   | Default Value | Kind                | Required |
-| ----- | ------ | ------------- | ------------------- | -------- |
-| combo | None   |               | POSITIONAL_OR_NAMED | Yes      |
-| keys  | string |               | VAR_POSITIONAL      | No       |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| combo | None |  | POSITIONAL_OR_NAMED | Yes |
+| keys | string |  | VAR_POSITIONAL | No |
 <hr style="border:1px solid grey">
 
 ### Move Pointer To Absolute
@@ -46,11 +44,10 @@
 
 #### Positional and named arguments
 
-| Name | Type    | Default Value | Kind                | Required |
-| ---- | ------- | ------------- | ------------------- | -------- |
-| x    | integer |               | POSITIONAL_OR_NAMED | Yes      |
-| y    | integer |               | POSITIONAL_OR_NAMED | Yes      |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| x | integer |  | POSITIONAL_OR_NAMED | Yes |
+| y | integer |  | POSITIONAL_OR_NAMED | Yes |
 <hr style="border:1px solid grey">
 
 ### Move Pointer To Proportional
@@ -61,11 +58,10 @@
 
 #### Positional and named arguments
 
-| Name | Type  | Default Value | Kind                | Required |
-| ---- | ----- | ------------- | ------------------- | -------- |
-| x    | float |               | POSITIONAL_OR_NAMED | Yes      |
-| y    | float |               | POSITIONAL_OR_NAMED | Yes      |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| x | float |  | POSITIONAL_OR_NAMED | Yes |
+| y | float |  | POSITIONAL_OR_NAMED | Yes |
 <hr style="border:1px solid grey">
 
 ### Press Pointer Button
@@ -75,10 +71,9 @@
 
 #### Positional and named arguments
 
-| Name   | Type   | Default Value | Kind                | Required |
-| ------ | ------ | ------------- | ------------------- | -------- |
-| button | string |               | POSITIONAL_OR_NAMED | Yes      |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| button | string |  | POSITIONAL_OR_NAMED | Yes |
 <hr style="border:1px solid grey">
 
 ### Release Pointer Button
@@ -88,10 +83,9 @@
 
 #### Positional and named arguments
 
-| Name   | Type   | Default Value | Kind                | Required |
-| ------ | ------ | ------------- | ------------------- | -------- |
-| button | string |               | POSITIONAL_OR_NAMED | Yes      |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| button | string |  | POSITIONAL_OR_NAMED | Yes |
 <hr style="border:1px solid grey">
 
 ### Release Pointer Buttons
@@ -107,10 +101,9 @@
 
 #### Positional and named arguments
 
-| Name   | Type   | Default Value | Kind                | Required |
-| ------ | ------ | ------------- | ------------------- | -------- |
-| string | string |               | POSITIONAL_OR_NAMED | Yes      |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| string | string |  | POSITIONAL_OR_NAMED | Yes |
 <hr style="border:1px solid grey">
 
 ### Walk Pointer To Absolute
@@ -121,13 +114,12 @@
 
 #### Positional and named arguments
 
-| Name          | Type    | Default Value | Kind                | Required |
-| ------------- | ------- | ------------- | ------------------- | -------- |
-| x             | integer |               | POSITIONAL_OR_NAMED | Yes      |
-| y             | integer |               | POSITIONAL_OR_NAMED | Yes      |
-| step_distance | float   |               | POSITIONAL_OR_NAMED | Yes      |
-| delay         | float   |               | POSITIONAL_OR_NAMED | Yes      |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| x | integer |  | POSITIONAL_OR_NAMED | Yes |
+| y | integer |  | POSITIONAL_OR_NAMED | Yes |
+| step_distance | float |  | POSITIONAL_OR_NAMED | Yes |
+| delay | float |  | POSITIONAL_OR_NAMED | Yes |
 <hr style="border:1px solid grey">
 
 ### Walk Pointer To Proportional
@@ -138,9 +130,9 @@
 
 #### Positional and named arguments
 
-| Name          | Type  | Default Value | Kind                | Required |
-| ------------- | ----- | ------------- | ------------------- | -------- |
-| x             | float |               | POSITIONAL_OR_NAMED | Yes      |
-| y             | float |               | POSITIONAL_OR_NAMED | Yes      |
-| step_distance | float |               | POSITIONAL_OR_NAMED | Yes      |
-| delay         | float |               | POSITIONAL_OR_NAMED | Yes      |
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| x | float |  | POSITIONAL_OR_NAMED | Yes |
+| y | float |  | POSITIONAL_OR_NAMED | Yes |
+| step_distance | float |  | POSITIONAL_OR_NAMED | Yes |
+| delay | float |  | POSITIONAL_OR_NAMED | Yes |

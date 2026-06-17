@@ -8,6 +8,24 @@
 
 ## Keywords
 
+### Find Cursor Position
+
+<p>Detect the cursor in the provided image or a new screenshot.</p>
+<p>Args: image: Image to search; grabs a screenshot if not provided. confidence: Minimum confidence (0-1) for a detection to be accepted.</p>
+<p>Returns: (x, y) absolute pixel coordinates of the cursor, or None.</p>
+
+### Return
+
+{'name': 'Union', 'typedoc': None, 'nested': [{'name': 'tuple', 'typedoc': 'tuple', 'nested': [{'name': 'int', 'typedoc': 'integer', 'nested': [], 'union': False}, {'name': 'int', 'typedoc': 'integer', 'nested': [], 'union': False}], 'union': False}, {'name': 'None', 'typedoc': 'None', 'nested': [], 'union': False}], 'union': True}
+
+#### Positional and named arguments
+
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| image | None | None | POSITIONAL_OR_NAMED | No |
+| confidence | float | 0.8 | POSITIONAL_OR_NAMED | No |
+<hr style="border:1px solid grey">
+
 ### Find Text
 
 <p>Find the specified text in the provided image or grab a screenshot to search from. The region can be specified directly in the robot file using <span class="name">RPA.core.geometry.to_region</span></p>
@@ -16,18 +34,17 @@
 
 ### Return
 
-{'name': 'List', 'typedoc': 'list', 'nested': \[{'name': 'dict', 'typedoc': 'dictionary', 'nested': [], 'union': False}\], 'union': False}
+{'name': 'List', 'typedoc': 'list', 'nested': [{'name': 'dict', 'typedoc': 'dictionary', 'nested': [], 'union': False}], 'union': False}
 
 #### Positional and named arguments
 
-| Name            | Type    | Default Value | Kind                | Required |
-| --------------- | ------- | ------------- | ------------------- | -------- |
-| text            | string  |               | POSITIONAL_OR_NAMED | Yes      |
-| region          | None    | None          | POSITIONAL_OR_NAMED | No       |
-| image           | None    | None          | POSITIONAL_OR_NAMED | No       |
-| color           | None    | None          | POSITIONAL_OR_NAMED | No       |
-| color_tolerance | integer | 20            | POSITIONAL_OR_NAMED | No       |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| text | string |  | POSITIONAL_OR_NAMED | Yes |
+| region | None | None | POSITIONAL_OR_NAMED | No |
+| image | None | None | POSITIONAL_OR_NAMED | No |
+| color | None | None | POSITIONAL_OR_NAMED | No |
+| color_tolerance | integer | 20 | POSITIONAL_OR_NAMED | No |
 <hr style="border:1px solid grey">
 
 ### Get Text Position
@@ -38,15 +55,14 @@
 
 ### Return
 
-{'name': 'tuple', 'typedoc': 'tuple', 'nested': \[{'name': 'int', 'typedoc': 'integer', 'nested': [], 'union': False}, {'name': 'int', 'typedoc': 'integer', 'nested': [], 'union': False}\], 'union': False}
+{'name': 'tuple', 'typedoc': 'tuple', 'nested': [{'name': 'int', 'typedoc': 'integer', 'nested': [], 'union': False}, {'name': 'int', 'typedoc': 'integer', 'nested': [], 'union': False}], 'union': False}
 
 #### Positional and named arguments
 
-| Name   | Type   | Default Value | Kind                | Required |
-| ------ | ------ | ------------- | ------------------- | -------- |
-| text   | string |               | POSITIONAL_OR_NAMED | Yes      |
-| region | None   | None          | POSITIONAL_OR_NAMED | No       |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| text | string |  | POSITIONAL_OR_NAMED | Yes |
+| region | None | None | POSITIONAL_OR_NAMED | No |
 <hr style="border:1px solid grey">
 
 ### Grab Screenshot
@@ -67,10 +83,9 @@
 
 #### Positional and named arguments
 
-| Name | Type   | Default Value | Kind                | Required |
-| ---- | ------ | ------------- | ------------------- | -------- |
-| msg  | string |               | POSITIONAL_OR_NAMED | No       |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| msg | string |  | POSITIONAL_OR_NAMED | No |
 <hr style="border:1px solid grey">
 
 ### Match
@@ -80,17 +95,16 @@
 
 ### Return
 
-{'name': 'List', 'typedoc': 'list', 'nested': \[{'name': 'Region', 'typedoc': None, 'nested': [], 'union': False}\], 'union': False}
+{'name': 'List', 'typedoc': 'list', 'nested': [{'name': 'Region', 'typedoc': None, 'nested': [], 'union': False}], 'union': False}
 
 #### Positional and named arguments
 
-| Name      | Type    | Default Value | Kind                | Required |
-| --------- | ------- | ------------- | ------------------- | -------- |
-| template  | string  |               | POSITIONAL_OR_NAMED | Yes      |
-| timeout   | integer | 10            | POSITIONAL_OR_NAMED | No       |
-| tolerance | float   | 0.8           | POSITIONAL_OR_NAMED | No       |
-| region    | None    | None          | POSITIONAL_OR_NAMED | No       |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| template | string |  | POSITIONAL_OR_NAMED | Yes |
+| timeout | integer | 10 | POSITIONAL_OR_NAMED | No |
+| tolerance | float | 0.8 | POSITIONAL_OR_NAMED | No |
+| region | None | None | POSITIONAL_OR_NAMED | No |
 <hr style="border:1px solid grey">
 
 ### Match All
@@ -101,16 +115,15 @@
 
 ### Return
 
-{'name': 'List', 'typedoc': 'list', 'nested': \[{'name': 'dict', 'typedoc': 'dictionary', 'nested': [], 'union': False}\], 'union': False}
+{'name': 'List', 'typedoc': 'list', 'nested': [{'name': 'dict', 'typedoc': 'dictionary', 'nested': [], 'union': False}], 'union': False}
 
 #### Positional and named arguments
 
-| Name      | Type     | Default Value | Kind                | Required |
-| --------- | -------- | ------------- | ------------------- | -------- |
-| templates | Sequence |               | POSITIONAL_OR_NAMED | Yes      |
-| timeout   | integer  | 10            | POSITIONAL_OR_NAMED | No       |
-| tolerance | float    | 0.8           | POSITIONAL_OR_NAMED | No       |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| templates | Sequence |  | POSITIONAL_OR_NAMED | Yes |
+| timeout | integer | 10 | POSITIONAL_OR_NAMED | No |
+| tolerance | float | 0.8 | POSITIONAL_OR_NAMED | No |
 <hr style="border:1px solid grey">
 
 ### Match Any
@@ -121,17 +134,16 @@
 
 ### Return
 
-{'name': 'List', 'typedoc': 'list', 'nested': \[{'name': 'dict', 'typedoc': 'dictionary', 'nested': [], 'union': False}\], 'union': False}
+{'name': 'List', 'typedoc': 'list', 'nested': [{'name': 'dict', 'typedoc': 'dictionary', 'nested': [], 'union': False}], 'union': False}
 
 #### Positional and named arguments
 
-| Name      | Type     | Default Value | Kind                | Required |
-| --------- | -------- | ------------- | ------------------- | -------- |
-| templates | Sequence |               | POSITIONAL_OR_NAMED | Yes      |
-| timeout   | integer  | 10            | POSITIONAL_OR_NAMED | No       |
-| tolerance | float    | 0.8           | POSITIONAL_OR_NAMED | No       |
-| region    | None     | None          | POSITIONAL_OR_NAMED | No       |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| templates | Sequence |  | POSITIONAL_OR_NAMED | Yes |
+| timeout | integer | 10 | POSITIONAL_OR_NAMED | No |
+| tolerance | float | 0.8 | POSITIONAL_OR_NAMED | No |
+| region | None | None | POSITIONAL_OR_NAMED | No |
 <hr style="border:1px solid grey">
 
 ### Match Text
@@ -146,18 +158,17 @@
 
 ### Return
 
-{'name': 'tuple', 'typedoc': 'tuple', 'nested': \[{'name': 'list', 'typedoc': 'list', 'nested': \[{'name': 'dict', 'typedoc': 'dictionary', 'nested': [], 'union': False}\], 'union': False}, {'name': 'Image', 'typedoc': None, 'nested': [], 'union': False}\], 'union': False}
+{'name': 'tuple', 'typedoc': 'tuple', 'nested': [{'name': 'list', 'typedoc': 'list', 'nested': [{'name': 'dict', 'typedoc': 'dictionary', 'nested': [], 'union': False}], 'union': False}, {'name': 'Image', 'typedoc': None, 'nested': [], 'union': False}], 'union': False}
 
 #### Positional and named arguments
 
-| Name            | Type    | Default Value | Kind                | Required |
-| --------------- | ------- | ------------- | ------------------- | -------- |
-| text            | string  |               | POSITIONAL_OR_NAMED | Yes      |
-| timeout         | integer | 10            | POSITIONAL_OR_NAMED | No       |
-| region          | None    | None          | POSITIONAL_OR_NAMED | No       |
-| color           | None    | None          | POSITIONAL_OR_NAMED | No       |
-| color_tolerance | integer | 20            | POSITIONAL_OR_NAMED | No       |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| text | string |  | POSITIONAL_OR_NAMED | Yes |
+| timeout | integer | 10 | POSITIONAL_OR_NAMED | No |
+| region | None | None | POSITIONAL_OR_NAMED | No |
+| color | None | None | POSITIONAL_OR_NAMED | No |
+| color_tolerance | integer | 20 | POSITIONAL_OR_NAMED | No |
 <hr style="border:1px solid grey">
 
 ### Read Text
@@ -172,10 +183,9 @@
 
 #### Positional and named arguments
 
-| Name  | Type | Default Value | Kind                | Required |
-| ----- | ---- | ------------- | ------------------- | -------- |
-| image | None | None          | POSITIONAL_OR_NAMED | No       |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| image | None | None | POSITIONAL_OR_NAMED | No |
 <hr style="border:1px solid grey">
 
 ### Restart Video Input
@@ -192,10 +202,9 @@
 
 #### Positional and named arguments
 
-| Name   | Type   | Default Value | Kind                | Required |
-| ------ | ------ | ------------- | ------------------- | -------- |
-| method | string | rapidocr      | POSITIONAL_OR_NAMED | No       |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| method | string | rapidocr | POSITIONAL_OR_NAMED | No |
 <hr style="border:1px solid grey">
 
 ### Start Video Input
@@ -218,8 +227,8 @@
 
 #### Positional and named arguments
 
-| Name                | Type  | Default Value | Kind                | Required |
-| ------------------- | ----- | ------------- | ------------------- | -------- |
-| duration            | float | 30.0          | POSITIONAL_OR_NAMED | No       |
-| still_duration      | float | 10.0          | POSITIONAL_OR_NAMED | No       |
-| screenshot_interval | float | 1.0           | POSITIONAL_OR_NAMED | No       |
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| duration | float | 30.0 | POSITIONAL_OR_NAMED | No |
+| still_duration | float | 10.0 | POSITIONAL_OR_NAMED | No |
+| screenshot_interval | float | 1.0 | POSITIONAL_OR_NAMED | No |

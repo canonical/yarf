@@ -8,7 +8,7 @@
 
 ## Keywords
 
-### Click \$\{button} Button
+### Click ${button} Button
 
 <p>Click a button on the virtual pointer.</p>
 <p>Embedded arguments:</p>
@@ -18,7 +18,7 @@
 
 <hr style="border:1px solid grey">
 
-### Click ${button} Button On $\{destination}
+### Click ${button} Button On ${destination}
 
 <p>Move the virtual pointer to the destination and click the button.</p>
 <p>See <a class="name" href="#move-pointer-to-destination">Move Pointer to ${destination}</a> for details.</p>
@@ -30,7 +30,7 @@
 
 <hr style="border:1px solid grey">
 
-### Displace ${point} By ($\{x}, \$\{y})
+### Displace ${point} By (${x}, ${y})
 
 <p>Shift a point by the specified displacements along the x and y axes.</p>
 <p>Embedded arguments:</p>
@@ -43,7 +43,7 @@
 
 <hr style="border:1px solid grey">
 
-### Drag And Drop On \$\{destination}
+### Drag And Drop On ${destination}
 
 <p>Drag and drop the current target (where the pointer is) on a destination.</p>
 <p>Embedded arguments:</p>
@@ -54,14 +54,13 @@
 
 #### Positional and named arguments
 
-| Name          | Type | Default Value | Kind                | Required |
-| ------------- | ---- | ------------- | ------------------- | -------- |
-| step_distance |      | 16            | POSITIONAL_OR_NAMED | No       |
-| delay         |      | 0.01          | POSITIONAL_OR_NAMED | No       |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| step_distance |  | 16 | POSITIONAL_OR_NAMED | No |
+| delay |  | 0.01 | POSITIONAL_OR_NAMED | No |
 <hr style="border:1px solid grey">
 
-### Ensure \$\{destination} Does Not Match
+### Ensure ${destination} Does Not Match
 
 <p>Ensure a given template or string doesn't match within a given timeout and number of attempts. This function is intended to be used like: "This given template or image should, by the end of this time, not be found on the screen."</p>
 <p>Embedded arguments:</p>
@@ -72,13 +71,12 @@
 
 #### Positional and named arguments
 
-| Name    | Type | Default Value | Kind                | Required |
-| ------- | ---- | ------------- | ------------------- | -------- |
-| timeout |      | 2             | POSITIONAL_OR_NAMED | No       |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| timeout |  | 2 | POSITIONAL_OR_NAMED | No |
 <hr style="border:1px solid grey">
 
-### Get Center Of \$\{region}
+### Get Center Of ${region}
 
 <p>Get the center point of a region.</p>
 <p>Embedded arguments:</p>
@@ -90,7 +88,7 @@
 
 <hr style="border:1px solid grey">
 
-### Get Position Of \$\{target}
+### Get Position Of ${target}
 
 <p>Get a position from an absolute coordinate, image template, or string.</p>
 <p>Embedded arguments:</p>
@@ -102,7 +100,7 @@
 
 <hr style="border:1px solid grey">
 
-### Move Pointer To \$\{destination}
+### Move Pointer To ${destination}
 
 <p>Move the pointer to an absolute position or image template.</p>
 <p>Embedded arguments:</p>
@@ -114,7 +112,7 @@
 
 <hr style="border:1px solid grey">
 
-### Move Pointer To ${destination} In $\{domain}
+### Move Pointer To ${destination} In ${domain}
 
 <p>Move the pointer to an absolute position or image template.</p>
 <p>Embedded arguments:</p>
@@ -129,7 +127,7 @@
 
 <hr style="border:1px solid grey">
 
-### Move Pointer To (${x}, $\{y})
+### Move Pointer To (${x}, ${y})
 
 <p>Move the pointer to an absolute position.</p>
 <p>Embedded arguments:</p>
@@ -140,7 +138,7 @@
 
 <hr style="border:1px solid grey">
 
-### Move Pointer To Proportional (${x}, $\{y})
+### Move Pointer To Proportional (${x}, ${y})
 
 <p>Move the pointer to a destination position given as proportions to the size of the display output.</p>
 <p>Embedded arguments:</p>
@@ -156,7 +154,7 @@
 
 <hr style="border:1px solid grey">
 
-### Press \$\{button} Button
+### Press ${button} Button
 
 <p>Press a button on the virtual pointer.</p>
 <p>Embedded arguments:</p>
@@ -168,15 +166,16 @@
 
 ### Press And Wait For Match
 
+
+
 #### Positional and named arguments
 
-| Name       | Type | Default Value                            | Kind                | Required |
-| ---------- | ---- | ---------------------------------------- | ------------------- | -------- |
-| keys-combo |      |                                          | POSITIONAL_OR_NAMED | Yes      |
-| template   |      |                                          | POSITIONAL_OR_NAMED | Yes      |
-| timeout    |      | 10                                       | POSITIONAL_OR_NAMED | No       |
-| tolerance  |      | \$\{DEFAULT_TEMPLATE_MATCHING_TOLERANCE} | POSITIONAL_OR_NAMED | No       |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| keys-combo |  |  | POSITIONAL_OR_NAMED | Yes |
+| template |  |  | POSITIONAL_OR_NAMED | Yes |
+| timeout |  | 10 | POSITIONAL_OR_NAMED | No |
+| tolerance |  | ${DEFAULT_TEMPLATE_MATCHING_TOLERANCE} | POSITIONAL_OR_NAMED | No |
 <hr style="border:1px solid grey">
 
 ### Press Combo And Match
@@ -185,14 +184,13 @@
 
 #### Positional and named arguments
 
-| Name       | Type | Default Value                            | Kind                | Required |
-| ---------- | ---- | ---------------------------------------- | ------------------- | -------- |
-| keys-combo |      |                                          | POSITIONAL_OR_NAMED | Yes      |
-| template   |      |                                          | POSITIONAL_OR_NAMED | Yes      |
-| tentatives |      | 1                                        | POSITIONAL_OR_NAMED | No       |
-| timeout    |      | 2                                        | POSITIONAL_OR_NAMED | No       |
-| tolerance  |      | \$\{DEFAULT_TEMPLATE_MATCHING_TOLERANCE} | POSITIONAL_OR_NAMED | No       |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| keys-combo |  |  | POSITIONAL_OR_NAMED | Yes |
+| template |  |  | POSITIONAL_OR_NAMED | Yes |
+| tentatives |  | 1 | POSITIONAL_OR_NAMED | No |
+| timeout |  | 2 | POSITIONAL_OR_NAMED | No |
+| tolerance |  | ${DEFAULT_TEMPLATE_MATCHING_TOLERANCE} | POSITIONAL_OR_NAMED | No |
 <hr style="border:1px solid grey">
 
 ### Press Key And Match
@@ -201,16 +199,15 @@
 
 #### Positional and named arguments
 
-| Name       | Type | Default Value | Kind                | Required |
-| ---------- | ---- | ------------- | ------------------- | -------- |
-| key        |      |               | POSITIONAL_OR_NAMED | Yes      |
-| template   |      |               | POSITIONAL_OR_NAMED | Yes      |
-| tentatives |      | 1             | POSITIONAL_OR_NAMED | No       |
-| timeout    |      | 2             | POSITIONAL_OR_NAMED | No       |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| key |  |  | POSITIONAL_OR_NAMED | Yes |
+| template |  |  | POSITIONAL_OR_NAMED | Yes |
+| tentatives |  | 1 | POSITIONAL_OR_NAMED | No |
+| timeout |  | 2 | POSITIONAL_OR_NAMED | No |
 <hr style="border:1px solid grey">
 
-### Release \$\{button} Button
+### Release ${button} Button
 
 <p>Release a button on the virtual pointer.</p>
 <p>Embedded arguments:</p>
@@ -226,7 +223,7 @@
 
 <hr style="border:1px solid grey">
 
-### Walk Pointer To \$\{destination}
+### Walk Pointer To ${destination}
 
 <p>Moves the pointer in incremental steps from the current pointer position to an absolute position or image template.</p>
 <p>Embedded arguments:</p>
@@ -246,14 +243,13 @@
 
 #### Positional and named arguments
 
-| Name          | Type | Default Value | Kind                | Required |
-| ------------- | ---- | ------------- | ------------------- | -------- |
-| step_distance |      | 16            | POSITIONAL_OR_NAMED | No       |
-| delay         |      | 0.01          | POSITIONAL_OR_NAMED | No       |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| step_distance |  | 16 | POSITIONAL_OR_NAMED | No |
+| delay |  | 0.01 | POSITIONAL_OR_NAMED | No |
 <hr style="border:1px solid grey">
 
-### Walk Pointer To (${x}, $\{y})
+### Walk Pointer To (${x}, ${y})
 
 <p>Move the pointer in incremental steps from the current pointer position to an absolute position.</p>
 <p>Embedded arguments:</p>
@@ -270,14 +266,13 @@
 
 #### Positional and named arguments
 
-| Name          | Type | Default Value | Kind                | Required |
-| ------------- | ---- | ------------- | ------------------- | -------- |
-| step_distance |      | 16            | POSITIONAL_OR_NAMED | No       |
-| delay         |      | 0.01          | POSITIONAL_OR_NAMED | No       |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| step_distance |  | 16 | POSITIONAL_OR_NAMED | No |
+| delay |  | 0.01 | POSITIONAL_OR_NAMED | No |
 <hr style="border:1px solid grey">
 
-### Walk Pointer To Proportional (${x}, $\{y})
+### Walk Pointer To Proportional (${x}, ${y})
 
 <p>Move the pointer in incremental steps from the current pointer position to a destination position given as proportions to the size of the display output.</p>
 <p>Embedded arguments:</p>
@@ -298,7 +293,7 @@
 
 #### Positional and named arguments
 
-| Name          | Type | Default Value | Kind                | Required |
-| ------------- | ---- | ------------- | ------------------- | -------- |
-| step_distance |      | 0.01          | POSITIONAL_OR_NAMED | No       |
-| delay         |      | 0.01          | POSITIONAL_OR_NAMED | No       |
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| step_distance |  | 0.01 | POSITIONAL_OR_NAMED | No |
+| delay |  | 0.01 | POSITIONAL_OR_NAMED | No |

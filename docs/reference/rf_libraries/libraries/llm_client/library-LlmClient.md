@@ -15,12 +15,11 @@
 
 #### Positional and named arguments
 
-| Name                 | Type   | Default Value | Kind                | Required |
-| -------------------- | ------ | ------------- | ------------------- | -------- |
-| description          | string |               | POSITIONAL_OR_NAMED | Yes      |
-| image                | None   | None          | POSITIONAL_OR_NAMED | No       |
-| custom_system_prompt | None   | None          | POSITIONAL_OR_NAMED | No       |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| description | string |  | POSITIONAL_OR_NAMED | Yes |
+| image | None | None | POSITIONAL_OR_NAMED | No |
+| custom_system_prompt | None | None | POSITIONAL_OR_NAMED | No |
 <hr style="border:1px solid grey">
 
 ### Check For Visual Corruption
@@ -32,15 +31,14 @@
 
 ### Return
 
-{'name': 'dict', 'typedoc': 'dictionary', 'nested': \[{'name': 'str', 'typedoc': 'string', 'nested': [], 'union': False}, {'name': 'Any', 'typedoc': 'Any', 'nested': [], 'union': False}\], 'union': False}
+{'name': 'dict', 'typedoc': 'dictionary', 'nested': [{'name': 'str', 'typedoc': 'string', 'nested': [], 'union': False}, {'name': 'Any', 'typedoc': 'Any', 'nested': [], 'union': False}], 'union': False}
 
 #### Positional and named arguments
 
-| Name          | Type | Default Value | Kind                | Required |
-| ------------- | ---- | ------------- | ------------------- | -------- |
-| image         | None | None          | POSITIONAL_OR_NAMED | No       |
-| custom_prompt | None | None          | POSITIONAL_OR_NAMED | No       |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| image | None | None | POSITIONAL_OR_NAMED | No |
+| custom_prompt | None | None | POSITIONAL_OR_NAMED | No |
 <hr style="border:1px solid grey">
 
 ### Configure Llm Client
@@ -51,10 +49,9 @@
 
 #### Positional and named arguments
 
-| Name   | Type | Default Value | Kind      | Required |
-| ------ | ---- | ------------- | --------- | -------- |
-| kwargs | Any  |               | VAR_NAMED | No       |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| kwargs | Any |  | VAR_NAMED | No |
 <hr style="border:1px solid grey">
 
 ### Execute Gui Action
@@ -65,11 +62,10 @@
 
 #### Positional and named arguments
 
-| Name        | Type       | Default Value | Kind                | Required |
-| ----------- | ---------- | ------------- | ------------------- | -------- |
-| action      | dictionary |               | POSITIONAL_OR_NAMED | Yes      |
-| description | string     |               | POSITIONAL_OR_NAMED | No       |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| action | dictionary |  | POSITIONAL_OR_NAMED | Yes |
+| description | string |  | POSITIONAL_OR_NAMED | No |
 <hr style="border:1px solid grey">
 
 ### Get Object Position
@@ -81,16 +77,15 @@
 
 ### Return
 
-{'name': 'list', 'typedoc': 'list', 'nested': \[{'name': 'float', 'typedoc': 'float', 'nested': [], 'union': False}\], 'union': False}
+{'name': 'list', 'typedoc': 'list', 'nested': [{'name': 'float', 'typedoc': 'float', 'nested': [], 'union': False}], 'union': False}
 
 #### Positional and named arguments
 
-| Name                 | Type   | Default Value | Kind                | Required |
-| -------------------- | ------ | ------------- | ------------------- | -------- |
-| description          | string |               | POSITIONAL_OR_NAMED | Yes      |
-| image                | None   | None          | POSITIONAL_OR_NAMED | No       |
-| custom_system_prompt | None   | None          | POSITIONAL_OR_NAMED | No       |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| description | string |  | POSITIONAL_OR_NAMED | Yes |
+| image | None | None | POSITIONAL_OR_NAMED | No |
+| custom_system_prompt | None | None | POSITIONAL_OR_NAMED | No |
 <hr style="border:1px solid grey">
 
 ### Get Single Gui Action
@@ -101,16 +96,15 @@
 
 ### Return
 
-{'name': 'dict', 'typedoc': 'dictionary', 'nested': \[{'name': 'str', 'typedoc': 'string', 'nested': [], 'union': False}, {'name': 'Any', 'typedoc': 'Any', 'nested': [], 'union': False}\], 'union': False}
+{'name': 'dict', 'typedoc': 'dictionary', 'nested': [{'name': 'str', 'typedoc': 'string', 'nested': [], 'union': False}, {'name': 'Any', 'typedoc': 'Any', 'nested': [], 'union': False}], 'union': False}
 
 #### Positional and named arguments
 
-| Name                 | Type   | Default Value | Kind                | Required |
-| -------------------- | ------ | ------------- | ------------------- | -------- |
-| task                 | string |               | POSITIONAL_OR_NAMED | Yes      |
-| image                | None   | None          | POSITIONAL_OR_NAMED | No       |
-| custom_system_prompt | None   | None          | POSITIONAL_OR_NAMED | No       |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| task | string |  | POSITIONAL_OR_NAMED | Yes |
+| image | None | None | POSITIONAL_OR_NAMED | No |
+| custom_system_prompt | None | None | POSITIONAL_OR_NAMED | No |
 <hr style="border:1px solid grey">
 
 ### Multiple Step Action
@@ -121,12 +115,11 @@
 
 #### Positional and named arguments
 
-| Name                 | Type    | Default Value | Kind                | Required |
-| -------------------- | ------- | ------------- | ------------------- | -------- |
-| task                 | string  |               | POSITIONAL_OR_NAMED | Yes      |
-| custom_system_prompt | None    | None          | POSITIONAL_OR_NAMED | No       |
-| max_steps            | integer | 50            | POSITIONAL_OR_NAMED | No       |
-
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| task | string |  | POSITIONAL_OR_NAMED | Yes |
+| custom_system_prompt | None | None | POSITIONAL_OR_NAMED | No |
+| max_steps | integer | 50 | POSITIONAL_OR_NAMED | No |
 <hr style="border:1px solid grey">
 
 ### Prompt Llm
@@ -141,8 +134,8 @@
 
 #### Positional and named arguments
 
-| Name          | Type   | Default Value | Kind                | Required |
-| ------------- | ------ | ------------- | ------------------- | -------- |
-| prompt        | string |               | POSITIONAL_OR_NAMED | Yes      |
-| image         | None   | None          | POSITIONAL_OR_NAMED | No       |
-| system_prompt | None   | None          | POSITIONAL_OR_NAMED | No       |
+| Name | Type | Default Value | Kind | Required |
+| --- | --- | --- | --- | --- |
+| prompt | string |  | POSITIONAL_OR_NAMED | Yes |
+| image | None | None | POSITIONAL_OR_NAMED | No |
+| system_prompt | None | None | POSITIONAL_OR_NAMED | No |
