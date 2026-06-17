@@ -400,9 +400,7 @@ class TestVideoInputBase:
                 await stub_videoinput.match("path", timeout=1)
 
             # Screenshots should still be saved
-            save_calls = (
-                stub_videoinput.grab_screenshot.return_value.save.call_args_list
-            )
+            save_calls = stub_videoinput.grab_screenshot.return_value.save.call_args_list
             assert save_calls == [
                 call("sentinel.tempdir/0000000001.png", compress_level=ANY),
                 call("sentinel.tempdir/0000000002.png", compress_level=ANY),
@@ -724,9 +722,7 @@ class TestVideoInputBase:
             },
         ]
         stub_videoinput.segmentation_tool.get_mean_text_color = Mock()
-        stub_videoinput.segmentation_tool.crop_and_convert_image_with_padding = (
-            Mock()
-        )
+        stub_videoinput.segmentation_tool.crop_and_convert_image_with_padding = Mock()
         stub_videoinput.segmentation_tool.convert_rgb_to_hsv = Mock()
         stub_videoinput.segmentation_tool.is_hsv_color_similar = Mock()
         stub_videoinput.segmentation_tool.is_hsv_color_similar.return_value = (
@@ -754,9 +750,7 @@ class TestVideoInputBase:
             },
         ]
         stub_videoinput.segmentation_tool.get_mean_text_color = Mock()
-        stub_videoinput.segmentation_tool.crop_and_convert_image_with_padding = (
-            Mock()
-        )
+        stub_videoinput.segmentation_tool.crop_and_convert_image_with_padding = Mock()
         stub_videoinput.segmentation_tool.convert_rgb_to_hsv = Mock()
         stub_videoinput.log_image = Mock()
         stub_videoinput.segmentation_tool.is_hsv_color_similar = Mock()

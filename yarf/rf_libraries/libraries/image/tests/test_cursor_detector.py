@@ -12,7 +12,9 @@ from yarf.rf_libraries.libraries.image.cursor_detector import (
 
 @pytest.fixture(autouse=True)
 def reset_singleton():
-    """Clear the CursorDetector singleton between tests."""
+    """
+    Clear the CursorDetector singleton between tests.
+    """
     from yarf.rf_libraries.libraries.image import cursor_detector as cd
 
     if hasattr(cd.CursorDetector, "instance"):
@@ -33,35 +35,54 @@ def _make_mock_session(input_h=640, input_w=640):
 
 def _row(x1, y1, x2, y2, conf, cls=0):
     """Helper: build one detection row [x1, y1, x2, y2, conf, class_id]."""
-    return [float(x1), float(y1), float(x2), float(y2), float(conf), float(cls)]
+    return [
+        float(x1),
+        float(y1),
+        float(x2),
+        float(y2),
+        float(conf),
+        float(cls),
+    ]
 
 
 def _low_conf_rows(n=10, cls=0):
-    """n dummy low-confidence rows in corner format."""
+    """
+    N dummy low-confidence rows in corner format.
+    """
     return [_row(i, i, i + 5, i + 5, 0.1, cls) for i in range(n)]
 
 
 def _nxc(rows):
-    """Build (1, N, 6) output array."""
+    """
+    Build (1, N, 6) output array.
+    """
     return np.array([rows], dtype=np.float32)
 
 
 def _cxn(rows):
-    """Build (1, 6, N) output array (transposed)."""
+    """
+    Build (1, 6, N) output array (transposed).
+    """
     return np.array([rows], dtype=np.float32).transpose(0, 2, 1)
 
 
-@patch("yarf.rf_libraries.libraries.image.cursor_detector.ort.InferenceSession")
+@patch(
+    "yarf.rf_libraries.libraries.image.cursor_detector.ort.InferenceSession"
+)
 class TestCursorDetectorInit:
     def test_singleton_returns_same_instance(self, mock_cls):
         mock_cls.return_value = _make_mock_session()
-        from yarf.rf_libraries.libraries.image.cursor_detector import CursorDetector
+        from yarf.rf_libraries.libraries.image.cursor_detector import (
+            CursorDetector,
+        )
 
         assert CursorDetector() is CursorDetector()
 
     def test_session_loaded_once(self, mock_cls):
         mock_cls.return_value = _make_mock_session()
-        from yarf.rf_libraries.libraries.image.cursor_detector import CursorDetector
+        from yarf.rf_libraries.libraries.image.cursor_detector import (
+            CursorDetector,
+        )
 
         CursorDetector()
         CursorDetector()
@@ -69,7 +90,9 @@ class TestCursorDetectorInit:
 
     def test_reads_input_shape_from_model(self, mock_cls):
         mock_cls.return_value = _make_mock_session(input_h=320, input_w=416)
-        from yarf.rf_libraries.libraries.image.cursor_detector import CursorDetector
+        from yarf.rf_libraries.libraries.image.cursor_detector import (
+            CursorDetector,
+        )
 
         d = CursorDetector()
         assert d._input_h == 320
@@ -82,25 +105,33 @@ class TestCursorDetectorInit:
         mock_input.shape = [1, 3, "dyn_h", "dyn_w"]
         session.get_inputs.return_value = [mock_input]
         mock_cls.return_value = session
-        from yarf.rf_libraries.libraries.image.cursor_detector import CursorDetector
+        from yarf.rf_libraries.libraries.image.cursor_detector import (
+            CursorDetector,
+        )
 
         d = CursorDetector()
         assert d._input_h == 640
         assert d._input_w == 640
 
 
-@patch("yarf.rf_libraries.libraries.image.cursor_detector.ort.InferenceSession")
+@patch(
+    "yarf.rf_libraries.libraries.image.cursor_detector.ort.InferenceSession"
+)
 class TestPreprocess:
     def test_output_shape_is_nchw(self, mock_cls):
         mock_cls.return_value = _make_mock_session(input_h=320, input_w=416)
-        from yarf.rf_libraries.libraries.image.cursor_detector import CursorDetector
+        from yarf.rf_libraries.libraries.image.cursor_detector import (
+            CursorDetector,
+        )
 
         blob = CursorDetector()._preprocess(Image.new("RGB", (800, 600)))
         assert blob.shape == (1, 3, 320, 416)
 
     def test_output_is_float32_normalized(self, mock_cls):
         mock_cls.return_value = _make_mock_session()
-        from yarf.rf_libraries.libraries.image.cursor_detector import CursorDetector
+        from yarf.rf_libraries.libraries.image.cursor_detector import (
+            CursorDetector,
+        )
 
         blob = CursorDetector()._preprocess(
             Image.new("RGB", (100, 100), (255, 128, 0))
@@ -111,7 +142,9 @@ class TestPreprocess:
 
     def test_converts_rgba_to_rgb(self, mock_cls):
         mock_cls.return_value = _make_mock_session()
-        from yarf.rf_libraries.libraries.image.cursor_detector import CursorDetector
+        from yarf.rf_libraries.libraries.image.cursor_detector import (
+            CursorDetector,
+        )
 
         blob = CursorDetector()._preprocess(
             Image.new("RGBA", (100, 100), (255, 0, 0, 128))
@@ -119,11 +152,15 @@ class TestPreprocess:
         assert blob.shape[1] == 3
 
 
-@patch("yarf.rf_libraries.libraries.image.cursor_detector.ort.InferenceSession")
+@patch(
+    "yarf.rf_libraries.libraries.image.cursor_detector.ort.InferenceSession"
+)
 class TestPostprocess:
     def _detector(self, mock_cls, input_h=640, input_w=640):
         mock_cls.return_value = _make_mock_session(input_h, input_w)
-        from yarf.rf_libraries.libraries.image.cursor_detector import CursorDetector
+        from yarf.rf_libraries.libraries.image.cursor_detector import (
+            CursorDetector,
+        )
 
         return CursorDetector()
 
@@ -201,13 +238,17 @@ class TestPostprocess:
         assert hasattr(result, "cursor_type")
 
 
-@patch("yarf.rf_libraries.libraries.image.cursor_detector.ort.InferenceSession")
+@patch(
+    "yarf.rf_libraries.libraries.image.cursor_detector.ort.InferenceSession"
+)
 class TestDetect:
     def test_detect_returns_none_when_not_found(self, mock_cls):
         session = _make_mock_session()
         session.run.return_value = [_nxc(_low_conf_rows(10))]
         mock_cls.return_value = session
-        from yarf.rf_libraries.libraries.image.cursor_detector import CursorDetector
+        from yarf.rf_libraries.libraries.image.cursor_detector import (
+            CursorDetector,
+        )
 
         assert (
             CursorDetector().detect(
@@ -222,7 +263,9 @@ class TestDetect:
         rows[4] = _row(100, 200, 110, 220, 0.9, cls=0)
         session.run.return_value = [_nxc(rows)]
         mock_cls.return_value = session
-        from yarf.rf_libraries.libraries.image.cursor_detector import CursorDetector
+        from yarf.rf_libraries.libraries.image.cursor_detector import (
+            CursorDetector,
+        )
 
         result = CursorDetector().detect(Image.new("RGB", (640, 640)))
         assert result is not None
@@ -239,7 +282,9 @@ class TestDetect:
         rows[0] = _row(100, 200, 110, 220, 0.9, cls=cls_id)
         session.run.return_value = [_nxc(rows)]
         mock_cls.return_value = session
-        from yarf.rf_libraries.libraries.image.cursor_detector import CursorDetector
+        from yarf.rf_libraries.libraries.image.cursor_detector import (
+            CursorDetector,
+        )
 
         result = CursorDetector().detect(Image.new("RGB", (640, 640)))
         assert result.cursor_type == CursorType.HAND
@@ -254,7 +299,9 @@ class TestDetect:
         rows[0] = _row(100, 200, 110, 220, 0.9, cls=cls_id)
         session.run.return_value = [_nxc(rows)]
         mock_cls.return_value = session
-        from yarf.rf_libraries.libraries.image.cursor_detector import CursorDetector
+        from yarf.rf_libraries.libraries.image.cursor_detector import (
+            CursorDetector,
+        )
 
         result = CursorDetector().detect(Image.new("RGB", (640, 640)))
         assert result.cursor_type == CursorType.TEXT

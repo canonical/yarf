@@ -21,7 +21,8 @@ class CursorType(IntEnum):
 
 @dataclass
 class CursorDetection:
-    """Result of a cursor detection.
+    """
+    Result of a cursor detection.
 
     Attributes:
         x: Horizontal pixel coordinate in the original image.
@@ -41,14 +42,15 @@ class CursorDetection:
 # (0.5, 0.5) is the bbox center; (0.0, 0.0) is the top-left corner.
 _CURSOR_OFFSETS: dict[CursorType, tuple[float, float]] = {
     CursorType.REGULAR: (0.20, 0.10),  # arrow tip: near top-left of bbox
-    CursorType.HAND:    (0.40, 0.10),  # pointer: tip near top-center of bbox
-    CursorType.TEXT:    (0.50, 0.50),  # I-beam: hotspot is at the center
+    CursorType.HAND: (0.40, 0.10),  # pointer: tip near top-center of bbox
+    CursorType.TEXT: (0.50, 0.50),  # I-beam: hotspot is at the center
 }
 
 
 class CursorDetector:
     """
     Detects cursor position in images using a YOLO ONNX model.
+
     Singleton to avoid loading the model multiple times.
     """
 
@@ -85,10 +87,14 @@ class CursorDetector:
         orig_w, orig_h = image.size
         blob = self._preprocess(image)
         outputs = self._session.run(None, {self._input_name: blob})
-        return self._postprocess(outputs[0], orig_w, orig_h, confidence_threshold)
+        return self._postprocess(
+            outputs[0], orig_w, orig_h, confidence_threshold
+        )
 
     def _preprocess(self, image: Image.Image) -> np.ndarray:
-        """Resize and normalize the image for model input."""
+        """
+        Resize and normalize the image for model input.
+        """
         resized = image.convert("RGB").resize(
             (self._input_w, self._input_h), Image.Resampling.BILINEAR
         )

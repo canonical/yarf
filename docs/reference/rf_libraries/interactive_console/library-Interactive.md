@@ -16,6 +16,6 @@
 
 #### Positional and named arguments
 
-| Name | Type | Default Value | Kind | Required |
-| --- | --- | --- | --- | --- |
-| names | string |  | VAR_POSITIONAL | No |
+| Name  | Type   | Default Value | Kind           | Required |
+| ----- | ------ | ------------- | -------------- | -------- |
+| names | string |               | VAR_POSITIONAL | No       |
