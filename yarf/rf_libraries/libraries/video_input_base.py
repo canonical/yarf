@@ -24,7 +24,10 @@ from yarf import LABEL_PREFIX
 from yarf.lib.images.utils import to_RGB
 from yarf.rf_libraries.libraries.image.cursor_detector import CursorDetector
 from yarf.rf_libraries.libraries.image.segmentation import SegmentationTool
-from yarf.rf_libraries.libraries.image.utils import log_image
+from yarf.rf_libraries.libraries.image.utils import (
+    draw_point_on_image,
+    log_image,
+)
 from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
 from yarf.rf_libraries.variables.video_input_vars import (
     DEFAULT_TEMPLATE_MATCHING_TOLERANCE,
@@ -525,18 +528,11 @@ class VideoInputBase(ABC):
             image, confidence_threshold=confidence
         )
         if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
-            debug_image = image.copy()
-            draw = ImageDraw.Draw(debug_image)
             if result is not None:
-                draw.ellipse(
-                    (
-                        result.x - 10,
-                        result.y - 10,
-                        result.x + 10,
-                        result.y + 10,
-                    ),
-                    outline="red",
-                    width=2,
+                debug_image = draw_point_on_image(
+                    image,
+                    [result.x, result.y],
+                    label=result.cursor_type.name,
                 )
                 log_image(
                     debug_image,
@@ -545,7 +541,7 @@ class VideoInputBase(ABC):
                     f" with conf >= {confidence}",
                 )
             else:
-                log_image(debug_image, "Cursor not detected.")
+                log_image(image, "Cursor not detected.")
 
         if result is None:
             return None

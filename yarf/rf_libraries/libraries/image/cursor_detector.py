@@ -145,6 +145,7 @@ class CursorDetector:
         if float(confidences[best_idx]) < threshold:
             return None
 
+        # Return only the best prediction.
         x1 = float(pred[best_idx, 0])
         y1 = float(pred[best_idx, 1])
         x2 = float(pred[best_idx, 2])
@@ -165,7 +166,7 @@ class CursorDetector:
 if __name__ == "__main__":
     import sys
 
-    from PIL import ImageDraw
+    from yarf.rf_libraries.libraries.image.utils import draw_point_on_image
 
     if len(sys.argv) < 2:
         print("Usage: python cursor_detector.py <image_path>")
@@ -180,13 +181,11 @@ if __name__ == "__main__":
             f"Cursor detected at: ({result.x:.2f}, {result.y:.2f})"
             f"  type={result.cursor_type.name}"
         )
-        draw = ImageDraw.Draw(image)
-        r = 10
-        draw.ellipse(
-            (result.x - r, result.y - r, result.x + r, result.y + r),
-            outline="red",
-            width=2,
+        annotated = draw_point_on_image(
+            image,
+            [result.x, result.y],
+            label=result.cursor_type.name,
         )
-        image.save("cursor_detected.png")
+        annotated.save("cursor_detected.png")
     else:
         print("Cursor not detected.")
