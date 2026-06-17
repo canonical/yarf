@@ -528,21 +528,28 @@ class VideoInputBase(ABC):
             debug_image = image.copy()
             draw = ImageDraw.Draw(debug_image)
             if result is not None:
-                x, y = result
                 draw.ellipse(
-                    (x - 10, y - 10, x + 10, y + 10), outline="red", width=2
+                    (
+                        result.x - 10,
+                        result.y - 10,
+                        result.x + 10,
+                        result.y + 10,
+                    ),
+                    outline="red",
+                    width=2,
                 )
                 log_image(
                     debug_image,
-                    f"Mouse detected at ({x}, {y}) with conf >= {confidence}",
+                    f"Mouse detected at ({result.x}, {result.y})"
+                    f" [{result.cursor_type.name}]"
+                    f" with conf >= {confidence}",
                 )
             else:
                 log_image(debug_image, "Mouse not detected.")
 
         if result is None:
             return None
-        x, y = result
-        return round(x), round(y)
+        return round(result.x), round(result.y)
 
     async def _grab_and_save_screenshot(self) -> Image.Image:
         screenshot = await self.grab_screenshot()

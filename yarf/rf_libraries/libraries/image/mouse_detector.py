@@ -2,6 +2,8 @@
 Mouse cursor detection using a YOLO ONNX model.
 """
 
+from dataclasses import dataclass
+from enum import IntEnum
 from pathlib import Path
 
 import numpy as np
@@ -9,6 +11,39 @@ import onnxruntime as ort
 from PIL import Image
 
 _MODEL_PATH = Path(__file__).parent / "yolo26_mouse_detector.onnx"
+
+
+class CursorType(IntEnum):
+    REGULAR = 0
+    HAND = 1
+    TEXT = 2
+
+
+@dataclass
+class MouseDetection:
+    """Result of a mouse cursor detection.
+
+    Attributes:
+        x: Horizontal pixel coordinate in the original image.
+        y: Vertical pixel coordinate in the original image.
+        cursor_type: Detected cursor category.
+    """
+
+    x: float
+    y: float
+    cursor_type: CursorType
+
+
+# Per-class hotspot position as a fraction of the full bbox from the top-left
+# corner (0.0) to the bottom-right corner (1.0).
+# Applied as: x_adj = x1 + x_frac * bbox_w
+#             y_adj = y1 + y_frac * bbox_h
+# (0.5, 0.5) is the bbox center; (0.0, 0.0) is the top-left corner.
+_CURSOR_OFFSETS: dict[CursorType, tuple[float, float]] = {
+    CursorType.REGULAR: (0.20, 0.10),  # arrow tip: near top-left of bbox
+    CursorType.HAND:    (0.40, 0.10),  # pointer: tip near top-center of bbox
+    CursorType.TEXT:    (0.50, 0.50),  # I-beam: hotspot is at the center
+}
 
 
 class MouseDetector:
@@ -36,16 +71,16 @@ class MouseDetector:
         self,
         image: Image.Image,
         confidence_threshold: float = 0.85,
-    ) -> tuple[float, float] | None:
+    ) -> MouseDetection | None:
         """
-        Detect mouse cursor in image and return its center coordinates.
+        Detect mouse cursor in image and return its position and type.
 
         Args:
             image: PIL Image to search.
             confidence_threshold: Minimum confidence (0-1) to accept a detection.
 
         Returns:
-            (x, y) pixel coordinates of the cursor center, or None if not found.
+            MouseDetection with pixel coordinates and cursor type, or None.
         """
         orig_w, orig_h = image.size
         blob = self._preprocess(image)
@@ -66,14 +101,15 @@ class MouseDetector:
         orig_w: int,
         orig_h: int,
         threshold: float,
-    ) -> tuple[float, float] | None:
+    ) -> MouseDetection | None:
         """
-        Parse YOLO output and return the best detection's center coordinates.
+        Parse YOLO output and return the best detection.
 
-        Handles both [1, 5+C, N] (YOLOv8-style) and [1, N, 5+C] (YOLOv5-style)
-        output layouts. Coordinates in the output are in input-image pixel space.
+        Output format: [x1, y1, x2, y2, confidence, class_id] per row,
+        where (x1, y1) is the top-left and (x2, y2) is the bottom-right corner
+        in model-input pixel space. Handles both (N, 6) and (6, N) layouts.
         """
-        pred = output[0]  # drop batch dim -> (5+C, N) or (N, 5+C)
+        pred = output[0]  # drop batch dim
         if pred.ndim == 1:
             pred = pred[np.newaxis]
         # Ensure rows are detections: if fewer rows than columns, it's transposed
@@ -88,18 +124,22 @@ class MouseDetector:
         if float(confidences[best_idx]) < threshold:
             return None
 
-        x_0 = float(pred[best_idx, 0])
-        y_0 = float(pred[best_idx, 1])
-        x_1 = float(pred[best_idx, 2])
-        y_1 = float(pred[best_idx, 3])
+        x1 = float(pred[best_idx, 0])
+        y1 = float(pred[best_idx, 1])
+        x2 = float(pred[best_idx, 2])
+        y2 = float(pred[best_idx, 3])
+        cursor_type = CursorType(int(pred[best_idx, 5]))
 
-        # The cursor tip is not exactly at the bbox corner, so we apply an
-        # offset correction.
+        x_frac, y_frac = _CURSOR_OFFSETS.get(cursor_type, (0.5, 0.5))
+        x_adj = x1 + x_frac * (x2 - x1)
+        y_adj = y1 + y_frac * (y2 - y1)
 
-        x_adj = x_0 + 0.20 * (x_1 - x_0)
-        y_adj = y_0 + 0.10 * (y_1 - y_0)
+        return MouseDetection(
+            x=x_adj / self._input_w * orig_w,
+            y=y_adj / self._input_h * orig_h,
+            cursor_type=cursor_type,
+        )
 
-        return x_adj / self._input_w * orig_w, y_adj / self._input_h * orig_h
 
 
 if __name__ == "__main__":
@@ -114,13 +154,16 @@ if __name__ == "__main__":
     image_path = sys.argv[1]
     image = Image.open(image_path)
     detector = MouseDetector()
-    result = detector.detect(image, confidence_threshold=0.5)
+    result = detector.detect(image, confidence_threshold=0.8)
     if result is not None:
-        x, y = result
-        print(f"Mouse detected at: ({x:.2f}, {y:.2f})")
+        print(f"Mouse detected at: ({result.x:.2f}, {result.y:.2f})  type={result.cursor_type.name}")
         draw = ImageDraw.Draw(image)
         r = 10
-        draw.ellipse((x - r, y - r, x + r, y + r), outline="red", width=2)
+        draw.ellipse(
+            (result.x - r, result.y - r, result.x + r, result.y + r),
+            outline="red",
+            width=2,
+        )
         image.save("mouse_detected.png")
     else:
         print("Mouse cursor not detected.")
