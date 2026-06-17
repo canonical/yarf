@@ -35,7 +35,7 @@ class MouseDetector:
     def detect(
         self,
         image: Image.Image,
-        confidence_threshold: float = 0.5,
+        confidence_threshold: float = 0.85,
     ) -> tuple[float, float] | None:
         """
         Detect mouse cursor in image and return its center coordinates.
@@ -53,6 +53,7 @@ class MouseDetector:
         return self._postprocess(outputs[0], orig_w, orig_h, confidence_threshold)
 
     def _preprocess(self, image: Image.Image) -> np.ndarray:
+        """Resize and normalize the image for model input."""
         resized = image.convert("RGB").resize(
             (self._input_w, self._input_h), Image.Resampling.BILINEAR
         )
@@ -87,8 +88,18 @@ class MouseDetector:
         if float(confidences[best_idx]) < threshold:
             return None
 
-        x_c, y_c = float(pred[best_idx, 0]), float(pred[best_idx, 1])
-        return x_c / self._input_w * orig_w, y_c / self._input_h * orig_h
+        x_0 = float(pred[best_idx, 0])
+        y_0 = float(pred[best_idx, 1])
+        x_1 = float(pred[best_idx, 2])
+        y_1 = float(pred[best_idx, 3])
+
+        # The cursor tip is not exactly at the bbox corner, so we apply an
+        # offset correction.
+
+        x_adj = x_0 + 0.20 * (x_1 - x_0)
+        y_adj = y_0 + 0.10 * (y_1 - y_0)
+
+        return x_adj / self._input_w * orig_w, y_adj / self._input_h * orig_h
 
 
 if __name__ == "__main__":

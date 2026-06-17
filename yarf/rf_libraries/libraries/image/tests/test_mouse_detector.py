@@ -153,8 +153,9 @@ class TestPostprocess:
         rows[3] = [320.0, 320.0, 10.0, 10.0, 0.9]  # one above threshold
         output = self._make_nxc_output(rows)
         x, y = d._postprocess(output, 1280, 1280, 0.5)
-        assert x == pytest.approx(640.0)
-        assert y == pytest.approx(640.0)
+        # x_adj = 320 - 0.10*10 = 319; y_adj = 320 + 0.05*10 = 320.5
+        assert x == pytest.approx(319.0 / 640 * 1280)
+        assert y == pytest.approx(320.5 / 640 * 1280)
 
     def test_returns_scaled_coordinates_cxn_format(self, mock_cls):
         d = self._make_detector(mock_cls, input_h=640, input_w=640)
@@ -162,8 +163,8 @@ class TestPostprocess:
         rows[3] = [320.0, 320.0, 10.0, 10.0, 0.9]
         output = self._make_cxn_output(rows)
         x, y = d._postprocess(output, 1280, 1280, 0.5)
-        assert x == pytest.approx(640.0)
-        assert y == pytest.approx(640.0)
+        assert x == pytest.approx(319.0 / 640 * 1280)
+        assert y == pytest.approx(320.5 / 640 * 1280)
 
     def test_picks_highest_confidence_detection(self, mock_cls):
         d = self._make_detector(mock_cls, input_h=640, input_w=640)
@@ -172,8 +173,9 @@ class TestPostprocess:
         rows[7] = [200.0, 200.0, 10.0, 10.0, 0.95]  # best
         output = self._make_nxc_output(rows)
         x, y = d._postprocess(output, 640, 640, 0.5)
-        assert x == pytest.approx(200.0)
-        assert y == pytest.approx(200.0)
+        # x_adj = 200 - 0.10*10 = 199; y_adj = 200 + 0.05*10 = 200.5
+        assert x == pytest.approx(199.0)
+        assert y == pytest.approx(200.5)
 
     def test_scales_to_original_image_size(self, mock_cls):
         d = self._make_detector(mock_cls, input_h=640, input_w=640)
@@ -181,8 +183,9 @@ class TestPostprocess:
         rows[0] = [160.0, 160.0, 5.0, 5.0, 0.9]
         output = self._make_nxc_output(rows)
         x, y = d._postprocess(output, 1920, 1080, 0.5)
-        assert x == pytest.approx(160.0 / 640 * 1920)
-        assert y == pytest.approx(160.0 / 640 * 1080)
+        # x_adj = 160 - 0.10*5 = 159.5; y_adj = 160 + 0.05*5 = 160.25
+        assert x == pytest.approx(159.5 / 640 * 1920)
+        assert y == pytest.approx(160.25 / 640 * 1080)
 
 
 @patch(
@@ -220,5 +223,6 @@ class TestDetect:
         result = d.detect(image)
         assert result is not None
         x, y = result
-        assert x == pytest.approx(320.0)
-        assert y == pytest.approx(320.0)
+        # x_adj = 320 - 0.10*10 = 319; y_adj = 320 + 0.05*10 = 320.5
+        assert x == pytest.approx(319.0)
+        assert y == pytest.approx(320.5)
