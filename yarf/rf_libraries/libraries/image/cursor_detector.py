@@ -65,7 +65,7 @@ class CursorDetector:
         self._session = ort.InferenceSession(str(_MODEL_PATH))
         self._input_name = self._session.get_inputs()[0].name
         shape = self._session.get_inputs()[0].shape
-        # Shape is [batch, channels, height, width] — fall back to 640 if dynamic
+        # Shape is [batch, channels, height, width] — fall back if dynamic
         self._input_h = shape[2] if isinstance(shape[2], int) else 640
         self._input_w = shape[3] if isinstance(shape[3], int) else 640
 
@@ -79,7 +79,7 @@ class CursorDetector:
 
         Args:
             image: PIL Image to search.
-            confidence_threshold: Minimum confidence (0-1) to accept a detection.
+            confidence_threshold: Minimum confidence (0-1) to accept.
 
         Returns:
             CursorDetection with pixel coordinates and cursor type, or None.
@@ -94,6 +94,12 @@ class CursorDetector:
     def _preprocess(self, image: Image.Image) -> np.ndarray:
         """
         Resize and normalize the image for model input.
+
+        Args:
+            image: PIL Image to preprocess.
+
+        Returns:
+            Float32 NCHW array normalized to [0, 1].
         """
         resized = image.convert("RGB").resize(
             (self._input_w, self._input_h), Image.Resampling.BILINEAR
@@ -112,8 +118,17 @@ class CursorDetector:
         Parse YOLO output and return the best detection.
 
         Output format: [x1, y1, x2, y2, confidence, class_id] per row,
-        where (x1, y1) is the top-left and (x2, y2) is the bottom-right corner
-        in model-input pixel space. Handles both (N, 6) and (6, N) layouts.
+        where (x1, y1) is the top-left and (x2, y2) is the bottom-right
+        corner in model-input pixel space. Handles (N, 6) and (6, N).
+
+        Args:
+            output: Raw model output array.
+            orig_w: Original image width in pixels.
+            orig_h: Original image height in pixels.
+            threshold: Minimum confidence to accept a detection.
+
+        Returns:
+            CursorDetection scaled to the original image, or None.
         """
         pred = output[0]  # drop batch dim
         if pred.ndim == 1:
