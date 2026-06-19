@@ -670,9 +670,6 @@ class TestVideoInputBase:
         assert await stub_videoinput.match_text(
             "Hello", color=RGB(red=1, blue=1, green=1)
         ) == (result, image)
-        # assert await stub_videoinput.match_text(
-        #     "Hello", color=(0, 0, 0)
-        # ) == (result, image)
 
     @pytest.mark.asyncio
     async def test_find_text_with_color_none(self, stub_videoinput):
