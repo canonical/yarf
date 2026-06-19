@@ -523,7 +523,7 @@ class VideoInputBase(ABC):
         """
         if image is None:
             image = await self._grab_and_save_screenshot()
-        
+
         # The cursor detector is initialized here to avoid loading when its not
         # used, since it loads the model. The class is a singleton, so it will
         # only load once.
