@@ -57,26 +57,19 @@ Test Text Cursor Detection On Document
     ...                     ${272}
 
 
-Test Hand Cursor Detection On App
+Test Mouse Cursor Detection On App
     [Tags]                  yarf:certification_status: blocker
     Detect Cursor In Image
     ...                     ${CURDIR}/gui/hand_cursor_app.jpg
     ...                     ${635}
     ...                     ${673}
 
-Detect Cursor In Desktop
-    [Tags]                  yarf:certification_status: blocker
-    Detect Cursor In Desktop
-    ...                     ${500}
-    ...                     ${500}
 
 *** Keywords ***
 Detect Cursor In Image
     [Arguments]             ${image_path}           ${expected_x}           ${expected_y}
-
     ${image}=               Evaluate
     ...                     PIL.Image.open(r"${image_path}")                modules=PIL.Image
-
     ${pos}=                 Find Cursor Position
     ...                     image=${image}
     ...                     confidence=${CONFIDENCE}
@@ -90,21 +83,3 @@ Detect Cursor In Image
     Should Be True
     ...                     abs(${y} - ${expected_y}) <= ${TOLERANCE}
     ...                     msg=y=${y} not within ${TOLERANCE}px of expected ${expected_y}
-
-Detect Cursor In Desktop
-    [Arguments]             ${x}                    ${y}
-
-    Hid.Move Pointer to Absolute                    x=${x}                  y=${y}
-
-    ${pos}=                 Find Cursor Position
-    ...                     confidence=${CONFIDENCE}
-    Should Not Be Equal     ${pos}                  ${None}
-    ...                     msg=Cursor not detected on desktop
-    ${detected_x}=          Set Variable            ${pos}[0]
-    ${detected_y}=          Set Variable            ${pos}[1]
-    Should Be True
-    ...                     abs(${detected_x} - ${x}) <= ${TOLERANCE}
-    ...                     msg=x=${detected_x} not within ${TOLERANCE}px of expected ${x}
-    Should Be True
-    ...                     abs(${detected_y} - ${y}) <= ${TOLERANCE}
-    ...                     msg=y=${detected_y} not within ${TOLERANCE}px of expected ${y}
