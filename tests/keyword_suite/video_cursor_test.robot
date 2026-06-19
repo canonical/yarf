@@ -94,7 +94,7 @@ Detect Cursor In Image
 Detect Cursor In Desktop
     [Arguments]             ${x}                    ${y}
 
-    Move Pointer to Absolute                        x=${x}                  y=${y}
+    Hid.Move Pointer to Absolute                    x=${x}                  y=${y}
 
     ${pos}=                 Find Cursor Position
     ...                     confidence=${CONFIDENCE}
