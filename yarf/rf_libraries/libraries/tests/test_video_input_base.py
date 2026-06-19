@@ -1022,54 +1022,63 @@ class TestVideoInputBase:
                 VideoInputBase.get_displays()
 
     @pytest.mark.asyncio
+    @patch("yarf.rf_libraries.libraries.video_input_base.CursorDetector")
     async def test_find_cursor_position_grabs_screenshot_when_no_image(
-        self, stub_videoinput
+        self, mock_detector_cls, stub_videoinput
     ):
-        stub_videoinput.cursor_detector.detect = Mock(return_value=None)
+        mock_detector_cls.return_value.detect.return_value = None
         await stub_videoinput.find_cursor_position()
         stub_videoinput.grab_screenshot.assert_called_once()
 
     @pytest.mark.asyncio
+    @patch("yarf.rf_libraries.libraries.video_input_base.CursorDetector")
     async def test_find_cursor_position_uses_provided_image(
-        self, stub_videoinput
+        self, mock_detector_cls, stub_videoinput
     ):
         image = Mock()
-        stub_videoinput.cursor_detector.detect = Mock(return_value=None)
+        mock_detector_cls.return_value.detect.return_value = None
         await stub_videoinput.find_cursor_position(image=image)
         stub_videoinput.grab_screenshot.assert_not_called()
-        stub_videoinput.cursor_detector.detect.assert_called_once_with(
+        mock_detector_cls.return_value.detect.assert_called_once_with(
             image, confidence_threshold=0.80
         )
 
     @pytest.mark.asyncio
+    @patch("yarf.rf_libraries.libraries.video_input_base.CursorDetector")
     async def test_find_cursor_position_returns_none_when_not_found(
-        self, stub_videoinput
+        self, mock_detector_cls, stub_videoinput
     ):
-        stub_videoinput.cursor_detector.detect = Mock(return_value=None)
+        mock_detector_cls.return_value.detect.return_value = None
         assert await stub_videoinput.find_cursor_position() is None
 
     @pytest.mark.asyncio
+    @patch("yarf.rf_libraries.libraries.video_input_base.CursorDetector")
     async def test_find_cursor_position_returns_rounded_coordinates(
-        self, stub_videoinput
+        self, mock_detector_cls, stub_videoinput
     ):
-        stub_videoinput.cursor_detector.detect = Mock(
-            return_value=CursorDetection(100.7, 200.3, CursorType.REGULAR)
+        mock_detector_cls.return_value.detect.return_value = CursorDetection(
+            100.7, 200.3, CursorType.REGULAR
         )
         assert await stub_videoinput.find_cursor_position() == (101, 200)
 
     @pytest.mark.asyncio
     @patch("yarf.rf_libraries.libraries.video_input_base.log_image")
-    @patch("yarf.rf_libraries.libraries.video_input_base.ImageDraw")
+    @patch("yarf.rf_libraries.libraries.video_input_base.draw_point_on_image")
+    @patch("yarf.rf_libraries.libraries.video_input_base.CursorDetector")
     async def test_find_cursor_position_logs_debug_when_detected(
-        self, mock_draw, mock_log_image, stub_videoinput
+        self,
+        mock_detector_cls,
+        mock_draw_point,
+        mock_log_image,
+        stub_videoinput,
     ):
-        stub_videoinput.cursor_detector.detect = Mock(
-            return_value=CursorDetection(50.0, 60.0, CursorType.REGULAR)
+        mock_detector_cls.return_value.detect.return_value = CursorDetection(
+            50.0, 60.0, CursorType.REGULAR
         )
         with patch.dict(os.environ, {"YARF_LOG_LEVEL": "DEBUG"}):
             await stub_videoinput.find_cursor_position(confidence=0.9)
-        mock_draw.Draw.return_value.ellipse.assert_called_once_with(
-            (40.0, 50.0, 60.0, 70.0), outline="red", width=2
+        mock_draw_point.assert_called_once_with(
+            ANY, [50.0, 60.0], label="REGULAR"
         )
         mock_log_image.assert_called_once()
         assert "50" in mock_log_image.call_args.args[1]
@@ -1078,22 +1087,23 @@ class TestVideoInputBase:
 
     @pytest.mark.asyncio
     @patch("yarf.rf_libraries.libraries.video_input_base.log_image")
-    @patch("yarf.rf_libraries.libraries.video_input_base.ImageDraw")
+    @patch("yarf.rf_libraries.libraries.video_input_base.CursorDetector")
     async def test_find_cursor_position_logs_debug_when_not_detected(
-        self, mock_draw, mock_log_image, stub_videoinput
+        self, mock_detector_cls, mock_log_image, stub_videoinput
     ):
-        stub_videoinput.cursor_detector.detect = Mock(return_value=None)
+        mock_detector_cls.return_value.detect.return_value = None
         with patch.dict(os.environ, {"YARF_LOG_LEVEL": "DEBUG"}):
             await stub_videoinput.find_cursor_position()
         mock_log_image.assert_called_once_with(ANY, "Cursor not detected.")
 
     @pytest.mark.asyncio
     @patch("yarf.rf_libraries.libraries.video_input_base.log_image")
+    @patch("yarf.rf_libraries.libraries.video_input_base.CursorDetector")
     async def test_find_cursor_position_no_debug_log_outside_debug_level(
-        self, mock_log_image, stub_videoinput
+        self, mock_detector_cls, mock_log_image, stub_videoinput
     ):
-        stub_videoinput.cursor_detector.detect = Mock(
-            return_value=CursorDetection(10.0, 20.0, CursorType.REGULAR)
+        mock_detector_cls.return_value.detect.return_value = CursorDetection(
+            10.0, 20.0, CursorType.REGULAR
         )
         with patch.dict(os.environ, {"YARF_LOG_LEVEL": "INFO"}):
             await stub_videoinput.find_cursor_position()

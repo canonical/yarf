@@ -152,6 +152,7 @@ class CursorDetector:
         y2 = float(pred[best_idx, 3])
         cursor_type = CursorType(int(pred[best_idx, 5]))
 
+        # Adjust the detected bounding box to the cursor point.
         x_frac, y_frac = _CURSOR_OFFSETS.get(cursor_type, (0.5, 0.5))
         x_adj = x1 + x_frac * (x2 - x1)
         y_adj = y1 + y_frac * (y2 - y1)

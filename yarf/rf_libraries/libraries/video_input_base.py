@@ -70,7 +70,6 @@ class VideoInputBase(ABC):
         self._screenshots_dir: Optional[tempfile.TemporaryDirectory] = None
         self.ocr: RapidOCRReader | ModuleType = RapidOCRReader()
         self.segmentation_tool: SegmentationTool = SegmentationTool()
-        self.cursor_detector: CursorDetector = CursorDetector()
 
     def _start_suite(self, data, result) -> None:
         self._frame_count = 0
@@ -524,7 +523,11 @@ class VideoInputBase(ABC):
         """
         if image is None:
             image = await self._grab_and_save_screenshot()
-        result = self.cursor_detector.detect(
+        
+        # The cursor detector is initialized here to avoid loading when its not
+        # used, since it loads the model. The class is a singleton, so it will
+        # only load once.
+        result = CursorDetector().detect(
             image, confidence_threshold=confidence
         )
         if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
