@@ -208,7 +208,7 @@ jobs:
         python-version: "3.12"
 
     - name: Download per-suite coverage artifacts
-      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
       with:
         path: coverage-artifacts
         pattern: keywords-coverage-*
