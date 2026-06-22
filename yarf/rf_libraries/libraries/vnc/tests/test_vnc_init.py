@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -41,11 +41,17 @@ class TestVnc:
 
     def test_check_connection_asyncio_running(self) -> None:
         vnc = Vnc()
+
+        def close_coro(coro, loop):
+            coro.close()
+            return MagicMock()
+
         with (
             patch("yarf.rf_libraries.libraries.vnc.connect"),
             patch("yarf.rf_libraries.libraries.vnc.asyncio.get_running_loop"),
             patch(
-                "yarf.rf_libraries.libraries.vnc.asyncio.run_coroutine_threadsafe"
+                "yarf.rf_libraries.libraries.vnc.asyncio.run_coroutine_threadsafe",
+                side_effect=close_coro,
             ),
         ):
             vnc.check_connection()
