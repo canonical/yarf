@@ -53,8 +53,10 @@ Test Keyword Move Pointer To Destination In Domain
 
 *** Keywords ***
 Start Calculator
-    [Documentation]    Starts the calculator application.
+    [Documentation]    Starts the calculator application and waits for it
+    ...    to be open.
     Start Process
     ...                     dbus-run-session
     ...                     --
     ...                     gnome-calculator
+    Match                   ${CURDIR}/calculator/01_calculator.png          timeout=60
