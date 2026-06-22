@@ -48,9 +48,7 @@ class TestPlatformMeta:
         assert "FirstPlatform" in SUPPORTED_PLATFORMS
         logger_name = "yarf.rf_libraries.libraries"
         assert not [
-            record
-            for record in caplog.records
-            if record.name == logger_name
+            record for record in caplog.records if record.name == logger_name
         ]
 
         with caplog.at_level("WARNING"):
