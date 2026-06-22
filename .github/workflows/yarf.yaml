@@ -1,5 +1,7 @@
 name: Testing and quality control for YARF codebase
 
+# CI trigger: verifying keyword test stability on CI runners.
+
 on:
   merge_group:
     types: [checks_requested]
