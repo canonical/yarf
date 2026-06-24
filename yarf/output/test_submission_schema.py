@@ -11,7 +11,7 @@ from typing import Any
 from xml.etree.ElementTree import Element
 
 from dateutil.parser import parse
-from robot.api import TestSuite
+from robot.api import TestSuite as RobotTestSuite
 
 from yarf import LABEL_PREFIX
 from yarf.output import OutputConverterBase
@@ -40,7 +40,7 @@ class TestSubmissionSchema(OutputConverterBase):
         # Add category_id: category name pair here
     }
 
-    def check_test_plan(self, test_plan: TestSuite) -> None:
+    def check_test_plan(self, test_plan: RobotTestSuite) -> None:
         """
         Check the test suite to see if it has all the required information for
         the TestSubmissionSchema output format.

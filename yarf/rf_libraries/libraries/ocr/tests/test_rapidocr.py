@@ -28,15 +28,27 @@ def mock_to_image():
 
 @pytest.fixture(autouse=True)
 def mock_reader():
+    if hasattr(RapidOCRReader, "instance"):
+        del RapidOCRReader.instance
     with patch("yarf.rf_libraries.libraries.ocr.rapidocr.RapidOCR") as p:
         p.SIMILARITY_LOG_THRESHOLD = RapidOCRReader.SIMILARITY_LOG_THRESHOLD
         yield p
+    if hasattr(RapidOCRReader, "instance"):
+        del RapidOCRReader.instance
 
 
 class TestRapidOCR:
     def test_init(self, mock_reader):
         result = RapidOCRReader()
         assert result.reader == mock_reader()
+
+    def test_init_loads_reader_once(self, mock_reader):
+        first = RapidOCRReader()
+        second = RapidOCRReader()
+
+        assert first is second
+        assert first.reader == mock_reader.return_value
+        mock_reader.assert_called_once_with()
 
     def test_read(self, mock_reader):
         mock_reader.reader.return_value = MockRapidOCROutput(

@@ -3,7 +3,7 @@ from textwrap import dedent
 from unittest.mock import call, patch
 
 import pytest
-from robot.api import TestSuite
+from robot.api import TestSuite as RobotTestSuite
 
 from yarf.rf_libraries.libraries.metadata_listener import MetadataListener
 
@@ -51,7 +51,7 @@ class TestMetadataListener:
         Test whether the start_suite hook is called and the metadata is
         correctly registered to the test suite.
         """
-        suite = TestSuite.from_string(mock_init_suite)
+        suite = RobotTestSuite.from_string(mock_init_suite)
         with patch(
             "yarf.rf_libraries.libraries.metadata_listener.BuiltIn.set_global_variable"
         ) as mock_set_global_variable:
