@@ -1,0 +1,33 @@
+name: Setup YARF Noble
+description: Install base apt deps, set up Python 3.12 and uv. Optionally bring up a virtual Mir server. Caller must run actions/checkout first.
+
+inputs:
+  with-mir:
+    description: Install Mir dependencies and start the virtual Mir server
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Install base dependencies
+      shell: bash
+      run: ./.github/scripts/yarf/install-base-deps.sh
+
+    - name: Set up Python
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+      with:
+        python-version: "3.12"
+
+    - name: Install uv
+      shell: bash
+      run: pip install uv
+
+    - name: Install Mir dependencies
+      if: inputs.with-mir == 'true'
+      shell: bash
+      run: ./.github/scripts/yarf/install-mir-deps.sh
+
+    - name: Start Global Mir Server
+      if: inputs.with-mir == 'true'
+      shell: bash
+      run: ./.github/scripts/yarf/start-mir-server.sh

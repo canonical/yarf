@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -70,10 +70,16 @@ class TestMir:
         """
 
         mir = Mir()
+
+        def close_coroutine(coroutine, loop):
+            coroutine.close()
+            return MagicMock()
+
         with (
             patch("yarf.rf_libraries.libraries.mir.asyncio.get_running_loop"),
             patch(
-                "yarf.rf_libraries.libraries.mir.asyncio.run_coroutine_threadsafe"
+                "yarf.rf_libraries.libraries.mir.asyncio.run_coroutine_threadsafe",
+                side_effect=close_coroutine,
             ),
             patch(
                 "yarf.rf_libraries.libraries.mir.screencopy.Screencopy.connect",

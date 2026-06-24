@@ -5,7 +5,7 @@ from unittest.mock import ANY, MagicMock, Mock, call, patch, sentinel
 
 import pytest
 from pyfakefs.fake_filesystem import FakeFilesystem
-from robot.api import TestSuite
+from robot.api import TestSuite as RobotTestSuite
 
 from yarf.output import (
     OUTPUT_FORMATS,
@@ -114,7 +114,7 @@ class TestOutputConverterBase:
         """
 
         class TestModule(OutputConverterBase):
-            def check_test_plan(self, suite: TestSuite):
+            def check_test_plan(self, suite: RobotTestSuite):
                 return suite is not None
 
             def get_output(self, outdir: Path) -> Any:
@@ -282,7 +282,7 @@ class TestInit:
         """
 
         class TestModule(OutputConverterBase):
-            def check_test_plan(self, suite: TestSuite) -> bool:
+            def check_test_plan(self, suite: RobotTestSuite) -> bool:
                 pass
 
             def get_output(self, outdir: Path) -> Any:

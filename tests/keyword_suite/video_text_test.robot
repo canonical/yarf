@@ -47,13 +47,15 @@ Test Set Ocr Method with Invalid Method
 
 *** Keywords ***
 Open Text Image
-    [Documentation]    Opens the image used for text tests.
+    [Documentation]    Opens the image used for text tests and waits for it
+    ...    to be displayed.
     Start Process
     ...                     dbus-run-session
     ...                     --
     ...                     eog
     ...                     -f
     ...                     ${CURDIR}/text/text.png
+    Match Text              AB123cd                 timeout=60
 
 Test Keyword Read Text
     [Tags]                  yarf:certification_status: blocker

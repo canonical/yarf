@@ -25,6 +25,18 @@ def mock_logger():
         yield p
 
 
+@pytest.fixture(autouse=True)
+def mock_to_thread():
+    async def run_inline(func, *args, **kwargs):
+        return func(*args, **kwargs)
+
+    with patch(
+        "yarf.rf_libraries.libraries.llm_client.LlmClient.asyncio.to_thread",
+        new=run_inline,
+    ):
+        yield
+
+
 class TestLlmClient:
     LLM_PATH = "yarf.rf_libraries.libraries.llm_client.LlmClient"
 
@@ -1279,11 +1291,13 @@ class TestLlmClient:
                 "execute_gui_action",
                 AsyncMock(),
             ) as execute_action,
+            patch(f"{self.LLM_PATH}.asyncio.sleep", AsyncMock()) as sleep,
         ):
             item = await client._run_step(3, "next action", "system prompt")
 
         grab_screenshot.assert_awaited_once()
         execute_action.assert_awaited_once_with(action, "Wait for loading")
+        sleep.assert_awaited_once_with(1)
         assert item == HistoryItem(step=3, action=action)
 
     @pytest.mark.asyncio
