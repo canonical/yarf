@@ -7,7 +7,7 @@ from unittest.mock import ANY, MagicMock, Mock, patch, sentinel
 from xml.etree.ElementTree import Element
 
 import pytest
-from robot.api import TestSuite
+from robot.api import TestSuite as RobotTestSuite
 
 from yarf.output.test_submission_schema import TestSubmissionSchema
 
@@ -97,7 +97,7 @@ class TestTestSubmissionSchema:
         Test whether the function check_test_plan passes a correct test plan
         and get the correct namespace.
         """
-        test_plan = TestSuite.from_string(
+        test_plan = RobotTestSuite.from_string(
             f"{mock_init_suite}\n{mock_test_suite}"
         )
         converter = TestSubmissionSchema()
@@ -244,8 +244,8 @@ class TestTestSubmissionSchema:
         Test whether the function check_test_plan raises a ValueError when the
         relevant data does not fulfill the requirement.
         """
-        test_plan = TestSuite.from_string(mock_init)
-        test_suite = TestSuite.from_string(mock_suite)
+        test_plan = RobotTestSuite.from_string(mock_init)
+        test_suite = RobotTestSuite.from_string(mock_suite)
         test_suite.name = "Test Suite"
         test_plan.suites = [test_suite]
         converter = TestSubmissionSchema()
