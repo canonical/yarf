@@ -69,6 +69,8 @@ class RapidOCRReader:
         return cls.instance
 
     def __init__(self) -> None:
+        if hasattr(self, "reader"):
+            return
         self.reader = RapidOCR()
 
     def read(self, image: Image.Image | Path) -> str:

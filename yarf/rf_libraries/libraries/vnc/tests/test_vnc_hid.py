@@ -33,10 +33,15 @@ class TestVncHid:
         with monkeypatch.context() as m:
             m.setenv("VNC_PORT", "1")
             m.setenv("VNC_HOST", "localhost")
-            with patch(
-                "yarf.rf_libraries.libraries.vnc.Hid.connect",
-                new=MagicMock(),
-            ) as connect_mock:
+            with (
+                patch(
+                    "yarf.rf_libraries.libraries.vnc.Hid.connect",
+                    new=MagicMock(),
+                ) as connect_mock,
+                patch(
+                    "yarf.rf_libraries.libraries.vnc.Hid.sleep"
+                ) as sleep_mock,
+            ):
                 client_mock = connect_mock.return_value.__aenter__.return_value
                 client_mock.keyboard.write = MagicMock()
                 client_mock.mouse.move = MagicMock()
@@ -45,6 +50,9 @@ class TestVncHid:
                 calls = [call(x) for x in farnsworth]
                 client_mock.keyboard.write.assert_has_calls(
                     calls, any_order=False
+                )
+                sleep_mock.assert_has_calls(
+                    [call(vnc_hid.type_string_delay) for _ in farnsworth]
                 )
                 client_mock.mouse.move.assert_called_once
 
