@@ -168,6 +168,22 @@ class TestPostprocess:
         d = self._detector(mock_cls)
         assert d._postprocess(_nxc(_low_conf_rows(10)), 1280, 960, 0.5) is None
 
+    def test_returns_none_when_prediction_rows_are_empty(self, mock_cls):
+        d = self._detector(mock_cls)
+        empty_output = np.empty((1, 0, 6), dtype=np.float32)
+        assert d._postprocess(empty_output, 640, 640, 0.5) is None
+
+    def test_1d_prediction_is_normalized_before_processing(self, mock_cls):
+        d = self._detector(mock_cls)
+        one_dim_output = np.array(
+            [[100.0, 200.0, 110.0, 220.0, 0.9, 0.0]],
+            dtype=np.float32,
+        )
+        result = d._postprocess(one_dim_output, 640, 640, 0.5)
+        assert result.cursor_type == CursorType.REGULAR
+        assert result.x == pytest.approx(102.0)
+        assert result.y == pytest.approx(202.0)
+
     # --- corner format: x1=100, y1=200, x2=110, y2=220, bbox_w=10, bbox_h=20 ---
     # REGULAR (0.20, 0.10): x=100+0.20*10=102, y=200+0.10*20=202
     # HAND    (0.40, 0.10): x=100+0.40*10=104, y=200+0.10*20=202

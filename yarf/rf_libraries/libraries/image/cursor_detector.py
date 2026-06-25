@@ -133,12 +133,12 @@ class CursorDetector:
         pred = output[0]  # drop batch dim
         if pred.ndim == 1:
             pred = pred[np.newaxis]
-        # Ensure rows are detections: if fewer rows than columns, it's transposed
-        if pred.shape[0] < pred.shape[1]:
-            pred = pred.T
-
         if len(pred) == 0:
             return None
+        # Ensure rows are detections when the model returns [6, N] instead of
+        # [N, 6]. Keep single detections in [1, 6] as-is.
+        if pred.shape[1] != 6 and pred.shape[0] == 6:
+            pred = pred.T
 
         confidences = pred[:, 4]
         best_idx = int(np.argmax(confidences))
