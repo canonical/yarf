@@ -19,9 +19,6 @@ def reset_singleton():
 
     if hasattr(cd.CursorDetector, "instance"):
         del cd.CursorDetector.instance
-    yield
-    if hasattr(cd.CursorDetector, "instance"):
-        del cd.CursorDetector.instance
 
 
 def _make_mock_session(input_h=640, input_w=640):
