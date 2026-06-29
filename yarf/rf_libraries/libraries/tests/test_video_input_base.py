@@ -535,7 +535,11 @@ class TestVideoInputBase:
                 mock_log_image.assert_not_called()
 
         stub_videoinput.ocr.find.assert_called_once_with(
-            stub_videoinput.grab_screenshot.return_value, "text", region=None
+            stub_videoinput.grab_screenshot.return_value,
+            "text",
+            region=None,
+            similarity=None,
+            confidence=None,
         )
 
     @pytest.mark.parametrize(
@@ -585,6 +589,8 @@ class TestVideoInputBase:
             stub_videoinput.grab_screenshot.return_value,
             "text",
             region=expected_region,
+            similarity=None,
+            confidence=None,
         )
 
     @pytest.mark.asyncio
@@ -606,7 +612,7 @@ class TestVideoInputBase:
         await stub_videoinput.find_text("text", image=image)
 
         stub_videoinput.ocr.find.assert_called_once_with(
-            image, "text", region=None
+            image, "text", region=None, similarity=None, confidence=None
         )
 
     @pytest.mark.asyncio
@@ -638,14 +644,57 @@ class TestVideoInputBase:
                     stub_videoinput.grab_screenshot.return_value,
                     "text",
                     region=None,
+                    similarity=None,
+                    confidence=None,
                 ),
                 call(
                     stub_videoinput.grab_screenshot.return_value,
                     "test",
                     region=None,
+                    similarity=None,
+                    confidence=None,
                 ),
             ],
             any_order=True,
+        )
+
+    @pytest.mark.asyncio
+    async def test_find_text_with_tesseract_threshold_override(
+        self, stub_videoinput
+    ):
+        stub_videoinput.set_ocr_method("tesseract")
+        image = Mock()
+        with (
+            patch.object(
+                stub_videoinput.ocr, "read", return_value="text"
+            ) as mock_read,
+            patch.object(
+                stub_videoinput.ocr, "find", return_value=[]
+            ) as mock_find,
+        ):
+            await stub_videoinput.find_text(
+                "regex:text",
+                image=image,
+                similarity=100,
+                confidence=95,
+            )
+
+        mock_read.assert_called_once_with(image)
+        mock_find.assert_called_once_with(image, "text", region=None)
+
+    @pytest.mark.asyncio
+    async def test_find_text_threshold_override(self, stub_videoinput):
+        """
+        Test that per-call similarity/confidence are passed to ocr.find.
+        """
+        image = Mock()
+        stub_videoinput.ocr.find = Mock(return_value=[])
+        await stub_videoinput.find_text(
+            "text", image=image, similarity=100, confidence=95
+        )
+
+        stub_videoinput.ocr.find.assert_called_once_with(
+            image, "text", region=None, similarity=100, confidence=95
         )
 
     @pytest.mark.asyncio
@@ -669,6 +718,8 @@ class TestVideoInputBase:
             stub_videoinput.grab_screenshot.return_value,
             "text",
             region=Region(0, 0, 1, 1),
+            similarity=None,
+            confidence=None,
         )
 
     @pytest.mark.asyncio
