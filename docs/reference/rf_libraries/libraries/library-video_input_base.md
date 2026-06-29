@@ -10,7 +10,7 @@
 ### Find Text
 
 <p>Find the specified text in the provided image or grab a screenshot to search from. The region can be specified directly in the robot file using <span class="name">RPA.core.geometry.to_region</span></p>
-<p>Args: text: text or regex to search for, use the format <span class="name">regex:&lt;regex-string&gt;</span> if the text we want to find is a regex. region: region to search for the text. image: image to search from. color: target color of the text. If set, matched text in the wrong color will be skipped. color_tolerance: Color tolerance threshold in %</p>
+<p>Args: text: text or regex to search for, use the format <span class="name">regex:&lt;regex-string&gt;</span> if the text we want to find is a regex. region: region to search for the text. image: image to search from. color: target color of the text. If set, matched text in the wrong color will be skipped. color_tolerance: Color tolerance threshold in % similarity: Minimum similarity percentage (0-100) for a match. If set, overrides ${OCR_SIMILARITY_THRESHOLD} for this call only. confidence: Minimum confidence percentage (0-100) for a match. If set, overrides ${OCR_CONFIDENCE_THRESHOLD} for this call only.</p>
 <p>Returns: The list of matched text regions where the text was found. Each match is a dictionary with "text", "region", and "confidence".</p>
 
 ### Return
@@ -26,6 +26,8 @@
 | image           | None    | None          | POSITIONAL_OR_NAMED | No       |
 | color           | None    | None          | POSITIONAL_OR_NAMED | No       |
 | color_tolerance | integer | 20            | POSITIONAL_OR_NAMED | No       |
+| similarity      | None    | None          | POSITIONAL_OR_NAMED | No       |
+| confidence      | None    | None          | POSITIONAL_OR_NAMED | No       |
 
 <hr style="border:1px solid grey">
 
@@ -148,7 +150,7 @@
 ### Match Text
 
 <p>Wait for specified text to appear on screen and get the position of the best match. The region can be specified directly in the robot file using <span class="name">RPA.core.geometry.to_region</span>.</p>
-<p>Args: text: text or regex to match, use the format <span class="name">regex:&lt;regex-string&gt;</span> if the text we want to find is a regex. timeout: Time to wait for the text to appear region: The region to search for the text color: The color of the searched text color_tolerance: The tolerance of the color of the searched text Returns: It returns a tuple with:</p>
+<p>Args: text: text or regex to match, use the format <span class="name">regex:&lt;regex-string&gt;</span> if the text we want to find is a regex. timeout: Time to wait for the text to appear region: The region to search for the text color: The color of the searched text color_tolerance: The tolerance of the color of the searched text similarity: Minimum similarity percentage (0-100) for a match. If set, overrides ${OCR_SIMILARITY_THRESHOLD} for this call only. confidence: Minimum confidence percentage (0-100) for a match. If set, overrides ${OCR_CONFIDENCE_THRESHOLD} for this call only. Returns: It returns a tuple with:</p>
 <ul>
 <li>The list of matched text regions where the text was found, sorted by confidence.</li>
 <li>The image (used for debugging). Each match is a dictionary with "text", "region", and "confidence".</li>
@@ -168,6 +170,8 @@
 | region          | None    | None          | POSITIONAL_OR_NAMED | No       |
 | color           | None    | None          | POSITIONAL_OR_NAMED | No       |
 | color_tolerance | integer | 20            | POSITIONAL_OR_NAMED | No       |
+| similarity      | None    | None          | POSITIONAL_OR_NAMED | No       |
+| confidence      | None    | None          | POSITIONAL_OR_NAMED | No       |
 
 <hr style="border:1px solid grey">
 
