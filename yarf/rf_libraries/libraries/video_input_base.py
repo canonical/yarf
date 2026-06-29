@@ -59,7 +59,9 @@ class VideoInputBase(ABC):
         When using RapidOCR as the OCR method, you can set the Robot Framework
         variables `${OCR_SIMILARITY_THRESHOLD}` and `${OCR_CONFIDENCE_THRESHOLD}`
         to control the minimum similarity and confidence required for text
-        matches (values between 0 and 100).
+        matches (values between 0 and 100). These can be overridden per call
+        via the `similarity` and `confidence` arguments of `Find Text` and
+        `Match Text`.
     """
 
     ROBOT_LIBRARY_SCOPE = "GLOBAL"
@@ -254,21 +256,43 @@ class VideoInputBase(ABC):
         text: str,
         image: Optional[Image.Image] = None,
         region: Optional[Region] = None,
+        similarity: Optional[float] = None,
+        confidence: Optional[float] = None,
     ) -> list[dict]:
         matched_text_regions: list[dict] = []
         regex_prefix = "regex:"
+
+        if isinstance(self.ocr, RapidOCRReader):
+            if similarity is not None:
+                RapidOCRReader._validate_threshold("similarity", similarity)
+            if confidence is not None:
+                RapidOCRReader._validate_threshold("confidence", confidence)
+
+        def find_match(match_text: str) -> list[dict]:
+            if isinstance(self.ocr, RapidOCRReader):
+                return self.ocr.find(
+                    image,  # type: ignore[arg-type]
+                    match_text,
+                    region=region,
+                    similarity=similarity,
+                    confidence=confidence,
+                )
+            return self.ocr.find(
+                image,  # type: ignore[arg-type]
+                match_text,
+                region=region,
+            )
+
         if text.startswith(regex_prefix):
             image_text = self.ocr.read(image)  # type: ignore[arg-type]
             unique_match_texts = set(
                 re.findall(rf"{text[len(regex_prefix) :]}", image_text)
             )
             for match_text in unique_match_texts:
-                matched_text_regions.extend(
-                    self.ocr.find(image, match_text, region=region)  # type: ignore[arg-type]
-                )
+                matched_text_regions.extend(find_match(match_text))
 
         else:
-            matched_text_regions = self.ocr.find(image, text, region=region)  # type: ignore[arg-type]
+            matched_text_regions = find_match(text)
 
         return matched_text_regions
 
@@ -280,6 +304,8 @@ class VideoInputBase(ABC):
         image: Optional[Image.Image] = None,
         color: Optional[Union[RGB, tuple[int, int, int]]] = None,
         color_tolerance: int = 20,
+        similarity: Optional[float] = None,
+        confidence: Optional[float] = None,
     ) -> List[dict]:
         """
         Find the specified text in the provided image or grab a screenshot to
@@ -293,6 +319,12 @@ class VideoInputBase(ABC):
             image: image to search from.
             color: target color of the text. If set, matched text in the wrong color will be skipped.
             color_tolerance: Color tolerance threshold in %
+            similarity: Minimum similarity percentage (0-100) for a match when
+                  using RapidOCR. If set, overrides
+                  ${OCR_SIMILARITY_THRESHOLD} for this call only.
+            confidence: Minimum confidence percentage (0-100) for a match when
+                  using RapidOCR. If set, overrides
+                  ${OCR_CONFIDENCE_THRESHOLD} for this call only.
 
         Returns:
             The list of matched text regions where the text was found. Each
@@ -304,6 +336,8 @@ class VideoInputBase(ABC):
             | &{region}=    Create Dictionary
             | ...    left=0    top=0    right=800    bottom=600
             | ${matches}=    Find Text    Continue    region=${region}
+            | ${matches}=    Find Text    Continue
+            | ...    similarity=90    confidence=70
         """
         if isinstance(region, dict):
             region = Region(**region)
@@ -313,7 +347,11 @@ class VideoInputBase(ABC):
 
         matched_text_regions: list[dict] = []
         ocr_text_regions: list[dict] = self._get_ocr_text_from_image(
-            text, image=image, region=region
+            text,
+            image=image,
+            region=region,
+            similarity=similarity,
+            confidence=confidence,
         )
         if color is None:
             matched_text_regions = ocr_text_regions
@@ -329,8 +367,8 @@ class VideoInputBase(ABC):
         # Log all the matches if in debug mode (If there are any matches)
         if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
             for match in matched_text_regions:
-                similarity = f"{match['similarity']:.2f}"
-                confidence = f"{match['confidence']:.2f}"
+                similarity_str = f"{match['similarity']:.2f}"
+                confidence_str = f"{match['confidence']:.2f}"
                 matched_image = self._draw_region_on_image(
                     image.copy(), match["region"]
                 )
@@ -339,7 +377,7 @@ class VideoInputBase(ABC):
                 log_image(
                     matched_image,
                     f"Found text matching '{text}' with similarity "
-                    f"{similarity}, confidence {confidence}: "
+                    f"{similarity_str}, confidence {confidence_str}: "
                     f"'{match['text']}'",
                 )
 
@@ -439,6 +477,8 @@ class VideoInputBase(ABC):
         region: Region | tuple[int] | None = None,
         color: RGB | tuple[int] | None = None,
         color_tolerance: int = 20,
+        similarity: float | None = None,
+        confidence: float | None = None,
     ) -> tuple[list[dict], Image.Image]:
         """
         Wait for specified text to appear on screen and get the position of the
@@ -452,6 +492,12 @@ class VideoInputBase(ABC):
             region: The region to search for the text
             color: The color of the searched text
             color_tolerance: The tolerance of the color of the searched text
+            similarity: Minimum similarity percentage (0-100) for a match when
+                  using RapidOCR. If set, overrides
+                  ${OCR_SIMILARITY_THRESHOLD} for this call only.
+            confidence: Minimum confidence percentage (0-100) for a match when
+                  using RapidOCR. If set, overrides
+                  ${OCR_CONFIDENCE_THRESHOLD} for this call only.
         Returns:
             It returns a tuple with:
              - The list of matched text regions where the text was found,
@@ -464,6 +510,8 @@ class VideoInputBase(ABC):
         Example:
             | ${matches}    ${image}=    Match Text    Continue
             | Match Text    Continue    timeout=60
+            | ${matches}    ${image}=    Match Text    Continue
+            | ...    similarity=90    confidence=70
         """
         region = to_region(region)
         print(f"\nLooking for '{text}'")
@@ -490,7 +538,11 @@ class VideoInputBase(ABC):
             # if no color was given, simply find any text
             if color_rgb is None:
                 text_matches = await self.find_text(
-                    text, image=image, region=region
+                    text,
+                    image=image,
+                    region=region,
+                    similarity=similarity,
+                    confidence=confidence,
                 )
 
             else:  # a color was given.
@@ -500,6 +552,8 @@ class VideoInputBase(ABC):
                     region=region,
                     color=color_rgb,
                     color_tolerance=color_tolerance,
+                    similarity=similarity,
+                    confidence=confidence,
                 )
 
             if text_matches:
