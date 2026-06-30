@@ -209,6 +209,33 @@
 
 <hr style="border:1px solid grey">
 
+### Set Ocr Coincidence Threshold
+
+<p>Set the OCR coincidence threshold.</p>
+<p>Args: threshold: Coincidence threshold between 0 and 100.</p>
+<p>Raises: ValueError: If the OCR method is Tesseract, which does not support setting coincidence threshold.</p>
+
+#### Positional and named arguments
+
+| Name      | Type  | Default Value | Kind                | Required |
+| --------- | ----- | ------------- | ------------------- | -------- |
+| threshold | float |               | POSITIONAL_OR_NAMED | Yes      |
+
+<hr style="border:1px solid grey">
+
+### Set Ocr Confidence Threshold
+
+<p>Set the OCR confidence threshold.</p>
+<p>Args: threshold: Confidence threshold between 0 and 1.</p>
+
+#### Positional and named arguments
+
+| Name      | Type  | Default Value | Kind                | Required |
+| --------- | ----- | ------------- | ------------------- | -------- |
+| threshold | float |               | POSITIONAL_OR_NAMED | Yes      |
+
+<hr style="border:1px solid grey">
+
 ### Set Ocr Method
 
 <p>Set the OCR method to use.</p>

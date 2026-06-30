@@ -923,7 +923,14 @@ class TestVideoInputBase:
 
         mock_log_image.assert_has_calls(
             [
-                call(ANY, "Text 'hello' not found in the image."),
+                call(
+                    ANY,
+                    f"Text 'hello' not found in the image"
+                    f" (OCR similarity threshold:"
+                    f" {RapidOCRReader.DEFAULT_SIMILARITY_THRESHOLD},"
+                    f" confidence threshold:"
+                    f" {RapidOCRReader.DEFAULT_CONFIDENCE_THRESHOLD}).",
+                ),
                 call(ANY, "Cropped region"),
             ]
         )

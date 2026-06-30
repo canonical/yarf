@@ -95,6 +95,33 @@ class RapidOCRReader:
             return ""
         return "\n".join(result.txts)
 
+    def get_thresholds(self) -> tuple[float, float]:
+        """
+        Return the current (similarity_threshold, confidence_threshold).
+
+        Reads from Robot Framework variables if set, otherwise uses defaults.
+        Returns defaults if called outside a Robot Framework context.
+
+        Returns:
+            Tuple of (similarity_threshold, confidence_threshold).
+        """
+        similarity_threshold = self.DEFAULT_SIMILARITY_THRESHOLD
+        confidence_threshold = self.DEFAULT_CONFIDENCE_THRESHOLD
+        try:
+            sim_str = BuiltIn().get_variable_value(
+                "${OCR_SIMILARITY_THRESHOLD}"
+            )
+            if sim_str is not None:
+                similarity_threshold = float(sim_str)
+            conf_str = BuiltIn().get_variable_value(
+                "${OCR_CONFIDENCE_THRESHOLD}"
+            )
+            if conf_str is not None:
+                confidence_threshold = float(conf_str)
+        except Exception:
+            pass
+        return similarity_threshold, confidence_threshold
+
     def find(
         self,
         image: Image.Image | Path,
@@ -227,9 +254,6 @@ class RapidOCRReader:
                 "${OCR_SIMILARITY_THRESHOLD}"
             )
             if similarity_threshold_str is not None:
-                logger.debug(
-                    f"OCR similarity threshold set to {similarity_threshold_str}"
-                )
                 try:
                     similarity_threshold = float(similarity_threshold_str)
                 except ValueError:
@@ -246,9 +270,6 @@ class RapidOCRReader:
                 "${OCR_CONFIDENCE_THRESHOLD}"
             )
             if confidence_threshold_str is not None:
-                logger.debug(
-                    f"OCR confidence threshold set to {confidence_threshold_str}"
-                )
                 try:
                     confidence_threshold = float(confidence_threshold_str)
                 except ValueError:

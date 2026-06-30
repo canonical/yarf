@@ -512,6 +512,19 @@ class VideoInputBase(ABC):
                 )
 
             if text_matches:
+                if isinstance(self.ocr, RapidOCRReader):
+                    global_sim, global_conf = self.ocr.get_thresholds()
+                    effective_sim = (
+                        similarity if similarity is not None else global_sim
+                    )
+                    effective_conf = (
+                        confidence if confidence is not None else global_conf
+                    )
+                    logger.debug(
+                        f"Text '{text}' found"
+                        f" (OCR similarity threshold: {effective_sim},"
+                        f" confidence threshold: {effective_conf})"
+                    )
                 return text_matches, cropped_image
             await self._sleep_for_minimum_iteration_time(
                 iteration_start_time, start_time + timeout
@@ -520,7 +533,21 @@ class VideoInputBase(ABC):
         read_text = await self.read_text(cropped_image)
 
         # Log the image where the text was searched
-        log_image(image, f"Text '{text}' not found in the image.")
+        not_found_msg = f"Text '{text}' not found in the image."
+        if isinstance(self.ocr, RapidOCRReader):
+            global_sim, global_conf = self.ocr.get_thresholds()
+            effective_sim = (
+                similarity if similarity is not None else global_sim
+            )
+            effective_conf = (
+                confidence if confidence is not None else global_conf
+            )
+            not_found_msg = (
+                f"Text '{text}' not found in the image"
+                f" (OCR similarity threshold: {effective_sim},"
+                f" confidence threshold: {effective_conf})."
+            )
+        log_image(image, not_found_msg)
         # Also log the cropped region if specified
         if region is not None:
             log_image(cropped_image, "Cropped region")
