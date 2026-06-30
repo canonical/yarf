@@ -77,6 +77,7 @@ class RapidOCRReader:
         if hasattr(self, "reader"):
             return
         self.reader = RapidOCR()
+        self._last_rejected_logs: set[str] = set()
 
     def read(self, image: Image.Image | Path) -> str:
         """
@@ -278,6 +279,7 @@ class RapidOCRReader:
                     )
 
         matches = []
+        rejected_logs: set[str] = set()
         for item in result:
             similarity = (
                 directional_ratio(match_text, item.text)
@@ -297,9 +299,14 @@ class RapidOCRReader:
                     }
                 )
             elif similarity >= self.SIMILARITY_LOG_THRESHOLD:
-                logger.debug(
+                rejected_logs.add(
                     f"Rejected match for text '{match_text}' "
                     f"with similarity {similarity} "
                     f"and confidence {item.confidence}: '{item.text}'"
                 )
+        # Only log rejected matches that weren't already logged last call,
+        # to avoid repeating the same message every polling iteration.
+        for msg in sorted(rejected_logs - self._last_rejected_logs):
+            logger.debug(msg)
+        self._last_rejected_logs = rejected_logs
         return sorted(matches, key=lambda x: x["similarity"], reverse=True)
