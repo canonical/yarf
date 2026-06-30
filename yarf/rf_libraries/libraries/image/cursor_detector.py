@@ -10,6 +10,14 @@ import numpy as np
 import onnxruntime as ort
 from PIL import Image
 
+from yarf.rf_libraries.variables.video_input_vars import (
+    DEFAULT_CURSOR_DETECTION_CONFIDENCE,
+)
+
+# Note: The model is trained to detect three cursor types: regular arrow,
+# hand pointer, and text I-beam. At the moment, the model is only reliable for
+# detecting the regular arrow cursor on Dell and Hp bios menus. Until we have
+# a more robust model, we should not rely on this for other contexts.
 _MODEL_PATH = Path(__file__).parent / "yolo26_mouse_detector.onnx"
 
 
@@ -72,7 +80,7 @@ class CursorDetector:
     def detect(
         self,
         image: Image.Image,
-        confidence_threshold: float = 0.85,
+        confidence_threshold: float = DEFAULT_CURSOR_DETECTION_CONFIDENCE,
     ) -> CursorDetection | None:
         """
         Detect cursor in image and return its position and type.
@@ -140,6 +148,9 @@ class CursorDetector:
         if pred.shape[1] != 6 and pred.shape[0] == 6:
             pred = pred.T
 
+        if len(pred) == 0:
+            return None
+
         confidences = pred[:, 4]
         best_idx = int(np.argmax(confidences))
         if float(confidences[best_idx]) < threshold:
@@ -176,7 +187,9 @@ if __name__ == "__main__":
     image_path = sys.argv[1]
     image = Image.open(image_path)
     detector = CursorDetector()
-    result = detector.detect(image, confidence_threshold=0.8)
+    result = detector.detect(
+        image, confidence_threshold=DEFAULT_CURSOR_DETECTION_CONFIDENCE
+    )
     if result is not None:
         print(
             f"Cursor detected at: ({result.x:.2f}, {result.y:.2f})"

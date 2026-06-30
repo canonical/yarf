@@ -25,6 +25,9 @@ from yarf.rf_libraries.libraries.image.cursor_detector import (
 )
 from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
 from yarf.rf_libraries.libraries.video_input_base import VideoInputBase
+from yarf.rf_libraries.variables.video_input_vars import (
+    DEFAULT_CURSOR_DETECTION_CONFIDENCE,
+)
 from yarf.vendor.RPA.core.geometry import Region
 from yarf.vendor.RPA.Images import RGB
 from yarf.vendor.RPA.recognition.templates import ImageNotFoundError
@@ -1037,7 +1040,7 @@ class TestVideoInputBase:
         await stub_videoinput.find_cursor_position(image=image)
         stub_videoinput.grab_screenshot.assert_not_called()
         mock_detector_cls.return_value.detect.assert_called_once_with(
-            image, confidence_threshold=0.80
+            image, confidence_threshold=DEFAULT_CURSOR_DETECTION_CONFIDENCE
         )
 
     @pytest.mark.asyncio

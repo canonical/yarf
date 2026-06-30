@@ -170,6 +170,11 @@ class TestPostprocess:
         empty_output = np.empty((1, 0, 6), dtype=np.float32)
         assert d._postprocess(empty_output, 640, 640, 0.5) is None
 
+    def test_returns_none_when_transposed_output_is_empty(self, mock_cls):
+        d = self._detector(mock_cls)
+        transposed_empty_output = np.empty((1, 6, 0), dtype=np.float32)
+        assert d._postprocess(transposed_empty_output, 640, 640, 0.5) is None
+
     def test_1d_prediction_is_normalized_before_processing(self, mock_cls):
         d = self._detector(mock_cls)
         one_dim_output = np.array(
@@ -181,7 +186,7 @@ class TestPostprocess:
         assert result.x == pytest.approx(102.0)
         assert result.y == pytest.approx(202.0)
 
-    # --- corner format: x1=100, y1=200, x2=110, y2=220, bbox_w=10, bbox_h=20 ---
+    # Corner format: x1=100, y1=200, x2=110, y2=220, bbox_w=10, bbox_h=20.
     # REGULAR (0.20, 0.10): x=100+0.20*10=102, y=200+0.10*20=202
     # HAND    (0.40, 0.10): x=100+0.40*10=104, y=200+0.10*20=202
     # TEXT    (0.50, 0.50): x=100+0.50*10=105, y=200+0.50*20=210
@@ -284,7 +289,7 @@ class TestDetect:
         assert result is not None
         assert isinstance(result, CursorDetection)
         assert result.cursor_type == CursorType.REGULAR
-        # x1=100, y1=200, bbox_w=10, bbox_h=20; REGULAR(0.20,0.10): x=102, y=202
+        # x1=100, y1=200, bbox_w=10, bbox_h=20; REGULAR -> x=102, y=202
         assert result.x == pytest.approx(102.0)
         assert result.y == pytest.approx(202.0)
 

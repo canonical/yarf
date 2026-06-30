@@ -30,6 +30,7 @@ from yarf.rf_libraries.libraries.image.utils import (
 )
 from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
 from yarf.rf_libraries.variables.video_input_vars import (
+    DEFAULT_CURSOR_DETECTION_CONFIDENCE,
     DEFAULT_TEMPLATE_MATCHING_TOLERANCE,
 )
 from yarf.vendor.RPA.core.geometry import to_region
@@ -509,7 +510,7 @@ class VideoInputBase(ABC):
     async def find_cursor_position(
         self,
         image: Optional[Image.Image] = None,
-        confidence: float = 0.80,
+        confidence: float = DEFAULT_CURSOR_DETECTION_CONFIDENCE,
     ) -> Optional[tuple[int, int]]:
         """
         Detect the cursor in the provided image or a new screenshot.

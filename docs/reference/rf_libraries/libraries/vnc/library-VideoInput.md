@@ -23,7 +23,7 @@
 | Name       | Type  | Default Value | Kind                | Required |
 | ---------- | ----- | ------------- | ------------------- | -------- |
 | image      | None  | None          | POSITIONAL_OR_NAMED | No       |
-| confidence | float | 0.8           | POSITIONAL_OR_NAMED | No       |
+| confidence | float | 0.85          | POSITIONAL_OR_NAMED | No       |
 
 <hr style="border:1px solid grey">
 
