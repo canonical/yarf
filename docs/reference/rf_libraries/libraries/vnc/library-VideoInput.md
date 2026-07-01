@@ -11,7 +11,7 @@
 ### Find Cursor Position
 
 <p>Detect the cursor in the provided image or a new screenshot.</p>
-<p>Note: This keyword relies on a bundled cursor detection model, which increases the installed package size. The current model is focused on BIOS navigation and is only reliable for the regular arrow cursor in that context. Use it carefully in other contexts until a more robust model is available.</p>
+<p>Note: This keyword relies on a bundled cursor detection model, which increases the installed package size. The current model is trained for simple navigation tasks where mouse is clearly visible, and works better for the regular arrow. Use it carefully in other contexts until a more robust model is available.</p>
 <p>Args: image: Image to search; grabs a screenshot if not provided. confidence: Minimum confidence (0-1) for a detection to be accepted.</p>
 <p>Returns: (x, y) absolute pixel coordinates of the cursor, or None.</p>
 
