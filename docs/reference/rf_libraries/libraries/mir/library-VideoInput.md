@@ -8,6 +8,26 @@
 
 ## Keywords
 
+### Find Cursor Position
+
+<p>Detect the cursor in the provided image or a new screenshot.</p>
+<p>Note: This keyword relies on a bundled cursor detection model, which increases the installed package size. The current model is trained for simple navigation tasks where mouse is clearly visible, and works better for the regular arrow. Use it carefully in other contexts until a more robust model is available.</p>
+<p>Args: image: Image to search; grabs a screenshot if not provided. confidence: Minimum confidence (0-1) for a detection to be accepted.</p>
+<p>Returns: (x, y) absolute pixel coordinates of the cursor, or None.</p>
+
+### Return
+
+{'name': 'Union', 'typedoc': None, 'nested': \[{'name': 'tuple', 'typedoc': 'tuple', 'nested': \[{'name': 'int', 'typedoc': 'integer', 'nested': [], 'union': False}, {'name': 'int', 'typedoc': 'integer', 'nested': [], 'union': False}\], 'union': False}, {'name': 'None', 'typedoc': 'None', 'nested': [], 'union': False}\], 'union': True}
+
+#### Positional and named arguments
+
+| Name       | Type  | Default Value | Kind                | Required |
+| ---------- | ----- | ------------- | ------------------- | -------- |
+| image      | None  | None          | POSITIONAL_OR_NAMED | No       |
+| confidence | float | 0.85          | POSITIONAL_OR_NAMED | No       |
+
+<hr style="border:1px solid grey">
+
 ### Find Text
 
 <p>Find the specified text in the provided image or grab a screenshot to search from. The region can be specified directly in the robot file using <span class="name">RPA.core.geometry.to_region</span></p>

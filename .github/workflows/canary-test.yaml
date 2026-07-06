@@ -191,6 +191,13 @@ jobs:
           pkill -f eog || true
           wlrctl pointer move -1280 -1024
 
+      - name: Run Keyword tests - VideoInput cursor detection
+        env:
+          TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
+        run: |
+          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite video_cursor_test
+          wlrctl pointer move -1280 -1024
+
       - name: Run Keyword tests - VideoInput Video
         env:
           TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}

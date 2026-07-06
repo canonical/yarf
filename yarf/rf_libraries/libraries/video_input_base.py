@@ -22,10 +22,15 @@ from robot.libraries.BuiltIn import BuiltIn
 
 from yarf import LABEL_PREFIX
 from yarf.lib.images.utils import to_RGB
+from yarf.rf_libraries.libraries.image.cursor_detector import CursorDetector
 from yarf.rf_libraries.libraries.image.segmentation import SegmentationTool
-from yarf.rf_libraries.libraries.image.utils import log_image
+from yarf.rf_libraries.libraries.image.utils import (
+    draw_point_on_image,
+    log_image,
+)
 from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
 from yarf.rf_libraries.variables.video_input_vars import (
+    DEFAULT_CURSOR_DETECTION_CONFIDENCE,
     DEFAULT_TEMPLATE_MATCHING_TOLERANCE,
 )
 from yarf.vendor.RPA.core.geometry import to_region
@@ -500,6 +505,58 @@ class VideoInputBase(ABC):
         Returns:
             screenshot as an Image object
         """
+
+    @keyword
+    async def find_cursor_position(
+        self,
+        image: Optional[Image.Image] = None,
+        confidence: float = DEFAULT_CURSOR_DETECTION_CONFIDENCE,
+    ) -> Optional[tuple[int, int]]:
+        """
+        Detect the cursor in the provided image or a new screenshot.
+
+        Note:
+            This keyword relies on a bundled cursor detection model, which
+            increases the installed package size. The current model is trained
+            for simple navigation tasks where mouse is clearly visible, and
+            works better for the regular arrow. Use it carefully in other
+            contexts until a more robust model is available.
+
+        Args:
+            image: Image to search; grabs a screenshot if not provided.
+            confidence: Minimum confidence (0-1) for a detection to be accepted.
+
+        Returns:
+            (x, y) absolute pixel coordinates of the cursor, or None.
+        """
+        if image is None:
+            image = await self._grab_and_save_screenshot()
+
+        # The cursor detector is initialized here to avoid loading when its not
+        # used, since it loads the model. The class is a singleton, so it will
+        # only load once.
+        result = CursorDetector().detect(
+            image, confidence_threshold=confidence
+        )
+        if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
+            if result is not None:
+                debug_image = draw_point_on_image(
+                    image,
+                    [result.x, result.y],
+                    label=result.cursor_type.name,
+                )
+                log_image(
+                    debug_image,
+                    f"Cursor detected at ({result.x}, {result.y})"
+                    f" [{result.cursor_type.name}]"
+                    f" with conf >= {confidence}",
+                )
+            else:
+                log_image(image, "Cursor not detected.")
+
+        if result is None:
+            return None
+        return round(result.x), round(result.y)
 
     async def _grab_and_save_screenshot(self) -> Image.Image:
         screenshot = await self.grab_screenshot()

@@ -141,6 +141,7 @@ jobs:
         suite:
           - video_image_test
           - video_text_test
+          - video_cursor_test
           - video_video_test
           - hid_keyboard_test
           - hid_pointer_test
