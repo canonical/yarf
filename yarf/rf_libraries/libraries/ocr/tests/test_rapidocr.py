@@ -179,6 +179,44 @@ class TestRapidOCR:
             }
         ]
 
+    def test_get_matches_threshold_override(self, mock_reader):
+        items = [
+            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Hello", 90),
+        ]
+        with patch(
+            "yarf.rf_libraries.libraries.ocr.rapidocr.BuiltIn.get_variable_value"
+        ) as mock_get_variable_value:
+            mock_get_variable_value.side_effect = lambda var, *a, **kw: {
+                "${OCR_CONFIDENCE_THRESHOLD}": 80,
+                "${OCR_SIMILARITY_THRESHOLD}": 80,
+            }.get(var)
+            # Per-call confidence=95 overrides the variable (80), rejecting
+            # the 90-confidence item that would otherwise match.
+            result = RapidOCRReader.get_matches(
+                mock_reader, items, "Hello", False, confidence=95
+            )
+
+        assert result == []
+
+    def test_get_matches_similarity_override(self, mock_reader):
+        items = [
+            OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Hello", 90),
+        ]
+        with patch(
+            "yarf.rf_libraries.libraries.ocr.rapidocr.BuiltIn.get_variable_value"
+        ) as mock_get_variable_value:
+            mock_get_variable_value.side_effect = lambda var, *a, **kw: {
+                "${OCR_CONFIDENCE_THRESHOLD}": 80,
+                "${OCR_SIMILARITY_THRESHOLD}": 80,
+            }.get(var)
+            # Per-call similarity=101 overrides the variable (80), rejecting
+            # the item that would otherwise match.
+            result = RapidOCRReader.get_matches(
+                mock_reader, items, "Hello", False, similarity=101
+            )
+
+        assert result == []
+
     def test_get_matches_no_matches(self, mock_reader):
         items = [
             OCRResult([[0, 0], [1, 0], [1, 1], [0, 1]], "Hello World", 90),
