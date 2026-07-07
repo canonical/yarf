@@ -39,6 +39,7 @@ jobs:
         with:
           ref: ${{ inputs.commit_sha }}
           persist-credentials: false
+          lfs: true
 
       - uses: astral-sh/setup-uv@d31148d669074a8d0a63714ba94f3201e7020bc3
 
@@ -80,11 +81,17 @@ jobs:
 
     runs-on: ${{ matrix.runs_on }}
     steps:
+    - name: Install dependencies
+      run: |
+        sudo apt update -qq
+        sudo apt install -y git-lfs
+
     - name: Checkout Repo
       uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         ref: ${{ inputs.commit_sha }}
         persist-credentials: false
+        lfs: true
 
     - name: Download updated project files
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
