@@ -53,9 +53,9 @@ class TestSegmentation:
         # A mask thin enough that erosion empties it, so the original mask
         # is kept for sampling.
         seg = SegmentationTool()
-        hsv_image = np.full((20, 20, 3), 200, dtype="uint8")
-        mask = np.zeros((20, 20), dtype="uint8")
-        mask[10, 5:15] = 255
+        hsv_image = np.full((100, 100, 3), 200, dtype="uint8")
+        mask = np.zeros((100, 100), dtype="uint8")
+        mask[50, 40:60] = 255
         seg.segment_text_mask = Mock(return_value=mask)
         tup = seg.get_mean_text_color(hsv_image)
         assert len(tup) == 3

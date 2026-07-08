@@ -122,8 +122,11 @@ class SegmentationTool:
             text_mask_inner = self.postprocess_mask(text_mask_inner)
 
         # Drop the anti-aliased rim: keep only the solid stroke interior.
-        # This is what makes the sampled color insensitive to box size.
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
+        # Scale the kernel with the crop size so the same fraction of the
+        # rim is removed regardless of resolution.
+        mask_h, mask_w = text_mask_inner.shape[:2]
+        ksize = max(1, round(min(mask_h, mask_w) * 0.05))
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (ksize, ksize))
         eroded = cv2.erode(text_mask_inner, kernel, iterations=1)
         if cv2.countNonZero(eroded) > 0:
             text_mask_inner = eroded
