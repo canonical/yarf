@@ -6,7 +6,7 @@ from dataclasses import astuple
 
 import cv2
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 from robot.api import logger
 
 from yarf.vendor.RPA.core.geometry import Region
@@ -53,7 +53,7 @@ class SegmentationTool:
 
         return True
 
-    def crop_and_convert_image_with_padding(
+    def crop_image_with_padding(
         self,
         image: Image,
         region: Region,
@@ -68,7 +68,7 @@ class SegmentationTool:
             pad: Padding to apply (positive to expand, negative to shrink)
 
         Returns:
-            Cropped image as a numpy array in HSV color space
+            Cropped image as a PIL Image
         """
 
         # If we can't apply pad, just use the original region
@@ -80,13 +80,60 @@ class SegmentationTool:
         clamped_region = padded_region.clamp(Region(0, 0, w, h))
 
         # Crop the original image using the region
-        cropped = image.crop(clamped_region.as_tuple())
+        return image.crop(clamped_region.as_tuple())
 
-        return cv2.cvtColor(np.array(cropped), cv2.COLOR_RGB2HSV)
+    def convert_image_to_hsv(self, image: Image) -> np.ndarray:
+        """
+        Convert a PIL image to an HSV numpy array.
+
+        Args:
+            image: Input image (PIL Image, RGB)
+
+        Returns:
+            The image as a numpy array in HSV color space
+        """
+        return cv2.cvtColor(np.array(image), cv2.COLOR_RGB2HSV)
+
+    def get_text_mask(self, image: Image) -> np.ndarray:
+        """
+        Build a binary mask of the text strokes in an image.
+
+        Only the eroded interior of the text mask is kept, dropping the
+        anti-aliased border pixels so the sampled color stays stable across
+        small bounding-box changes.
+
+        Args:
+            image: input image (PIL Image, RGB)
+
+        Returns:
+            Binary mask (uint8 0/255) selecting the text stroke pixels
+        """
+        hsv_image = self.convert_image_to_hsv(image)
+
+        # Build text mask on inner ROI using color-based segmentation
+        roi_bgr_inner = cv2.cvtColor(hsv_image, cv2.COLOR_HSV2BGR)
+        text_mask_inner = self.segment_text_mask(roi_bgr_inner)
+
+        # Safety fallback: if mask ended empty, treat darkest 30% as text
+        if cv2.countNonZero(text_mask_inner) == 0:
+            v_channel = hsv_image[:, :, 2]
+            thr = np.percentile(v_channel, 30)
+            text_mask_inner = (v_channel <= thr).astype(np.uint8) * 255
+            text_mask_inner = self.postprocess_mask(text_mask_inner)
+
+        # Drop the anti-aliased rim: keep only the solid stroke interior.
+        # This is what makes the sampled color insensitive to box size.
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
+        eroded = cv2.erode(text_mask_inner, kernel, iterations=1)
+        if cv2.countNonZero(eroded) > 0:
+            text_mask_inner = eroded
+
+        return text_mask_inner
 
     def get_mean_text_color(
         self,
         image: Image,
+        mask: np.ndarray | None = None,
     ):
         """
         Calculate the representative color of text strokes in an image.
@@ -98,32 +145,18 @@ class SegmentationTool:
         across small bounding-box changes.
 
         Args:
-            image: input image in HSV color space
+            image: input image (PIL Image, RGB)
+            mask: precomputed text mask (0/255); computed when not provided
 
         Returns:
             A tuple containing the representative HSV values (h, s, v) of
             the text strokes
         """
+        if mask is None:
+            mask = self.get_text_mask(image)
 
-        # Build text mask on inner ROI using color-based segmentation
-        roi_bgr_inner = cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
-        text_mask_inner = self.segment_text_mask(roi_bgr_inner)
-
-        # Safety fallback: if mask ended empty, treat darkest 30% as text
-        if cv2.countNonZero(text_mask_inner) == 0:
-            v_channel = image[:, :, 2]
-            thr = np.percentile(v_channel, 30)
-            text_mask_inner = (v_channel <= thr).astype(np.uint8) * 255
-            text_mask_inner = self.postprocess_mask(text_mask_inner)
-
-        # Drop the anti-aliased rim: keep only the solid stroke interior.
-        # This is what makes the sampled color insensitive to box size.
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-        eroded = cv2.erode(text_mask_inner, kernel, iterations=1)
-        if cv2.countNonZero(eroded) > 0:
-            text_mask_inner = eroded
-
-        return self._robust_hsv_color(image, text_mask_inner)
+        hsv_image = self.convert_image_to_hsv(image)
+        return self._robust_hsv_color(hsv_image, mask)
 
     def _robust_hsv_color(
         self,
@@ -338,3 +371,70 @@ class SegmentationTool:
         return cv2.cvtColor(
             np.array([[astuple(color)]], dtype=np.uint8), cv2.COLOR_RGB2HSV
         )[0, 0]
+
+    def convert_hsv_to_rgb(self, color: tuple[int, int, int]):
+        """
+        Convert an HSV color to an RGB tuple.
+
+        Args:
+            color: Input color in HSV format (h, s, v)
+
+        Returns:
+            RGB representation of the color as a (r, g, b) tuple
+        """
+        rgb = cv2.cvtColor(
+            np.array([[color]], dtype=np.uint8), cv2.COLOR_HSV2RGB
+        )[0, 0]
+        return int(rgb[0]), int(rgb[1]), int(rgb[2])
+
+    def create_color_comparison_image(
+        self,
+        expected_hsv: tuple[int, int, int],
+        detected_hsv: tuple[int, int, int],
+        swatch_size: int = 120,
+    ) -> Image.Image:
+        """
+        Build an image comparing two HSV colors as side-by-side swatches.
+
+        The left square shows the expected color to match and the right
+        square shows the mean color detected by the algorithm, so they can
+        be compared visually.
+
+        Args:
+            expected_hsv: Expected color to match in HSV format (h, s, v)
+            detected_hsv: Detected mean color in HSV format (h, s, v)
+            swatch_size: Side length in pixels of each color square
+
+        Returns:
+            A PIL image with both colors drawn as labelled squares
+        """
+        label_height = 24
+        gap = 10
+        width = swatch_size * 2 + gap
+        height = swatch_size + label_height
+        comparison = Image.new("RGB", (width, height), (255, 255, 255))
+        draw = ImageDraw.Draw(comparison)
+
+        expected_rgb = self.convert_hsv_to_rgb(expected_hsv)
+        detected_rgb = self.convert_hsv_to_rgb(detected_hsv)
+
+        draw.rectangle(
+            (0, label_height, swatch_size, label_height + swatch_size),
+            fill=expected_rgb,
+            outline=(0, 0, 0),
+        )
+        draw.rectangle(
+            (
+                swatch_size + gap,
+                label_height,
+                swatch_size * 2 + gap,
+                label_height + swatch_size,
+            ),
+            fill=detected_rgb,
+            outline=(0, 0, 0),
+        )
+
+        draw.text((0, 0), "Expected", fill=(0, 0, 0))
+        draw.text((swatch_size + gap, 0), "Detected", fill=(0, 0, 0))
+
+        return comparison

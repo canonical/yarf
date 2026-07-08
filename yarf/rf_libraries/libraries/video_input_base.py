@@ -313,19 +313,20 @@ class VideoInputBase(ABC):
                     f"'{match['text']}' at region {astuple(match['region'])}"
                 )
 
-                # mean color of the text strokes (not the outer background ring)
-                # crop and pad
-                cropped_and_padded = (
-                    self.segmentation_tool.crop_and_convert_image_with_padding(
-                        image,
-                        match["region"],
-                        pad=-2,
-                    )
+                # mean color of the text strokes (not the outer background
+                # ring). Crop first and pass the cropped RGB image to the
+                # segmentation tool, which handles the HSV conversion, so the
+                # debug image logged below keeps its original colors.
+                cropped = self.segmentation_tool.crop_image_with_padding(
+                    image,
+                    match["region"],
+                    pad=-2,
                 )
 
-                # get mean color in HSV
+                # build the text mask and sample the mean color in HSV
+                text_mask = self.segmentation_tool.get_text_mask(cropped)
                 text_color_hsv = self.segmentation_tool.get_mean_text_color(
-                    cropped_and_padded
+                    cropped, text_mask
                 )
 
                 logger.info(f"Target color (HSV):   {target_color_hsv}")
@@ -342,8 +343,18 @@ class VideoInputBase(ABC):
                         "The colors of the detected text could not be matched"
                     )
                     log_image(
-                        Image.fromarray(cropped_and_padded),
+                        cropped,
                         "The image used for color matching was:",
+                    )
+                    log_image(
+                        Image.fromarray(text_mask),
+                        "Text mask used to sample the color:",
+                    )
+                    log_image(
+                        self.segmentation_tool.create_color_comparison_image(
+                            target_color_hsv, text_color_hsv
+                        ),
+                        "Color comparison (left: expected, right: detected):",
                     )
 
         # Log all the matches if in debug mode (If there are any matches)

@@ -18,7 +18,13 @@ class TestSegmentation:
         seg = SegmentationTool()
         image = Image.fromarray(np.zeros((20, 20, 3), dtype="uint8"))
         region = to_region("2,2,8,8")
-        _ = seg.crop_and_convert_image_with_padding(image, region, pad=-2)
+        _ = seg.crop_image_with_padding(image, region, pad=-2)
+
+    def test_convert_image_to_hsv(self):
+        seg = SegmentationTool()
+        image = Image.fromarray(np.zeros((20, 20, 3), dtype="uint8"))
+        result = seg.convert_image_to_hsv(image)
+        assert result.shape == (20, 20, 3)
 
     def test_get_mean_text_color(self):
         seg = SegmentationTool()
@@ -30,6 +36,18 @@ class TestSegmentation:
         seg.segment_text_mask = Mock(return_value=mask)
         h, s, v = seg.get_mean_text_color(hsv_image)
         assert isinstance(v, float)
+
+    def test_get_mean_text_color_with_mask(self):
+        # When a mask is provided, get_text_mask is not recomputed.
+        seg = SegmentationTool()
+        hsv_image = np.full((20, 20, 3), 200, dtype="uint8")
+        hsv_image[8:12, 8:12, 2] = 10
+        mask = np.zeros((20, 20), dtype="uint8")
+        mask[6:14, 6:14] = 255
+        seg.get_text_mask = Mock()
+        tup = seg.get_mean_text_color(hsv_image, mask)
+        seg.get_text_mask.assert_not_called()
+        assert len(tup) == 3
 
     def test_get_mean_text_color_empty_erosion(self):
         # A mask thin enough that erosion empties it, so the original mask
@@ -56,6 +74,17 @@ class TestSegmentation:
         mask = np.zeros((20, 20), dtype="uint8")
         tup = seg._robust_hsv_color(image, mask)
         assert len(tup) == 3
+
+    def test_convert_hsv_to_rgb(self):
+        seg = SegmentationTool()
+        rgb = seg.convert_hsv_to_rgb((0, 0, 0))
+        assert rgb == (0, 0, 0)
+
+    def test_create_color_comparison_image(self):
+        seg = SegmentationTool()
+        image = seg.create_color_comparison_image((0, 0, 0), (0, 0, 255))
+        assert isinstance(image, Image.Image)
+        assert image.size == (250, 144)
 
     @patch("numpy.median")
     @patch("numpy.ndarray")
