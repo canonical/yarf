@@ -322,7 +322,7 @@ class VideoInputBase(ABC):
         text: str,
         image: Image.Image,
         ocr_text_regions: list[dict],
-        color: Union[RGB, tuple[int, int, int]],
+        color: Optional[Union[RGB, tuple[int, int, int]]],
         color_tolerance: int,
     ) -> list[dict]:
         """
