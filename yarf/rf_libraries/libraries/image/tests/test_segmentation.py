@@ -1,6 +1,5 @@
 from unittest.mock import MagicMock, Mock, patch
 
-import cv2
 import numpy as np
 from PIL import Image
 
@@ -23,32 +22,39 @@ class TestSegmentation:
 
     def test_get_mean_text_color(self):
         seg = SegmentationTool()
-        image = np.zeros((20, 20, 3), dtype="uint8")
-        cv2.cvtColor = Mock()
-        cv2.mean = Mock()
-        cv2.mean.return_value = image
-        cv2.cvtColor.return_value = image
-        cv2.countNonZero = MagicMock()
-        cv2.countNonZero.return_value = 1
-        seg.segment_text_mask = Mock()
-        seg.crop_and_convert_image_with_padding = Mock()
-        seg.crop_and_convert_image_with_padding.return_value = image
-        seg.get_mean_text_color(image)
+        # A dark stroke on a light background so the mask is non-empty.
+        hsv_image = np.full((20, 20, 3), 200, dtype="uint8")
+        hsv_image[8:12, 8:12, 2] = 10
+        mask = np.zeros((20, 20), dtype="uint8")
+        mask[6:14, 6:14] = 255
+        seg.segment_text_mask = Mock(return_value=mask)
+        h, s, v = seg.get_mean_text_color(hsv_image)
+        assert isinstance(v, float)
+
+    def test_get_mean_text_color_empty_erosion(self):
+        # A mask thin enough that erosion empties it, so the original mask
+        # is kept for sampling.
+        seg = SegmentationTool()
+        hsv_image = np.full((20, 20, 3), 200, dtype="uint8")
+        mask = np.zeros((20, 20), dtype="uint8")
+        mask[10, 5:15] = 255
+        seg.segment_text_mask = Mock(return_value=mask)
+        tup = seg.get_mean_text_color(hsv_image)
+        assert len(tup) == 3
 
     def test_get_mean_text_color_all_zeros(self):
         seg = SegmentationTool()
-        image = np.zeros((20, 20, 20), dtype="uint8")
-        image2 = MagicMock()
-        image2.size = 1
-        cv2.cvtColor = MagicMock()
-        cv2.cvtColor.return_value = image
-        cv2.mean = MagicMock()
-        cv2.mean.return_value = image
-        seg.segment_text_mask = MagicMock()
-        seg.postprocess_mask = MagicMock()
-        cv2.countNonZero = MagicMock()
-        cv2.countNonZero.return_value = 0
+        image = np.zeros((20, 20, 3), dtype="uint8")
+        seg.segment_text_mask = Mock(return_value=np.zeros((20, 20), "uint8"))
+        seg.postprocess_mask = Mock(return_value=np.zeros((20, 20), "uint8"))
         tup = seg.get_mean_text_color(image)
+        assert len(tup) == 3
+
+    def test_robust_hsv_color_empty_mask(self):
+        seg = SegmentationTool()
+        image = np.zeros((20, 20, 3), dtype="uint8")
+        mask = np.zeros((20, 20), dtype="uint8")
+        tup = seg._robust_hsv_color(image, mask)
         assert len(tup) == 3
 
     @patch("numpy.median")

@@ -94,14 +94,11 @@ Test Keyword Find Text
     Should Be Equal As Strings                      ${matched_text[0]['text']}                      AB123cd
     Should Be Equal As Numbers                      ${matched_text[0]['similarity']}                100.0
 
-    # Try again with color specified. A wider color tolerance is used because
-    # the near-black text is anti-aliased and the detected mean text color
-    # varies slightly with the OCR model's bounding boxes (e.g. PP-OCRv6).
+    # Try again with color specified
     ${matched_text}=        Find Text
     ...                     AB123cd
     ...                     region=${REGEX_REGION}
     ...                     color=${1,1,1}
-    ...                     color_tolerance=${30}
     ${length}=              Get Length              ${matched_text}
     Should Be True          ${length} > 1
     Should Be Equal As Strings                      ${matched_text[0]['text']}                      AB123cd
@@ -139,14 +136,11 @@ Test Keyword Match Text
     ${is_image}=            Evaluate                isinstance($image, __import__('PIL.Image').Image.Image)
     Should Be True          ${is_image}
 
-    # Try again with color specified. A wider color tolerance is used because
-    # the near-black text is anti-aliased and the detected mean text color
-    # varies slightly with the OCR model's bounding boxes (e.g. PP-OCRv6).
+    # Try again with color specified
     ${matches}              ${image}=               Match Text
     ...                     AB123cd
     ...                     region=${region}
     ...                     color=${1,1,1}
-    ...                     color_tolerance=${30}
     ${length}=              Get Length              ${matches}
     Should Be True          ${length} > 1
     ${is_image}=            Evaluate                isinstance($image, __import__('PIL.Image').Image.Image)

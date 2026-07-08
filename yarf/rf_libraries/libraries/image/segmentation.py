@@ -89,16 +89,20 @@ class SegmentationTool:
         image: Image,
     ):
         """
-        Calculate the mean color of text regions in an image.
+        Calculate the representative color of text strokes in an image.
 
-        This function analyzes the specified text in an image and computes
-        the average HSV color values of the pixels within those regions.
+        This function analyzes the text in an image and computes a robust
+        HSV color for the stroke pixels. Only the eroded interior of the
+        text mask is sampled (dropping anti-aliased border pixels) and a
+        robust per-channel statistic is used, so the result stays stable
+        across small bounding-box changes.
 
         Args:
-            image: input image
+            image: input image in HSV color space
 
         Returns:
-            A tuple containing the mean HSV values (mean_rh, mean_s, mean_v) of the text regions
+            A tuple containing the representative HSV values (h, s, v) of
+            the text strokes
         """
 
         # Build text mask on inner ROI using color-based segmentation
@@ -112,8 +116,51 @@ class SegmentationTool:
             text_mask_inner = (v_channel <= thr).astype(np.uint8) * 255
             text_mask_inner = self.postprocess_mask(text_mask_inner)
 
-        # Compute mean HSV only where mask=255
-        return cv2.mean(image, mask=text_mask_inner)[:3]
+        # Drop the anti-aliased rim: keep only the solid stroke interior.
+        # This is what makes the sampled color insensitive to box size.
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+        eroded = cv2.erode(text_mask_inner, kernel, iterations=1)
+        if cv2.countNonZero(eroded) > 0:
+            text_mask_inner = eroded
+
+        return self._robust_hsv_color(image, text_mask_inner)
+
+    def _robust_hsv_color(
+        self,
+        hsv_image: np.ndarray,
+        mask: np.ndarray,
+    ):
+        """
+        Compute a robust representative HSV color over the masked pixels.
+
+        Uses the median for saturation and value and a circular median for
+        hue, so a minority of residual border or background pixels cannot
+        skew the result the way an arithmetic mean would.
+
+        Args:
+            hsv_image: image in HSV color space
+            mask: binary mask (0/255) selecting text pixels
+
+        Returns:
+            A tuple of representative (h, s, v) values
+        """
+        pixels = hsv_image[mask == 255]
+        if pixels.size == 0:
+            return cv2.mean(hsv_image, mask=mask)[:3]
+
+        s = float(np.median(pixels[:, 1]))
+        v = float(np.median(pixels[:, 2]))
+
+        # Hue is circular (0..179 in OpenCV): take the median of the angle
+        # so the 0/179 wraparound cannot distort the result.
+        hue_rad = pixels[:, 0].astype(np.float64) * (2.0 * np.pi / 180.0)
+        median_sin = np.median(np.sin(hue_rad))
+        median_cos = np.median(np.cos(hue_rad))
+        h = (np.arctan2(median_sin, median_cos) % (2.0 * np.pi)) * (
+            180.0 / (2.0 * np.pi)
+        )
+
+        return (h, s, v)
 
     def postprocess_mask(
         self,
