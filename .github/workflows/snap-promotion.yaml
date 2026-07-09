@@ -170,14 +170,9 @@ jobs:
 
       - name: Promote ${{ matrix.track }}/${{ matrix.from }} to ${{ matrix.track }}/${{ matrix.to }} for ${{ matrix.arch }}
         env:
-          # this is necessary because snapcraft will not allow --yes for promotions of the edge channel
-          SNAPCRAFT_HAS_TTY: "true"
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT }}
           TRACK: ${{ matrix.track }}
           FROM: ${{ matrix.from }}
           TO: ${{ matrix.to }}
         run: |
-          # Note: using `yes |` instead of `--yes` because snapcraft will
-          #       refuse to non-interactively promote a snap from the edge
-          #       channel if it is done without any branch qualifiers
-          yes | snapcraft promote yarf --from-channel "${TRACK}/${FROM}" --to-channel "${TRACK}/${TO}"
+          snapcraft promote --yes yarf --from-channel "${TRACK}/${FROM}" --to-channel "${TRACK}/${TO}"
