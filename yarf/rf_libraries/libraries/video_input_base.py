@@ -290,61 +290,13 @@ class VideoInputBase(ABC):
         if color is None:
             matched_text_regions = ocr_text_regions
         else:
-            if isinstance(color, tuple):
-                color = to_RGB(color)
-
-            logger.info(
-                "Trying to match text with a specific color {}".format(
-                    astuple(color)  # type: ignore[arg-type]
-                )
+            matched_text_regions = self._find_text_with_color(
+                text,
+                image,
+                ocr_text_regions,
+                color,
+                color_tolerance,
             )
-
-            if len(ocr_text_regions) == 0:
-                logger.info(f"Text '{text}' not found in the image.")
-                return matched_text_regions
-
-            target_color_hsv = self.segmentation_tool.convert_rgb_to_hsv(
-                color  # type: ignore[arg-type]
-            )
-            for match in ocr_text_regions:
-                logger.info(
-                    f"Found text matching '{text}' with similarity "
-                    f"{match['similarity']:.2f}, confidence {match['confidence']:.2f}: "
-                    f"'{match['text']}' at region {astuple(match['region'])}"
-                )
-
-                # mean color of the text strokes (not the outer background ring)
-                # crop and pad
-                cropped_and_padded = (
-                    self.segmentation_tool.crop_and_convert_image_with_padding(
-                        image,
-                        match["region"],
-                        pad=-2,
-                    )
-                )
-
-                # get mean color in HSV
-                text_color_hsv = self.segmentation_tool.get_mean_text_color(
-                    cropped_and_padded
-                )
-
-                logger.info(f"Target color (HSV):   {target_color_hsv}")
-                logger.info(f"Detected color (HSV): {text_color_hsv}")
-
-                is_similar = self.segmentation_tool.is_hsv_color_similar(
-                    text_color_hsv, target_color_hsv, color_tolerance
-                )
-                if is_similar:
-                    matched_text_regions.append(match)
-
-                else:
-                    logger.info(
-                        "The colors of the detected text could not be matched"
-                    )
-                    log_image(
-                        Image.fromarray(cropped_and_padded),
-                        "The image used for color matching was:",
-                    )
 
         # Log all the matches if in debug mode (If there are any matches)
         if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
@@ -361,6 +313,92 @@ class VideoInputBase(ABC):
                     f"Found text matching '{text}' with similarity "
                     f"{similarity}, confidence {confidence}: "
                     f"'{match['text']}'",
+                )
+
+        return matched_text_regions
+
+    def _find_text_with_color(
+        self,
+        text: str,
+        image: Image.Image,
+        ocr_text_regions: list[dict],
+        color: Optional[Union[RGB, tuple[int, int, int]]],
+        color_tolerance: int,
+    ) -> list[dict]:
+        """
+        Filter OCR text matches by the color of the detected text.
+
+        Args:
+            text: text that was searched for (used for logging)
+            image: image the text was found in
+            ocr_text_regions: OCR matches to filter by color
+            color: target color of the text
+            color_tolerance: Color tolerance threshold in %
+
+        Returns:
+            The subset of matches whose text color is within tolerance.
+        """
+        if isinstance(color, tuple):
+            color = to_RGB(color)
+
+        logger.info(
+            "Trying to match text with a specific color {}".format(
+                astuple(color)  # type: ignore[arg-type]
+            )
+        )
+
+        matched_text_regions: list[dict] = []
+        if len(ocr_text_regions) == 0:
+            logger.info(f"Text '{text}' not found in the image.")
+            return matched_text_regions
+
+        target_color_hsv = self.segmentation_tool.convert_rgb_to_hsv(
+            color  # type: ignore[arg-type]
+        )
+        for match in ocr_text_regions:
+            logger.info(
+                f"Found text matching '{text}' with similarity "
+                f"{match['similarity']:.2f}, confidence {match['confidence']:.2f}: "
+                f"'{match['text']}' at region {astuple(match['region'])}"
+            )
+
+            # mean color of the text strokes (not the outer background
+            # ring). Crop first and pass the cropped RGB image to the
+            # segmentation tool, which handles the HSV conversion, so the
+            # debug image logged below keeps its original colors.
+            cropped = self.segmentation_tool.crop_image_with_padding(
+                image,
+                match["region"],
+                pad=-2,
+            )
+
+            # build the text mask and sample the mean color in HSV
+            text_mask = self.segmentation_tool.get_text_mask(cropped)
+            text_color_hsv = self.segmentation_tool.get_mean_text_color(
+                cropped, text_mask
+            )
+
+            logger.info(f"Target color (HSV):   {target_color_hsv}")
+            logger.info(f"Detected color (HSV): {text_color_hsv}")
+
+            is_similar = self.segmentation_tool.is_hsv_color_similar(
+                text_color_hsv, target_color_hsv, color_tolerance
+            )
+            if is_similar:
+                matched_text_regions.append(match)
+
+            else:
+                logger.info("The colors of the text could not be matched")
+                log_image(cropped, "Image used for color matching was:")
+                log_image(
+                    Image.fromarray(text_mask),
+                    "Text mask used to sample the color:",
+                )
+                log_image(
+                    self.segmentation_tool.create_color_comparison_image(
+                        target_color_hsv, text_color_hsv
+                    ),
+                    "Color comparison (left: expected, right: detected):",
                 )
 
         return matched_text_regions

@@ -6,7 +6,7 @@ from dataclasses import astuple
 
 import cv2
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 from robot.api import logger
 
 from yarf.vendor.RPA.core.geometry import Region
@@ -53,7 +53,7 @@ class SegmentationTool:
 
         return True
 
-    def crop_and_convert_image_with_padding(
+    def crop_image_with_padding(
         self,
         image: Image,
         region: Region,
@@ -68,7 +68,7 @@ class SegmentationTool:
             pad: Padding to apply (positive to expand, negative to shrink)
 
         Returns:
-            Cropped image as a numpy array in HSV color space
+            Cropped image as a PIL Image
         """
 
         # If we can't apply pad, just use the original region
@@ -80,40 +80,123 @@ class SegmentationTool:
         clamped_region = padded_region.clamp(Region(0, 0, w, h))
 
         # Crop the original image using the region
-        cropped = image.crop(clamped_region.as_tuple())
+        return image.crop(clamped_region.as_tuple())
 
-        return cv2.cvtColor(np.array(cropped), cv2.COLOR_RGB2HSV)
-
-    def get_mean_text_color(
-        self,
-        image: Image,
-    ):
+    def convert_image_to_hsv(self, image: Image) -> np.ndarray:
         """
-        Calculate the mean color of text regions in an image.
-
-        This function analyzes the specified text in an image and computes
-        the average HSV color values of the pixels within those regions.
+        Convert a PIL image to an HSV numpy array.
 
         Args:
-            image: input image
+            image: Input image (PIL Image, RGB)
 
         Returns:
-            A tuple containing the mean HSV values (mean_rh, mean_s, mean_v) of the text regions
+            The image as a numpy array in HSV color space
         """
+        return cv2.cvtColor(np.array(image), cv2.COLOR_RGB2HSV)
+
+    def get_text_mask(self, image: Image) -> np.ndarray:
+        """
+        Build a binary mask of the text strokes in an image.
+
+        Only the eroded interior of the text mask is kept, dropping the
+        anti-aliased border pixels so the sampled color stays stable across
+        small bounding-box changes.
+
+        Args:
+            image: input image (PIL Image, RGB)
+
+        Returns:
+            Binary mask (uint8 0/255) selecting the text stroke pixels
+        """
+        hsv_image = self.convert_image_to_hsv(image)
 
         # Build text mask on inner ROI using color-based segmentation
-        roi_bgr_inner = cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
+        roi_bgr_inner = cv2.cvtColor(hsv_image, cv2.COLOR_HSV2BGR)
         text_mask_inner = self.segment_text_mask(roi_bgr_inner)
 
         # Safety fallback: if mask ended empty, treat darkest 30% as text
         if cv2.countNonZero(text_mask_inner) == 0:
-            v_channel = image[:, :, 2]
+            v_channel = hsv_image[:, :, 2]
             thr = np.percentile(v_channel, 30)
             text_mask_inner = (v_channel <= thr).astype(np.uint8) * 255
             text_mask_inner = self.postprocess_mask(text_mask_inner)
 
-        # Compute mean HSV only where mask=255
-        return cv2.mean(image, mask=text_mask_inner)[:3]
+        # Drop the anti-aliased rim: keep only the solid stroke interior.
+        # Scale the kernel with the crop size so the same fraction of the
+        # rim is removed regardless of resolution.
+        mask_h, mask_w = text_mask_inner.shape[:2]
+        ksize = max(1, round(min(mask_h, mask_w) * 0.05))
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (ksize, ksize))
+        eroded = cv2.erode(text_mask_inner, kernel, iterations=1)
+        if cv2.countNonZero(eroded) > 0:
+            text_mask_inner = eroded
+
+        return text_mask_inner
+
+    def get_mean_text_color(
+        self,
+        image: Image,
+        mask: np.ndarray | None = None,
+    ):
+        """
+        Calculate the representative color of text strokes in an image.
+
+        This function analyzes the text in an image and computes a robust
+        HSV color for the stroke pixels. Only the eroded interior of the
+        text mask is sampled (dropping anti-aliased border pixels) and a
+        robust per-channel statistic is used, so the result stays stable
+        across small bounding-box changes.
+
+        Args:
+            image: input image (PIL Image, RGB)
+            mask: precomputed text mask (0/255); computed when not provided
+
+        Returns:
+            A tuple containing the representative HSV values (h, s, v) of
+            the text strokes
+        """
+        if mask is None:
+            mask = self.get_text_mask(image)
+
+        hsv_image = self.convert_image_to_hsv(image)
+        return self._robust_hsv_color(hsv_image, mask)
+
+    def _robust_hsv_color(
+        self,
+        hsv_image: np.ndarray,
+        mask: np.ndarray,
+    ):
+        """
+        Compute a robust representative HSV color over the masked pixels.
+
+        Uses the median for saturation and value and a circular median for
+        hue, so a minority of residual border or background pixels cannot
+        skew the result the way an arithmetic mean would.
+
+        Args:
+            hsv_image: image in HSV color space
+            mask: binary mask (0/255) selecting text pixels
+
+        Returns:
+            A tuple of representative (h, s, v) values
+        """
+        pixels = hsv_image[mask == 255]
+        if pixels.size == 0:
+            return cv2.mean(hsv_image, mask=mask)[:3]
+
+        s = float(np.median(pixels[:, 1]))
+        v = float(np.median(pixels[:, 2]))
+
+        # Hue is circular (0..179 in OpenCV): take the median of the angle
+        # so the 0/179 wraparound cannot distort the result.
+        hue_rad = pixels[:, 0].astype(np.float64) * (2.0 * np.pi / 180.0)
+        median_sin = np.median(np.sin(hue_rad))
+        median_cos = np.median(np.cos(hue_rad))
+        h = (np.arctan2(median_sin, median_cos) % (2.0 * np.pi)) * (
+            180.0 / (2.0 * np.pi)
+        )
+
+        return (h, s, v)
 
     def postprocess_mask(
         self,
@@ -291,3 +374,70 @@ class SegmentationTool:
         return cv2.cvtColor(
             np.array([[astuple(color)]], dtype=np.uint8), cv2.COLOR_RGB2HSV
         )[0, 0]
+
+    def convert_hsv_to_rgb(self, color: tuple[int, int, int]):
+        """
+        Convert an HSV color to an RGB tuple.
+
+        Args:
+            color: Input color in HSV format (h, s, v)
+
+        Returns:
+            RGB representation of the color as a (r, g, b) tuple
+        """
+        rgb = cv2.cvtColor(
+            np.array([[color]], dtype=np.uint8), cv2.COLOR_HSV2RGB
+        )[0, 0]
+        return int(rgb[0]), int(rgb[1]), int(rgb[2])
+
+    def create_color_comparison_image(
+        self,
+        expected_hsv: tuple[int, int, int],
+        detected_hsv: tuple[int, int, int],
+        swatch_size: int = 120,
+    ) -> Image.Image:
+        """
+        Build an image comparing two HSV colors as side-by-side swatches.
+
+        The left square shows the expected color to match and the right
+        square shows the mean color detected by the algorithm, so they can
+        be compared visually.
+
+        Args:
+            expected_hsv: Expected color to match in HSV format (h, s, v)
+            detected_hsv: Detected mean color in HSV format (h, s, v)
+            swatch_size: Side length in pixels of each color square
+
+        Returns:
+            A PIL image with both colors drawn as labelled squares
+        """
+        label_height = 24
+        gap = 10
+        width = swatch_size * 2 + gap
+        height = swatch_size + label_height
+        comparison = Image.new("RGB", (width, height), (255, 255, 255))
+        draw = ImageDraw.Draw(comparison)
+
+        expected_rgb = self.convert_hsv_to_rgb(expected_hsv)
+        detected_rgb = self.convert_hsv_to_rgb(detected_hsv)
+
+        draw.rectangle(
+            (0, label_height, swatch_size, label_height + swatch_size),
+            fill=expected_rgb,
+            outline=(0, 0, 0),
+        )
+        draw.rectangle(
+            (
+                swatch_size + gap,
+                label_height,
+                swatch_size * 2 + gap,
+                label_height + swatch_size,
+            ),
+            fill=detected_rgb,
+            outline=(0, 0, 0),
+        )
+
+        draw.text((0, 0), "Expected", fill=(0, 0, 0))
+        draw.text((swatch_size + gap, 0), "Detected", fill=(0, 0, 0))
+
+        return comparison
