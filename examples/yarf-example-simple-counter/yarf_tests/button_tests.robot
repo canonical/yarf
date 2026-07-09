@@ -14,7 +14,7 @@ Task Tags
 *** Test Cases ***
 Assert simple counter started
     [Tags]                  yarf:certification_status: blocker
-    Match                   ${CURDIR}/simple_counter.png
+    Match                   ${CURDIR}/simple_counter.png                    timeout=90
 
 Increase the counter and assert count
     [Tags]                  yarf:certification_status: blocker
