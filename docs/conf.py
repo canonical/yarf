@@ -190,7 +190,7 @@ sitemap_show_lastmod = True
 # Template and asset locations
 #######################
 
-#html_static_path = [".sphinx/_static"]
+html_static_path = [".sphinx/_static"]
 templates_path = [".sphinx/_templates"]
 
 
@@ -292,6 +292,7 @@ html_css_files = [
 # Adds custom JavaScript files, located under 'html_static_path'
 
 html_js_files = [
+    "overwrite_links.js",   # support ReadTheDocs flyout when hosted at ubuntu.com/docs
     "https://assets.ubuntu.com/v1/287a5e8f-bundle.js"   # Google Analytics cookie banner
 ]
 
