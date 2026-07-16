@@ -36,6 +36,7 @@ dependencies = [
     "rapidocr~=3.9.1",
     "robotframework==7.4.2",
     "robotframework-sshlibrary~=3.8.0",
+    "paramiko>=5.0.0,<6",  # Keep SSHLibrary's transitive dependency safe.
     "robotframework-stacktrace==0.4.1",
     "prompt-toolkit>=3.0.38",
     "pygments>=2.14.0",
