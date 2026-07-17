@@ -1,6 +1,6 @@
 // Replaces rtd-address with new-address in links
 
-const rtd_address = 'canonical-yarf-documentation.readthedocs-hosted.com';
+const rtd_address = 'canonical-yarf.readthedocs-hosted.com';
 const new_address = 'ubuntu.com/docs/yarf';
 
 function escapeRegExp(value) {
