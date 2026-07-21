@@ -48,8 +48,8 @@ The `variants` directory contains modified versions of the base templates, organ
 
 We need to identify the platform that we would like to run to use YARF. The choice is different in different case, for now we are working to support the following platforms:
 
-- Mir: A display server that is suitable for local development and continuous integration. For details please visit [here](https://canonical-mir.readthedocs-hosted.com/stable/)
-- VNC: A backend that use QEMU to view and control a virtual machine's graphical desktop. For details of how to start a VNC session please visit [here](using-the-vnc-backend.md)
+- Mir: A display server that is suitable for local development and continuous integration. For details please visit [Mir documentation](https://canonical.com/mir/docs/stable/)
+- VNC: A backend that use QEMU to view and control a virtual machine's graphical desktop. For details of how to start a VNC session please visit {doc}`using-the-vnc-backend`
 
 ## Provide the correct variant
 
@@ -131,7 +131,7 @@ gnome-calculator &  # start the application
 yarf --platform Mir <path-to-suite>/suite
 ```
 
-You can find out more about Mir at [the Mir documentation site](https://canonical-mir.readthedocs-hosted.com/stable/tutorial/getting-started-with-mir/).
+You can find out more about Mir at [the Mir documentation site](https://canonical.com/mir/docs/stable/tutorial/getting-started-with-mir/).
 
 ______________________________________________________________________
 
