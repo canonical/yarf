@@ -35,7 +35,7 @@ jobs:
           python3-tk
 
     - name: Checkout Repository
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         lfs: true
         persist-credentials: false
@@ -53,7 +53,7 @@ jobs:
     name: Noble - Install and sync
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         persist-credentials: false
 
@@ -90,7 +90,7 @@ jobs:
     env:
       KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
     steps:
-    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         lfs: true
         fetch-depth: ${{ matrix.fetch-depth || 1 }}
@@ -150,7 +150,7 @@ jobs:
     env:
       KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
     steps:
-    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         lfs: true
         persist-credentials: false
@@ -198,7 +198,7 @@ jobs:
       KEYWORDS_COVERAGE_CHECKER: .github/scripts/yarf/check_unused_keywords.py
       COVERAGE_MERGER: .github/scripts/yarf/merge-keywords-coverage.py
     steps:
-    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         persist-credentials: false
 
