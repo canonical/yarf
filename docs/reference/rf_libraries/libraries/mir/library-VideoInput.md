@@ -50,6 +50,27 @@
 
 <hr style="border:1px solid grey">
 
+### Get Highlighted Text
+
+<p>Detect the currently highlighted item in a keyboard-driven menu.</p>
+<p>Reads every text line and returns the one whose background stands out from the others, that is, the selection highlight, without needing to know the highlight color in advance. This is useful for navigating text menus where a pointer is unavailable and the current selection has to be read from the screen.</p>
+<p>Args: region: The region to restrict the search to. image: The image to analyze; a screenshot is grabbed when not given. A path to an image file may also be given. color_tolerance: Background color tolerance in percent. A line whose background differs beyond this is considered highlighted.</p>
+<p>Returns: The highlighted line as a dict with "text", "region" and "confidence", or None if no highlight is detected.</p>
+
+### Return
+
+{'name': 'Union', 'typedoc': None, 'nested': \[{'name': 'dict', 'typedoc': 'dictionary', 'nested': [], 'union': False}, {'name': 'None', 'typedoc': 'None', 'nested': [], 'union': False}\], 'union': True}
+
+#### Positional and named arguments
+
+| Name            | Type    | Default Value | Kind                | Required |
+| --------------- | ------- | ------------- | ------------------- | -------- |
+| region          | None    | None          | POSITIONAL_OR_NAMED | No       |
+| image           | None    | None          | POSITIONAL_OR_NAMED | No       |
+| color_tolerance | integer | 20            | POSITIONAL_OR_NAMED | No       |
+
+<hr style="border:1px solid grey">
+
 ### Get Text Position
 
 <p>Get the center position of the best match for the specified text. The region to search can be also specified. The center position is round to the nearest integer.</p>
@@ -77,6 +98,28 @@
 ### Return
 
 {'name': 'Image', 'typedoc': None, 'nested': [], 'union': False}
+
+<hr style="border:1px solid grey">
+
+### Is Highlighted Text
+
+<p>Check whether the currently highlighted menu item matches text.</p>
+<p>Uses <a class="name" href="#get-highlighted-text">Get Highlighted Text</a> to read the selected item and checks whether <code>text</code> appears within it, ignoring case, so the expected label does not need to reproduce the full line exactly. Useful for asserting or waiting on the selection while navigating a menu.</p>
+<p>Args: text: The expected text of the highlighted item. region: The region to restrict the search to. image: The image to analyze; a screenshot is grabbed when not given. A path to an image file may also be given. color_tolerance: Background color tolerance in percent. A line whose background differs beyond this is considered highlighted.</p>
+<p>Returns: True if the highlighted item matches <code>text</code>, False otherwise.</p>
+
+### Return
+
+{'name': 'bool', 'typedoc': 'boolean', 'nested': [], 'union': False}
+
+#### Positional and named arguments
+
+| Name            | Type    | Default Value | Kind                | Required |
+| --------------- | ------- | ------------- | ------------------- | -------- |
+| text            | string  |               | POSITIONAL_OR_NAMED | Yes      |
+| region          | None    | None          | POSITIONAL_OR_NAMED | No       |
+| image           | None    | None          | POSITIONAL_OR_NAMED | No       |
+| color_tolerance | integer | 20            | POSITIONAL_OR_NAMED | No       |
 
 <hr style="border:1px solid grey">
 

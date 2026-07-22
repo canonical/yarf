@@ -29,6 +29,8 @@ Test Text Keywords with Rapid Ocr
     Test Keyword Get Position Of Target String
     Test Keyword Find Text
     Test Keyword Match Text
+    Test Keyword Get Highlighted Text
+    Test Keyword Is Highlighted Text
 
 Test Text Keywords with Tesseract
     [Tags]                  yarf:certification_status: blocker
@@ -38,6 +40,10 @@ Test Text Keywords with Tesseract
     Test Keyword Get Position Of Target String
     Test Keyword Find Text
     Test Keyword Match Text
+    # Get Highlighted Text and Is Highlighted Text are currently
+    # very fragile with tesseract, so we skip them for now.
+    # Test Keyword Get Highlighted Text
+    # Test Keyword Is Highlighted Text
 
 Test Set Ocr Method with Invalid Method
     [Tags]                  yarf:certification_status: blocker
@@ -161,3 +167,32 @@ Test Keyword Match Text
 
     Run Keyword And Expect Error                    ValueError: *
     ...                     Match Text              not_expected            region=${region}
+
+Test Keyword Get Highlighted Text
+    [Documentation]    Detect the highlighted entry across menus with the
+    ...    highest and lowest background/highlight contrast, plus
+    ...    camera-captured variants shot in a dark room. Lower-contrast images
+    ...    need a tighter color tolerance. Only RapidOCR reads the inverted
+    ...    (highlighted) row reliably.
+    [Tags]                  yarf:certification_status: blocker
+    ${variants}=            Create List
+    ...                     ${{ ('menu_high.png', 'Dragon', 20) }}
+    ...                     ${{ ('menu_high_camera.png', 'Dragon', 20) }}
+    ...                     ${{ ('menu_low.png', 'Combo', 20) }}
+    ...                     ${{ ('menu_low_camera.png', 'Combo', 10) }}
+    FOR    ${variant}    IN    @{variants}
+        ${line}=                Get Highlighted Text
+        ...                     image=${CURDIR}/text/${variant}[0]
+        ...                     color_tolerance=${variant}[2]
+        Should Contain          ${line}[text]           ${variant}[1]
+    END
+
+Test Keyword Is Highlighted Text
+    [Documentation]    Confirm whether a given entry is the highlighted one.
+    [Tags]                  yarf:certification_status: blocker
+    ${result}=              Is Highlighted Text     Pet the Dragon
+    ...                     image=${CURDIR}/text/menu_high.png
+    Should Be True          ${result}
+    ${result}=              Is Highlighted Text     Take a Nap
+    ...                     image=${CURDIR}/text/menu_high.png
+    Should Not Be True      ${result}
