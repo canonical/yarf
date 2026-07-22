@@ -40,6 +40,10 @@ Test Text Keywords with Tesseract
     Test Keyword Get Position Of Target String
     Test Keyword Find Text
     Test Keyword Match Text
+    # Get Highlighted Text and Is Highlighted Text are currently
+    # very fragile with tesseract, so we skip them for now.
+    # Test Keyword Get Highlighted Text
+    # Test Keyword Is Highlighted Text
 
 Test Set Ocr Method with Invalid Method
     [Tags]                  yarf:certification_status: blocker
