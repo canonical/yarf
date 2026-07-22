@@ -183,12 +183,41 @@ class SegmentationTool:
         hsv_image = self.convert_image_to_hsv(image)
         return self._robust_hsv_color(hsv_image, background_mask)
 
+    def _is_background_similar(
+        self,
+        color1: tuple,
+        color2: tuple,
+        tolerance: int,
+    ) -> bool:
+        """
+        Check whether two background colors match within tolerance.
+
+        Unlike `is_hsv_color_similar`, this accounts for OpenCV's 0-179
+        circular hue range (including the 0/179 wraparound) and only compares
+        hue and value, which is what distinguishes a highlighted background
+        from the common one.
+
+        Args:
+            color1: First color in HSV (h, s, v).
+            color2: Second color in HSV (h, s, v).
+            tolerance: Allowed difference in percent.
+
+        Returns:
+            True if the colors are within tolerance, False otherwise.
+        """
+        hue_diff = abs(color1[0] - color2[0])
+        hue_diff = min(hue_diff, 180.0 - hue_diff)
+        value_diff = abs(color1[2] - color2[2])
+        hue_threshold = 180.0 * tolerance / 100.0
+        value_threshold = 255.0 * tolerance / 100.0
+        return hue_diff <= hue_threshold and value_diff <= value_threshold
+
     def find_outlier_region_index(
         self,
         image: Image,
         regions: list[Region],
         tolerance: int = 20,
-    ) -> "int | None":
+    ) -> int | None:
         """
         Find the region whose background color stands out from the rest.
 
@@ -223,7 +252,7 @@ class SegmentationTool:
         best_index = None
         best_deviation = 0.0
         for index, background in enumerate(backgrounds):
-            if self.is_hsv_color_similar(consensus, background, tolerance):
+            if self._is_background_similar(consensus, background, tolerance):
                 continue
             hue_diff = abs(background[0] - consensus[0])
             hue_diff = min(hue_diff, 180.0 - hue_diff)
@@ -246,7 +275,7 @@ class SegmentationTool:
         self,
         backgrounds: list,
         consensus: tuple,
-        outlier_index: "int | None" = None,
+        outlier_index: int | None = None,
         swatch_size: int = 80,
     ) -> Image.Image:
         """

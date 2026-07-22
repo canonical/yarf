@@ -54,7 +54,7 @@
 
 <p>Detect the currently highlighted item in a keyboard-driven menu.</p>
 <p>Reads every text line and returns the one whose background stands out from the others, that is, the selection highlight, without needing to know the highlight color in advance. This is useful for navigating text menus where a pointer is unavailable and the current selection has to be read from the screen.</p>
-<p>Args: region: The region to restrict the search to. image: The image to analyse; a screenshot is grabbed when not given. A path to an image file may also be given. color_tolerance: Background color tolerance in percent. A line whose background differs beyond this is considered highlighted.</p>
+<p>Args: region: The region to restrict the search to. image: The image to analyze; a screenshot is grabbed when not given. A path to an image file may also be given. color_tolerance: Background color tolerance in percent. A line whose background differs beyond this is considered highlighted.</p>
 <p>Returns: The highlighted line as a dict with "text", "region" and "confidence", or None if no highlight is detected.</p>
 
 ### Return
@@ -104,8 +104,8 @@
 ### Is Highlighted Text
 
 <p>Check whether the currently highlighted menu item matches text.</p>
-<p>Uses <a class="name" href="#get-highlighted-text">Get Highlighted Text</a> to read the selected item and compares it against <code>text</code> (case-insensitive substring match), so the expected label does not need to reproduce the full line exactly. Useful for asserting or waiting on the selection while navigating a menu.</p>
-<p>Args: text: The expected text of the highlighted item. region: The region to restrict the search to. image: The image to analyse; a screenshot is grabbed when not given. A path to an image file may also be given. color_tolerance: Background color tolerance in percent. A line whose background differs beyond this is considered highlighted.</p>
+<p>Uses <a class="name" href="#get-highlighted-text">Get Highlighted Text</a> to read the selected item and checks whether <code>text</code> appears within it, ignoring case, so the expected label does not need to reproduce the full line exactly. Useful for asserting or waiting on the selection while navigating a menu.</p>
+<p>Args: text: The expected text of the highlighted item. region: The region to restrict the search to. image: The image to analyze; a screenshot is grabbed when not given. A path to an image file may also be given. color_tolerance: Background color tolerance in percent. A line whose background differs beyond this is considered highlighted.</p>
 <p>Returns: True if the highlighted item matches <code>text</code>, False otherwise.</p>
 
 ### Return

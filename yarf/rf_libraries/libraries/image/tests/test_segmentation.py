@@ -126,6 +126,17 @@ class TestSegmentation:
         assert seg.find_outlier_region_index(Mock(), regions) is None
         mock_log_image.assert_called_once()
 
+    def test_is_background_similar(self):
+        seg = SegmentationTool()
+        # Hues 1 and 179 are only 2 apart on the 0-179 circle, so similar.
+        assert seg._is_background_similar(
+            (1.0, 0.0, 100.0), (179.0, 0.0, 100.0), 20
+        )
+        # A large value difference is not similar.
+        assert not seg._is_background_similar(
+            (0.0, 0.0, 10.0), (0.0, 0.0, 250.0), 20
+        )
+
     def test_create_background_comparison_image(self):
         seg = SegmentationTool()
         image = seg.create_background_comparison_image(

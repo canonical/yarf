@@ -12,6 +12,7 @@ import tempfile
 import time
 from abc import ABC, abstractmethod
 from dataclasses import astuple
+from pathlib import Path
 from types import ModuleType
 from typing import List, Optional, Sequence, Union
 
@@ -408,7 +409,7 @@ class VideoInputBase(ABC):
     async def get_highlighted_text(
         self,
         region: Optional[Union[Region, dict]] = None,
-        image: Optional[Image.Image] = None,
+        image: Optional[Union[Image.Image, str, Path]] = None,
         color_tolerance: int = 20,
     ) -> Optional[dict]:
         """
@@ -422,7 +423,7 @@ class VideoInputBase(ABC):
 
         Args:
             region: The region to restrict the search to.
-            image: The image to analyse; a screenshot is grabbed when not
+            image: The image to analyze; a screenshot is grabbed when not
                 given. A path to an image file may also be given.
             color_tolerance: Background color tolerance in percent. A line
                 whose background differs beyond this is considered
@@ -508,21 +509,21 @@ class VideoInputBase(ABC):
         self,
         text: str,
         region: Optional[Union[Region, dict]] = None,
-        image: Optional[Image.Image] = None,
+        image: Optional[Union[Image.Image, str, Path]] = None,
         color_tolerance: int = 20,
     ) -> bool:
         """
         Check whether the currently highlighted menu item matches text.
 
-        Uses `Get Highlighted Text` to read the selected item and compares it
-        against ``text`` (case-insensitive substring match), so the expected
+        Uses `Get Highlighted Text` to read the selected item and checks
+        whether ``text`` appears within it, ignoring case, so the expected
         label does not need to reproduce the full line exactly. Useful for
         asserting or waiting on the selection while navigating a menu.
 
         Args:
             text: The expected text of the highlighted item.
             region: The region to restrict the search to.
-            image: The image to analyse; a screenshot is grabbed when not
+            image: The image to analyze; a screenshot is grabbed when not
                 given. A path to an image file may also be given.
             color_tolerance: Background color tolerance in percent. A line
                 whose background differs beyond this is considered

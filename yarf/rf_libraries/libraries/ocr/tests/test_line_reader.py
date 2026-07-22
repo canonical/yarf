@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
 import pytest
+from pytesseract import TesseractNotFoundError
 
 from yarf.rf_libraries.libraries.ocr import line_reader
 from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
@@ -149,3 +150,11 @@ class TestReadLinesTesseract:
 
         mock_to_image.return_value.crop.assert_called_once()
         assert result[0]["region"] == Region(10, 20, 15, 22)
+
+    def test_read_lines_tesseract_not_installed(self):
+        with patch(
+            "yarf.rf_libraries.libraries.ocr.line_reader.pytesseract"
+        ) as pt:
+            pt.image_to_data.side_effect = TesseractNotFoundError()
+            with pytest.raises(EnvironmentError):
+                line_reader.read_lines(Mock(), None)

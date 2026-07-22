@@ -176,11 +176,11 @@ Test Keyword Get Highlighted Text
     ...                     ${{ ('menu_high_camera.png', 'Dragon', 20) }}
     ...                     ${{ ('menu_low.png', 'Combo', 20) }}
     ...                     ${{ ('menu_low_camera.png', 'Combo', 10) }}
-    FOR    ${image}    ${expected}    ${tolerance}    IN    @{variants}
+    FOR    ${variant}    IN    @{variants}
         ${line}=                Get Highlighted Text
-        ...                     image=${CURDIR}/text/${image}
-        ...                     color_tolerance=${tolerance}
-        Should Contain          ${line}[text]           ${expected}
+        ...                     image=${CURDIR}/text/${variant}[0]
+        ...                     color_tolerance=${variant}[2]
+        Should Contain          ${line}[text]           ${variant}[1]
     END
 
 Test Keyword Is Highlighted Text

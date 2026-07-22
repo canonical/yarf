@@ -13,9 +13,11 @@ from types import ModuleType
 import numpy as np
 import pytesseract
 from PIL import Image
+from pytesseract import TesseractNotFoundError
 
 from yarf.rf_libraries.libraries.ocr.rapidocr import OCRResult, RapidOCRReader
 from yarf.vendor.RPA.core.geometry import Region
+from yarf.vendor.RPA.recognition.ocr import INSTALL_PROMPT
 from yarf.vendor.RPA.recognition.utils import to_image
 
 # Tesseract reports page, block, paragraph, line and word levels; level 5 is
@@ -25,7 +27,7 @@ _TESSERACT_WORD_LEVEL = 5
 
 def read_lines(
     ocr: RapidOCRReader | ModuleType,
-    image: Image.Image | Path,
+    image: Image.Image | str | Path,
     region: Region | None = None,
 ) -> list[dict]:
     """
@@ -113,10 +115,16 @@ def _tesseract_lines(image: Image.Image) -> list[tuple[str, Region, float]]:
 
     Returns:
         One triple per detected line.
+
+    Raises:
+        EnvironmentError: If the Tesseract binary is not installed.
     """
-    data = pytesseract.image_to_data(
-        image, output_type=pytesseract.Output.DICT
-    )
+    try:
+        data = pytesseract.image_to_data(
+            image, output_type=pytesseract.Output.DICT
+        )
+    except TesseractNotFoundError as err:
+        raise EnvironmentError(INSTALL_PROMPT) from err
 
     lines: dict[tuple[int, int, int], dict] = {}
     for index, text in enumerate(data["text"]):
