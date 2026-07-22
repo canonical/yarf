@@ -35,8 +35,8 @@ Press Button Until Target Is Highlighted Moves The Highlight
     [Documentation]    Press ${button} Until ${target} Is Highlighted moves the
     ...    highlight onto the target word.
     [Tags]                  yarf:certification_status: blocker
-    Press Right Until tiger Is Highlighted          color_tolerance=${COLOR_TOLERANCE}
-    ${on_target}=           Is Highlighted Text     tiger                   color_tolerance=${COLOR_TOLERANCE}
+    Press Right Until flame Is Highlighted          color_tolerance=${COLOR_TOLERANCE}
+    ${on_target}=           Is Highlighted Text     flame                   color_tolerance=${COLOR_TOLERANCE}
     Should Be True          ${on_target}
     ${on_start}=            Is Highlighted Text     apple                   color_tolerance=${COLOR_TOLERANCE}
     Should Not Be True      ${on_start}
@@ -46,12 +46,11 @@ Press Keys Until Target Is Highlighted Walks A Column
     ...    sequence of Down keys to walk down a column, then a single Up to
     ...    step back up one row.
     [Tags]                  yarf:certification_status: blocker
-    Press Right Until apple Is Highlighted          color_tolerance=${COLOR_TOLERANCE}
-    Press Keys Until quilt Is Highlighted           ${{ ['Down'] * 6 }}     color_tolerance=${COLOR_TOLERANCE}
-    ${on_bottom}=           Is Highlighted Text     quilt                   color_tolerance=${COLOR_TOLERANCE}
+    Press Keys Until vapor Is Highlighted           ${{ ['Down'] * 6 }}     color_tolerance=${COLOR_TOLERANCE}
+    ${on_bottom}=           Is Highlighted Text     vapor                   color_tolerance=${COLOR_TOLERANCE}
     Should Be True          ${on_bottom}
-    Press Keys Until joker Is Highlighted           ${{ ['Up'] }}           color_tolerance=${COLOR_TOLERANCE}
-    ${on_up}=               Is Highlighted Text     joker                   color_tolerance=${COLOR_TOLERANCE}
+    Press Keys Until olive Is Highlighted           ${{ ['Up'] }}           color_tolerance=${COLOR_TOLERANCE}
+    ${on_up}=               Is Highlighted Text     olive                   color_tolerance=${COLOR_TOLERANCE}
     Should Be True          ${on_up}
 
 Press Keys Until Target Is Highlighted Walks A Diagonal
@@ -59,9 +58,8 @@ Press Keys Until Target Is Highlighted Walks A Diagonal
     ...    given sequence of keys, so a repeated Down + Right walks the
     ...    highlight along the grid diagonal to the target.
     [Tags]                  yarf:certification_status: blocker
-    Press Right Until apple Is Highlighted          color_tolerance=${COLOR_TOLERANCE}
-    Press Keys Until glide Is Highlighted           ${{ ['Down', 'Right'] * 4 }}                    color_tolerance=${COLOR_TOLERANCE}
-    ${on_target}=           Is Highlighted Text     glide                   color_tolerance=${COLOR_TOLERANCE}
+    Press Keys Until ivory Is Highlighted           ${{ ['Left', 'Up'] * 4 }}                       color_tolerance=${COLOR_TOLERANCE}
+    ${on_target}=           Is Highlighted Text     ivory                   color_tolerance=${COLOR_TOLERANCE}
     Should Be True          ${on_target}
 
 Close The Word Grid
