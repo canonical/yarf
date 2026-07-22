@@ -148,6 +148,7 @@ jobs:
           - kvm_test
           - llm_client_test
           - grid_test
+          - grid_test_low_contrast
     env:
       KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
     steps:

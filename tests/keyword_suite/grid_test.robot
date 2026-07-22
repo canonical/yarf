@@ -15,21 +15,30 @@ Task Tags
 ...    yarf:test_group_id: com.canonical.yarf::video_input
 
 
+*** Variables ***
+# Contrast of the highlight relative to the background (0..1) and the matching
+# background colour tolerance used for detection. Override to exercise a
+# low-contrast highlight, e.g.
+# --variable CONTRAST:0.4 --variable COLOR_TOLERANCE:10
+${CONTRAST}             0.85
+${COLOR_TOLERANCE}      20
+
+
 *** Test Cases ***
 Grid Starts With Top Left Highlighted
     [Documentation]    The top-left word is highlighted when the grid opens.
     [Tags]                  yarf:certification_status: blocker
-    ${highlighted}=         Is Highlighted Text     apple
+    ${highlighted}=         Is Highlighted Text     apple                   color_tolerance=${COLOR_TOLERANCE}
     Should Be True          ${highlighted}
 
 Press Button Until Target Is Highlighted Moves The Highlight
     [Documentation]    Press ${button} Until ${target} Is Highlighted moves the
     ...    highlight onto the target word.
     [Tags]                  yarf:certification_status: blocker
-    Press Right Until tiger Is Highlighted
-    ${on_target}=           Is Highlighted Text     tiger
+    Press Right Until tiger Is Highlighted          color_tolerance=${COLOR_TOLERANCE}
+    ${on_target}=           Is Highlighted Text     tiger                   color_tolerance=${COLOR_TOLERANCE}
     Should Be True          ${on_target}
-    ${on_start}=            Is Highlighted Text     apple
+    ${on_start}=            Is Highlighted Text     apple                   color_tolerance=${COLOR_TOLERANCE}
     Should Not Be True      ${on_start}
 
 Press Keys Until Target Is Highlighted Walks A Column
@@ -37,12 +46,12 @@ Press Keys Until Target Is Highlighted Walks A Column
     ...    sequence of Down keys to walk down a column, then a single Up to
     ...    step back up one row.
     [Tags]                  yarf:certification_status: blocker
-    Press Right Until apple Is Highlighted
-    Press Keys Until quilt Is Highlighted           ${{ ['Down'] * 6 }}
-    ${on_bottom}=           Is Highlighted Text     quilt
+    Press Right Until apple Is Highlighted          color_tolerance=${COLOR_TOLERANCE}
+    Press Keys Until quilt Is Highlighted           ${{ ['Down'] * 6 }}     color_tolerance=${COLOR_TOLERANCE}
+    ${on_bottom}=           Is Highlighted Text     quilt                   color_tolerance=${COLOR_TOLERANCE}
     Should Be True          ${on_bottom}
-    Press Keys Until joker Is Highlighted           ${{ ['Up'] }}
-    ${on_up}=               Is Highlighted Text     joker
+    Press Keys Until joker Is Highlighted           ${{ ['Up'] }}           color_tolerance=${COLOR_TOLERANCE}
+    ${on_up}=               Is Highlighted Text     joker                   color_tolerance=${COLOR_TOLERANCE}
     Should Be True          ${on_up}
 
 Press Keys Until Target Is Highlighted Walks A Diagonal
@@ -50,25 +59,27 @@ Press Keys Until Target Is Highlighted Walks A Diagonal
     ...    given sequence of keys, so a repeated Down + Right walks the
     ...    highlight along the grid diagonal to the target.
     [Tags]                  yarf:certification_status: blocker
-    Press Right Until apple Is Highlighted
-    Press Keys Until glide Is Highlighted           ${{ ['Down', 'Right'] * 4 }}
-    ${on_target}=           Is Highlighted Text     glide
+    Press Right Until apple Is Highlighted          color_tolerance=${COLOR_TOLERANCE}
+    Press Keys Until glide Is Highlighted           ${{ ['Down', 'Right'] * 4 }}                    color_tolerance=${COLOR_TOLERANCE}
+    ${on_target}=           Is Highlighted Text     glide                   color_tolerance=${COLOR_TOLERANCE}
     Should Be True          ${on_target}
 
 Enter Selects And Escape Clears The Selection
     [Documentation]    Enter turns the highlighted word green; Escape clears
-    ...    every green selection.
+    ...    every green selection. Highlight detection is row-based, so the
+    ...    highlight is moved to a different row (Up) to tell the selected row
+    ...    apart from the highlighted one.
     [Tags]                  yarf:certification_status: blocker
-    Press Right Until wheat Is Highlighted
+    Press Right Until wheat Is Highlighted          color_tolerance=${COLOR_TOLERANCE}
     Keys Combo              Return
-    ${selected}=            Is Highlighted Text     wheat
+    ${selected}=            Is Highlighted Text     wheat                   color_tolerance=${COLOR_TOLERANCE}
     Should Be True          ${selected}
-    Keys Combo              Left
+    Keys Combo              Up
     Keys Combo              Escape
     Sleep                   0.3
-    ${cleared}=             Is Highlighted Text     wheat
+    ${cleared}=             Is Highlighted Text     wheat                   color_tolerance=${COLOR_TOLERANCE}
     Should Not Be True      ${cleared}
-    ${on_neighbour}=        Is Highlighted Text     vapor
+    ${on_neighbour}=        Is Highlighted Text     joker                   color_tolerance=${COLOR_TOLERANCE}
     Should Be True          ${on_neighbour}
 
 Close The Word Grid
@@ -79,8 +90,8 @@ Close The Word Grid
 
 *** Keywords ***
 Start Word Grid
-    [Documentation]    Starts the word grid application and waits for it to be
-    ...    open with the top-left word displayed.
+    [Documentation]    Starts the word grid application at ${CONTRAST} contrast
+    ...    and waits for it to be open with the top-left word displayed.
     Start Process
     ...                     dbus-run-session
     ...                     --
@@ -90,5 +101,5 @@ Start Word Grid
     ...                     run
     ...                     grid-app
     ...                     --contrast
-    ...                     0.85
+    ...                     ${CONTRAST}
     Match Text              apple                   timeout=90
