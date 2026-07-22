@@ -49,7 +49,7 @@ The `variants` directory contains modified versions of the base templates, organ
 We need to identify the platform that we would like to run to use YARF. The choice is different in different case, for now we are working to support the following platforms:
 
 - Mir: A display server that is suitable for local development and continuous integration. For details please visit [Mir documentation](https://canonical.com/mir/docs/stable/)
-- VNC: A backend that use QEMU to view and control a virtual machine's graphical desktop. For details of how to start a VNC session please visit {doc}`using-the-vnc-backend`
+- VNC: A backend that uses QEMU to view and control a virtual machine's graphical desktop. For details of how to start a VNC session please visit {doc}`using-the-vnc-backend`
 
 ## Provide the correct variant
 
@@ -62,7 +62,7 @@ caption: Format for the variant string.
 <attribute1>/<attribute2>/<attribute3>/...
 ```
 
-Take example on Code Snippet [here](#code_snippet_an_example_of_a_more_comprehensive_test_suite), we can have one variant strings:
+As shown in the example [Code Snippet](#code_snippet_an_example_of_a_more_comprehensive_test_suite), we can have one variant string:
 
 1. `var`: When running the test suite, we use `suite/variants/var/a1.png` and `suite/variants/var/sub/a2.png` instead of `suite/a1.png` and `suite/a2.png`.
 
@@ -99,7 +99,7 @@ To run a test suite named `<suite>` using a given `<platform>`, a `<variant>` an
 
 ```{code-block} bash
 ---
-caption: `yarf` command
+caption: '`yarf` command'
 ---
 yarf --variant <variant> --platform <platform> --outdir <outdir> <path-to-test-suite>/suite
 ```
@@ -109,7 +109,7 @@ If the `--platform` argument is not specified, then YARF will use Vnc as the pla
 
 ```{code-block} bash
 ---
-caption: `yarf` command without `--platform` option
+caption: '`yarf` command without `--platform` option'
 ---
 yarf --platform Vnc <path-to-suite>/suite
 ```
@@ -119,7 +119,7 @@ To run with the Mir platform, you need to run a Mir compositor with additional W
 
 ```{code-block} bash
 ---
-caption: `yarf` command for Mir
+caption: '`yarf` command for Mir'
 ---
 export WAYLAND_DISPLAY=wayland-99
 export MIR_SERVER_ADD_WAYLAND_EXTENSIONS=zwlr_screencopy_manager_v1:zwlr_virtual_pointer_manager_v1
@@ -143,7 +143,7 @@ The Robot Framework CLI provides several additional options, such as the `--vari
 
 ```{code-block} bash
 ---
-caption: `yarf` command with Robot-specific argument provided
+caption: '`yarf` command with Robot-specific argument provided'
 ---
 yarf <path-to-suite>/suite -- --variable KEY1:VALUE1 --variable KEY2:VALUE2
 ```

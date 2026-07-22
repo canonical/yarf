@@ -8,6 +8,7 @@ The keywords and resources YARF provides on top of Robot Framework, including th
 platform-specific libraries.
 
 ```{toctree}
+---
 glob:
 maxdepth: 1
 ---

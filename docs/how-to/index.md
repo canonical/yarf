@@ -19,12 +19,12 @@ Using The LLM Client <./using-the-llm-client.md>
 
 ## Platforms and output
 
-Set up the Vnc back end and organise a test plan for a specific output format.
+Set up the VNC backend and organise a test plan for a specific output format.
 
 ```{toctree}
 ---
 titlesonly:
---- 
+---
 Using The Vnc Backend <./using-the-vnc-backend.md>
 Organising a test plan for a specific output format <./organising-a-test-plan-for-a-specific-output-format.md>
 ```
@@ -36,6 +36,6 @@ Create a platform plugin and make it available in YARF.
 ```{toctree}
 ---
 titlesonly:
---- 
+---
 Platform Plugins <./platform-plugins.md>
 ```

@@ -35,7 +35,8 @@ We can add this tag in the `Test Tags` section under `*** Settings ***` or under
 
 ```{code-block} text
 ---
-caption: An example of a test robot file using the tag `yarf:version: <operator> X.Y`
+caption: 'An example of a test robot file using the tag `yarf:version: <operator>
+  X.Y`'
 ---
 *** Settings ***
 Documentation       Example
@@ -86,7 +87,8 @@ This tag specifies the category of a test case in the form of `yarf:category_id:
 
 ```{code-block} text
 ---
-caption: An example of a test robot file using the tag `yarf:category_id: full_id` under the `Settings` section
+caption: 'An example of a test robot file using the tag `yarf:category_id: full_id`
+  under the `Settings` section'
 ---
 *** Settings ***
 Documentation       Example
@@ -104,7 +106,8 @@ Task 2
 
 ```{code-block} robotframework
 ---
-caption: An example of a test robot file using the tag `yarf:category_id: full_id` under individual tasks
+caption: 'An example of a test robot file using the tag `yarf:category_id: full_id`
+  under individual tasks'
 ---
 *** Settings ***
 Documentation       Example
@@ -127,7 +130,8 @@ This tag specifies the certification status of a test case in the form of `yarf:
 
 ```{code-block} robotframework
 ---
-caption: An example of a test robot file using the tag `yarf:certification_status: <value>` under individual tasks
+caption: 'An example of a test robot file using the tag `yarf:certification_status:
+  <value>` under individual tasks'
 ---
 *** Settings ***
 Documentation       Example
@@ -154,7 +158,8 @@ This tag specifies the scenario group of a test case in the form of `yarf:test_g
 
 ```{code-block} text
 ---
-caption: An example of a test robot file using the tag `yarf:test_group_id: <test_group_namespace>::<group>` under the `Settings` section
+caption: 'An example of a test robot file using the tag `yarf:test_group_id: <test_group_namespace>::<group>`
+  under the `Settings` section'
 ---
 *** Settings ***
 Documentation       Example
@@ -172,7 +177,8 @@ Task 2 for Provisioning
 
 ```{code-block} robotframework
 ---
-caption: An example of a test robot file using the tag `yarf:test_group_id: <test_group_namespace>::<group>` under individual tasks
+caption: 'An example of a test robot file using the tag `yarf:test_group_id: <test_group_namespace>::<group>`
+  under individual tasks'
 ---
 *** Settings ***
 Documentation       Example

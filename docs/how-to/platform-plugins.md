@@ -52,7 +52,7 @@ In the `__init__.py`:
 
 ```{code-block} python
 ---
-caption: `__init__.py` for Platform A
+caption: '`__init__.py` for Platform A'
 ---
 from yarf.rf_libraries.libraries import PlatformBase
 
