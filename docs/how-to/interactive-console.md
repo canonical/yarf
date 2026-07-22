@@ -13,7 +13,7 @@ We can enter the interactive console by supplying the platform choice with an em
 
 ```{code-block} bash
 ---
-caption: `yarf` command for Vnc that enters interactive console
+caption: '`yarf` command for Vnc that enters interactive console'
 ---
 yarf --platform Vnc
 ```
@@ -22,7 +22,7 @@ After we enter the command, we should see something similar to the following:
 
 ```{code-block} bash
 ---
-caption: `yarf`'s interactive console
+caption: "`yarf`'s interactive console"
 ---
 WARNING:yarf.main:Removing existing output directory: /tmp/yarf-outdir
 INFO:The value of CURDIR is: /path/to/current/directory
