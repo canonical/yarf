@@ -27,6 +27,19 @@ case "$SUITE" in
     trap 'kill "$STUB_PID" 2>/dev/null || true' EXIT
     run_yarf
     ;;
+  grid_test)
+    # The grid app is a GTK4/libadwaita application managed by uv; install its
+    # system GObject bindings and create its venv with access to them,
+    # mirroring the tutorial tests setup.
+    sudo apt-get --yes --no-install-recommends install \
+      python3-gi \
+      gir1.2-gtk-4.0 \
+      libadwaita-1-dev \
+      gir1.2-adw-1
+    uv venv --python=/usr/bin/python3 --system-site-packages \
+      --project="$(pwd)/tests/keyword_suite/grid"
+    run_yarf
+    ;;
   *)
     run_yarf
     ;;
