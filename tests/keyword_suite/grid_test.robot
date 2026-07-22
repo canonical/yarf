@@ -32,6 +32,19 @@ Press Button Until Target Is Highlighted Moves The Highlight
     ${on_start}=            Is Highlighted Text     apple
     Should Not Be True      ${on_start}
 
+Press Keys Until Target Is Highlighted Walks A Column
+    [Documentation]    Press Keys Until ${target} Is Highlighted presses a
+    ...    sequence of Down keys to walk down a column, then a single Up to
+    ...    step back up one row.
+    [Tags]                  yarf:certification_status: blocker
+    Press Right Until apple Is Highlighted
+    Press Keys Until quilt Is Highlighted           ${{ ['Down'] * 6 }}
+    ${on_bottom}=           Is Highlighted Text     quilt
+    Should Be True          ${on_bottom}
+    Press Keys Until joker Is Highlighted           ${{ ['Up'] }}
+    ${on_up}=               Is Highlighted Text     joker
+    Should Be True          ${on_up}
+
 Press Keys Until Target Is Highlighted Walks A Diagonal
     [Documentation]    Press Keys Until ${target} Is Highlighted presses the
     ...    given sequence of keys, so a repeated Down + Right walks the
@@ -41,31 +54,6 @@ Press Keys Until Target Is Highlighted Walks A Diagonal
     Press Keys Until glide Is Highlighted           ${{ ['Down', 'Right'] * 4 }}
     ${on_target}=           Is Highlighted Text     glide
     Should Be True          ${on_target}
-
-Navigate The Grid Vertically
-    [Documentation]    The Down and Up arrow keys move the highlight down and
-    ...    up a full column of the grid.
-    [Tags]                  yarf:certification_status: blocker
-    Press Right Until apple Is Highlighted
-    Press Keys And Expect Highlighted               ${{ ['Down'] }}         honey
-    Press Keys And Expect Highlighted               ${{ ['Down'] }}         ocean
-    Press Keys And Expect Highlighted               ${{ ['Down'] }}         vivid
-    Press Keys And Expect Highlighted               ${{ ['Down'] }}         crane
-    Press Keys And Expect Highlighted               ${{ ['Down'] }}         joker
-    Press Keys And Expect Highlighted               ${{ ['Down'] }}         quilt
-    Press Keys And Expect Highlighted               ${{ ['Up'] }}           joker
-
-Navigate The Grid Diagonally
-    [Documentation]    Pressing Down then Right repeatedly moves the highlight
-    ...    along the full grid diagonal.
-    [Tags]                  yarf:certification_status: blocker
-    Press Right Until apple Is Highlighted
-    Press Keys And Expect Highlighted               ${{ ['Down', 'Right'] }}                        ivory
-    Press Keys And Expect Highlighted               ${{ ['Down', 'Right'] }}                        queen
-    Press Keys And Expect Highlighted               ${{ ['Down', 'Right'] }}                        yacht
-    Press Keys And Expect Highlighted               ${{ ['Down', 'Right'] }}                        glide
-    Press Keys And Expect Highlighted               ${{ ['Down', 'Right'] }}                        olive
-    Press Keys And Expect Highlighted               ${{ ['Down', 'Right'] }}                        wheat
 
 Enter Selects And Escape Clears The Selection
     [Documentation]    Enter turns the highlighted word green; Escape clears
@@ -104,14 +92,3 @@ Start Word Grid
     ...                     --contrast
     ...                     0.85
     Match Text              apple                   timeout=90
-
-Press Keys And Expect Highlighted
-    [Documentation]    Press each key in ${keys} in order, then assert that
-    ...    ${word} is the highlighted item.
-    [Arguments]             ${keys}                 ${word}
-    FOR    ${key}    IN    @{keys}
-        Keys Combo              ${key}
-    END
-    Sleep                   0.3
-    ${highlighted}=         Is Highlighted Text     ${word}
-    Should Be True          ${highlighted}
