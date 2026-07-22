@@ -1,0 +1,4 @@
+.venv
+*.snap
+__pycache__/
+.pytest_cache/
