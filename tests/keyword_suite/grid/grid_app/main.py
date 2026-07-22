@@ -174,6 +174,7 @@ def _run(contrast):
             win.add_controller(controller)
 
             self._refresh()
+            win.fullscreen()
             win.present()
 
         def _refresh(self):
