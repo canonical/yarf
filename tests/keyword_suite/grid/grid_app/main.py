@@ -107,10 +107,10 @@ def _run(contrast):
     .cell {{
         background-color: {bg};
         color: {text};
-        padding: 16px 12px;
+        padding: 16px 28px;
         border-radius: 6px;
         font-weight: bold;
-        font-size: 18px;
+        font-size: 20px;
     }}
     .cell.highlight {{ background-color: {hl}; color: {hl_text}; }}
     .cell.selected {{ background-color: {sel}; color: {sel_text}; }}
@@ -144,15 +144,15 @@ def _run(contrast):
             )
 
             win = Gtk.ApplicationWindow(application=app)
-            win.set_default_size(560, 560)
+            win.set_default_size(1040, 720)
 
             headerbar = Adw.HeaderBar()
             headerbar.set_title_widget(Gtk.Label(label="Word Grid"))
             win.set_titlebar(headerbar)
 
             grid = Gtk.Grid(
-                row_spacing=6,
-                column_spacing=6,
+                row_spacing=16,
+                column_spacing=32,
                 margin_top=16,
                 margin_bottom=16,
                 margin_start=16,

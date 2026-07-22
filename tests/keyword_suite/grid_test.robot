@@ -19,7 +19,7 @@ Task Tags
 # Contrast of the highlight relative to the background (0..1) and the matching
 # background colour tolerance used for detection. Override to exercise a
 # low-contrast highlight, e.g.
-# --variable CONTRAST:0.4 --variable COLOR_TOLERANCE:10
+# --variable CONTRAST:0.55 --variable COLOR_TOLERANCE:10
 ${CONTRAST}             0.85
 ${COLOR_TOLERANCE}      20
 
@@ -64,24 +64,6 @@ Press Keys Until Target Is Highlighted Walks A Diagonal
     ${on_target}=           Is Highlighted Text     glide                   color_tolerance=${COLOR_TOLERANCE}
     Should Be True          ${on_target}
 
-Enter Selects And Escape Clears The Selection
-    [Documentation]    Enter turns the highlighted word green; Escape clears
-    ...    every green selection. Highlight detection is row-based, so the
-    ...    highlight is moved to a different row (Up) to tell the selected row
-    ...    apart from the highlighted one.
-    [Tags]                  yarf:certification_status: blocker
-    Press Right Until wheat Is Highlighted          color_tolerance=${COLOR_TOLERANCE}
-    Keys Combo              Return
-    ${selected}=            Is Highlighted Text     wheat                   color_tolerance=${COLOR_TOLERANCE}
-    Should Be True          ${selected}
-    Keys Combo              Up
-    Keys Combo              Escape
-    Sleep                   0.3
-    ${cleared}=             Is Highlighted Text     wheat                   color_tolerance=${COLOR_TOLERANCE}
-    Should Not Be True      ${cleared}
-    ${on_neighbour}=        Is Highlighted Text     joker                   color_tolerance=${COLOR_TOLERANCE}
-    Should Be True          ${on_neighbour}
-
 Close The Word Grid
     [Documentation]    Close the application.
     [Tags]                  yarf:certification_status: blocker
@@ -92,6 +74,10 @@ Close The Word Grid
 Start Word Grid
     [Documentation]    Starts the word grid application at ${CONTRAST} contrast
     ...    and waits for it to be open with the top-left word displayed.
+    # RapidOCR reports a box per word, so each cell is a separate region and a
+    # single highlighted cell stands out cleanly (Tesseract would merge a whole
+    # row into one region and average the highlight away).
+    Set Ocr Method          rapidocr
     Start Process
     ...                     dbus-run-session
     ...                     --

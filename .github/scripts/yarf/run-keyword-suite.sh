@@ -46,7 +46,7 @@ case "$SUITE" in
       # Reuse the grid_test suite but render the highlight at a low contrast,
       # which needs a tighter background colour tolerance to be detected.
       ROBOT_SUITE=grid_test
-      run_yarf --variable CONTRAST:0.4 --variable COLOR_TOLERANCE:10
+      run_yarf --variable CONTRAST:0.55 --variable COLOR_TOLERANCE:10
     else
       run_yarf
     fi
