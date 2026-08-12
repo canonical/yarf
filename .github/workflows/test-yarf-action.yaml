@@ -1,0 +1,61 @@
+name: Test YARF action
+
+on:
+  merge_group:
+    types: [checks_requested]
+  pull_request:
+    paths:
+      - '.github/actions/yarf-test/**'
+      - '.github/workflows/test-yarf-action.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read  # Required to check out repository code
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-action:
+    name: ${{ matrix.platform }} - Run YARF via the action
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [Mir, Vnc]
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          lfs: true
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Install the app under test
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends gnome-calculator
+
+      - name: Run canary test through the action
+        id: yarf
+        uses: ./.github/actions/yarf-test
+        with:
+          platform: ${{ matrix.platform }}
+          platform-provider: ${{ matrix.platform }}
+          test-path: tests/canary_test
+          launch-command: dbus-run-session -- gnome-calculator
+          # Build the checked-out revision so the action tests current code.
+          yarf-ref: ${{ github.sha }}
+          artifact-name: yarf-output-${{ matrix.platform }}
+
+      - name: Check action outputs
+        env:
+          RESULT: ${{ steps.yarf.outputs.result }}
+          OUTPUT_DIR: ${{ steps.yarf.outputs.output-dir }}
+        run: |
+          set -euo pipefail
+          echo "result=${RESULT}"
+          echo "output-dir=${OUTPUT_DIR}"
+          test "${RESULT}" = "passed"
