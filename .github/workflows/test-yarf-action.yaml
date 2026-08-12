@@ -46,8 +46,7 @@ jobs:
           platform-provider: ${{ matrix.platform }}
           test-path: tests/canary_test
           launch-command: dbus-run-session -- gnome-calculator
-          # Build the checked-out revision so the action tests current code.
-          yarf-ref: ${{ github.sha }}
+          yarf-channel: latest/stable
           artifact-name: yarf-output-${{ matrix.platform }}
 
       - name: Check action outputs
