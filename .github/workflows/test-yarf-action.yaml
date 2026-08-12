@@ -40,8 +40,6 @@ jobs:
 
       - name: Run canary test through the action
         id: yarf
-        # Local reference so the checked-out revision (the PR) is exercised.
-        # Expressions such as github.sha are not allowed in a step `uses`.
         uses: ./.github/actions/yarf-test
         with:
           platform: ${{ matrix.platform }}
