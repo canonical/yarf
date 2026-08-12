@@ -40,13 +40,12 @@ jobs:
 
       - name: Run canary test through the action
         id: yarf
-        uses: ./.github/actions/yarf-test
+        # Pinned to this commit so the PR's own changes are exercised.
+        uses: canonical/yarf/.github/actions/yarf-test@${{ github.sha }}
         with:
           platform: ${{ matrix.platform }}
           platform-provider: ${{ matrix.platform }}
           test-path: tests/canary_test
-          launch-command: dbus-run-session -- gnome-calculator
-          # Build the checked-out revision so the action tests current code.
           yarf-ref: ${{ github.sha }}
           artifact-name: yarf-output-${{ matrix.platform }}
 
