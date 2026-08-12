@@ -40,8 +40,9 @@ jobs:
 
       - name: Run canary test through the action
         id: yarf
-        # Pinned to this commit so the PR's own changes are exercised.
-        uses: canonical/yarf/.github/actions/yarf-test@${{ github.sha }} # zizmor: ignore[unpinned-uses]
+        # Local reference so the checked-out revision (the PR) is exercised.
+        # Expressions such as github.sha are not allowed in a step `uses`.
+        uses: ./.github/actions/yarf-test
         with:
           platform: ${{ matrix.platform }}
           platform-provider: ${{ matrix.platform }}
