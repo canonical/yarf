@@ -82,4 +82,5 @@ The output directory differs by install mode: the snap writes to
 `~/snap/yarf/common/yarf-outdir/`, while a source install writes to
 `$TMPDIR/yarf-outdir`. The action resolves the correct path based on the install
 mode and exposes it via `output-dir` so downstream steps and the artifact upload
-do not hardcode it.
+do not hardcode it. Passing an explicit `--outdir <path>` through `yarf-args`
+takes precedence and is reflected in `output-dir`.

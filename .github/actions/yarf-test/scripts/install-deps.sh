@@ -30,11 +30,19 @@ Mir | Vnc)
   if [ "${arch}" = "amd64" ]; then
     sudo apt-get install -y --no-install-recommends wlrctl
   else
-    # wlrctl has no package outside amd64, so build it from source.
+    # wlrctl has no package outside amd64, so build it from a pinned release.
+    wlrctl_tag="v0.2.2"
+    wlrctl_commit="afe60da062ea315b92f2a9857e50b77e0b3a4b7e"
     sudo apt-get install -y --no-install-recommends \
       gcc libwayland-dev meson ninja-build scdoc wayland-protocols
     build_dir="$(mktemp -d)"
-    git clone https://git.sr.ht/~brocellous/wlrctl "${build_dir}/wlrctl"
+    git clone --depth 1 --branch "${wlrctl_tag}" \
+      https://git.sr.ht/~brocellous/wlrctl "${build_dir}/wlrctl"
+    actual_commit="$(git -C "${build_dir}/wlrctl" rev-parse HEAD)"
+    if [ "${actual_commit}" != "${wlrctl_commit}" ]; then
+      echo "wlrctl ${wlrctl_tag} resolved to ${actual_commit}, expected ${wlrctl_commit}" >&2
+      exit 1
+    fi
     meson setup "${build_dir}/wlrctl/build" "${build_dir}/wlrctl"
     ninja -C "${build_dir}/wlrctl/build"
     sudo ninja -C "${build_dir}/wlrctl/build" install

@@ -106,6 +106,8 @@ runs:
         set -euo pipefail
         bash -c "${LAUNCH_COMMAND}" &
         echo "YARF_APP_PID=$!" >> "${GITHUB_ENV}"
+        # Give the app a moment to draw its first frame before YARF asserts.
+        sleep 5
 
     - name: Run YARF
       id: run

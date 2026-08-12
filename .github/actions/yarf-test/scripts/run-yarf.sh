@@ -31,15 +31,28 @@ else
   cmd=(yarf)
 fi
 
-cmd+=(--platform "${PLATFORM}")
-# Intentional word splitting: these inputs carry multiple CLI arguments.
+# Intentional word splitting: these inputs each carry multiple CLI arguments.
 # shellcheck disable=SC2206
-[ -n "${YARF_ARGS}" ] && cmd+=(${YARF_ARGS})
+yarf_args=(${YARF_ARGS})
+# shellcheck disable=SC2206
+rf_args=(${ROBOTFRAMEWORK_ARGS})
+
+cmd+=(--platform "${PLATFORM}")
+cmd+=("${yarf_args[@]}")
 cmd+=("${TEST_PATH}")
-if [ -n "${ROBOTFRAMEWORK_ARGS}" ]; then
-  # shellcheck disable=SC2206
-  cmd+=(-- ${ROBOTFRAMEWORK_ARGS})
+if [ "${#rf_args[@]}" -gt 0 ]; then
+  cmd+=(-- "${rf_args[@]}")
 fi
+
+# A caller-supplied --outdir in yarf-args overrides the install-mode default
+# used for the reported output directory and the artifact upload path.
+output_dir="${YARF_OUTPUT_DIR}"
+for ((i = 0; i < ${#yarf_args[@]}; i++)); do
+  case "${yarf_args[i]}" in
+  --outdir=*) output_dir="${yarf_args[i]#--outdir=}" ;;
+  --outdir) output_dir="${yarf_args[i + 1]:-${output_dir}}" ;;
+  esac
+done
 
 echo "Running: ${cmd[*]}"
 set +e
@@ -60,7 +73,7 @@ fi
 
 {
   echo "result=${result}"
-  echo "output-dir=${YARF_OUTPUT_DIR}"
+  echo "output-dir=${output_dir}"
   echo "exit-code=${exit_code}"
 } >> "${GITHUB_OUTPUT}"
 
