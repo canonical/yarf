@@ -41,7 +41,7 @@ jobs:
       - name: Run canary test through the action
         id: yarf
         # Pinned to this commit so the PR's own changes are exercised.
-        uses: canonical/yarf/.github/actions/yarf-test@${{ github.sha }}
+        uses: canonical/yarf/.github/actions/yarf-test@${{ github.sha }} # zizmor: ignore[unpinned-uses]
         with:
           platform: ${{ matrix.platform }}
           platform-provider: ${{ matrix.platform }}
