@@ -35,6 +35,11 @@ compositor (for example a YARF platform plugin). Install and start the platform
 with `platform-setup-command`, optionally block until it is ready with
 `platform-ready-command`, and clean up with `platform-teardown-command`.
 
+When the plugin is installed with `pip` rather than as a snap, set
+`python-version`. YARF only discovers plugins in `site-packages`, and on the
+runner's system Python `pip` falls back to a user install that YARF does not
+scan.
+
 ```yaml
 jobs:
   visual-tests:
@@ -61,6 +66,7 @@ jobs:
 | `platform-setup-command`    | no       | `""`            | Command(s) to start the platform when `platform-provider` is `custom`.                        |
 | `platform-ready-command`    | no       | `""`            | Command(s) that block until a custom platform is ready.                                       |
 | `platform-teardown-command` | no       | `""`            | Command(s) to tear down a custom platform after the run.                                      |
+| `python-version`            | no       | `""`            | Python version to set up before installing YARF. Needed for pip-installed plugins.            |
 | `test-path`                 | yes      | —               | Path (in the consumer's checkout) to the YARF test suite to run.                              |
 | `launch-command`            | no       | `""`            | Command to start the app/OS under test, just before running YARF. Skipped when empty.         |
 | `yarf-channel`              | no       | `latest/stable` | Snap channel to install YARF from when `yarf-ref` is unset.                                   |

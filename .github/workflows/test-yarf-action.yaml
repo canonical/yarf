@@ -70,17 +70,13 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
-        with:
-          python-version: "3.12"
-
       - name: Run plugin test through the action
         id: yarf
         uses: ./.github/actions/yarf-test
         with:
           platform: Example
           platform-provider: custom
+          python-version: "3.12"
           platform-setup-command: >-
             python3 -m pip install --break-system-packages
             examples/yarf-example-plugin

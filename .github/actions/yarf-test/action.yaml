@@ -26,6 +26,14 @@ inputs:
     description: Command(s) to tear down a custom platform after the run.
     required: false
     default: ""
+  python-version:
+    description: >-
+      Python version to set up before installing YARF. Needed when a plugin is
+      pip-installed, since YARF only discovers plugins in site-packages and pip
+      falls back to a user install on the runner's system Python. Skipped when
+      empty.
+    required: false
+    default: ""
   test-path:
     description: Path (in the consumer's checkout) to the YARF test suite to run.
     required: true
@@ -75,6 +83,12 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Set up Python
+      if: inputs.python-version != ''
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+      with:
+        python-version: ${{ inputs.python-version }}
+
     - name: Install workflow dependencies
       shell: bash
       env:
