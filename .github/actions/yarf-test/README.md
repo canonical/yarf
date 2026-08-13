@@ -65,22 +65,22 @@ Inputs are validated before anything is installed, so a misconfigured workflow
 fails immediately with every problem listed at once. `platform-provider` is
 accepted in any casing.
 
-| Input                       | Required          | Default         | Description                                                                                   |
-| --------------------------- | ----------------- | --------------- | --------------------------------------------------------------------------------------------- |
-| `platform`                  | yes               | —               | Value passed to `yarf --platform`.                                                            |
-| `platform-provider`         | no                | `Mir`           | Platform YARF starts with: `Mir`, `Vnc`, or `custom`.                                         |
-| `platform-setup-command`    | for `custom`      | `""`            | Command(s) to start the platform when `platform-provider` is `custom`.                        |
-| `platform-ready-command`    | for `custom`      | `""`            | Command(s) that block until a custom platform is ready.                                       |
-| `platform-teardown-command` | for `custom`      | `""`            | Command(s) to tear down a custom platform after the run.                                      |
-| `python-version`            | for `custom`      | `""`            | Python version to set up before installing YARF. Needed for pip-installed plugins.            |
-| `test-path`                 | yes               | —               | Path (in the consumer's checkout) to the YARF test suite to run.                              |
-| `launch-command`            | yes               | `""`            | Command to start the app/OS under test, just before running YARF. Leave empty when the suite starts the app itself. |
-| `yarf-ref`                  | no                | `main`          | Git ref (branch/tag/SHA) to build and install YARF from.                                      |
-| `yarf-args`                 | no                | `""`            | Extra yarf options placed before the test path (e.g. `--output-format TestSubmissionSchema`). |
-| `robotframework-args`       | no                | `""`            | Extra args appended after `--` to the yarf invocation (e.g. `--suite foo`).                   |
-| `display-size`              | no                | `1280x1024`     | Virtual output resolution for the built-in platforms.                                         |
-| `artifact-name`             | no                | `yarf-output`   | Name for the uploaded results artifact.                                                       |
-| `upload-artifact`           | no                | `true`          | Whether to upload the YARF output dir as an artifact.                                         |
+| Input                       | Required     | Default       | Description                                                                                                         |
+| --------------------------- | ------------ | ------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `platform`                  | yes          | —             | Value passed to `yarf --platform`.                                                                                  |
+| `platform-provider`         | no           | `Mir`         | Platform YARF starts with: `Mir`, `Vnc`, or `custom`.                                                               |
+| `platform-setup-command`    | for `custom` | `""`          | Command(s) to start the platform when `platform-provider` is `custom`.                                              |
+| `platform-ready-command`    | for `custom` | `""`          | Command(s) that block until a custom platform is ready.                                                             |
+| `platform-teardown-command` | for `custom` | `""`          | Command(s) to tear down a custom platform after the run.                                                            |
+| `python-version`            | for `custom` | `""`          | Python version to set up before installing YARF. Needed for pip-installed plugins.                                  |
+| `test-path`                 | yes          | —             | Path (in the consumer's checkout) to the YARF test suite to run.                                                    |
+| `launch-command`            | yes          | `""`          | Command to start the app/OS under test, just before running YARF. Leave empty when the suite starts the app itself. |
+| `yarf-ref`                  | no           | `main`        | Git ref (branch/tag/SHA) to build and install YARF from.                                                            |
+| `yarf-args`                 | no           | `""`          | Extra yarf options placed before the test path (e.g. `--output-format TestSubmissionSchema`).                       |
+| `robotframework-args`       | no           | `""`          | Extra args appended after `--` to the yarf invocation (e.g. `--suite foo`).                                         |
+| `display-size`              | no           | `1280x1024`   | Virtual output resolution for the built-in platforms.                                                               |
+| `artifact-name`             | no           | `yarf-output` | Name for the uploaded results artifact.                                                                             |
+| `upload-artifact`           | no           | `true`        | Whether to upload the YARF output dir as an artifact.                                                               |
 
 ## Outputs
 
