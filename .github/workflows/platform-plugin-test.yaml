@@ -18,57 +18,30 @@ jobs:
     name: Test platform plugin
     runs-on: ubuntu-latest
     steps:
-      - name: Install dependencies
-        run: |
-          sudo apt update -qq
-          sudo apt install -y \
-            git-lfs \
-            libgl1 \
-            libxkbcommon-dev \
-            jq \
-            clang \
-            python3-tk
-
       - name: Checkout repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           lfs: true
-          fetch-depth: 0
-          fetch-tags: true
+          fetch-depth: 1
           persist-credentials: false
 
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
-        with:
-          python-version: "3.12"
-
-      - name: Pin YARF to the requested version in yarf-example-plugin pyproject.toml
-        run: |
-          # YARF dependency is pinned this way because pip does not use uv automatically
-          # so uv add <dep> will not work because pip will not look into tool.uv.sources.
-          set -euo pipefail
-          f=examples/yarf-example-plugin/pyproject.toml
-          # remove any bare "yarf"
-          sed -i '/"yarf"\s*,\?$/d' "$f"
-          # append the pinned URL dep
-          awk -v sha="$GITHUB_SHA" '
-            BEGIN{added=0}
-            {print}
-            /^\[project\]/{inproj=1}
-            inproj && /^\s*dependencies\s*=\s*\[/{
-              print "    \"yarf @ git+https://github.com/canonical/yarf.git@" sha "\","
-              inproj=0; added=1
-            }
-            END{if(!added) exit 0}
-          ' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
-
-      - name: Install YARF and yarf-example-plugin
-        run: |
-          pip install examples/yarf-example-plugin
-
       - name: Run plugin integration tests
-        run: |
-          yarf --platform Example tests/plugin_suite
+        uses: ./.github/actions/yarf-test
+        with:
+          platform: Example
+          platform-provider: custom
+          python-version: "3.12"
+          # The example plugin deliberately omits a yarf dependency, so this
+          # installs against the YARF the action already installed.
+          platform-setup-command: >-
+            python3 -m pip install --break-system-packages
+            examples/yarf-example-plugin
+          platform-ready-command: yarf --platform Example --help
+          platform-teardown-command: >-
+            python3 -m pip uninstall --yes yarf-example-plugin
+          test-path: tests/plugin_suite
+          yarf-ref: ${{ github.sha }}
+          artifact-name: yarf-output-plugin
 
       - if: failure() && runner.debug
         name: Setup upterm session (restart with "Enable debug logging" to activate)
