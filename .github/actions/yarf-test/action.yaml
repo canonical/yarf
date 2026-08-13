@@ -28,10 +28,9 @@ inputs:
     default: ""
   python-version:
     description: >-
-      Python version to set up before installing YARF. Required when
-      platform-provider is custom, since YARF only discovers plugins in
-      site-packages and pip falls back to a user install on the runner's system
-      Python. Skipped when empty.
+      Python version to set up before installing YARF, selecting the interpreter
+      the action builds its venv on. Skipped when empty, which uses the Python
+      already on the runner.
     required: false
     default: ""
   test-path:
@@ -89,7 +88,6 @@ runs:
         PLATFORM_READY_COMMAND: ${{ inputs.platform-ready-command }}
         PLATFORM_TEARDOWN_COMMAND: ${{ inputs.platform-teardown-command }}
         TEST_PATH: ${{ inputs.test-path }}
-        PYTHON_VERSION: ${{ inputs.python-version }}
         DISPLAY_SIZE: ${{ inputs.display-size }}
         UPLOAD_ARTIFACT: ${{ inputs.upload-artifact }}
       run: bash "${GITHUB_ACTION_PATH}/scripts/validate-inputs.sh"

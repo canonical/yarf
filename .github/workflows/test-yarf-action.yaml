@@ -76,7 +76,6 @@ jobs:
         with:
           platform: Vnc
           platform-provider: custom
-          python-version: "3.12"
           # QEMU serves the VNC display itself, so no compositor is involved.
           # VNC_HOST/VNC_PORT default to localhost:5900, matching `-vnc :0`.
           platform-setup-command: |
@@ -131,15 +130,13 @@ jobs:
         with:
           platform: Example
           platform-provider: custom
-          python-version: "3.12"
-          platform-setup-command: >-
-            python3 -m pip install --break-system-packages
-            examples/yarf-example-plugin
+          # The example plugin deliberately omits a yarf dependency, so this
+          # installs into the venv the action already put YARF in.
+          platform-setup-command: uv pip install examples/yarf-example-plugin
           # Fails unless YARF discovered the plugin, so a broken install is
           # reported before the suite runs.
           platform-ready-command: yarf --platform Example --help
-          platform-teardown-command: >-
-            python3 -m pip uninstall --yes yarf-example-plugin
+          platform-teardown-command: uv pip uninstall yarf-example-plugin
           test-path: tests/plugin_suite
           yarf-ref: ${{ github.sha }}
           artifact-name: yarf-output-Example

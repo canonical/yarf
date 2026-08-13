@@ -30,15 +30,11 @@ jobs:
         with:
           platform: Example
           platform-provider: custom
-          python-version: "3.12"
           # The example plugin deliberately omits a yarf dependency, so this
-          # installs against the YARF the action already installed.
-          platform-setup-command: >-
-            python3 -m pip install --break-system-packages
-            examples/yarf-example-plugin
+          # installs into the venv the action already put YARF in.
+          platform-setup-command: uv pip install examples/yarf-example-plugin
           platform-ready-command: yarf --platform Example --help
-          platform-teardown-command: >-
-            python3 -m pip uninstall --yes yarf-example-plugin
+          platform-teardown-command: uv pip uninstall yarf-example-plugin
           test-path: tests/plugin_suite
           yarf-ref: ${{ github.sha }}
           artifact-name: yarf-output-plugin

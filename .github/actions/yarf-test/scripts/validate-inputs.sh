@@ -15,7 +15,6 @@
 #   PLATFORM_READY_COMMAND     Command(s) that block until a custom platform is ready.
 #   PLATFORM_TEARDOWN_COMMAND  Command(s) to tear down a custom platform.
 #   TEST_PATH                  Path to the YARF test suite to run.
-#   PYTHON_VERSION             Python version to set up before installing YARF.
 #   DISPLAY_SIZE               Virtual output resolution for the built-in platforms.
 #   UPLOAD_ARTIFACT            Whether to upload the YARF output dir.
 #   GITHUB_ENV                 File used to export variables to later steps.
@@ -51,11 +50,6 @@ custom)
       errors+=("platform-${input}-command is required when platform-provider is custom")
     fi
   done
-  # A plugin has to land in the site-packages of the interpreter YARF runs on,
-  # which the runner's system Python does not give us.
-  if [ -z "${PYTHON_VERSION:-}" ]; then
-    errors+=("python-version is required when platform-provider is custom")
-  fi
   ;;
 *)
   errors+=("platform-provider '${PLATFORM_PROVIDER}' is invalid (expected Mir, Vnc, or custom)")

@@ -2,10 +2,15 @@
 
 Run [YARF](https://github.com/canonical/yarf) visual tests in your own CI with a
 single `uses:` step. The action installs the necessary dependencies, installs
-YARF from source at `yarf-ref`, starts a platform (built-in Mir/Vnc or a custom
-provider), starts the app/OS under test via a command you provide, runs YARF
-against a test suite, and surfaces the YARF output as an uploaded artifact and
-job summary — failing the job when tests fail.
+YARF from source at `yarf-ref` into a `uv` venv, starts a platform (built-in
+Mir/Vnc or a custom provider), starts the app/OS under test via a command you
+provide, runs YARF against a test suite, and surfaces the YARF output as an
+uploaded artifact and job summary — failing the job when tests fail.
+
+The venv is put on `PATH` and exported as `VIRTUAL_ENV`, and it is seeded with
+`pip`, so both `pip install` and `uv pip install` in your own commands and later
+steps target the same environment as YARF. Packages already installed on the
+runner stay importable, as the venv is created with `--system-site-packages`.
 
 The caller must run `actions/checkout` first so the test suite is available.
 
@@ -39,10 +44,9 @@ with `platform-setup-command`, block until it is ready with
 `platform-ready-command`, and clean up with `platform-teardown-command`; all
 three are required for this provider.
 
-When the plugin is installed with `pip`, set `python-version`. YARF only
-discovers plugins in `site-packages`, and on the runner's system Python `pip`
-falls back to a user install that YARF does not scan, so it is required for this
-provider.
+When the plugin is installed with `pip`, install it into the venv the action
+creates for YARF (`uv pip install …` picks it up automatically), since YARF only
+discovers plugins in the `site-packages` of the interpreter it runs on.
 
 ```yaml
 jobs:
@@ -54,13 +58,12 @@ jobs:
         with:
           platform: MyPlatform
           platform-provider: custom
-          python-version: "3.12"
           test-path: tests/visual
           platform-setup-command: |
-            python3 -m pip install --break-system-packages ./my-yarf-plugin
+            uv pip install ./my-yarf-plugin
             ./ci/start-my-platform.sh
           platform-ready-command: yarf --platform MyPlatform --help
-          platform-teardown-command: python3 -m pip uninstall --yes my-yarf-plugin
+          platform-teardown-command: uv pip uninstall my-yarf-plugin
 ```
 
 ### Testing a virtual machine over VNC
@@ -82,7 +85,6 @@ jobs:
         with:
           platform: Vnc
           platform-provider: custom
-          python-version: "3.12"
           test-path: tests/vm
           platform-setup-command: |
             qemu-system-x86_64 -accel kvm -m 2048 -smp 2 \
@@ -108,7 +110,7 @@ accepted in any casing.
 | `platform-setup-command`    | for `custom` | `""`          | Command(s) to start the platform when `platform-provider` is `custom`.                                              |
 | `platform-ready-command`    | for `custom` | `""`          | Command(s) that block until a custom platform is ready.                                                             |
 | `platform-teardown-command` | for `custom` | `""`          | Command(s) to tear down a custom platform after the run.                                                            |
-| `python-version`            | for `custom` | `""`          | Python version to set up before installing YARF. Needed for pip-installed plugins.                                  |
+| `python-version`            | no           | `""`          | Python version the action builds YARF's venv on. Uses the runner's Python when empty.                               |
 | `test-path`                 | yes          | —             | Path (in the consumer's checkout) to the YARF test suite to run.                                                    |
 | `launch-command`            | yes          | `""`          | Command to start the app/OS under test, just before running YARF. Leave empty when the suite starts the app itself. |
 | `yarf-ref`                  | no           | `main`        | Git ref (branch/tag/SHA) to build and install YARF from.                                                            |
