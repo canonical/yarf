@@ -146,6 +146,8 @@ jobs:
         lfs: true
         persist-credentials: false
 
+    - uses: ./.github/actions/setup-noble-env
+
     - name: Set up the simple counter example
       run: ./.github/scripts/yarf/setup-tutorial-app.sh
 

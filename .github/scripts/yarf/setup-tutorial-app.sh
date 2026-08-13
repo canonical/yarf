@@ -2,9 +2,11 @@
 # Prepare the simple counter example the tutorial suite drives.
 #
 # The suite starts the app itself with `uv --project ... run simple-counter`,
-# which reuses this venv rather than creating an isolated one. It has to see
-# the system site packages, because the app imports the GTK bindings from apt.
+# so its venv has to exist before YARF runs and must see the system site
+# packages, because the app imports the GTK bindings from apt.
 set -euo pipefail
+
+APP_DIR="$(pwd)/examples/yarf-example-simple-counter"
 
 sudo apt-get update -qq
 sudo apt-get --yes --no-install-recommends install \
@@ -13,5 +15,8 @@ sudo apt-get --yes --no-install-recommends install \
   libadwaita-1-dev \
   gir1.2-adw-1
 
-python3 -m venv --system-site-packages \
-  examples/yarf-example-simple-counter/.venv
+uv venv --python=/usr/bin/python3 --system-site-packages --project="${APP_DIR}"
+
+# Syncs the venv and surfaces a broken app here, rather than as a blank screen
+# 90 seconds into the suite.
+uv --project "${APP_DIR}" run simple-counter --help > /dev/null

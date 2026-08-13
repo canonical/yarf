@@ -9,7 +9,7 @@
 #
 # Environment:
 #   YARF_REF     Git ref (branch/tag/SHA) to build YARF from (default: main).
-#   RUNNER_TEMP  Directory the venv is created in.
+#   RUNNER_TEMP  Directory the venv and the checkout are created in.
 #   GITHUB_ENV   File used to export variables to later steps.
 #   GITHUB_PATH  File used to extend PATH for later steps.
 set -euo pipefail
@@ -17,6 +17,7 @@ set -euo pipefail
 YARF_REF="${YARF_REF:-main}"
 output_dir="${TMPDIR:-/tmp}/yarf-outdir"
 venv="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/yarf-venv"
+src="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/yarf-src"
 
 if ! command -v uv > /dev/null; then
   echo "Installing uv"
@@ -34,8 +35,18 @@ fi
 uv --no-managed-python venv --seed --system-site-packages "${venv}"
 
 echo "Installing YARF from source at ref '${YARF_REF}'"
-uv pip install --python "${venv}/bin/python" \
-  "yarf @ git+https://github.com/canonical/yarf.git@${YARF_REF}"
+# Checked out here rather than installed straight from the git URL, because pip
+# and uv do not fetch Git LFS objects and YARF ships assets that need them.
+rm -rf "${src}"
+git init --quiet "${src}"
+git -C "${src}" remote add origin https://github.com/canonical/yarf.git
+git -C "${src}" fetch --quiet --depth 1 origin "${YARF_REF}"
+git -C "${src}" checkout --quiet FETCH_HEAD
+# Only the packaged assets are needed; a caller's own suite assets come from
+# their checkout.
+git -C "${src}" lfs pull --include="yarf/**"
+
+uv pip install --python "${venv}/bin/python" "${src}"
 
 {
   echo "VIRTUAL_ENV=${venv}"
