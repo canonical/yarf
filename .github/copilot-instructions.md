@@ -101,9 +101,8 @@ ______________________________________________________________________
 
 ### `yarf/rf_libraries/libraries/mir/`
 
-- Mir/Wayland platform implementation. Tests may require system Wayland/Mir
-  dependencies and a system-Python-backed uv environment because uv-managed
-  Python builds lack `os.memfd_create`.
+- Mir/Wayland platform implementation. Tests may require system
+  Wayland/Mir dependencies.
 
 ### `yarf/rf_libraries/libraries/vnc/`
 

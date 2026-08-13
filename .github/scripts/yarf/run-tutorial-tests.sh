@@ -9,6 +9,8 @@ sudo apt-get --yes --no-install-recommends install \
   libadwaita-1-dev \
   gir1.2-adw-1
 
+# --system-site-packages makes the distro-provided python3-gi package
+# available to simple-counter.
 uv venv --python=/usr/bin/python3 --system-site-packages \
   --project="$(pwd)/examples/yarf-example-simple-counter"
 
