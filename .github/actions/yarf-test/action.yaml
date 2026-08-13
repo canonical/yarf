@@ -11,27 +11,27 @@ inputs:
     description: Value passed to `yarf --platform`.
     required: true
   platform-provider:
-    description: "Platform YARF starts with: Mir, Vnc, or custom."
+    description: "Platform YARF starts with: Mir, Vnc, or custom (any casing)."
     required: false
     default: Mir
   platform-setup-command:
-    description: Command(s) to start the platform when platform-provider is custom.
+    description: Command(s) to start the platform. Required when platform-provider is custom.
     required: false
     default: ""
   platform-ready-command:
-    description: Command(s) that block until a custom platform is ready.
+    description: Command(s) that block until the platform is ready. Required when platform-provider is custom.
     required: false
     default: ""
   platform-teardown-command:
-    description: Command(s) to tear down a custom platform after the run.
+    description: Command(s) to tear down the platform after the run. Required when platform-provider is custom.
     required: false
     default: ""
   python-version:
     description: >-
-      Python version to set up before installing YARF. Needed when a plugin is
-      pip-installed, since YARF only discovers plugins in site-packages and pip
-      falls back to a user install on the runner's system Python. Skipped when
-      empty.
+      Python version to set up before installing YARF. Required when
+      platform-provider is custom, since YARF only discovers plugins in
+      site-packages and pip falls back to a user install on the runner's system
+      Python. Skipped when empty.
     required: false
     default: ""
   test-path:
@@ -40,17 +40,14 @@ inputs:
   launch-command:
     description: >-
       Command the action runs to start the app/OS under test on the platform,
-      just before running YARF. Skipped when empty.
+      just before running YARF. Leave empty when the suite starts the app
+      itself.
     required: false
     default: ""
-  yarf-channel:
-    description: Snap channel to install YARF from when yarf-ref is unset.
-    required: false
-    default: latest/stable
   yarf-ref:
-    description: Git ref (branch/tag/SHA) to build and install YARF from source.
+    description: Git ref (branch/tag/SHA) to build and install YARF from.
     required: false
-    default: ""
+    default: main
   yarf-args:
     description: Extra yarf options placed before the test path (e.g. --output-format).
     required: false
@@ -83,6 +80,20 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Validate inputs
+      shell: bash
+      env:
+        PLATFORM: ${{ inputs.platform }}
+        PLATFORM_PROVIDER: ${{ inputs.platform-provider }}
+        PLATFORM_SETUP_COMMAND: ${{ inputs.platform-setup-command }}
+        PLATFORM_READY_COMMAND: ${{ inputs.platform-ready-command }}
+        PLATFORM_TEARDOWN_COMMAND: ${{ inputs.platform-teardown-command }}
+        TEST_PATH: ${{ inputs.test-path }}
+        PYTHON_VERSION: ${{ inputs.python-version }}
+        DISPLAY_SIZE: ${{ inputs.display-size }}
+        UPLOAD_ARTIFACT: ${{ inputs.upload-artifact }}
+      run: bash "${GITHUB_ACTION_PATH}/scripts/validate-inputs.sh"
+
     - name: Set up Python
       if: inputs.python-version != ''
       uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
@@ -91,27 +102,23 @@ runs:
 
     - name: Install workflow dependencies
       shell: bash
-      env:
-        PLATFORM_PROVIDER: ${{ inputs.platform-provider }}
       run: bash "${GITHUB_ACTION_PATH}/scripts/install-deps.sh"
 
     - name: Install YARF
       shell: bash
       env:
         YARF_REF: ${{ inputs.yarf-ref }}
-        YARF_CHANNEL: ${{ inputs.yarf-channel }}
       run: bash "${GITHUB_ACTION_PATH}/scripts/install-yarf.sh"
 
     - name: Start platform
       shell: bash
       env:
-        PLATFORM_PROVIDER: ${{ inputs.platform-provider }}
         DISPLAY_SIZE: ${{ inputs.display-size }}
         PLATFORM_SETUP_COMMAND: ${{ inputs.platform-setup-command }}
         PLATFORM_READY_COMMAND: ${{ inputs.platform-ready-command }}
       run: bash "${GITHUB_ACTION_PATH}/scripts/start-platform.sh"
 
-    - name: Launch app under test
+    - name: Launch app/OS under test
       if: inputs.launch-command != ''
       shell: bash
       env:
@@ -131,8 +138,10 @@ runs:
         ROBOTFRAMEWORK_ARGS: ${{ inputs.robotframework-args }}
       run: bash "${GITHUB_ACTION_PATH}/scripts/run-yarf.sh"
 
+    # Validation rejects a teardown command for the built-in providers, so a
+    # non-empty value here means the provider is custom.
     - name: Tear down platform
-      if: always() && inputs.platform-provider == 'custom' && inputs.platform-teardown-command != ''
+      if: always() && inputs.platform-teardown-command != ''
       shell: bash
       env:
         PLATFORM_TEARDOWN_COMMAND: ${{ inputs.platform-teardown-command }}

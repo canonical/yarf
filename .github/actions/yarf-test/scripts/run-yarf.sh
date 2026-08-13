@@ -1,18 +1,16 @@
 #!/bin/bash
 # Run YARF against a test suite, capture the result and clean up.
 #
-# Invokes YARF (via the snap or the source-installed entry point depending on
-# YARF_INSTALL_MODE), records the outcome and output directory to
-# $GITHUB_OUTPUT, and makes a best-effort attempt to stop the launched app.
-# It always exits 0; the captured YARF exit code is exported so a later step
-# can propagate pass/fail to the job.
+# Invokes YARF, records the outcome and output directory to $GITHUB_OUTPUT, and
+# makes a best-effort attempt to stop the launched app. It always exits 0; the
+# captured YARF exit code is exported so a later step can propagate pass/fail to
+# the job.
 #
 # Environment:
 #   PLATFORM             Value passed to `yarf --platform` (required).
 #   TEST_PATH            Path to the YARF test suite to run (required).
 #   YARF_ARGS            Extra yarf options placed before the test path.
 #   ROBOTFRAMEWORK_ARGS  Extra args appended after `--`.
-#   YARF_INSTALL_MODE    snap or source (default: snap).
 #   YARF_OUTPUT_DIR      Resolved YARF output directory.
 #   YARF_APP_PID         PID of the app launched under test, if any.
 #   GITHUB_OUTPUT        File used to expose step outputs.
@@ -22,14 +20,9 @@ PLATFORM="${PLATFORM:?platform is required}"
 TEST_PATH="${TEST_PATH:?test-path is required}"
 YARF_ARGS="${YARF_ARGS:-}"
 ROBOTFRAMEWORK_ARGS="${ROBOTFRAMEWORK_ARGS:-}"
-YARF_INSTALL_MODE="${YARF_INSTALL_MODE:-snap}"
 YARF_OUTPUT_DIR="${YARF_OUTPUT_DIR:-}"
 
-if [ "${YARF_INSTALL_MODE}" = "snap" ]; then
-  cmd=(snap run yarf)
-else
-  cmd=(yarf)
-fi
+cmd=(yarf)
 
 # Intentional word splitting: these inputs each carry multiple CLI arguments.
 # shellcheck disable=SC2206

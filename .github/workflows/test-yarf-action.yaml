@@ -80,6 +80,11 @@ jobs:
           platform-setup-command: >-
             python3 -m pip install --break-system-packages
             examples/yarf-example-plugin
+          # Fails unless YARF discovered the plugin, so a broken install is
+          # reported before the suite runs.
+          platform-ready-command: yarf --platform Example --help
+          platform-teardown-command: >-
+            python3 -m pip uninstall --yes yarf-example-plugin
           test-path: tests/plugin_suite
           yarf-ref: ${{ github.sha }}
           artifact-name: yarf-output-Example
