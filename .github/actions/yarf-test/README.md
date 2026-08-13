@@ -88,7 +88,7 @@ jobs:
             qemu-system-x86_64 -accel kvm -m 2048 -smp 2 \
               -drive file=/tmp/vm.img,format=qcow2 -vnc :0 -daemonize
           platform-ready-command: timeout 120 bash -c 'until nc -z localhost 5900; do sleep 2; done'
-          platform-teardown-command: pkill -f qemu-system-x86_64 || true
+          platform-teardown-command: "pkill -f '[q]emu-system-x86_64' || true"
 ```
 
 The readiness command only proves QEMU is listening, not that the guest booted;
