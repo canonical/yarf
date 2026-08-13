@@ -12,6 +12,7 @@ and the LLM client.
 titlesonly:
 ---
 Run a robot test suite in YARF <./run-a-robot-test-suite-in-yarf.md>
+Run YARF in GitHub Actions <./run-yarf-in-github-actions.md>
 Write a Robot File with YARF Tags <./write-a-robot-file-with-yarf-tags.md>
 Interactive console <./interactive-console.md>
 Using The LLM Client <./using-the-llm-client.md>
