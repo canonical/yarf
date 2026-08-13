@@ -59,7 +59,7 @@ jobs:
           test "${RESULT}" = "passed"
 
   test-action-vm:
-    name: Vnc(QEMU) - Run YARF via the action against a QEMU VM
+    name: Vnc (QEMU) - Run YARF via the action against a QEMU VM
     runs-on: ubuntu-latest
 
     steps:
