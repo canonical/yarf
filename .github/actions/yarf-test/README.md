@@ -13,6 +13,10 @@ The caller must run `actions/checkout` first so the test suite is available.
 
 ### Built-in platform (Mir/Vnc)
 
+Both built-in providers start the same headless Mir compositor; `Vnc` also
+starts `wayvnc` in front of it so YARF talks to it over RFB. Neither boots an
+operating system.
+
 ```yaml
 jobs:
   visual-tests:
@@ -58,6 +62,38 @@ jobs:
           platform-ready-command: yarf --platform MyPlatform --help
           platform-teardown-command: python3 -m pip uninstall --yes my-yarf-plugin
 ```
+
+### Testing a virtual machine over VNC
+
+YARF's `Vnc` platform is a VNC client: it connects to `VNC_HOST:5900+VNC_PORT`
+and does not care what serves that port. To drive a whole OS instead of a
+compositor, start a VM that exposes a VNC display with the `custom` provider and
+keep `platform: Vnc`. See
+[Using the VNC backend](../../../docs/how-to/using-the-vnc-backend.md) for the
+QEMU arguments and the `VNC_HOST`/`VNC_PORT` variables.
+
+```yaml
+jobs:
+  vm-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: canonical/yarf/.github/actions/yarf-test@main
+        with:
+          platform: Vnc
+          platform-provider: custom
+          python-version: "3.12"
+          test-path: tests/vm
+          platform-setup-command: |
+            qemu-system-x86_64 -accel kvm -m 2048 -smp 2 \
+              -drive file=/tmp/vm.img,format=qcow2 -vnc :0 -daemonize
+          platform-ready-command: timeout 120 bash -c 'until nc -z localhost 5900; do sleep 2; done'
+          platform-teardown-command: pkill -f qemu-system-x86_64 || true
+```
+
+The readiness command only proves QEMU is listening, not that the guest booted;
+let the suite wait for the first `Match`. `display-size` is unused here, as the
+resolution comes from the guest.
 
 ## Inputs
 
