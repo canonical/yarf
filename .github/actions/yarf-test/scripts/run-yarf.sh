@@ -11,6 +11,7 @@
 #   TEST_PATH            Path to the YARF test suite to run (required).
 #   YARF_ARGS            Extra yarf options placed before the test path.
 #   ROBOTFRAMEWORK_ARGS  Extra args appended after `--`.
+#   YARF_COMMAND_SUFFIX  Shell text appended to the yarf invocation, if any.
 #   YARF_OUTPUT_DIR      Resolved YARF output directory.
 #   YARF_APP_PID         PID of the app launched under test, if any.
 #   GITHUB_OUTPUT        File used to expose step outputs.
@@ -47,9 +48,15 @@ for ((i = 0; i < ${#yarf_args[@]}; i++)); do
   esac
 done
 
-echo "Running: ${cmd[*]}"
+echo "Running: ${cmd[*]} ${YARF_COMMAND_SUFFIX:-}"
 set +e
-"${cmd[@]}"
+if [ -n "${YARF_COMMAND_SUFFIX:-}" ]; then
+  # Evaluated so redirections and pipes in the suffix take effect; the command
+  # itself stays quoted, so only the suffix is interpreted.
+  eval '"${cmd[@]}"' "${YARF_COMMAND_SUFFIX}"
+else
+  "${cmd[@]}"
+fi
 exit_code=$?
 set -e
 

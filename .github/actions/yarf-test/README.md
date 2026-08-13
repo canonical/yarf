@@ -116,6 +116,7 @@ accepted in any casing.
 | `yarf-ref`                  | no           | `main`        | Git ref (branch/tag/SHA) to build and install YARF from.                                                            |
 | `yarf-args`                 | no           | `""`          | Extra yarf options placed before the test path (e.g. `--output-format TestSubmissionSchema`).                       |
 | `robotframework-args`       | no           | `""`          | Extra args appended after `--` to the yarf invocation (e.g. `--suite foo`).                                         |
+| `yarf-command-suffix`       | no           | `""`          | Shell text appended to the yarf invocation (e.g. `2> ~/wayland.trace`). Evaluated by bash.                          |
 | `display-size`              | no           | `1280x1024`   | Virtual output resolution for the built-in platforms.                                                               |
 | `artifact-name`             | no           | `yarf-output` | Name for the uploaded results artifact.                                                                             |
 | `upload-artifact`           | no           | `true`        | Whether to upload the YARF output dir as an artifact.                                                               |

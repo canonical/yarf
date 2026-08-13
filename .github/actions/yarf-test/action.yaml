@@ -55,6 +55,14 @@ inputs:
     description: Extra args appended after `--` to the yarf invocation (e.g. --suite foo).
     required: false
     default: ""
+  yarf-command-suffix:
+    description: >-
+      Shell text appended to the yarf invocation, for example
+      `2> ~/wayland.trace` for suites that assert on YARF's stderr. Evaluated by
+      bash, so treat it like any other command input and keep untrusted values
+      out of it.
+    required: false
+    default: ""
   display-size:
     description: Virtual output resolution for the built-in platforms.
     required: false
@@ -134,6 +142,7 @@ runs:
         TEST_PATH: ${{ inputs.test-path }}
         YARF_ARGS: ${{ inputs.yarf-args }}
         ROBOTFRAMEWORK_ARGS: ${{ inputs.robotframework-args }}
+        YARF_COMMAND_SUFFIX: ${{ inputs.yarf-command-suffix }}
       run: bash "${GITHUB_ACTION_PATH}/scripts/run-yarf.sh"
 
     # Validation rejects a teardown command for the built-in providers, so a
