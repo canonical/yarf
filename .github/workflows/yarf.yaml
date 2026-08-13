@@ -57,57 +57,28 @@ jobs:
       with:
         persist-credentials: false
 
-    - uses: ./.github/actions/setup-yarf-noble
+    - uses: ./.github/actions/setup-noble-env
 
     - name: Sync Python dependencies
       run: uv sync --python 3.12
 
-  tests-noble:
-    name: ${{ matrix.name }}
+  unit-tests-noble:
+    name: Noble - Unit tests
     runs-on: ubuntu-24.04
     needs: install-noble
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: Noble - Unit tests
-            slug: unit
-            script: run-unit-tests.sh
-            with-mir: "false"
-            fetch-depth: "0"
-          - name: Noble - Integration tests
-            slug: integration
-            script: run-integration-tests.sh
-            with-mir: "true"
-          - name: Noble - Tutorial tests (default)
-            slug: tutorial-default
-            script: run-tutorial-tests.sh
-            with-mir: "true"
-          - name: Noble - Tutorial tests (light)
-            slug: tutorial-light
-            script: run-tutorial-tests.sh light
-            with-mir: "true"
-    env:
-      KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         lfs: true
-        fetch-depth: ${{ matrix.fetch-depth || 1 }}
+        fetch-depth: 0
         persist-credentials: false
 
-    - uses: ./.github/actions/setup-yarf-noble
-      with:
-        with-mir: ${{ matrix.with-mir }}
+    - uses: ./.github/actions/setup-noble-env
 
-    - name: Run ${{ matrix.name }}
-      env:
-        SCRIPT: ${{ matrix.script }}
-      # shellcheck disable=SC2086  # SCRIPT may include the script's argument
-      run: ./.github/scripts/yarf/${SCRIPT}
+    - name: Run Noble - Unit tests
+      run: ./.github/scripts/yarf/run-unit-tests.sh
 
-    - if: matrix.slug == 'unit'
-      name: Upload Coverage Report
+    - name: Upload Coverage Report
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
       with:
         name: coverage
@@ -115,15 +86,78 @@ jobs:
         retention-days: 5
         overwrite: true
 
-    - if: failure()
-      name: Collect test results
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+    - if: failure() && runner.debug
+      name: Setup upterm session (restart with "Enable debug logging" to activate)
+      uses: canonical/action-tmate@a0e8caed3bba2ccb98901a274553bf1284ad96c2  # zizmor: ignore[stale-action-refs]
       with:
-        name: yarf-output-${{ matrix.slug }}
-        path: /tmp/yarf-outdir/*
-        retention-days: 5
-        if-no-files-found: ignore
-        overwrite: true
+        limit-access-to-actor: true
+
+  integration-tests-noble:
+    name: Noble - Integration tests
+    runs-on: ubuntu-24.04
+    needs: install-noble
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        lfs: true
+        persist-credentials: false
+
+    - name: Install the app under test
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y --no-install-recommends gnome-calculator
+
+    - name: Run Noble - Integration tests
+      id: yarf
+      uses: ./.github/actions/yarf-test
+      with:
+        platform: Mir
+        platform-provider: Mir
+        test-path: tests/canary_test
+        yarf-args: --output-format TestSubmissionSchema
+        yarf-ref: ${{ github.sha }}
+        artifact-name: yarf-output-integration
+
+    - name: Validate test submission schema
+      env:
+        OUTPUT_DIR: ${{ steps.yarf.outputs.output-dir }}
+      run: ./.github/scripts/yarf/validate-submission-schema.sh "${OUTPUT_DIR}"
+
+    - if: failure() && runner.debug
+      name: Setup upterm session (restart with "Enable debug logging" to activate)
+      uses: canonical/action-tmate@a0e8caed3bba2ccb98901a274553bf1284ad96c2  # zizmor: ignore[stale-action-refs]
+      with:
+        limit-access-to-actor: true
+
+  tutorial-tests-noble:
+    name: Noble - Tutorial tests (${{ matrix.variant || 'default' }})
+    runs-on: ubuntu-24.04
+    needs: install-noble
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ["", light]
+    env:
+      # The suite's own default; an empty value would reach the app as --theme ''.
+      SIMPLE_COUNTER_THEME: ${{ matrix.variant || 'dark' }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        lfs: true
+        persist-credentials: false
+
+    - name: Set up the simple counter example
+      run: ./.github/scripts/yarf/setup-tutorial-app.sh
+
+    - name: Run Noble - Tutorial tests (${{ matrix.variant || 'default' }})
+      uses: ./.github/actions/yarf-test
+      with:
+        platform: Mir
+        platform-provider: Mir
+        test-path: examples/yarf-example-simple-counter/yarf_tests
+        yarf-args: ${{ matrix.variant && format('--variant {0}', matrix.variant) || '' }}
+        yarf-ref: ${{ github.sha }}
+        artifact-name: yarf-output-tutorial-${{ matrix.variant || 'default' }}
 
     - if: failure() && runner.debug
       name: Setup upterm session (restart with "Enable debug logging" to activate)
@@ -138,31 +172,44 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite:
-          - video_image_test
-          - video_text_test
-          - video_cursor_test
-          - video_video_test
-          - hid_keyboard_test
-          - hid_pointer_test
-          - kvm_test
-          - llm_client_test
+        include:
+          - suite: video_image_test
+          - suite: video_text_test
+          - suite: video_cursor_test
+          - suite: video_video_test
+          # The HID suites assert on the Wayland trace YARF's stderr produces.
+          - suite: hid_keyboard_test
+            wayland-debug: client
+            yarf-command-suffix: 2> ~/wayland.trace
+          - suite: hid_pointer_test
+            wayland-debug: client
+            yarf-command-suffix: 2> ~/wayland.trace
+          - suite: kvm_test
+          - suite: llm_client_test
+            launch-command: python3 tests/keyword_suite/server/llm_stub_server.py
     env:
       KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
+      WAYLAND_DEBUG: ${{ matrix.wayland-debug }}
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         lfs: true
         persist-credentials: false
 
-    - uses: ./.github/actions/setup-yarf-noble
-      with:
-        with-mir: "true"
+    - name: Install suite dependencies
+      run: ./.github/scripts/yarf/install-suite-deps.sh
 
     - name: Run Noble - Keyword tests (${{ matrix.suite }})
-      env:
-        SUITE: ${{ matrix.suite }}
-      run: ./.github/scripts/yarf/run-keyword-suite.sh "${SUITE}"
+      uses: ./.github/actions/yarf-test
+      with:
+        platform: Mir
+        platform-provider: Mir
+        test-path: tests/keyword_suite
+        launch-command: ${{ matrix.launch-command }}
+        robotframework-args: --suite ${{ matrix.suite }} --listener ${{ env.KEYWORDS_LISTENER_PATH }}
+        yarf-command-suffix: ${{ matrix.yarf-command-suffix }}
+        yarf-ref: ${{ github.sha }}
+        artifact-name: yarf-output-keyword-${{ matrix.suite }}
 
     - name: Upload per-suite keyword coverage
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -171,16 +218,6 @@ jobs:
         path: keywords_coverage.json
         retention-days: 1
         if-no-files-found: error
-        overwrite: true
-
-    - if: failure()
-      name: Collect test results
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-      with:
-        name: yarf-output-keyword-${{ matrix.suite }}
-        path: /tmp/yarf-outdir/*
-        retention-days: 5
-        if-no-files-found: ignore
         overwrite: true
 
     - if: failure() && runner.debug
