@@ -27,11 +27,10 @@ if ! command -v uv > /dev/null; then
   echo "${user_bin}" >> "${GITHUB_PATH}"
 fi
 
-# uv-managed Python builds lack os.memfd_create, which the Mir platform needs,
-# so the venv has to be built on an interpreter already on the runner.
-# System site packages stay visible so callers can prepare dependencies before
-# this action runs, and pip is seeded so a plain `pip install` in a caller's
-# command lands in this venv rather than escaping to the system one.
+# Built on an interpreter already on the runner so its site packages stay
+# visible, letting callers prepare dependencies before this action runs. pip is
+# seeded so a plain `pip install` in a caller's command lands in this venv
+# rather than escaping to the system one.
 uv --no-managed-python venv --seed --system-site-packages "${venv}"
 
 echo "Installing YARF from source at ref '${YARF_REF}'"
