@@ -45,17 +45,6 @@ Notes:
   `sudo apt install -y build-essential libxkbcommon-dev tesseract-ocr`.
   Optional: `python3-tk`. See `CONTRIBUTING.md` for the full setup guide.
 
-## Mir / Wayland caveat
-
-The Mir platform uses `os.memfd_create`, which is missing from uv-managed
-Python builds. If you need to run or test Mir/Wayland code, create the venv
-with system Python (this matches the command in `CONTRIBUTING.md`):
-
-```bash
-uv --no-managed-python venv --system-site-packages
-uv sync
-```
-
 ## Repo-specific guardrails
 
 - Line length is **79**.
