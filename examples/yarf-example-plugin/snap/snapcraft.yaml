@@ -27,6 +27,9 @@ parts:
       - pkg-config
       - libxkbcommon-dev
       - libwayland-dev
+      # pywayland ships no arm64 wheel, so it is built from source there and
+      # its scanner needs the wayland-protocols pkg-config data.
+      - wayland-protocols
     stage-packages:
       - libxkbcommon0
       - bash
