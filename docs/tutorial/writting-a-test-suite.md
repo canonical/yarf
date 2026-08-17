@@ -49,7 +49,10 @@ sudo apt install \
     gir1.2-adw-1
 ```
 
-After that, we install `uv` following the [official installation guide][uv-installation-guide] and run the `simple-counter`:
+After that, we install `uv` following the [official installation guide][uv-installation-guide].
+The `simple-counter` application uses the distro-provided `python3-gi` bindings,
+so use `--system-site-packages` to make them available in its environment. Then
+run the `simple-counter`:
 
 ```{code-block} bash
 ---
