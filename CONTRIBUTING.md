@@ -26,7 +26,7 @@ We can install YARF along with the dependencies specified in
 `pyproject.toml` in the virtual environment using the command:
 
 ```shell
-uv --no-managed-python venv --system-site-packages
+uv venv
 uv sync
 ```
 

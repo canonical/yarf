@@ -112,6 +112,7 @@ repos:
   rev: e73b8ba0c1316be565983236c72e653ad44e6b66
   hooks:
   - id: docformatter
+    language_version: python3.12
     args: [
       --in-place,
       --pre-summary-newline,
