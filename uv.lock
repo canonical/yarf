@@ -1594,17 +1594,19 @@ wheels = [
 
 [[package]]
 name = "pywayland"
-version = "0.4.18"
+version = "0.4.19"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cffi", marker = "platform_python_implementation != 'PyPy'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/20/93/bc9b258dcb46aafc587438355a9170c3be05a6abb5cd55bf1d600d848fa0/pywayland-0.4.18.tar.gz", hash = "sha256:598ade02783aad05a328f663b51b694c5ab68bd5d1e0926c0da3c5212c566533", size = 247348, upload-time = "2024-07-27T19:24:38.008Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ef/43/81da8524a9e81bee3cd4d8bd1752de34031060e8011d2d3d1e9950840d6f/pywayland-0.4.19.tar.gz", hash = "sha256:9d8478f5b0df3540333ccf85a55fe8b34150b2c28c685805de9ffa855898549e", size = 280412, upload-time = "2026-08-15T15:03:51.982Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6a/50/bf3e9d6effd59bd6c4b1ab32d2712426e19d23470b4bfdf25e128ed5b7e6/pywayland-0.4.18-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:de1d8dff2e79e7e6ddb71206254925af250a32dd4930500017ed3739ca41a134", size = 836088, upload-time = "2024-07-27T19:24:26.558Z" },
-    { url = "https://files.pythonhosted.org/packages/aa/4a/57071fa161e3d85f06e83bab5bb091648545499cc3b677782e7ac36623d0/pywayland-0.4.18-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:cfb22d56c81add861ca5329ef3ffb16ed4d913f601fb70dfe5ae20a45c9f52dd", size = 836079, upload-time = "2024-07-27T19:24:28.411Z" },
-    { url = "https://files.pythonhosted.org/packages/3f/3a/1134f6e0badc62ae4db44486ba19d30f6af8c8ef4045cc8d099839c275fe/pywayland-0.4.18-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:9bfa354df5bda91b94fbb6520543b8229d26cde1625f58c8741e647ef3ef5b4f", size = 837339, upload-time = "2024-07-27T19:24:29.72Z" },
-    { url = "https://files.pythonhosted.org/packages/de/7b/a41c0afe40bb67b46887f838930f99466b20595d35ab2239018512579c94/pywayland-0.4.18-pp310-pypy310_pp73-manylinux_2_28_x86_64.whl", hash = "sha256:ab2d74fee534d3519fac87a903148085e24dd076395e881ed2bdb3aa6bdd5882", size = 758137, upload-time = "2024-07-27T19:24:34.611Z" },
+    { url = "https://files.pythonhosted.org/packages/7d/f8/79e147b8c9ca2e2c01f8f192d527190cf27b6b264c6825ee9c6655b8a45a/pywayland-0.4.19-cp310-cp310-manylinux_2_34_x86_64.whl", hash = "sha256:482ae6c2a664560716a1f72fc53ce58a1f83e6340eb59c1ebfc8b7c9c2f3d06f", size = 704120, upload-time = "2026-08-15T15:03:44.634Z" },
+    { url = "https://files.pythonhosted.org/packages/d4/fe/df2e2249cddb74b6e0815f5535afd3fbfc028be597dc60de526879b98611/pywayland-0.4.19-cp311-cp311-manylinux_2_34_x86_64.whl", hash = "sha256:f60860fd181d2420a6cb931cb91db49592691f7f6834eb4ce956de11abe2321a", size = 704098, upload-time = "2026-08-15T15:03:46.085Z" },
+    { url = "https://files.pythonhosted.org/packages/ab/46/20d628982baab0f57df815e2ba6b34b4f08a8111edd65eeb831dd6bcd5c3/pywayland-0.4.19-cp312-cp312-manylinux_2_34_x86_64.whl", hash = "sha256:1cde2f1f133f5f8d6974014969bad64789c5d2b129acbe212a9425805c65fe2b", size = 705327, upload-time = "2026-08-15T15:03:47.282Z" },
+    { url = "https://files.pythonhosted.org/packages/a3/22/dc49766cb01d174d5f1f55620385436bd8032547d6196aef22c8fec991e2/pywayland-0.4.19-cp313-cp313-manylinux_2_34_x86_64.whl", hash = "sha256:267e24092fefad19b0d8c4ca79ed11f9e6ab8074a4953d6dbbba1b180ec36363", size = 705279, upload-time = "2026-08-15T15:03:48.411Z" },
+    { url = "https://files.pythonhosted.org/packages/27/e8/10f36b4db54bcccfc906c2939333e9b6482ca953f5a36a61fb5c7ed8518e/pywayland-0.4.19-cp314-cp314-manylinux_2_34_x86_64.whl", hash = "sha256:51bba0917ba7815a4db75a3ecf7efe4683d4d78e861d59f83f7efade719faedb", size = 705127, upload-time = "2026-08-15T15:03:49.674Z" },
+    { url = "https://files.pythonhosted.org/packages/76/a9/a740a45412a3486bda29de37ed8950de884bc38ee5b626ee4006f0c95561/pywayland-0.4.19-pp311-pypy311_pp73-manylinux_2_34_x86_64.whl", hash = "sha256:46ece208f847900ff33b753eaaeaa0ff350ef0d6880b14b6b89d2d71c3b2dade", size = 631528, upload-time = "2026-08-15T15:03:50.944Z" },
 ]
 
 [[package]]
@@ -2230,7 +2232,7 @@ requires-dist = [
     { name = "pyte", specifier = "~=0.8.2" },
     { name = "pytesseract", specifier = "~=0.3.10" },
     { name = "python-dateutil", specifier = ">=2.9.0.post0" },
-    { name = "pywayland" },
+    { name = "pywayland", specifier = "==0.4.19" },
     { name = "rapidfuzz", specifier = ">=3.12.1" },
     { name = "rapidocr", specifier = "~=3.9.1" },
     { name = "robotframework", specifier = "==7.4.2" },

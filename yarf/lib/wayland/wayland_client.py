@@ -13,7 +13,7 @@ from owasp_logger import OWASPLogger
 
 from yarf.loggers.owasp_logger import get_owasp_logger
 
-from .protocols.wayland.wl_registry import WlRegistryProxy
+from .protocols.wayland import WlRegistryProxy
 
 _owasp_logger = OWASPLogger(appid=__name__, logger=get_owasp_logger())
 

@@ -11,14 +11,10 @@ from PIL import Image
 
 from . import get_memfd
 from .protocols import WlOutput, WlShm, ZwlrScreencopyManagerV1
-from .protocols.wayland.wl_buffer import WlBufferProxy
-from .protocols.wayland.wl_output import WlOutputProxy
-from .protocols.wayland.wl_shm import WlShmProxy
-from .protocols.wlr_screencopy_unstable_v1.zwlr_screencopy_frame_v1 import (
+from .protocols.wayland import WlBufferProxy, WlOutputProxy, WlShmProxy
+from .protocols.wlr_screencopy_unstable_v1 import (
     ZwlrScreencopyFrameV1,
     ZwlrScreencopyFrameV1Proxy,
-)
-from .protocols.wlr_screencopy_unstable_v1.zwlr_screencopy_manager_v1 import (
     ZwlrScreencopyManagerV1Proxy,
 )
 from .wayland_client import WaylandClient

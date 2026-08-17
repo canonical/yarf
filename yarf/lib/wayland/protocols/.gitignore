@@ -1,5 +1,5 @@
-wayland
-virtual_keyboard_unstable_v1
-wlr_screencopy_unstable_v1
-wlr_virtual_pointer_unstable_v1
-xdg_output_unstable_v1
+wayland.py
+virtual_keyboard_unstable_v1.py
+wlr_screencopy_unstable_v1.py
+wlr_virtual_pointer_unstable_v1.py
+xdg_output_unstable_v1.py
