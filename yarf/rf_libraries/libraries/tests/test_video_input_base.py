@@ -767,6 +767,157 @@ class TestVideoInputBase:
         )
 
     @pytest.mark.asyncio
+    async def test_get_highlighted_text(self, stub_videoinput):
+        """
+        The highlighted line detected by the segmentation tool is returned, and
+        the pipeline images are logged.
+        """
+        image = Image.new("RGB", (20, 8))
+        lines = [
+            {"text": "First", "region": Region(0, 0, 10, 2), "confidence": 90},
+            {
+                "text": "Second",
+                "region": Region(0, 2, 10, 4),
+                "confidence": 90,
+            },
+        ]
+        stub_videoinput.segmentation_tool.find_outlier_region_index = Mock(
+            return_value=1
+        )
+
+        with (
+            patch(
+                "yarf.rf_libraries.libraries.video_input_base.read_lines",
+                return_value=lines,
+            ),
+            patch(
+                "yarf.rf_libraries.libraries.video_input_base.log_image"
+            ) as mock_log_image,
+        ):
+            result = await stub_videoinput.get_highlighted_text(image=image)
+
+        assert result == lines[1]
+        # The OCR-boxes image and the final selection image are both logged.
+        assert mock_log_image.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_get_highlighted_text_with_region(self, stub_videoinput):
+        """
+        A region given as a dict is converted and passed to read_lines.
+        """
+        image = Image.new("RGB", (20, 8))
+        lines = [
+            {"text": "A", "region": Region(0, 0, 10, 2), "confidence": 90},
+            {"text": "B", "region": Region(0, 2, 10, 4), "confidence": 90},
+        ]
+        stub_videoinput.segmentation_tool.find_outlier_region_index = Mock(
+            return_value=0
+        )
+
+        with (
+            patch(
+                "yarf.rf_libraries.libraries.video_input_base.read_lines",
+                return_value=lines,
+            ) as mock_read_lines,
+            patch("yarf.rf_libraries.libraries.video_input_base.log_image"),
+        ):
+            result = await stub_videoinput.get_highlighted_text(
+                region={"left": 0, "top": 0, "right": 10, "bottom": 4},
+                image=image,
+            )
+
+        assert result == lines[0]
+        mock_read_lines.assert_called_once_with(
+            stub_videoinput.ocr, image, region=Region(0, 0, 10, 4)
+        )
+
+    @pytest.mark.asyncio
+    async def test_get_highlighted_text_image_path(
+        self, stub_videoinput, mock_to_image
+    ):
+        """
+        An image given as a path is loaded via to_image.
+        """
+        lines = [
+            {"text": "A", "region": Region(0, 0, 10, 2), "confidence": 90},
+            {"text": "B", "region": Region(0, 2, 10, 4), "confidence": 90},
+        ]
+        stub_videoinput.segmentation_tool.find_outlier_region_index = Mock(
+            return_value=1
+        )
+
+        with (
+            patch(
+                "yarf.rf_libraries.libraries.video_input_base.read_lines",
+                return_value=lines,
+            ),
+            patch("yarf.rf_libraries.libraries.video_input_base.log_image"),
+        ):
+            result = await stub_videoinput.get_highlighted_text(
+                image="menu.png"
+            )
+
+        assert result == lines[1]
+        mock_to_image.assert_called_once_with("menu.png")
+
+    @pytest.mark.parametrize(
+        "highlighted, expected",
+        [
+            ({"text": "USB1-1 (Samsung Type-C)"}, True),
+            ({"text": "HDD1-Ubuntu"}, False),
+            (None, False),
+        ],
+    )
+    @pytest.mark.asyncio
+    async def test_is_highlighted_text(
+        self, stub_videoinput, highlighted, expected
+    ):
+        """
+        The keyword reports whether the highlighted item matches the text.
+        """
+        stub_videoinput.get_highlighted_text = AsyncMock(
+            return_value=highlighted
+        )
+        result = await stub_videoinput.is_highlighted_text("usb1-1")
+        assert result is expected
+
+    @pytest.mark.asyncio
+    async def test_get_highlighted_text_too_few_lines(self, stub_videoinput):
+        """
+        None is returned when fewer than two lines are detected.
+        """
+        with patch(
+            "yarf.rf_libraries.libraries.video_input_base.read_lines",
+            return_value=[
+                {"text": "Only", "region": Region(0, 0, 1, 1), "confidence": 9}
+            ],
+        ):
+            assert await stub_videoinput.get_highlighted_text() is None
+
+    @pytest.mark.asyncio
+    async def test_get_highlighted_text_no_outlier(self, stub_videoinput):
+        """
+        None is returned when no line stands out as highlighted.
+        """
+        image = Image.new("RGB", (20, 8))
+        lines = [
+            {"text": "A", "region": Region(0, 0, 10, 2), "confidence": 9},
+            {"text": "B", "region": Region(0, 2, 10, 4), "confidence": 9},
+        ]
+        stub_videoinput.segmentation_tool.find_outlier_region_index = Mock(
+            return_value=None
+        )
+        with (
+            patch(
+                "yarf.rf_libraries.libraries.video_input_base.read_lines",
+                return_value=lines,
+            ),
+            patch("yarf.rf_libraries.libraries.video_input_base.log_image"),
+        ):
+            result = await stub_videoinput.get_highlighted_text(image=image)
+        assert result is None
+
+    @pytest.mark.asyncio
     @patch("yarf.rf_libraries.libraries.video_input_base.log_image")
     async def test_match_text_fails(
         self, mock_log_image, stub_videoinput, mock_time

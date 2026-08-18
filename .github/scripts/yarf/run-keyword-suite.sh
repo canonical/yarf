@@ -4,6 +4,10 @@ set -euo pipefail
 SUITE=${1:?usage: run-keyword-suite.sh <suite-name>}
 LISTENER=${KEYWORDS_LISTENER_PATH:-.github/scripts/yarf/keywords_listener.py}
 
+# The matrix entry name ($SUITE) is also the Robot suite to run, unless a case
+# below overrides ROBOT_SUITE to reuse a suite file with different variables.
+ROBOT_SUITE="$SUITE"
+
 # Fresh coverage file on every invocation: the listener loads the
 # existing file and removes used keywords from it, so leftover state
 # from a previous (failed) attempt would skew the result.
@@ -14,7 +18,7 @@ rm -f keywords_coverage.json
 # dependency to that runtime environment.
 run_yarf() {
   uv run --with asttokens yarf --platform Mir tests/keyword_suite -- \
-    --suite "$SUITE" --listener "$LISTENER" "$@"
+    --suite "$ROBOT_SUITE" --listener "$LISTENER" "$@"
 }
 
 case "$SUITE" in
@@ -26,6 +30,26 @@ case "$SUITE" in
     STUB_PID=$!
     trap 'kill "$STUB_PID" 2>/dev/null || true' EXIT
     run_yarf
+    ;;
+  grid_test|grid_test_low_contrast)
+    # The grid app is a GTK4/libadwaita application managed by uv; install its
+    # system GObject bindings and create its venv with access to them,
+    # mirroring the tutorial tests setup.
+    sudo apt-get --yes --no-install-recommends install \
+      python3-gi \
+      gir1.2-gtk-4.0 \
+      libadwaita-1-dev \
+      gir1.2-adw-1
+    uv venv --python=/usr/bin/python3 --system-site-packages \
+      --project="$(pwd)/tests/keyword_suite/grid"
+    if [ "$SUITE" = grid_test_low_contrast ]; then
+      # Reuse the grid_test suite but render the highlight at a low contrast,
+      # which needs a tighter background colour tolerance to be detected.
+      ROBOT_SUITE=grid_test
+      run_yarf --variable CONTRAST:0.55 --variable COLOR_TOLERANCE:10
+    else
+      run_yarf
+    fi
     ;;
   *)
     run_yarf
