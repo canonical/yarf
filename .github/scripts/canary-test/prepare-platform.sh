@@ -13,7 +13,7 @@ mir-test-tools.demo-server \
 --virtual-output 1280x1024 &
 
 # Wait for the compositor to start
-inotifywait --event create --include "^$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY\$" $XDG_RUNTIME_DIR
+inotifywait --event create --include "^$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY\$" "$XDG_RUNTIME_DIR"
 
 if [ "$PLATFORM" == "Vnc" ]; then
     # Start vnc session

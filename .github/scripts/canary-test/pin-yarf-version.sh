@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # We pin the YARF version this way because snapcraft runs pip install
 # and does not use uv automatically, so uv add <dep> will not work because
 # pip will not look into tool.uv.sources.

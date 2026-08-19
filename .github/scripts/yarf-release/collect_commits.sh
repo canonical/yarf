@@ -15,10 +15,6 @@ set -euo pipefail
 
 command -v jq >/dev/null 2>&1 || { echo "jq not found" >&2; exit 127; }
 
-# URL-encode tags for safe API paths
-FROM_ESC="$(printf '%s' "${FROM}" | jq -sRr @uri)"
-TO_ESC="$(printf '%s' "${TO}" | jq -sRr @uri)"
-
 if [[ "${FROM_KIND}" == "tag" ]]; then
   # We have a start and end tag
   GIT_RANGE="${FROM}..${TO}"

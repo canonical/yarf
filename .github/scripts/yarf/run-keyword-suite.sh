@@ -14,7 +14,7 @@ rm -f keywords_coverage.json
 # dependency to that runtime environment.
 run_yarf() {
   uv run --with asttokens yarf --platform Mir tests/keyword_suite -- \
-    --suite "$SUITE" --listener "$LISTENER" "$@"
+    --suite "$SUITE" --listener "$LISTENER"
 }
 
 case "$SUITE" in
