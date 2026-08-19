@@ -41,6 +41,7 @@ from yarf.vendor.RPA.recognition.templates import ImageNotFoundError
 DISPLAY_PATTERN = r"((?P<id>[\w-]+)\:)?(?P<resolution>\d+x\d+)(\s+|$)"
 DISPLAY_RE = re.compile(rf"{DISPLAY_PATTERN}")
 DISPLAYS_RE = re.compile(rf"^({DISPLAY_PATTERN})+$")
+MIN_MATCH_ITERATION_TIME = 0.1
 
 
 class VideoInputBase(ABC):
@@ -436,8 +437,16 @@ class VideoInputBase(ABC):
         region = to_region(region)
         print(f"\nLooking for '{text}'")
         print(region)
-        start_time = time.time()
-        while time.time() - start_time < timeout:
+        start_time = time.monotonic()
+        first_iteration = True
+        while True:
+            iteration_start_time = time.monotonic()
+            if (
+                not first_iteration
+                and iteration_start_time - start_time >= timeout
+            ):
+                break
+            first_iteration = False
             image = await self._grab_and_save_screenshot()
             # Save the cropped image for debugging
             cropped_image = (
@@ -464,6 +473,9 @@ class VideoInputBase(ABC):
 
             if text_matches:
                 return text_matches, cropped_image
+            await self._sleep_for_minimum_iteration_time(
+                iteration_start_time, start_time + timeout
+            )
 
         read_text = await self.read_text(cropped_image)
 
@@ -608,6 +620,17 @@ class VideoInputBase(ABC):
 
         return screenshot
 
+    async def _sleep_for_minimum_iteration_time(
+        self, iteration_start_time: float, end_time: float | None = None
+    ) -> None:
+        current_time = time.monotonic()
+        elapsed = current_time - iteration_start_time
+        sleep_time = max(0.0, MIN_MATCH_ITERATION_TIME - elapsed)
+        if end_time is not None:
+            sleep_time = min(sleep_time, max(0.0, end_time - current_time))
+        if sleep_time > 0:
+            await asyncio.sleep(sleep_time)
+
     async def _do_match(
         self,
         templates: Sequence[str],
@@ -646,13 +669,17 @@ class VideoInputBase(ABC):
             )
             for template, image in template_images.items()
         }
-        end_time = time.time() + float(timeout)
-        while (now := time.time()) < end_time:
+        end_time = time.monotonic() + float(timeout)
+        while (iteration_start_time := time.monotonic()) < end_time:
             try:
                 screenshot = await asyncio.wait_for(
-                    self._grab_and_save_screenshot(), end_time - now
+                    self._grab_and_save_screenshot(),
+                    end_time - iteration_start_time,
                 )
             except RuntimeError:
+                await self._sleep_for_minimum_iteration_time(
+                    iteration_start_time, end_time
+                )
                 continue
             matches = []
             for path, image in template_images.items():
@@ -695,6 +722,9 @@ class VideoInputBase(ABC):
                 # have matched
                 if not accept_any:
                     return matches
+            await self._sleep_for_minimum_iteration_time(
+                iteration_start_time, end_time
+            )
 
         if screenshot:
             for template in templates:
