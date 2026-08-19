@@ -3,11 +3,14 @@ bool
 boolean
 color_tolerance
 funcobj
+Gui
 HIDs
 keypresses
+kvm
 kwargs
 LLM
 msg
+Ocr
 Ollama
 Qwen
 rapidocr

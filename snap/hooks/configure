@@ -4,4 +4,4 @@ set -e
 
 # Ensure the platform plugins directories exists
 # Directory for snap connect
-mkdir -p $SNAP_COMMON/platform_plugins
+mkdir -p "$SNAP_COMMON/platform_plugins"

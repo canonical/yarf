@@ -10,9 +10,9 @@ real_xdg_runtime_dir=$(dirname "${XDG_RUNTIME_DIR}")
 real_wayland=${real_xdg_runtime_dir}/${WAYLAND_DISPLAY:-wayland-0}
 
 [ -d "${real_xdg_runtime_dir}" ] || echo "WARNING: missing ${real_xdg_runtime_dir}, is a Wayland compositor running?"
-[ -O "${real_wayland}" ] || echo "WARNING: missing ${real_wayland}, is a Wayland compositor running?"
+[ -e "${real_wayland}" ] || echo "WARNING: missing ${real_wayland}, is a Wayland compositor running?"
 
-if mkdir -p "$XDG_RUNTIME_DIR" -m 700; then
+if mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"; then
   ln -sf "${real_wayland}" "$XDG_RUNTIME_DIR"
   ln -sf "${real_wayland}.lock" "$XDG_RUNTIME_DIR"
 else
