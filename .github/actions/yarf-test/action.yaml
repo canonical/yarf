@@ -1,9 +1,9 @@
 name: YARF test
 description: >-
   Run YARF visual tests in CI. Installs dependencies, starts a platform
-  (built-in Mir/Vnc or a custom provider), launches the app under test,
-  runs YARF against a test suite and surfaces the results as an artifact and
-  job summary, failing the job when tests fail. Caller must run
+  (the stock Mir + wayvnc compositor or a custom provider), launches the app
+  under test, runs YARF against a test suite and surfaces the results as an
+  artifact and job summary, failing the job when tests fail. Caller must run
   actions/checkout first.
 
 inputs:
@@ -11,9 +11,9 @@ inputs:
     description: Value passed to `yarf --platform`.
     required: true
   platform-provider:
-    description: "Platform YARF starts with: Mir, Vnc, or custom (any casing)."
+    description: "Platform YARF starts with: stock or custom (any casing)."
     required: false
-    default: Mir
+    default: stock
   platform-setup-command:
     description: Command(s) to start the platform. Required when platform-provider is custom.
     required: false
@@ -24,13 +24,6 @@ inputs:
     default: ""
   platform-teardown-command:
     description: Command(s) to tear down the platform after the run. Required when platform-provider is custom.
-    required: false
-    default: ""
-  python-version:
-    description: >-
-      Python version to set up before installing YARF, selecting the interpreter
-      the action builds its venv on. Skipped when empty, which uses the Python
-      already on the runner.
     required: false
     default: ""
   test-path:
@@ -44,9 +37,18 @@ inputs:
     required: false
     default: ""
   yarf-ref:
-    description: Git ref (branch/tag/SHA) to build and install YARF from.
+    description: >-
+      Git ref (branch/tag/SHA) to build and install YARF from. Defaults to the
+      ref this action was called at, so pinning the action also pins YARF.
     required: false
-    default: main
+    default: ""
+  yarf-path:
+    description: >-
+      Path to a YARF source tree to install instead of fetching one. Takes
+      priority over yarf-ref; mainly for workflows in this repository, which
+      already have the source checked out.
+    required: false
+    default: ""
   yarf-args:
     description: Extra yarf options placed before the test path (e.g. --output-format).
     required: false
@@ -64,7 +66,7 @@ inputs:
     required: false
     default: ""
   display-size:
-    description: Virtual output resolution for the built-in platforms.
+    description: Virtual output resolution for the stock platform.
     required: false
     default: 1280x1024
   artifact-name:
@@ -100,12 +102,6 @@ runs:
         UPLOAD_ARTIFACT: ${{ inputs.upload-artifact }}
       run: bash "${GITHUB_ACTION_PATH}/scripts/validate-inputs.sh"
 
-    - name: Set up Python
-      if: inputs.python-version != ''
-      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
-      with:
-        python-version: ${{ inputs.python-version }}
-
     - name: Install workflow dependencies
       shell: bash
       run: bash "${GITHUB_ACTION_PATH}/scripts/install-deps.sh"
@@ -113,7 +109,11 @@ runs:
     - name: Install YARF
       shell: bash
       env:
-        YARF_REF: ${{ inputs.yarf-ref }}
+        YARF_PATH: ${{ inputs.yarf-path }}
+        # github.action_* are empty when the action is used from a local path,
+        # which only happens for the yarf-path workflows in this repository.
+        YARF_REF: ${{ inputs.yarf-ref || github.action_ref }}
+        YARF_REPOSITORY: ${{ github.action_repository }}
       run: bash "${GITHUB_ACTION_PATH}/scripts/install-yarf.sh"
 
     - name: Start platform
@@ -145,7 +145,7 @@ runs:
         YARF_COMMAND_SUFFIX: ${{ inputs.yarf-command-suffix }}
       run: bash "${GITHUB_ACTION_PATH}/scripts/run-yarf.sh"
 
-    # Validation rejects a teardown command for the built-in providers, so a
+    # Validation rejects a teardown command for the stock provider, so a
     # non-empty value here means the provider is custom.
     - name: Tear down platform
       if: always() && inputs.platform-teardown-command != ''
@@ -156,7 +156,7 @@ runs:
 
     - name: Upload YARF output
       id: upload
-      if: always() && inputs.upload-artifact == 'true'
+      if: always() && inputs.upload-artifact == 'true' && steps.run.outputs.output-dir != ''
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: ${{ inputs.artifact-name }}

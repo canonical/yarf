@@ -8,7 +8,6 @@ set -euo pipefail
 sudo apt-get update -qq
 sudo apt-get --yes --no-install-recommends install \
   eog \
-  ffmpeg \
   gnome-calculator \
   mpv
 

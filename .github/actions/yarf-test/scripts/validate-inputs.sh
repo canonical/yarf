@@ -10,21 +10,20 @@
 #
 # Environment:
 #   PLATFORM                   Value passed to `yarf --platform`.
-#   PLATFORM_PROVIDER          Mir, Vnc, or custom.
+#   PLATFORM_PROVIDER          stock or custom.
 #   PLATFORM_SETUP_COMMAND     Command(s) to start a custom platform.
 #   PLATFORM_READY_COMMAND     Command(s) that block until a custom platform is ready.
 #   PLATFORM_TEARDOWN_COMMAND  Command(s) to tear down a custom platform.
 #   TEST_PATH                  Path to the YARF test suite to run.
-#   DISPLAY_SIZE               Virtual output resolution for the built-in platforms.
+#   DISPLAY_SIZE               Virtual output resolution for the stock platform.
 #   UPLOAD_ARTIFACT            Whether to upload the YARF output dir.
 #   GITHUB_ENV                 File used to export variables to later steps.
 set -euo pipefail
 
-# The provider names are documented capitalised, but accept any casing and pass
-# the canonical spelling on to the scripts that match on it.
+# Accept any casing and pass the canonical spelling on to the scripts that
+# match on it.
 case "${PLATFORM_PROVIDER:-}" in
-[Mm][Ii][Rr]) PLATFORM_PROVIDER="Mir" ;;
-[Vv][Nn][Cc]) PLATFORM_PROVIDER="Vnc" ;;
+[Ss][Tt][Oo][Cc][Kk]) PLATFORM_PROVIDER="stock" ;;
 [Cc][Uu][Ss][Tt][Oo][Mm]) PLATFORM_PROVIDER="custom" ;;
 esac
 
@@ -35,7 +34,7 @@ if [ ! -e "${TEST_PATH:-}" ]; then
 fi
 
 case "${PLATFORM_PROVIDER}" in
-Mir | Vnc)
+stock)
   for input in setup ready teardown; do
     var="PLATFORM_${input^^}_COMMAND"
     if [ -n "${!var:-}" ]; then
@@ -52,7 +51,7 @@ custom)
   done
   ;;
 *)
-  errors+=("platform-provider '${PLATFORM_PROVIDER}' is invalid (expected Mir, Vnc, or custom)")
+  errors+=("platform-provider '${PLATFORM_PROVIDER}' is invalid (expected stock or custom)")
   ;;
 esac
 

@@ -28,19 +28,30 @@ consumers invoke with a single `uses:` step.
   together; the real logic lives in small, single-responsibility bash scripts
   under `scripts/` (`install-deps.sh`, `install-yarf.sh`, `start-platform.sh`,
   `run-yarf.sh`), each runnable standalone for testing.
-- **Execution flow.** Install workflow dependencies, install YARF (from a snap
-  channel by default, or built from a git ref via `yarf-ref`), start the
+- **Execution flow.** Install workflow dependencies, install YARF, start the
   platform, launch the app under test, run YARF, upload the output directory as
   an artifact, write a job summary, and propagate YARF's pass/fail to the job.
-- **Platform providers.** `Mir` and `Vnc` get a built-in virtual Mir compositor
-  (no graphics hardware required, plus `wayvnc` for VNC). Any other platform is
-  treated as a `custom` provider, driven by consumer-supplied
-  `platform-setup-command`, `platform-ready-command`, and
-  `platform-teardown-command`.
-- **Output location.** The YARF output directory differs by install mode
-  (`~/snap/yarf/common/yarf-outdir/` for the snap, `$TMPDIR/yarf-outdir` for a
-  source install). The action resolves this and exposes it via the `output-dir`
-  output so downstream steps and artifact upload do not hardcode it.
+- **Source install only, no snap option.** The action builds YARF from source
+  into a virtual environment on the runner. The snap is strictly confined, so a
+  snap-installed YARF cannot see a suite that lives in the runner's workspace,
+  nor can consumers install platform plugins into it. The source install also
+  lets the action run any git ref, which the snap channels cannot express.
+- **Version pinning follows the action.** `yarf-ref` defaults to the ref the
+  action itself was called at, so `yarf-test@3.16.0` runs YARF 3.16.0, and the
+  source is fetched from the repository the action came from, which keeps forks
+  working. Workflows in this repository pass `yarf-path` instead, reusing the
+  checkout they already have.
+- **Platform providers.** The `stock` provider starts a virtual Mir compositor
+  (no graphics hardware required) with `wayvnc` in front of it, which serves
+  the `Mir` and `Vnc` platforms alike; `Vnc` is a protocol rather than a
+  platform of its own. Everything else is a `custom` provider, driven by
+  consumer-supplied `platform-setup-command`, `platform-ready-command`, and
+  `platform-teardown-command`. Driving a whole OS, for example under QEMU,
+  involves too many variables to bake into the action; it belongs in a native
+  YARF platform and is served by `custom` until then.
+- **Output location.** The action passes `--outdir` itself and exposes the
+  directory via the `output-dir` output, so downstream steps and the artifact
+  upload do not hardcode a path.
 
 ## Consequences
 
@@ -50,7 +61,7 @@ consumers invoke with a single `uses:` step.
   in-snap bootstrapping infeasible.
 - The action must stay in sync with YARF's CLI and output conventions; a
   self-test workflow ([`test-yarf-action.yaml`](../.github/workflows/test-yarf-action.yaml))
-  exercises it against the canary suite on the built-in providers.
+  exercises it against the canary suite on the stock provider.
 - Testing on hardware (e.g. via Zapper/Testflinger) needs additional operations
   such as credentials and plugins and is intentionally out of scope here; it is
   expected to be offered as a separate service.

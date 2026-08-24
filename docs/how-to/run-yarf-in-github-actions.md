@@ -16,11 +16,11 @@ The action expects the following:
 - Git LFS enabled in the checkout (`lfs: true`) when the suite stores its
   reference images in Git LFS.
 
-## Run a suite on a built-in platform
+## Run a suite on the stock platform
 
-The `Mir` and `Vnc` providers both start a headless Mir compositor, so no
-graphics hardware is needed. The `Vnc` provider also starts `wayvnc` in front
-of it, so that YARF connects to it over VNC.
+The `stock` provider starts a headless Mir compositor, so no graphics hardware
+is needed, and puts `wayvnc` in front of it. It therefore serves both the `Mir`
+and the `Vnc` platform.
 
 ```{code-block} yaml
 ---
@@ -36,7 +36,6 @@ jobs:
       - uses: canonical/yarf/.github/actions/yarf-test@main
         with:
           platform: Mir
-          platform-provider: Mir
           test-path: tests/visual
           launch-command: dbus-run-session -- my-app
 ```
@@ -50,7 +49,7 @@ itself.
 
 ## Run a suite on a platform plugin
 
-Set `platform-provider` to `custom` when the platform is not the built-in
+Set `platform-provider` to `custom` when the platform is not the stock
 compositor, for example a platform plugin. See
 {doc}`./platform-plugins` for how to write one. This provider requires three
 commands:
@@ -125,12 +124,12 @@ the guest finished booting. Let the suite wait for the first `Match` instead.
 
 The following inputs shape the YARF invocation:
 
-| Input                 | Effect                                                        |
-| --------------------- | ------------------------------------------------------------- |
-| `yarf-args`           | Options placed before the test path, such as `--variant`.     |
-| `robotframework-args` | Arguments appended after `--`, such as `--suite` or `--test`. |
-| `yarf-ref`            | Git ref to install YARF from. Defaults to `main`.             |
-| `python-version`      | Python version to build the virtual environment on.           |
+| Input                 | Effect                                                                         |
+| --------------------- | ------------------------------------------------------------------------------ |
+| `yarf-args`           | Options placed before the test path, such as `--variant`.                      |
+| `robotframework-args` | Arguments appended after `--`, such as `--suite` or `--test`.                  |
+| `yarf-ref`            | Git ref to install YARF from. Defaults to the ref the action was called at.    |
+| `yarf-path`           | Path to a YARF source tree to install instead. Takes priority over `yarf-ref`. |
 
 ```{code-block} yaml
 ---
@@ -152,8 +151,8 @@ exposes two outputs:
 - `result` is `passed` or `failed`.
 - `output-dir` is the absolute path of the YARF output directory.
 
-Reference `output-dir` in later steps instead of a fixed path, because the
-directory changes when `--outdir` is passed through `yarf-args`.
+The action passes `--outdir` to YARF itself, so an `--outdir` in `yarf-args` has
+no effect. Reference `output-dir` in later steps instead of a fixed path.
 
 ```{code-block} yaml
 ---

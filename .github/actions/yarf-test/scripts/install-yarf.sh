@@ -1,5 +1,8 @@
 #!/bin/bash
-# Install YARF from source at a given git ref, into a dedicated uv venv.
+# Install YARF from source, into a dedicated uv venv.
+#
+# The source comes from YARF_PATH when set, otherwise from a git checkout of
+# YARF_REPOSITORY at YARF_REF.
 #
 # The venv is put on $GITHUB_PATH and exported through VIRTUAL_ENV so later
 # steps (a custom platform's setup command, the YARF run itself) install into
@@ -8,13 +11,17 @@
 # output directory is exported too, so later steps need not hardcode a path.
 #
 # Environment:
-#   YARF_REF     Git ref (branch/tag/SHA) to build YARF from (default: main).
-#   RUNNER_TEMP  Directory the venv and the checkout are created in.
-#   GITHUB_ENV   File used to export variables to later steps.
-#   GITHUB_PATH  File used to extend PATH for later steps.
+#   YARF_PATH        Path to a YARF source tree; takes priority over YARF_REF.
+#   YARF_REF         Git ref (branch/tag/SHA) to build YARF from (default: main).
+#   YARF_REPOSITORY  Repository to fetch YARF from (default: canonical/yarf).
+#   RUNNER_TEMP      Directory the venv and the checkout are created in.
+#   GITHUB_ENV       File used to export variables to later steps.
+#   GITHUB_PATH      File used to extend PATH for later steps.
 set -euo pipefail
 
+YARF_PATH="${YARF_PATH:-}"
 YARF_REF="${YARF_REF:-main}"
+YARF_REPOSITORY="${YARF_REPOSITORY:-canonical/yarf}"
 output_dir="${TMPDIR:-/tmp}/yarf-outdir"
 venv="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/yarf-venv"
 src="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/yarf-src"
@@ -33,17 +40,23 @@ fi
 # rather than escaping to the system one.
 uv --no-managed-python venv --seed --system-site-packages "${venv}"
 
-echo "Installing YARF from source at ref '${YARF_REF}'"
-# Checked out here rather than installed straight from the git URL, because pip
-# and uv do not fetch Git LFS objects and YARF ships assets that need them.
-rm -rf "${src}"
-git init --quiet "${src}"
-git -C "${src}" remote add origin https://github.com/canonical/yarf.git
-git -C "${src}" fetch --quiet --depth 1 origin "${YARF_REF}"
-git -C "${src}" checkout --quiet FETCH_HEAD
-# Only the packaged assets are needed; a caller's own suite assets come from
-# their checkout.
-git -C "${src}" lfs pull --include="yarf/**"
+if [ -n "${YARF_PATH}" ]; then
+  echo "Installing YARF from '${YARF_PATH}'"
+  src="${YARF_PATH}"
+else
+  echo "Installing YARF from '${YARF_REPOSITORY}' at ref '${YARF_REF}'"
+  # Checked out here rather than installed straight from the git URL, because
+  # pip and uv do not fetch Git LFS objects and YARF ships assets that need
+  # them.
+  rm -rf "${src}"
+  git init --quiet "${src}"
+  git -C "${src}" remote add origin "https://github.com/${YARF_REPOSITORY}.git"
+  git -C "${src}" fetch --quiet --depth 1 origin "${YARF_REF}"
+  git -C "${src}" checkout --quiet FETCH_HEAD
+  # Only the packaged assets are needed; a caller's own suite assets come from
+  # their checkout.
+  git -C "${src}" lfs pull --include="yarf/**"
+fi
 
 uv pip install --python "${venv}/bin/python" "${src}"
 

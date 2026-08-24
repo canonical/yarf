@@ -112,10 +112,10 @@ jobs:
       uses: ./.github/actions/yarf-test
       with:
         platform: Mir
-        platform-provider: Mir
+        platform-provider: stock
         test-path: tests/canary_test
         yarf-args: --output-format TestSubmissionSchema
-        yarf-ref: ${{ github.sha }}
+        yarf-path: .
         artifact-name: yarf-output-integration
 
     - name: Validate test submission schema
@@ -153,10 +153,10 @@ jobs:
       uses: ./.github/actions/yarf-test
       with:
         platform: Mir
-        platform-provider: Mir
+        platform-provider: stock
         test-path: examples/yarf-example-simple-counter/yarf_tests
         yarf-args: ${{ matrix.variant && format('--variant {0}', matrix.variant) || '' }}
-        yarf-ref: ${{ github.sha }}
+        yarf-path: .
         artifact-name: yarf-output-tutorial-${{ matrix.variant || 'default' }}
 
     - if: failure() && runner.debug
@@ -203,12 +203,12 @@ jobs:
       uses: ./.github/actions/yarf-test
       with:
         platform: Mir
-        platform-provider: Mir
+        platform-provider: stock
         test-path: tests/keyword_suite
         launch-command: ${{ matrix.launch-command }}
         robotframework-args: --suite ${{ matrix.suite }} --listener ${{ env.KEYWORDS_LISTENER_PATH }}
         yarf-command-suffix: ${{ matrix.yarf-command-suffix }}
-        yarf-ref: ${{ github.sha }}
+        yarf-path: .
         artifact-name: yarf-output-keyword-${{ matrix.suite }}
 
     - name: Upload per-suite keyword coverage

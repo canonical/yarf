@@ -2,10 +2,14 @@
 
 Run [YARF](https://github.com/canonical/yarf) visual tests in your own CI with a
 single `uses:` step. The action installs the necessary dependencies, installs
-YARF from source at `yarf-ref` into a `uv` venv, starts a platform (built-in
-Mir/Vnc or a custom provider), starts the app/OS under test via a command you
+YARF from source into a `uv` venv, starts a platform (the stock Mir + `wayvnc`
+compositor or a custom provider), starts the app/OS under test via a command you
 provide, runs YARF against a test suite, and surfaces the YARF output as an
 uploaded artifact and job summary — failing the job when tests fail.
+
+YARF is built from the ref the action itself was called at, so
+`yarf-test@3.16.0` runs YARF 3.16.0. Override it with `yarf-ref`, or point
+`yarf-path` at a source tree you already checked out.
 
 The venv is put on `PATH` and exported as `VIRTUAL_ENV`, and it is seeded with
 `pip`, so both `pip install` and `uv pip install` in your own commands and later
@@ -16,10 +20,10 @@ The caller must run `actions/checkout` first so the test suite is available.
 
 ## Usage
 
-### Built-in platform (Mir/Vnc)
+### Stock platform
 
-Both built-in providers start the same headless Mir compositor; `Vnc` also
-starts `wayvnc` in front of it so YARF talks to it over RFB. Neither boots an
+The stock provider starts a headless Mir compositor with `wayvnc` in front of
+it, so it serves both the `Mir` and the `Vnc` platform. It does not boot an
 operating system.
 
 ```yaml
@@ -31,15 +35,14 @@ jobs:
       - uses: canonical/yarf/.github/actions/yarf-test@main
         with:
           platform: Mir
-          platform-provider: Mir
           test-path: tests/visual
           launch-command: dbus-run-session -- my-app
 ```
 
 ### Custom platform provider
 
-Use `platform-provider: custom` when the platform is not the built-in Mir/Vnc
-compositor (for example a YARF platform plugin). Install and start the platform
+Use `platform-provider: custom` when the platform is not the stock compositor
+(for example a YARF platform plugin). Install and start the platform
 with `platform-setup-command`, block until it is ready with
 `platform-ready-command`, and clean up with `platform-teardown-command`; all
 three are required for this provider.
@@ -106,18 +109,18 @@ accepted in any casing.
 | Input                       | Required     | Default       | Description                                                                                                         |
 | --------------------------- | ------------ | ------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `platform`                  | yes          | —             | Value passed to `yarf --platform`.                                                                                  |
-| `platform-provider`         | no           | `Mir`         | Platform YARF starts with: `Mir`, `Vnc`, or `custom`.                                                               |
+| `platform-provider`         | no           | `stock`       | Platform YARF starts with: `stock` or `custom`.                                                                     |
 | `platform-setup-command`    | for `custom` | `""`          | Command(s) to start the platform when `platform-provider` is `custom`.                                              |
 | `platform-ready-command`    | for `custom` | `""`          | Command(s) that block until a custom platform is ready.                                                             |
 | `platform-teardown-command` | for `custom` | `""`          | Command(s) to tear down a custom platform after the run.                                                            |
-| `python-version`            | no           | `""`          | Python version the action builds YARF's venv on. Uses the runner's Python when empty.                               |
 | `test-path`                 | yes          | —             | Path (in the consumer's checkout) to the YARF test suite to run.                                                    |
 | `launch-command`            | yes          | `""`          | Command to start the app/OS under test, just before running YARF. Leave empty when the suite starts the app itself. |
-| `yarf-ref`                  | no           | `main`        | Git ref (branch/tag/SHA) to build and install YARF from.                                                            |
+| `yarf-ref`                  | no           | action's ref  | Git ref (branch/tag/SHA) to build and install YARF from.                                                            |
+| `yarf-path`                 | no           | `""`          | Path to a YARF source tree to install instead of fetching one. Takes priority over `yarf-ref`.                      |
 | `yarf-args`                 | no           | `""`          | Extra yarf options placed before the test path (e.g. `--output-format TestSubmissionSchema`).                       |
 | `robotframework-args`       | no           | `""`          | Extra args appended after `--` to the yarf invocation (e.g. `--suite foo`).                                         |
 | `yarf-command-suffix`       | no           | `""`          | Shell text appended to the yarf invocation (e.g. `2> ~/wayland.trace`). Evaluated by bash.                          |
-| `display-size`              | no           | `1280x1024`   | Virtual output resolution for the built-in platforms.                                                               |
+| `display-size`              | no           | `1280x1024`   | Virtual output resolution for the stock platform.                                                                   |
 | `artifact-name`             | no           | `yarf-output` | Name for the uploaded results artifact.                                                                             |
 | `upload-artifact`           | no           | `true`        | Whether to upload the YARF output dir as an artifact.                                                               |
 
@@ -128,7 +131,6 @@ accepted in any casing.
 | `output-dir` | Absolute path to YARF's output directory. |
 | `result`     | `passed` or `failed`.                     |
 
-The output directory is `$TMPDIR/yarf-outdir`. The action exposes it via
-`output-dir` so downstream steps and the artifact upload do not hardcode it.
-Passing an explicit `--outdir <path>` through `yarf-args` takes precedence and
-is reflected in `output-dir`.
+The output directory is `$TMPDIR/yarf-outdir`. The action passes it to YARF as
+`--outdir` and exposes it via `output-dir`, so downstream steps and the artifact
+upload do not hardcode it. An `--outdir` in `yarf-args` is therefore ignored.

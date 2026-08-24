@@ -12,7 +12,7 @@
 #   YARF_ARGS            Extra yarf options placed before the test path.
 #   ROBOTFRAMEWORK_ARGS  Extra args appended after `--`.
 #   YARF_COMMAND_SUFFIX  Shell text appended to the yarf invocation, if any.
-#   YARF_OUTPUT_DIR      Resolved YARF output directory.
+#   YARF_OUTPUT_DIR      Directory YARF writes its output to (required).
 #   YARF_APP_PID         PID of the app launched under test, if any.
 #   GITHUB_OUTPUT        File used to expose step outputs.
 set -euo pipefail
@@ -21,7 +21,7 @@ PLATFORM="${PLATFORM:?platform is required}"
 TEST_PATH="${TEST_PATH:?test-path is required}"
 YARF_ARGS="${YARF_ARGS:-}"
 ROBOTFRAMEWORK_ARGS="${ROBOTFRAMEWORK_ARGS:-}"
-YARF_OUTPUT_DIR="${YARF_OUTPUT_DIR:-}"
+YARF_OUTPUT_DIR="${YARF_OUTPUT_DIR:?output directory is required}"
 
 cmd=(yarf)
 
@@ -33,20 +33,13 @@ rf_args=(${ROBOTFRAMEWORK_ARGS})
 
 cmd+=(--platform "${PLATFORM}")
 cmd+=("${yarf_args[@]}")
+# Last --outdir wins, so the action decides where the output lands even if the
+# caller put one in yarf-args, keeping the reported output-dir accurate.
+cmd+=(--outdir "${YARF_OUTPUT_DIR}")
 cmd+=("${TEST_PATH}")
 if [ "${#rf_args[@]}" -gt 0 ]; then
   cmd+=(-- "${rf_args[@]}")
 fi
-
-# A caller-supplied --outdir in yarf-args overrides the install-mode default
-# used for the reported output directory and the artifact upload path.
-output_dir="${YARF_OUTPUT_DIR}"
-for ((i = 0; i < ${#yarf_args[@]}; i++)); do
-  case "${yarf_args[i]}" in
-  --outdir=*) output_dir="${yarf_args[i]#--outdir=}" ;;
-  --outdir) output_dir="${yarf_args[i + 1]:-${output_dir}}" ;;
-  esac
-done
 
 echo "Running: ${cmd[*]} ${YARF_COMMAND_SUFFIX:-}"
 set +e
@@ -73,7 +66,7 @@ fi
 
 {
   echo "result=${result}"
-  echo "output-dir=${output_dir}"
+  echo "output-dir=${YARF_OUTPUT_DIR}"
   echo "exit-code=${exit_code}"
 } >> "${GITHUB_OUTPUT}"
 

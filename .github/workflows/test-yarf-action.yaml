@@ -43,9 +43,9 @@ jobs:
         uses: ./.github/actions/yarf-test
         with:
           platform: ${{ matrix.platform }}
-          platform-provider: ${{ matrix.platform }}
+          platform-provider: stock
           test-path: tests/canary_test
-          yarf-ref: ${{ github.sha }}
+          yarf-path: .
           artifact-name: yarf-output-${{ matrix.platform }}
 
       - name: Check action outputs
@@ -99,7 +99,7 @@ jobs:
           # runs this command.
           platform-teardown-command: "pkill -f '[q]emu-system-x86_64' || true"
           test-path: tests/vm_test
-          yarf-ref: ${{ github.sha }}
+          yarf-path: .
           artifact-name: yarf-output-Qemu
 
       - name: Check action outputs
@@ -138,7 +138,7 @@ jobs:
           platform-ready-command: yarf --platform Example --help
           platform-teardown-command: uv pip uninstall yarf-example-plugin
           test-path: tests/plugin_suite
-          yarf-ref: ${{ github.sha }}
+          yarf-path: .
           artifact-name: yarf-output-Example
 
       - name: Check action outputs

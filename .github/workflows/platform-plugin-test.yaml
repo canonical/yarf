@@ -36,7 +36,7 @@ jobs:
           platform-ready-command: yarf --platform Example --help
           platform-teardown-command: uv pip uninstall yarf-example-plugin
           test-path: tests/plugin_suite
-          yarf-ref: ${{ github.sha }}
+          yarf-path: .
           artifact-name: yarf-output-plugin
 
       - if: failure() && runner.debug

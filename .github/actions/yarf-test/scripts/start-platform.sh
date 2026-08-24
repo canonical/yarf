@@ -1,25 +1,26 @@
 #!/bin/bash
 # Start the platform YARF will run against.
 #
-# For the built-in Mir/Vnc providers this starts a virtual Mir compositor
-# (no graphics hardware required) at the requested resolution, waits for the
-# Wayland socket to appear and, for Vnc, also starts wayvnc. WAYLAND_DISPLAY
-# is exported to $GITHUB_ENV so later steps inherit it. For the custom provider
-# it runs the caller-supplied setup and readiness commands instead.
+# The stock provider starts a virtual Mir compositor (no graphics hardware
+# required) at the requested resolution, waits for the Wayland socket to appear
+# and starts wayvnc in front of it, so it serves the Mir and the Vnc platforms
+# alike. WAYLAND_DISPLAY is exported to $GITHUB_ENV so later steps inherit it.
+# The custom provider runs the caller-supplied setup and readiness commands
+# instead.
 #
 # Environment:
-#   PLATFORM_PROVIDER        Mir, Vnc, or custom (default: Mir).
+#   PLATFORM_PROVIDER        stock or custom (default: stock).
 #   DISPLAY_SIZE             Virtual output resolution (default: 1280x1024).
 #   PLATFORM_SETUP_COMMAND   Command(s) to start a custom platform.
 #   PLATFORM_READY_COMMAND   Command(s) that block until a custom platform is ready.
 #   GITHUB_ENV               File used to export variables to later steps.
 set -euo pipefail
 
-PLATFORM_PROVIDER="${PLATFORM_PROVIDER:-Mir}"
+PLATFORM_PROVIDER="${PLATFORM_PROVIDER:-stock}"
 DISPLAY_SIZE="${DISPLAY_SIZE:-1280x1024}"
 
 case "${PLATFORM_PROVIDER}" in
-Mir | Vnc)
+stock)
   export WAYLAND_DISPLAY="wayland-99"
 
   # Start Mir on a virtual display (doesn't require graphics hardware).
@@ -36,9 +37,8 @@ Mir | Vnc)
     exit 1
   fi
 
-  if [ "${PLATFORM_PROVIDER}" = "Vnc" ]; then
-    wayvnc &
-  fi
+  # Serves the Vnc platform; harmless for suites that talk Wayland directly.
+  wayvnc &
 
   echo "WAYLAND_DISPLAY=${WAYLAND_DISPLAY}" >> "${GITHUB_ENV}"
   ;;
@@ -53,7 +53,7 @@ custom)
   fi
   ;;
 *)
-  echo "Unknown platform-provider: '${PLATFORM_PROVIDER}' (expected Mir, Vnc, or custom)" >&2
+  echo "Unknown platform-provider: '${PLATFORM_PROVIDER}' (expected stock or custom)" >&2
   exit 1
   ;;
 esac

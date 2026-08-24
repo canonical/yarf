@@ -1,19 +1,20 @@
 #!/bin/bash
 # Install workflow dependencies for the YARF test action.
 #
-# Installs the base apt packages YARF needs and, for the built-in Mir/Vnc
-# providers, the virtual compositor tooling (including the architecture
-# specific wlrctl build on non-amd64 runners) plus wayvnc for Vnc.
+# Installs the base apt packages YARF needs and, for the stock provider, the
+# virtual compositor tooling (including the architecture specific wlrctl build
+# on non-amd64 runners) and wayvnc.
 #
 # Environment:
-#   PLATFORM_PROVIDER  Platform provider: Mir, Vnc, or custom (default: Mir).
+#   PLATFORM_PROVIDER  Platform provider: stock or custom (default: stock).
 set -euo pipefail
 
-PLATFORM_PROVIDER="${PLATFORM_PROVIDER:-Mir}"
+PLATFORM_PROVIDER="${PLATFORM_PROVIDER:-stock}"
 
 sudo apt-get update -qq
 sudo apt-get install -y --no-install-recommends \
   clang \
+  ffmpeg \
   git-lfs \
   jq \
   libgl1 \
@@ -22,9 +23,9 @@ sudo apt-get install -y --no-install-recommends \
   tesseract-ocr
 
 case "${PLATFORM_PROVIDER}" in
-Mir | Vnc)
+stock)
   sudo snap install mir-test-tools
-  sudo apt-get install -y --no-install-recommends inotify-tools
+  sudo apt-get install -y --no-install-recommends inotify-tools wayvnc
 
   arch="$(dpkg --print-architecture)"
   if [ "${arch}" = "amd64" ]; then
@@ -47,14 +48,10 @@ Mir | Vnc)
     ninja -C "${build_dir}/wlrctl/build"
     sudo ninja -C "${build_dir}/wlrctl/build" install
   fi
-
-  if [ "${PLATFORM_PROVIDER}" = "Vnc" ]; then
-    sudo apt-get install -y --no-install-recommends wayvnc
-  fi
   ;;
 custom) ;;
 *)
-  echo "Unknown platform-provider: '${PLATFORM_PROVIDER}' (expected Mir, Vnc, or custom)" >&2
+  echo "Unknown platform-provider: '${PLATFORM_PROVIDER}' (expected stock or custom)" >&2
   exit 1
   ;;
 esac
