@@ -13,6 +13,7 @@
 #   DISPLAY_SIZE             Virtual output resolution (default: 1280x1024).
 #   PLATFORM_SETUP_COMMAND   Command(s) to start a custom platform.
 #   PLATFORM_READY_COMMAND   Command(s) that block until a custom platform is ready.
+#   XDG_RUNTIME_DIR          Directory the Wayland socket appears in (default: /run/user/$(id -u)).
 #   GITHUB_ENV               File used to export variables to later steps.
 set -euo pipefail
 
@@ -22,6 +23,10 @@ DISPLAY_SIZE="${DISPLAY_SIZE:-1280x1024}"
 case "${PLATFORM_PROVIDER}" in
 stock)
   export WAYLAND_DISPLAY="wayland-99"
+  # Not guaranteed to be set: it depends on the runner image and how the job
+  # is invoked.
+  export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+  mkdir -p "${XDG_RUNTIME_DIR}"
 
   # Start Mir on a virtual display (doesn't require graphics hardware).
   mir-test-tools.demo-server \
@@ -37,10 +42,18 @@ stock)
     exit 1
   fi
 
-  # Serves the Vnc platform; harmless for suites that talk Wayland directly.
+  # Start the VNC server, so the same compositor serves the Vnc platform too.
   wayvnc &
 
-  echo "WAYLAND_DISPLAY=${WAYLAND_DISPLAY}" >> "${GITHUB_ENV}"
+  if ! timeout 60 bash -c "until </dev/tcp/localhost/5900; do sleep 1; done" 2> /dev/null; then
+    echo "Timed out waiting for wayvnc to listen on localhost:5900" >&2
+    exit 1
+  fi
+
+  {
+    echo "WAYLAND_DISPLAY=${WAYLAND_DISPLAY}"
+    echo "XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR}"
+  } >> "${GITHUB_ENV}"
   ;;
 custom)
   if [ -n "${PLATFORM_SETUP_COMMAND:-}" ]; then

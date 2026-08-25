@@ -32,10 +32,9 @@ consumers invoke with a single `uses:` step.
   platform, launch the app under test, run YARF, upload the output directory as
   an artifact, write a job summary, and propagate YARF's pass/fail to the job.
 - **Source install only, no snap option.** The action builds YARF from source
-  into a virtual environment on the runner. The snap is strictly confined, so a
-  snap-installed YARF cannot see a suite that lives in the runner's workspace,
-  nor can consumers install platform plugins into it. The source install also
-  lets the action run any git ref, which the snap channels cannot express.
+  into a virtual environment on the runner. That lets it run any git ref, which
+  the snap's channels cannot express, and keeps compatibility with platform
+  plugins, which are ordinary Python packages and are not necessarily snapped.
 - **Version pinning follows the action.** `yarf-ref` defaults to the ref the
   action itself was called at, so `yarf-test@3.16.0` runs YARF 3.16.0, and the
   source is fetched from the repository the action came from, which keeps forks
@@ -59,9 +58,11 @@ consumers invoke with a single `uses:` step.
   runners, with results surfaced as an artifact and job summary.
 - Bootstrapping stays outside the snap, avoiding the confinement issue that made
   in-snap bootstrapping infeasible.
-- The action must stay in sync with YARF's CLI and output conventions; a
-  self-test workflow ([`test-yarf-action.yaml`](../.github/workflows/test-yarf-action.yaml))
-  exercises it against the canary suite on the stock provider.
+- The action must stay in sync with YARF's CLI and output conventions. Rather
+  than adding a dedicated self-test workflow, this repository's own workflows
+  ([`yarf.yaml`](../.github/workflows/yarf.yaml) and
+  [`platform-plugin-test.yaml`](../.github/workflows/platform-plugin-test.yaml))
+  run through the action, so both providers are exercised on every change.
 - Testing on hardware (e.g. via Zapper/Testflinger) needs additional operations
   such as credentials and plugins and is intentionally out of scope here; it is
   expected to be offered as a separate service.
