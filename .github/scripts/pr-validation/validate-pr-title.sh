@@ -10,11 +10,13 @@ set -euo pipefail
 TRIMMED_TITLE=$(printf '%s' "$PR_TITLE" | awk '{$1=$1; print}')
 if [ "$TRIMMED_TITLE" != "$PR_TITLE" ]; then
   echo "Updating PR title to: '$TRIMMED_TITLE'"
+  PAYLOAD=$(TRIMMED_TITLE="$TRIMMED_TITLE" python3 -c \
+    'import json, os; print(json.dumps({"title": os.environ["TRIMMED_TITLE"]}))')
   curl -sS -X PATCH \
     -H "Authorization: Bearer $GITHUB_TOKEN" \
     -H "Accept: application/vnd.github+json" \
     "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER" \
-    -d "$(jq -n --arg title "$TRIMMED_TITLE" '{title:$title}')"
+    -d "$PAYLOAD"
 else
   echo "PR title already normalized."
 fi

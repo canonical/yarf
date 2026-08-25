@@ -19,6 +19,7 @@ jobs:
     name: Validate PR title
     runs-on: ubuntu-latest
     permissions:
+      contents: read  # Required to check out repository code
       pull-requests: write  # Required to update PR title if needed
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -30,18 +31,19 @@ jobs:
         PR_NUMBER: ${{ github.event.pull_request.number }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         REPO: ${{ github.repository }}
-      run: .github/scripts/pr-validation/validate-pr-title.sh
+      run: bash .github/scripts/pr-validation/validate-pr-title.sh
 
   validate_body:
     name: Validate PR description
     runs-on: ubuntu-latest
     permissions:
+      contents: read  # Required to check out repository code
       pull-requests: write  # Required to strip leftover template comments
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         persist-credentials: false
-    - name: Checking that the PR template sections are filled in
+    - name: Checking that the PR template sections are present
       env:
         PR_BODY: ${{ github.event.pull_request.body }}
         PR_NUMBER: ${{ github.event.pull_request.number }}
