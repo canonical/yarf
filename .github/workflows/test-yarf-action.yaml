@@ -87,6 +87,7 @@ jobs:
               | sudo tee /etc/udev/rules.d/99-kvm4all.rules
             sudo udevadm control --reload-rules
             sudo udevadm trigger --name-match=kvm
+            sudo udevadm settle
             curl -fsSL --retry 3 -o /tmp/yarf-vm.img \
               https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
             accel=tcg
