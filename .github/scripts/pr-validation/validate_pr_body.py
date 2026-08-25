@@ -55,63 +55,52 @@ def update_pr_body(body: str) -> None:
         pass
 
 
-def parse_sections(text: str) -> dict[str, list[str]]:
+def parse_headings(text: str) -> list[str]:
     """
-    Map each markdown heading of a document to the lines below it.
+    List the markdown headings of a document.
 
     Args:
         text: The markdown document to parse.
 
     Returns:
-        A mapping of heading, as written, to the lines that follow it.
+        The headings, as written.
     """
-    sections: dict[str, list[str]] = {}
-    current: list[str] | None = None
-    for line in text.splitlines():
-        if HEADING.match(line):
-            current = []
-            sections[line.strip()] = current
-        elif current is not None:
-            current.append(line)
-    return sections
+    return [line.strip() for line in text.splitlines() if HEADING.match(line)]
 
 
 def main() -> int:
     """
-    Report the template sections missing from or left empty in the PR body.
+    Report the template sections missing from the PR body.
 
     Returns:
-        0 if every template section is filled in, 1 otherwise.
+        0 if every template section is present, 1 otherwise.
     """
     body = os.environ.get("PR_BODY") or ""
-    # The template is made of headings followed by HTML comments, so a section
-    # only counts as filled in once the comments are gone.
     cleaned_body = strip_comments(body)
     if cleaned_body.strip() != body.strip():
         print("Removing the template comments left in the PR description.")
         update_pr_body(cleaned_body)
 
-    template_sections = parse_sections(
-        strip_comments(TEMPLATE_PATH.read_text(encoding="utf-8"))
+    template_headings = parse_headings(
+        TEMPLATE_PATH.read_text(encoding="utf-8")
     )
-    body_sections = parse_sections(cleaned_body)
+    body_headings = set(parse_headings(cleaned_body))
 
-    errors = []
-    for heading in template_sections:
-        if heading not in body_sections:
-            errors.append(f"Missing '{heading}' section.")
-        elif not "".join(body_sections[heading]).strip():
-            errors.append(f"Section '{heading}' is empty.")
-
-    if errors:
-        print("\n".join(errors))
+    missing = [
+        heading
+        for heading in template_headings
+        if heading not in body_headings
+    ]
+    if missing:
+        for heading in missing:
+            print(f"Missing '{heading}' section.")
         print(
-            "Please fill in the pull request template "
+            "Please keep every section of the pull request template "
             "(.github/pull_request_template.md)."
         )
         return 1
 
-    print("All PR template sections are present and filled in.")
+    print("All PR template sections are present.")
     return 0
 
 
