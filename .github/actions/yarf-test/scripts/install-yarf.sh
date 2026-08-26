@@ -20,7 +20,7 @@
 set -euo pipefail
 
 YARF_PATH="${YARF_PATH:-}"
-YARF_REF="${YARF_REF:-main}"
+YARF_REF="${YARF_REF:-}"
 YARF_REPOSITORY="${YARF_REPOSITORY:-canonical/yarf}"
 output_dir="${TMPDIR:-/tmp}/yarf-outdir"
 venv="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/yarf-venv"
@@ -44,6 +44,10 @@ if [ -n "${YARF_PATH}" ]; then
   echo "Installing YARF from '${YARF_PATH}'"
   src="${YARF_PATH}"
 else
+  if [ -z "${YARF_REF}" ]; then
+    echo "No yarf-ref specified, defaulting to 'main'"
+    YARF_REF="main"
+  fi
   echo "Installing YARF from '${YARF_REPOSITORY}' at ref '${YARF_REF}'"
   # Checked out here rather than installed straight from the git URL, because
   # pip and uv do not fetch Git LFS objects and YARF ships assets that need
@@ -58,7 +62,15 @@ else
   git -C "${src}" lfs pull --include="yarf/**"
 fi
 
-uv pip install --python "${venv}/bin/python" "${src}"
+# Install the locked dependency set when the source tree ships a lock file, so
+# a run is reproducible rather than resolving to whatever is latest.
+if [ -f "${src}/uv.lock" ]; then
+  requirements="$(mktemp)"
+  uv export --frozen --no-dev --no-emit-project --project "${src}" -o "${requirements}"
+  uv pip install --python "${venv}/bin/python" -r "${requirements}" "${src}"
+else
+  uv pip install --python "${venv}/bin/python" "${src}"
+fi
 
 {
   echo "VIRTUAL_ENV=${venv}"

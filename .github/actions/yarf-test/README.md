@@ -114,7 +114,7 @@ accepted in any casing.
 | `platform-ready-command`    | for `custom` | `""`          | Command(s) that block until a custom platform is ready.                                                             |
 | `platform-teardown-command` | for `custom` | `""`          | Command(s) to tear down a custom platform after the run.                                                            |
 | `test-path`                 | yes          | —             | Path (in the consumer's checkout) to the YARF test suite to run.                                                    |
-| `launch-command`            | yes          | `""`          | Command to start the app/OS under test, just before running YARF. Leave empty when the suite starts the app itself. |
+| `launch-command`            | no           | `""`          | Command to start the app/OS under test, just before running YARF. Leave empty when the suite starts the app itself. |
 | `yarf-ref`                  | no           | action's ref  | Git ref (branch/tag/SHA) to build and install YARF from.                                                            |
 | `yarf-path`                 | no           | `""`          | Path to a YARF source tree to install instead of fetching one. Takes priority over `yarf-ref`.                      |
 | `yarf-args`                 | no           | `""`          | Extra yarf options placed before the test path (e.g. `--output-format TestSubmissionSchema`).                       |

@@ -33,7 +33,7 @@ if [ ! -e "${TEST_PATH:-}" ]; then
   errors+=("test-path '${TEST_PATH:-}' does not exist; did the workflow run actions/checkout?")
 fi
 
-case "${PLATFORM_PROVIDER}" in
+case "${PLATFORM_PROVIDER:-}" in
 stock)
   for input in setup ready teardown; do
     var="PLATFORM_${input^^}_COMMAND"
