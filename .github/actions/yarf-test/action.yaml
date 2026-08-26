@@ -1,0 +1,190 @@
+name: YARF test
+description: >-
+  Run YARF visual tests in CI. Installs dependencies, starts a platform
+  (the stock Mir + wayvnc compositor or a custom provider), launches the app
+  under test, runs YARF against a test suite and surfaces the results as an
+  artifact and job summary, failing the job when tests fail. Caller must run
+  actions/checkout first.
+
+inputs:
+  platform:
+    description: Value passed to `yarf --platform`.
+    required: true
+  platform-provider:
+    description: "Platform YARF starts with: stock or custom (any casing)."
+    required: false
+    default: stock
+  platform-setup-command:
+    description: Command(s) to start the platform. Required when platform-provider is custom.
+    required: false
+    default: ""
+  platform-ready-command:
+    description: Command(s) that block until the platform is ready. Required when platform-provider is custom.
+    required: false
+    default: ""
+  platform-teardown-command:
+    description: Command(s) to tear down the platform after the run. Required when platform-provider is custom.
+    required: false
+    default: ""
+  test-path:
+    description: Path (in the consumer's checkout) to the YARF test suite to run.
+    required: true
+  launch-command:
+    description: >-
+      Command the action runs to start the app/OS under test on the platform,
+      just before running YARF. Leave empty when the suite starts the app
+      itself.
+    required: false
+    default: ""
+  yarf-ref:
+    description: >-
+      Git ref (branch/tag/SHA) to build and install YARF from. Defaults to the
+      ref this action was called at, so pinning the action also pins YARF.
+    required: false
+    default: ""
+  yarf-path:
+    description: >-
+      Path to a YARF source tree to install instead of fetching one. Takes
+      priority over yarf-ref; mainly for workflows in this repository, which
+      already have the source checked out.
+    required: false
+    default: ""
+  yarf-args:
+    description: Extra yarf options placed before the test path (e.g. --output-format).
+    required: false
+    default: ""
+  robotframework-args:
+    description: Extra args appended after `--` to the yarf invocation (e.g. --suite foo).
+    required: false
+    default: ""
+  yarf-command-suffix:
+    description: >-
+      Shell text appended to the yarf invocation, for example
+      `2> ~/wayland.trace` for suites that assert on YARF's stderr. Evaluated by
+      bash, so treat it like any other command input and keep untrusted values
+      out of it.
+    required: false
+    default: ""
+  display-size:
+    description: Virtual output resolution for the stock platform.
+    required: false
+    default: 1280x1024
+  artifact-name:
+    description: Name for the uploaded results artifact.
+    required: false
+    default: yarf-output
+  upload-artifact:
+    description: Whether to upload the YARF output dir as an artifact.
+    required: false
+    default: "true"
+
+outputs:
+  output-dir:
+    description: Absolute path to YARF's output directory.
+    value: ${{ steps.run.outputs.output-dir }}
+  result:
+    description: passed or failed.
+    value: ${{ steps.run.outputs.result }}
+
+runs:
+  using: composite
+  steps:
+    - name: Validate inputs
+      shell: bash
+      env:
+        PLATFORM: ${{ inputs.platform }}
+        PLATFORM_PROVIDER: ${{ inputs.platform-provider }}
+        PLATFORM_SETUP_COMMAND: ${{ inputs.platform-setup-command }}
+        PLATFORM_READY_COMMAND: ${{ inputs.platform-ready-command }}
+        PLATFORM_TEARDOWN_COMMAND: ${{ inputs.platform-teardown-command }}
+        TEST_PATH: ${{ inputs.test-path }}
+        DISPLAY_SIZE: ${{ inputs.display-size }}
+        UPLOAD_ARTIFACT: ${{ inputs.upload-artifact }}
+      run: bash "${GITHUB_ACTION_PATH}/scripts/validate-inputs.sh"
+
+    - name: Install workflow dependencies
+      shell: bash
+      run: bash "${GITHUB_ACTION_PATH}/scripts/install-deps.sh"
+
+    - name: Install YARF
+      shell: bash
+      env:
+        YARF_PATH: ${{ inputs.yarf-path }}
+        # github.action_* are empty when the action is used from a local path,
+        # which only happens for the yarf-path workflows in this repository.
+        YARF_REF: ${{ inputs.yarf-ref || github.action_ref }}
+        YARF_REPOSITORY: ${{ github.action_repository }}
+      run: bash "${GITHUB_ACTION_PATH}/scripts/install-yarf.sh"
+
+    - name: Start platform
+      shell: bash
+      env:
+        DISPLAY_SIZE: ${{ inputs.display-size }}
+        PLATFORM_SETUP_COMMAND: ${{ inputs.platform-setup-command }}
+        PLATFORM_READY_COMMAND: ${{ inputs.platform-ready-command }}
+      run: bash "${GITHUB_ACTION_PATH}/scripts/start-platform.sh"
+
+    - name: Launch app/OS under test
+      if: inputs.launch-command != ''
+      shell: bash
+      env:
+        LAUNCH_COMMAND: ${{ inputs.launch-command }}
+      run: |
+        set -euo pipefail
+        bash -c "${LAUNCH_COMMAND}" &
+        echo "YARF_APP_PID=$!" >> "${GITHUB_ENV}"
+
+    - name: Run YARF
+      id: run
+      shell: bash
+      env:
+        PLATFORM: ${{ inputs.platform }}
+        TEST_PATH: ${{ inputs.test-path }}
+        YARF_ARGS: ${{ inputs.yarf-args }}
+        ROBOTFRAMEWORK_ARGS: ${{ inputs.robotframework-args }}
+        YARF_COMMAND_SUFFIX: ${{ inputs.yarf-command-suffix }}
+      run: bash "${GITHUB_ACTION_PATH}/scripts/run-yarf.sh"
+
+    # Validation rejects a teardown command for the stock provider, so a
+    # non-empty value here means the provider is custom.
+    - name: Tear down platform
+      if: always() && inputs.platform-teardown-command != ''
+      shell: bash
+      env:
+        PLATFORM_TEARDOWN_COMMAND: ${{ inputs.platform-teardown-command }}
+      run: bash -c "${PLATFORM_TEARDOWN_COMMAND}"
+
+    - name: Upload YARF output
+      id: upload
+      if: always() && inputs.upload-artifact == 'true' && steps.run.outputs.output-dir != ''
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ steps.run.outputs.output-dir }}
+        if-no-files-found: warn
+
+    - name: Job summary
+      if: always()
+      shell: bash
+      env:
+        PLATFORM: ${{ inputs.platform }}
+        RESULT: ${{ steps.run.outputs.result }}
+        ARTIFACT_NAME: ${{ inputs.artifact-name }}
+        ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
+      run: |
+        {
+          echo "### YARF test result"
+          echo ""
+          echo "- Platform: \`${PLATFORM}\`"
+          echo "- Result: \`${RESULT:-unknown}\`"
+          if [ -n "${ARTIFACT_URL}" ]; then
+            echo "- Output: [${ARTIFACT_NAME}](${ARTIFACT_URL})"
+          fi
+        } >> "${GITHUB_STEP_SUMMARY}"
+
+    - name: Propagate result
+      if: always()
+      shell: bash
+      env:
+        EXIT_CODE: ${{ steps.run.outputs.exit-code }}
+      run: exit "${EXIT_CODE:-1}"
