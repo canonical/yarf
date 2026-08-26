@@ -58,11 +58,13 @@ consumers invoke with a single `uses:` step.
   runners, with results surfaced as an artifact and job summary.
 - Bootstrapping stays outside the snap, avoiding the confinement issue that made
   in-snap bootstrapping infeasible.
-- The action must stay in sync with YARF's CLI and output conventions. Rather
-  than adding a dedicated self-test workflow, this repository's own workflows
-  ([`yarf.yaml`](../.github/workflows/yarf.yaml) and
+- The action must stay in sync with YARF's CLI and output conventions. This
+  repository's own workflows ([`yarf.yaml`](../.github/workflows/yarf.yaml) and
   [`platform-plugin-test.yaml`](../.github/workflows/platform-plugin-test.yaml))
-  run through the action, so both providers are exercised on every change.
+  run through the action, so both providers are exercised on every change, and
+  [`yarf-action-smoke-test.yaml`](../.github/workflows/yarf-action-smoke-test.yaml)
+  covers what they do not: rejected inputs, the optional command inputs and the
+  fetched-source install path.
 - Testing on hardware (e.g. via Zapper/Testflinger) needs additional operations
   such as credentials and plugins and is intentionally out of scope here; it is
   expected to be offered as a separate service.
