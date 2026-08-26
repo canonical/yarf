@@ -36,10 +36,10 @@ consumers invoke with a single `uses:` step.
   the snap's channels cannot express, and keeps compatibility with platform
   plugins, which are ordinary Python packages and are not necessarily snapped.
 - **Version pinning follows the action.** `yarf-ref` defaults to the ref the
-  action itself was called at, so `yarf-test@3.16.0` runs YARF 3.16.0, and the
-  source is fetched from the repository the action came from, which keeps forks
-  working. Workflows in this repository pass `yarf-path` instead, reusing the
-  checkout they already have.
+  action itself was called at, so `yarf-test@<release>` runs YARF `<release>`,
+  and the source is fetched from the repository the action came from, which
+  keeps forks working. Workflows in this repository pass `yarf-path` instead,
+  reusing the checkout they already have.
 - **Platform providers.** The `stock` provider starts a virtual Mir compositor
   (no graphics hardware required) with `wayvnc` in front of it, which serves
   the `Mir` and `Vnc` platforms alike; `Vnc` is a protocol rather than a
