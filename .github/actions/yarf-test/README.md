@@ -8,8 +8,18 @@ provide, runs YARF against a test suite, and surfaces the YARF output as an
 uploaded artifact and job summary — failing the job when tests fail.
 
 YARF is built from the ref the action itself was called at, so
-`yarf-test@3.16.0` runs YARF 3.16.0. Override it with `yarf-ref`, or point
-`yarf-path` at a source tree you already checked out.
+`yarf-test@3.16.0` runs YARF 3.16.0. Pin a release tag to keep runs
+reproducible; `@main` follows the latest development state. Override the YARF
+version independently with `yarf-ref`, or point `yarf-path` at a source tree you
+already checked out.
+
+```yaml
+# Pinned: installs YARF 3.16.0.
+- uses: canonical/yarf/.github/actions/yarf-test@3.16.0
+
+# Unpinned: installs YARF from main.
+- uses: canonical/yarf/.github/actions/yarf-test@main
+```
 
 The venv is put on `PATH` and exported as `VIRTUAL_ENV`, and it is seeded with
 `pip`, so both `pip install` and `uv pip install` in your own commands and later

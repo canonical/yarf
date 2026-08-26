@@ -51,7 +51,7 @@ custom)
   done
   ;;
 *)
-  errors+=("platform-provider '${PLATFORM_PROVIDER}' is invalid (expected stock or custom)")
+  errors+=("platform-provider '${PLATFORM_PROVIDER:-}' is invalid (expected stock or custom)")
   ;;
 esac
 
