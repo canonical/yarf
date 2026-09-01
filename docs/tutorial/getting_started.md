@@ -274,7 +274,7 @@ Then we should see the pointer inside the mir server moving across the buttons o
 
 In this tutorial, we have successfully setup the mir server and use YARF to control the keyboard and pointer to do simple calculations on the calculator app. Feel free to try out other keywords!
 
-[mir-docs]: https://canonical-mir.readthedocs-hosted.com/stable/
+[mir-docs]: https://canonical.com/mir/docs/stable/
 [mir-tests-tools]: https://snapcraft.io/mir-test-tools
 [reference-resource-docs]: ../reference/rf_libraries-resources.md
 [robot-framework]: https://robotframework.org/

@@ -65,7 +65,8 @@ Task 2
 
 ```{code-block} robotframework
 ---
-caption: An example of a test robot file using the tag `yarf:version: <operator> X.Y`
+caption: 'An example of a test robot file using the tag `yarf:version: <operator>
+  X.Y`'
 ---
 *** Settings ***
 Documentation       Example

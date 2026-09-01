@@ -1,0 +1,265 @@
+name: YARF action smoke test
+
+# Exercises the yarf-test action across input combinations the repository's
+# regular workflows do not cover: rejected inputs, the optional command inputs
+# and the fetched-source install path.
+
+on:
+  merge_group:
+    types: [checks_requested]
+  pull_request:
+    paths:
+      - '.github/actions/yarf-test/**'
+      - '.github/workflows/yarf-action-smoke-test.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read  # Required to check out repository code
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  invalid-inputs:
+    name: Reject invalid inputs (${{ matrix.id }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: unknown-provider
+            platform-provider: bogus
+            setup-command: ""
+            ready-command: ""
+            teardown-command: ""
+            test-path: tests/plugin_suite
+            display-size: 1280x1024
+            upload-artifact: "true"
+          - id: missing-custom-commands
+            platform-provider: custom
+            setup-command: ""
+            ready-command: ""
+            teardown-command: ""
+            test-path: tests/plugin_suite
+            display-size: 1280x1024
+            upload-artifact: "true"
+          - id: stock-with-custom-commands
+            platform-provider: stock
+            setup-command: "true"
+            ready-command: "true"
+            teardown-command: "true"
+            test-path: tests/plugin_suite
+            display-size: 1280x1024
+            upload-artifact: "true"
+          - id: missing-test-path
+            platform-provider: stock
+            setup-command: ""
+            ready-command: ""
+            teardown-command: ""
+            test-path: tests/does-not-exist
+            display-size: 1280x1024
+            upload-artifact: "true"
+          - id: bad-display-size
+            platform-provider: stock
+            setup-command: ""
+            ready-command: ""
+            teardown-command: ""
+            test-path: tests/plugin_suite
+            display-size: "1920"
+            upload-artifact: "true"
+          - id: bad-upload-artifact
+            platform-provider: stock
+            setup-command: ""
+            ready-command: ""
+            teardown-command: ""
+            test-path: tests/plugin_suite
+            display-size: 1280x1024
+            upload-artifact: "yes"
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Run the action
+        id: action
+        continue-on-error: true
+        uses: ./.github/actions/yarf-test
+        with:
+          platform: Example
+          platform-provider: ${{ matrix.platform-provider }}
+          platform-setup-command: ${{ matrix.setup-command }}
+          platform-ready-command: ${{ matrix.ready-command }}
+          platform-teardown-command: ${{ matrix.teardown-command }}
+          test-path: ${{ matrix.test-path }}
+          display-size: ${{ matrix.display-size }}
+          upload-artifact: ${{ matrix.upload-artifact }}
+          yarf-path: .
+
+      - name: Assert the action failed
+        env:
+          CASE: ${{ matrix.id }}
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          set -euo pipefail
+          if [ "${OUTCOME}" != "failure" ]; then
+            echo "Expected the action to reject '${CASE}', got '${OUTCOME}'" >&2
+            exit 1
+          fi
+
+  custom-provider:
+    name: Custom provider (${{ matrix.id }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Only the inputs the action cannot default.
+          - id: minimal
+            platform-provider: custom
+            launch-command: ""
+            yarf-args: ""
+            robotframework-args: ""
+            command-suffix: ""
+            stderr-log: ""
+            upload-artifact: "true"
+          # Every optional command input at once, and a non-canonical casing
+          # for platform-provider.
+          - id: all-optional-inputs
+            platform-provider: CUSTOM
+            launch-command: sleep 300
+            yarf-args: --debug --log-video
+            robotframework-args: --loglevel DEBUG
+            command-suffix: 2> yarf-stderr.log
+            stderr-log: yarf-stderr.log
+            upload-artifact: "false"
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          lfs: true
+          persist-credentials: false
+
+      - name: Run the action
+        id: action
+        uses: ./.github/actions/yarf-test
+        with:
+          platform: Example
+          platform-provider: ${{ matrix.platform-provider }}
+          # The example plugin deliberately omits a yarf dependency, so this
+          # installs into the venv the action already put YARF in.
+          platform-setup-command: uv pip install examples/yarf-example-plugin
+          platform-ready-command: yarf --platform Example --help
+          platform-teardown-command: uv pip uninstall yarf-example-plugin
+          test-path: tests/plugin_suite
+          launch-command: ${{ matrix.launch-command }}
+          yarf-args: ${{ matrix.yarf-args }}
+          robotframework-args: ${{ matrix.robotframework-args }}
+          yarf-command-suffix: ${{ matrix.command-suffix }}
+          upload-artifact: ${{ matrix.upload-artifact }}
+          artifact-name: yarf-output-smoke-${{ matrix.id }}
+          yarf-path: .
+
+      - name: Assert the action reported a passing run
+        env:
+          RESULT: ${{ steps.action.outputs.result }}
+          OUTPUT_DIR: ${{ steps.action.outputs.output-dir }}
+        run: |
+          set -euo pipefail
+          if [ "${RESULT}" != "passed" ]; then
+            echo "Expected result 'passed', got '${RESULT}'" >&2
+            exit 1
+          fi
+          if [ ! -d "${OUTPUT_DIR}" ]; then
+            echo "Reported output dir '${OUTPUT_DIR}' does not exist" >&2
+            exit 1
+          fi
+
+      - name: Assert the command suffix was applied
+        if: matrix.stderr-log != ''
+        env:
+          STDERR_LOG: ${{ matrix.stderr-log }}
+        run: |
+          set -euo pipefail
+          if [ ! -f "${STDERR_LOG}" ]; then
+            echo "yarf-command-suffix did not create '${STDERR_LOG}'" >&2
+            exit 1
+          fi
+
+  fetched-source:
+    name: Install YARF from a git ref
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          lfs: true
+          persist-credentials: false
+
+      # yarf-path short-circuits the checkout install path that consumers of
+      # the action actually use, so this job fetches the source instead.
+      - name: Run the action
+        id: action
+        uses: ./.github/actions/yarf-test
+        with:
+          platform: Example
+          platform-provider: custom
+          platform-setup-command: uv pip install examples/yarf-example-plugin
+          platform-ready-command: yarf --platform Example --help
+          platform-teardown-command: uv pip uninstall yarf-example-plugin
+          test-path: tests/plugin_suite
+          yarf-ref: main
+          artifact-name: yarf-output-smoke-fetched-source
+
+      - name: Assert the action reported a passing run
+        env:
+          RESULT: ${{ steps.action.outputs.result }}
+        run: |
+          set -euo pipefail
+          if [ "${RESULT}" != "passed" ]; then
+            echo "Expected result 'passed', got '${RESULT}'" >&2
+            exit 1
+          fi
+
+  stock-provider:
+    name: Stock provider with a non-default display size
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          lfs: true
+          persist-credentials: false
+
+      - name: Install the app under test
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends gnome-calculator
+
+      - name: Run the action
+        id: action
+        uses: ./.github/actions/yarf-test
+        with:
+          platform: Mir
+          platform-provider: stock
+          test-path: tests/canary_test
+          display-size: 1920x1080
+          upload-artifact: "false"
+          yarf-path: .
+
+      - name: Assert the action reported a passing run
+        env:
+          RESULT: ${{ steps.action.outputs.result }}
+        run: |
+          set -euo pipefail
+          if [ "${RESULT}" != "passed" ]; then
+            echo "Expected result 'passed', got '${RESULT}'" >&2
+            exit 1
+          fi
+
+      - if: failure() && runner.debug
+        name: Setup upterm session (restart with "Enable debug logging" to activate)
+        uses: canonical/action-tmate@a0e8caed3bba2ccb98901a274553bf1284ad96c2  # zizmor: ignore[stale-action-refs]
+        with:
+          limit-access-to-actor: true

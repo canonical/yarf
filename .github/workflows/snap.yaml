@@ -41,7 +41,7 @@ jobs:
           persist-credentials: false
           lfs: true
 
-      - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d
 
       - name: Set version
         env:
