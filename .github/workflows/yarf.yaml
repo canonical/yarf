@@ -189,6 +189,8 @@ jobs:
             launch-command: python3 tests/keyword_suite/server/llm_stub_server.py
           - suite: grid_test
           - suite: grid_test_low_contrast
+            robot-suite: grid_test
+            robot-args: --variable CONTRAST:0.55 --variable COLOR_TOLERANCE:10
     env:
       KEYWORDS_LISTENER_PATH: .github/scripts/yarf/keywords_listener.py
       WAYLAND_DEBUG: ${{ matrix.wayland-debug }}
@@ -201,6 +203,10 @@ jobs:
     - name: Install suite dependencies
       run: ./.github/scripts/yarf/install-suite-deps.sh
 
+    - if: startsWith(matrix.suite, 'grid_test')
+      name: Set up the word grid app
+      run: ./.github/scripts/yarf/setup-grid-app.sh
+
     - name: Run Noble - Keyword tests (${{ matrix.suite }})
       uses: ./.github/actions/yarf-test
       with:
@@ -208,7 +214,7 @@ jobs:
         platform-provider: stock
         test-path: tests/keyword_suite
         launch-command: ${{ matrix.launch-command }}
-        robotframework-args: --suite ${{ matrix.suite }} --listener ${{ env.KEYWORDS_LISTENER_PATH }}
+        robotframework-args: --suite ${{ matrix.robot-suite || matrix.suite }} --listener ${{ env.KEYWORDS_LISTENER_PATH }} ${{ matrix.robot-args }}
         yarf-command-suffix: ${{ matrix.yarf-command-suffix }}
         yarf-path: .
         artifact-name: yarf-output-keyword-${{ matrix.suite }}
