@@ -36,7 +36,7 @@ dependencies = [
     # Keep this in sync with [tool.hatch.build.hooks.custom].
     "pywayland==0.4.19",
     "rapidfuzz>=3.12.1",
-    "rapidocr~=3.9.1",
+    "rapidocr~=3.7.0",
     "robotframework==7.4.2",
     "robotframework-sshlibrary~=3.8.0",
     "paramiko>=5.0.0,<6",  # Keep SSHLibrary's transitive dependency safe.
