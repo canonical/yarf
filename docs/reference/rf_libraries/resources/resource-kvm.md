@@ -166,6 +166,42 @@
 
 <hr style="border:1px solid grey">
 
+### Press ${button} Until $\{target} Is Highlighted
+
+<p>Move the keyboard highlight of a grid or menu onto the item whose text matches ${target}, then leave it there.</p>
+<p>Presses ${button} repeatedly until <span class="name">Is Highlighted Text</span> reports the target as the highlighted item. The highlight is detected with computer vision (<span class="name">Get Highlighted Text</span>), so no template or prior knowledge of the highlight color is needed. Useful for keyboard-only navigation where a pointer is unavailable.</p>
+<p>Embedded arguments:</p>
+<ul>
+<li>${button}: The key that advances the highlight. A single direction</li>
+</ul>
+<p>that wraps around can reach any item, e.g. "Right".</p>
+<ul>
+<li>${target}: The text of the item to move the highlight to.</li>
+</ul>
+<p>Arguments:</p>
+<ul>
+<li>${max_steps} (optional): Maximum number of key presses before</li>
+</ul>
+<p>giving up. Default 50.</p>
+<ul>
+<li>${settle} (optional): Seconds to wait after each key press for the</li>
+</ul>
+<p>screen to update. Default 0.3.</p>
+<ul>
+<li>${color_tolerance} (optional): Background color tolerance in</li>
+</ul>
+<p>percent for the highlight detection. Default 20.</p>
+
+#### Positional and named arguments
+
+| Name            | Type | Default Value | Kind                | Required |
+| --------------- | ---- | ------------- | ------------------- | -------- |
+| max_steps       |      | 50            | POSITIONAL_OR_NAMED | No       |
+| settle          |      | 0.3           | POSITIONAL_OR_NAMED | No       |
+| color_tolerance |      | 20            | POSITIONAL_OR_NAMED | No       |
+
+<hr style="border:1px solid grey">
+
 ### Press And Wait For Match
 
 #### Positional and named arguments
@@ -207,6 +243,38 @@
 | template   |      |               | POSITIONAL_OR_NAMED | Yes      |
 | tentatives |      | 1             | POSITIONAL_OR_NAMED | No       |
 | timeout    |      | 2             | POSITIONAL_OR_NAMED | No       |
+
+<hr style="border:1px solid grey">
+
+### Press Keys Until \$\{target} Is Highlighted
+
+<p>Move the keyboard highlight of a grid or menu onto the item whose text matches ${target}, then leave it there.</p>
+<p>Presses each key in ${keys}, in order, stopping as soon as <span class="name">Is Highlighted Text</span> reports the target as the highlighted item. The caller supplies the full sequence of keys needed to reach the target, so no step counting is needed. The highlight is detected with computer vision (<span class="name">Get Highlighted Text</span>), so no template or prior knowledge of the highlight color is needed. Useful for keyboard-only navigation where a pointer is unavailable.</p>
+<p>Embedded arguments:</p>
+<ul>
+<li>${target}: The text of the item to move the highlight to.</li>
+</ul>
+<p>Arguments:</p>
+<ul>
+<li>${keys}: The sequence of keys to press, in order, to reach the</li>
+</ul>
+<p>target.</p>
+<ul>
+<li>${settle} (optional): Seconds to wait after each key press for the</li>
+</ul>
+<p>screen to update. Default 0.3.</p>
+<ul>
+<li>${color_tolerance} (optional): Background color tolerance in</li>
+</ul>
+<p>percent for the highlight detection. Default 20.</p>
+
+#### Positional and named arguments
+
+| Name            | Type | Default Value | Kind                | Required |
+| --------------- | ---- | ------------- | ------------------- | -------- |
+| keys            |      |               | POSITIONAL_OR_NAMED | Yes      |
+| settle          |      | 0.3           | POSITIONAL_OR_NAMED | No       |
+| color_tolerance |      | 20            | POSITIONAL_OR_NAMED | No       |
 
 <hr style="border:1px solid grey">
 
