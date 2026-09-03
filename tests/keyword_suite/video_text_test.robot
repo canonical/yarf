@@ -29,6 +29,7 @@ Test Text Keywords with Rapid Ocr
     Test Keyword Get Position Of Target String
     Test Keyword Find Text
     Test Keyword Match Text
+    Test Keyword Text Threshold Overrides
 
 Test Text Keywords with Tesseract
     [Tags]                  yarf:certification_status: blocker
@@ -161,3 +162,28 @@ Test Keyword Match Text
 
     Run Keyword And Expect Error                    ValueError: *
     ...                     Match Text              not_expected            region=${region}
+
+Test Keyword Text Threshold Overrides
+    [Tags]                  yarf:certification_status: blocker
+    ${region}=              Catenate
+    ...                     SEPARATOR=,
+    ...                     ${REGEX_REGION.left}
+    ...                     ${REGEX_REGION.top}
+    ...                     ${REGEX_REGION.right}
+    ...                     ${REGEX_REGION.bottom}
+    ${matched_text}=        Find Text
+    ...                     AB123cd
+    ...                     region=${REGEX_REGION}
+    ...                     similarity=100
+    ...                     confidence=70
+    Should Not Be Empty     ${matched_text}
+    Should Be Equal As Strings                      ${matched_text[0]['text']}                      AB123cd
+
+    ${matches}              ${image}=               Match Text
+    ...                     AB123cd
+    ...                     region=${region}
+    ...                     similarity=100
+    ...                     confidence=70
+    Should Not Be Empty     ${matches}
+    ${is_image}=            Evaluate                isinstance($image, __import__('PIL.Image').Image.Image)
+    Should Be True          ${is_image}
