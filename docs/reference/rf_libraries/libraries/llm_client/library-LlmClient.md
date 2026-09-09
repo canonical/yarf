@@ -36,9 +36,11 @@ Assert State    a Continue button is visible
 <p>Returns: A dict containing the LLM's assessment of whether the image is corrupted and a description.</p>
 <p>Raises: VQAValidationError: If the image is assessed as corrupted by the LLM.</p>
 
-### Return
+#### Return
 
-{'name': 'dict', 'typedoc': 'dictionary', 'nested': \[{'name': 'str', 'typedoc': 'string', 'nested': [], 'union': False}, {'name': 'Any', 'typedoc': 'Any', 'nested': [], 'union': False}\], 'union': False}
+```
+dictionary[string, Any]
+```
 
 #### Positional and named arguments
 
@@ -106,9 +108,11 @@ Execute Gui Action    ${action}    click the Continue button
 <p>Returns: The object position as normalized relative coordinates <code>[x, y]</code>, where each value is typically in the range <code>0..1</code>.</p>
 <p>Raises: VQADetectionError: If the LLM indicates that the object was not</p>
 
-### Return
+#### Return
 
-{'name': 'list', 'typedoc': 'list', 'nested': \[{'name': 'float', 'typedoc': 'float', 'nested': [], 'union': False}\], 'union': False}
+```
+list[float]
+```
 
 #### Positional and named arguments
 
@@ -132,9 +136,11 @@ ${point}=    Get Object Position    the Continue button
 <p>Args: task: The task description to provide to the LLM. image: Image to inspect. If omitted, a screenshot is grabbed. custom_system_prompt: Optional system prompt override.</p>
 <p>Returns: The next GUI action as returned by the LLM. For pointer-based actions, <span class="name">point_2d</span> contains the raw coordinates from the LLM's 1000x1000 grid.</p>
 
-### Return
+#### Return
 
-{'name': 'dict', 'typedoc': 'dictionary', 'nested': \[{'name': 'str', 'typedoc': 'string', 'nested': [], 'union': False}, {'name': 'Any', 'typedoc': 'Any', 'nested': [], 'union': False}\], 'union': False}
+```
+dictionary[string, Any]
+```
 
 #### Positional and named arguments
 
@@ -180,9 +186,11 @@ Multiple Step Action    click the Continue button    max_steps=10
 <p>Args: prompt: The text prompt to send to the LLM. image: Optional image (PIL Image or path) to include in the prompt. system_prompt: Optional system prompt to guide the LLM.</p>
 <p>Returns: The response from the LLM.</p>
 
-### Return
+#### Return
 
-{'name': 'str', 'typedoc': 'string', 'nested': [], 'union': False}
+```
+string
+```
 
 #### Positional and named arguments
 

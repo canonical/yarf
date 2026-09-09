@@ -96,8 +96,9 @@ def convert_json_to_markdown(json_file: Path, markdown_file: Path):
                     "returnType" in keyword
                     and keyword["returnType"] is not None
                 ):
+                    return_type = format_type(keyword["returnType"])
                     content.append(
-                        f"### Return\n\n{keyword['returnType']}\n\n"
+                        f"#### Return\n\n```\n{return_type}\n```\n\n"
                     )
 
                 if keyword.get("args", []):
@@ -147,6 +148,28 @@ def convert_json_to_markdown(json_file: Path, markdown_file: Path):
                     md.write("<hr style=\"border:1px solid grey\">\n\n")
 
     json_file.unlink(missing_ok=True)
+
+
+def format_type(type_info):
+    """
+    Render a libdoc type entry as a readable type expression, for example
+    ``list[dictionary]`` or ``tuple[integer, integer] | None``.
+
+    :param type_info: A libdoc type mapping with ``name``, ``typedoc``,
+        ``nested`` and ``union`` keys.
+    :return: The type expression as a string.
+    """
+    if not type_info:
+        return ""
+
+    nested = [format_type(entry) for entry in type_info.get("nested") or []]
+    name = type_info.get("typedoc") or type_info.get("name") or ""
+
+    if not nested:
+        return name
+    if type_info.get("union"):
+        return " | ".join(nested)
+    return f"{name}[{', '.join(nested)}]"
 
 
 def extract_example(html_text):
