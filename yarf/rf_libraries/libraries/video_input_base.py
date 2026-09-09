@@ -119,6 +119,9 @@ class VideoInputBase(ABC):
 
         Raises:
             ValueError: If the specified method is not supported.
+
+        Example:
+            | Set Ocr Method    tesseract
         """
         if method == "rapidocr":
             self.ocr = RapidOCRReader()
@@ -146,6 +149,10 @@ class VideoInputBase(ABC):
             region: the region to search for the template in
         Returns:
             list of matched regions
+
+        Example:
+            | ${regions}=    Match    ${CURDIR}/button.png
+            | Match    ${CURDIR}/button.png    timeout=30    tolerance=0.9
         """
 
         if isinstance(region, dict):
@@ -173,6 +180,10 @@ class VideoInputBase(ABC):
 
         Returns:
             List of matched regions and template path matched
+
+        Example:
+            | ${templates}=    Create List    ${CURDIR}/ok.png    ${CURDIR}/cancel.png
+            | ${matches}=    Match All    ${templates}    timeout=30
         """
         return await self._do_match(
             templates, accept_any=False, timeout=timeout, tolerance=tolerance
@@ -198,6 +209,10 @@ class VideoInputBase(ABC):
 
         Returns:
             list of matched regions and template path matched
+
+        Example:
+            | ${templates}=    Create List    ${CURDIR}/ok.png    ${CURDIR}/cancel.png
+            | ${matches}=    Match Any    ${templates}    timeout=30
         """
         if isinstance(region, dict):
             region = Region(**region)
@@ -223,6 +238,11 @@ class VideoInputBase(ABC):
 
         Returns:
             text read from the image
+
+        Example:
+            | ${text}=    Read Text
+            | ${image}=    Grab Screenshot
+            | ${text}=    Read Text    ${image}
         """
         if not image:
             image = await self._grab_and_save_screenshot()
@@ -277,6 +297,13 @@ class VideoInputBase(ABC):
         Returns:
             The list of matched text regions where the text was found. Each
             match is a dictionary with "text", "region", and "confidence".
+
+        Example:
+            | ${matches}=    Find Text    Continue
+            | ${matches}=    Find Text    regex:[0-9]{3}
+            | &{region}=    Create Dictionary
+            | ...    left=0    top=0    right=800    bottom=600
+            | ${matches}=    Find Text    Continue    region=${region}
         """
         if isinstance(region, dict):
             region = Region(**region)
@@ -433,6 +460,10 @@ class VideoInputBase(ABC):
             Each match is a dictionary with "text", "region", and "confidence".
         Raises:
             ValueError: If the specified text isn't found in time
+
+        Example:
+            | ${matches}    ${image}=    Match Text    Continue
+            | Match Text    Continue    timeout=60
         """
         region = to_region(region)
         print(f"\nLooking for '{text}'")
@@ -507,6 +538,10 @@ class VideoInputBase(ABC):
             region: The region to search for the text
         Returns:
             The x and y coordinates of the center of the best match
+
+        Example:
+            | ${x}    ${y}=    Get Text Position    Continue
+            | Move Pointer To Absolute    ${x}    ${y}
         """
         if isinstance(region, dict):
             region = Region(**region)
@@ -527,6 +562,9 @@ class VideoInputBase(ABC):
     async def start_video_input(self) -> None:
         """
         Start video stream process if needed.
+
+        Example:
+            | Start Video Input
         """
 
     # yarf: nocoverage
@@ -535,6 +573,9 @@ class VideoInputBase(ABC):
     async def stop_video_input(self) -> None:
         """
         Stop video stream process if needed.
+
+        Example:
+            | Stop Video Input
         """
 
     # yarf: nocoverage
@@ -542,6 +583,9 @@ class VideoInputBase(ABC):
     async def restart_video_input(self) -> None:
         """
         Restart video stream process if needed.
+
+        Example:
+            | Restart Video Input
         """
         await self.stop_video_input()
         await self.start_video_input()
@@ -554,6 +598,9 @@ class VideoInputBase(ABC):
 
         Returns:
             screenshot as an Image object
+
+        Example:
+            | ${image}=    Grab Screenshot
         """
 
     @keyword
@@ -578,6 +625,10 @@ class VideoInputBase(ABC):
 
         Returns:
             (x, y) absolute pixel coordinates of the cursor, or None.
+
+        Example:
+            | ${position}=    Find Cursor Position
+            | ${position}=    Find Cursor Position    confidence=0.8
         """
         if image is None:
             image = await self._grab_and_save_screenshot()
@@ -847,6 +898,9 @@ class VideoInputBase(ABC):
 
         Args:
             msg: Message to log with the image
+
+        Example:
+            | Log Screenshot    Desktop after login
         """
         screenshot = await self.grab_screenshot()
         log_image(screenshot, msg)
@@ -870,6 +924,10 @@ class VideoInputBase(ABC):
 
         Raises:
             TimeoutError: If the screen does not remain still for the required still_duration within the total duration.
+
+        Example:
+            | Wait Still Screen
+            | Wait Still Screen    duration=60    still_duration=5
         """
         previous_img: Optional[Image.Image] = None
         start_time = time.monotonic()

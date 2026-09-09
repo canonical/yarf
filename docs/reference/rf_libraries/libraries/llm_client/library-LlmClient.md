@@ -21,6 +21,12 @@
 | image                | None   | None          | POSITIONAL_OR_NAMED | No       |
 | custom_system_prompt | None   | None          | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+Assert State    a Continue button is visible
+```
+
 <hr style="border:1px solid grey">
 
 ### Check For Visual Corruption
@@ -41,6 +47,12 @@
 | image         | None | None          | POSITIONAL_OR_NAMED | No       |
 | custom_prompt | None | None          | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+${result}=    Check For Visual Corruption
+```
+
 <hr style="border:1px solid grey">
 
 ### Configure Llm Client
@@ -54,6 +66,14 @@
 | Name   | Type | Default Value | Kind      | Required |
 | ------ | ---- | ------------- | --------- | -------- |
 | kwargs | Any  |               | VAR_NAMED | No       |
+
+#### Example
+
+```robotframework
+Configure Llm Client
+...    model=qwen3-vl:2b-instruct
+...    server_url=http://localhost:11434/v1
+```
 
 <hr style="border:1px solid grey">
 
@@ -69,6 +89,13 @@
 | ----------- | ---------- | ------------- | ------------------- | -------- |
 | action      | dictionary |               | POSITIONAL_OR_NAMED | Yes      |
 | description | string     |               | POSITIONAL_OR_NAMED | No       |
+
+#### Example
+
+```robotframework
+${action}=    Get Single Gui Action    click the Continue button
+Execute Gui Action    ${action}    click the Continue button
+```
 
 <hr style="border:1px solid grey">
 
@@ -91,6 +118,12 @@
 | image                | None   | None          | POSITIONAL_OR_NAMED | No       |
 | custom_system_prompt | None   | None          | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+${point}=    Get Object Position    the Continue button
+```
+
 <hr style="border:1px solid grey">
 
 ### Get Single Gui Action
@@ -111,6 +144,12 @@
 | image                | None   | None          | POSITIONAL_OR_NAMED | No       |
 | custom_system_prompt | None   | None          | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+${action}=    Get Single Gui Action    click the Continue button
+```
+
 <hr style="border:1px solid grey">
 
 ### Multiple Step Action
@@ -126,6 +165,12 @@
 | task                 | string  |               | POSITIONAL_OR_NAMED | Yes      |
 | custom_system_prompt | None    | None          | POSITIONAL_OR_NAMED | No       |
 | max_steps            | integer | 50            | POSITIONAL_OR_NAMED | No       |
+
+#### Example
+
+```robotframework
+Multiple Step Action    click the Continue button    max_steps=10
+```
 
 <hr style="border:1px solid grey">
 
@@ -146,3 +191,11 @@
 | prompt        | string |               | POSITIONAL_OR_NAMED | Yes      |
 | image         | None   | None          | POSITIONAL_OR_NAMED | No       |
 | system_prompt | None   | None          | POSITIONAL_OR_NAMED | No       |
+
+#### Example
+
+```robotframework
+${answer}=    Prompt Llm    Describe the screen
+${image}=    Grab Screenshot
+${answer}=    Prompt Llm    What is shown?    ${image}
+```

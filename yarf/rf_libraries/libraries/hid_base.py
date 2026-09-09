@@ -44,6 +44,11 @@ class HidBase(ABC):
 
         Raises:
             AssertionError: If both combo and keys are provided.
+
+        Example:
+            | Keys Combo    Control_L    Alt_L    Delete
+            | ${combo}=    Create List    Control_L    c
+            | Keys Combo    ${combo}
         """
         assert type(combo) is str or not keys, (
             "Pass keys as a list, or as argument list, not both"
@@ -60,6 +65,9 @@ class HidBase(ABC):
 
         Args:
             string: string to type.
+
+        Example:
+            | Type String    hello world
         """
 
     @abstractmethod
@@ -70,6 +78,9 @@ class HidBase(ABC):
 
         Args:
             button: either LEFT, MIDDLE or RIGHT.
+
+        Example:
+            | Press Pointer Button    LEFT
         """
 
     @abstractmethod
@@ -80,6 +91,9 @@ class HidBase(ABC):
 
         Args:
             button: either LEFT, MIDDLE or RIGHT.
+
+        Example:
+            | Release Pointer Button    LEFT
         """
 
     @abstractmethod
@@ -90,6 +104,9 @@ class HidBase(ABC):
 
         Args:
             button: either LEFT, MIDDLE or RIGHT.
+
+        Example:
+            | Click Pointer Button    LEFT
         """
 
     @abstractmethod
@@ -97,6 +114,9 @@ class HidBase(ABC):
     async def release_pointer_buttons(self) -> None:
         """
         Release all pointer buttons.
+
+        Example:
+            | Release Pointer Buttons
         """
 
     @abstractmethod
@@ -139,6 +159,9 @@ class HidBase(ABC):
 
         Raises:
             AssertionError: if coordinates are out of range
+
+        Example:
+            | Move Pointer To Proportional    0.5    0.5
         """
 
         assert 0 <= x <= 1, "x not in range 0..1"
@@ -158,6 +181,9 @@ class HidBase(ABC):
 
         Raises:
             AssertionError: if coordinates are out of range
+
+        Example:
+            | Move Pointer To Absolute    ${640}    ${480}
         """
 
         assert isinstance(x, int) and isinstance(y, int), (
@@ -192,6 +218,9 @@ class HidBase(ABC):
 
         Raises:
             AssertionError: if coordinates are out of range or if x and y are not integers
+
+        Example:
+            | Walk Pointer To Absolute    ${640}    ${480}    ${10}    ${0.01}
         """
 
         assert isinstance(x, int) and isinstance(y, int), (
@@ -233,6 +262,9 @@ class HidBase(ABC):
 
         Raises:
             AssertionError: if coordinates are out of range
+
+        Example:
+            | Walk Pointer To Proportional    0.5    0.5    0.05    ${0.01}
         """
         assert 0 <= x <= 1, "x not in range 0..1"
         assert 0 <= y <= 1, "y not in range 0..1"

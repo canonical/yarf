@@ -26,6 +26,13 @@
 | image      | None  | None          | POSITIONAL_OR_NAMED | No       |
 | confidence | float | 0.85          | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+${position}=    Find Cursor Position
+${position}=    Find Cursor Position    confidence=0.8
+```
+
 <hr style="border:1px solid grey">
 
 ### Find Text
@@ -48,6 +55,16 @@
 | color           | None    | None          | POSITIONAL_OR_NAMED | No       |
 | color_tolerance | integer | 20            | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+${matches}=    Find Text    Continue
+${matches}=    Find Text    regex:[0-9]{3}
+&{region}=    Create Dictionary
+...    left=0    top=0    right=800    bottom=600
+${matches}=    Find Text    Continue    region=${region}
+```
+
 <hr style="border:1px solid grey">
 
 ### Get Text Position
@@ -67,6 +84,13 @@
 | text   | string |               | POSITIONAL_OR_NAMED | Yes      |
 | region | None   | None          | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+${x}    ${y}=    Get Text Position    Continue
+Move Pointer To Absolute    ${x}    ${y}
+```
+
 <hr style="border:1px solid grey">
 
 ### Grab Screenshot
@@ -77,6 +101,12 @@
 ### Return
 
 {'name': 'Image', 'typedoc': None, 'nested': [], 'union': False}
+
+#### Example
+
+```robotframework
+${image}=    Grab Screenshot
+```
 
 <hr style="border:1px solid grey">
 
@@ -90,6 +120,12 @@
 | Name | Type   | Default Value | Kind                | Required |
 | ---- | ------ | ------------- | ------------------- | -------- |
 | msg  | string |               | POSITIONAL_OR_NAMED | No       |
+
+#### Example
+
+```robotframework
+Log Screenshot    Desktop after login
+```
 
 <hr style="border:1px solid grey">
 
@@ -111,6 +147,13 @@
 | tolerance | float   | 0.8           | POSITIONAL_OR_NAMED | No       |
 | region    | None    | None          | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+${regions}=    Match    ${CURDIR}/button.png
+Match    ${CURDIR}/button.png    timeout=30    tolerance=0.9
+```
+
 <hr style="border:1px solid grey">
 
 ### Match All
@@ -130,6 +173,13 @@
 | templates | Sequence |               | POSITIONAL_OR_NAMED | Yes      |
 | timeout   | integer  | 10            | POSITIONAL_OR_NAMED | No       |
 | tolerance | float    | 0.8           | POSITIONAL_OR_NAMED | No       |
+
+#### Example
+
+```robotframework
+${templates}=    Create List    ${CURDIR}/ok.png    ${CURDIR}/cancel.png
+${matches}=    Match All    ${templates}    timeout=30
+```
 
 <hr style="border:1px solid grey">
 
@@ -151,6 +201,13 @@
 | timeout   | integer  | 10            | POSITIONAL_OR_NAMED | No       |
 | tolerance | float    | 0.8           | POSITIONAL_OR_NAMED | No       |
 | region    | None     | None          | POSITIONAL_OR_NAMED | No       |
+
+#### Example
+
+```robotframework
+${templates}=    Create List    ${CURDIR}/ok.png    ${CURDIR}/cancel.png
+${matches}=    Match Any    ${templates}    timeout=30
+```
 
 <hr style="border:1px solid grey">
 
@@ -178,6 +235,13 @@
 | color           | None    | None          | POSITIONAL_OR_NAMED | No       |
 | color_tolerance | integer | 20            | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+${matches}    ${image}=    Match Text    Continue
+Match Text    Continue    timeout=60
+```
+
 <hr style="border:1px solid grey">
 
 ### Read Text
@@ -196,11 +260,25 @@
 | ----- | ---- | ------------- | ------------------- | -------- |
 | image | None | None          | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+${text}=    Read Text
+${image}=    Grab Screenshot
+${text}=    Read Text    ${image}
+```
+
 <hr style="border:1px solid grey">
 
 ### Restart Video Input
 
 <p>Restart video stream process if needed.</p>
+
+#### Example
+
+```robotframework
+Restart Video Input
+```
 
 <hr style="border:1px solid grey">
 
@@ -216,17 +294,35 @@
 | ------ | ------ | ------------- | ------------------- | -------- |
 | method | string | rapidocr      | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+Set Ocr Method    tesseract
+```
+
 <hr style="border:1px solid grey">
 
 ### Start Video Input
 
 <p>Connect to the display.</p>
 
+#### Example
+
+```robotframework
+Start Video Input
+```
+
 <hr style="border:1px solid grey">
 
 ### Stop Video Input
 
 <p>Disconnect from the display.</p>
+
+#### Example
+
+```robotframework
+Stop Video Input
+```
 
 <hr style="border:1px solid grey">
 
@@ -243,3 +339,10 @@
 | duration            | float | 30.0          | POSITIONAL_OR_NAMED | No       |
 | still_duration      | float | 10.0          | POSITIONAL_OR_NAMED | No       |
 | screenshot_interval | float | 1.0           | POSITIONAL_OR_NAMED | No       |
+
+#### Example
+
+```robotframework
+Wait Still Screen
+Wait Still Screen    duration=60    still_duration=5
+```

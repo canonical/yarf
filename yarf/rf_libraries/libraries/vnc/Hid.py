@@ -64,6 +64,9 @@ class Hid(HidBase):
 
         Args:
             string: string to type.
+
+        Example:
+            | Type String    hello world
         """
         async with connect(self.vnc.host, self.vnc.port) as client:
             client.mouse.move(self.curr_x, self.curr_y)
@@ -80,6 +83,9 @@ class Hid(HidBase):
             button: either LEFT, MIDDLE or RIGHT.
         Raises:
             ValueError: if the specified button isn't supported
+
+        Example:
+            | Click Pointer Button    LEFT
         """
         try:
             MouseTranslation[button]
@@ -99,6 +105,9 @@ class Hid(HidBase):
 
         Args:
             button: either LEFT, MIDDLE or RIGHT.
+
+        Example:
+            | Press Pointer Button    LEFT
         """
         async with connect(self.vnc.host, self.vnc.port) as client:
             client.mouse.move(self.curr_x, self.curr_y)
@@ -111,6 +120,9 @@ class Hid(HidBase):
 
         Args:
             button: either LEFT, MIDDLE or RIGHT.
+
+        Example:
+            | Release Pointer Button    LEFT
         """
         async with connect(self.vnc.host, self.vnc.port) as client:
             client.mouse.move(self.curr_x, self.curr_y)
@@ -120,6 +132,9 @@ class Hid(HidBase):
     async def release_pointer_buttons(self) -> None:
         """
         Release all pointer buttons.
+
+        Example:
+            | Release Pointer Buttons
         """
         async with connect(self.vnc.host, self.vnc.port) as client:
             client.mouse.move(self.curr_x, self.curr_y)
@@ -140,6 +155,9 @@ class Hid(HidBase):
 
         Raises:
             AssertionError: if coordinates are out of range
+
+        Example:
+            | Move Pointer    0.5    0.5
         """
         assert 0 <= x <= 1
         assert 0 <= y <= 1

@@ -44,6 +44,9 @@ class VideoInput(VideoInputBase):
 
         Returns:
             Pillow Image of the frame
+
+        Example:
+            | ${image}=    Grab Screenshot
         """
         await self.start_video_input()
         return await self._screencopy.grab_screenshot()
@@ -53,6 +56,9 @@ class VideoInput(VideoInputBase):
     async def start_video_input(self) -> None:
         """
         Connect to the display.
+
+        Example:
+            | Start Video Input
         """
         await self._screencopy.connect()
 
@@ -61,5 +67,8 @@ class VideoInput(VideoInputBase):
     async def stop_video_input(self) -> None:
         """
         Disconnect from the display.
+
+        Example:
+            | Stop Video Input
         """
         await self._screencopy.disconnect()
