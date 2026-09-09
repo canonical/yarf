@@ -180,8 +180,9 @@ def extract_example(html_text):
     block (lines prefixed with ``|``) so that libdoc renders it as ``<pre>``.
 
     :param html_text: The keyword documentation rendered as HTML by libdoc.
-    :return: A tuple of the documentation without the example section and the
-        example source, or ``None`` when no example is present.
+    :return: A tuple of the documentation without the example section, and the
+        example source. The example source is ``None`` when the documentation
+        has no example section.
     """
     soup = BeautifulSoup(html_text, 'html.parser')
     for paragraph in soup.find_all('p'):
