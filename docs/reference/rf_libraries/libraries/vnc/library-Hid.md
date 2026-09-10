@@ -19,6 +19,12 @@
 | ------ | ------ | ------------- | ------------------- | -------- |
 | button | string |               | POSITIONAL_OR_NAMED | Yes      |
 
+#### Example
+
+```robotframework
+Click Pointer Button    LEFT
+```
+
 <hr style="border:1px solid grey">
 
 ### Keys Combo
@@ -33,6 +39,14 @@
 | ----- | ------ | ------------- | ------------------- | -------- |
 | combo | None   |               | POSITIONAL_OR_NAMED | Yes      |
 | keys  | string |               | VAR_POSITIONAL      | No       |
+
+#### Example
+
+```robotframework
+Keys Combo    Control_L    Alt_L    Delete
+${combo}=    Create List    Control_L    c
+Keys Combo    ${combo}
+```
 
 <hr style="border:1px solid grey">
 
@@ -49,6 +63,12 @@
 | x    | float |               | POSITIONAL_OR_NAMED | Yes      |
 | y    | float |               | POSITIONAL_OR_NAMED | Yes      |
 
+#### Example
+
+```robotframework
+Move Pointer    0.5    0.5
+```
+
 <hr style="border:1px solid grey">
 
 ### Move Pointer To Absolute
@@ -63,6 +83,12 @@
 | ---- | ------- | ------------- | ------------------- | -------- |
 | x    | integer |               | POSITIONAL_OR_NAMED | Yes      |
 | y    | integer |               | POSITIONAL_OR_NAMED | Yes      |
+
+#### Example
+
+```robotframework
+Move Pointer To Absolute    ${640}    ${480}
+```
 
 <hr style="border:1px solid grey">
 
@@ -79,6 +105,12 @@
 | x    | float |               | POSITIONAL_OR_NAMED | Yes      |
 | y    | float |               | POSITIONAL_OR_NAMED | Yes      |
 
+#### Example
+
+```robotframework
+Move Pointer To Proportional    0.5    0.5
+```
+
 <hr style="border:1px solid grey">
 
 ### Press Pointer Button
@@ -91,6 +123,12 @@
 | Name   | Type   | Default Value | Kind                | Required |
 | ------ | ------ | ------------- | ------------------- | -------- |
 | button | string |               | POSITIONAL_OR_NAMED | Yes      |
+
+#### Example
+
+```robotframework
+Press Pointer Button    LEFT
+```
 
 <hr style="border:1px solid grey">
 
@@ -105,11 +143,23 @@
 | ------ | ------ | ------------- | ------------------- | -------- |
 | button | string |               | POSITIONAL_OR_NAMED | Yes      |
 
+#### Example
+
+```robotframework
+Release Pointer Button    LEFT
+```
+
 <hr style="border:1px solid grey">
 
 ### Release Pointer Buttons
 
 <p>Release all pointer buttons.</p>
+
+#### Example
+
+```robotframework
+Release Pointer Buttons
+```
 
 <hr style="border:1px solid grey">
 
@@ -123,6 +173,12 @@
 | Name   | Type   | Default Value | Kind                | Required |
 | ------ | ------ | ------------- | ------------------- | -------- |
 | string | string |               | POSITIONAL_OR_NAMED | Yes      |
+
+#### Example
+
+```robotframework
+Type String    hello world
+```
 
 <hr style="border:1px solid grey">
 
@@ -141,6 +197,12 @@
 | step_distance | float   |               | POSITIONAL_OR_NAMED | Yes      |
 | delay         | float   |               | POSITIONAL_OR_NAMED | Yes      |
 
+#### Example
+
+```robotframework
+Walk Pointer To Absolute    ${640}    ${480}    ${10}    ${0.01}
+```
+
 <hr style="border:1px solid grey">
 
 ### Walk Pointer To Proportional
@@ -157,3 +219,9 @@
 | y             | float |               | POSITIONAL_OR_NAMED | Yes      |
 | step_distance | float |               | POSITIONAL_OR_NAMED | Yes      |
 | delay         | float |               | POSITIONAL_OR_NAMED | Yes      |
+
+#### Example
+
+```robotframework
+Walk Pointer To Proportional    0.5    0.5    0.05    ${0.01}
+```

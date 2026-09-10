@@ -16,6 +16,12 @@
 <li>${button}: Button to click (LEFT|RIGHT|MIDDLE).</li>
 </ul>
 
+#### Example
+
+```robotframework
+Click LEFT Button
+```
+
 <hr style="border:1px solid grey">
 
 ### Click ${button} Button On $\{destination}
@@ -27,6 +33,13 @@
 <li>${button}: Button to click (LEFT|RIGHT|MIDDLE).</li>
 <li>${destination}: The template or location to click on.</li>
 </ul>
+
+#### Example
+
+```robotframework
+Click LEFT Button On ${CURDIR}/button.png
+Click LEFT Button On Continue
+```
 
 <hr style="border:1px solid grey">
 
@@ -40,6 +53,12 @@
 <li>${y}: Displacement along the y-axis.</li>
 </ul>
 <p>Return: Displaced point, as a tuple (x, y) of integers.</p>
+
+#### Example
+
+```robotframework
+${shifted}=    Displace ${3,3} By (5, 5)
+```
 
 <hr style="border:1px solid grey">
 
@@ -59,6 +78,13 @@
 | step_distance |      | 16            | POSITIONAL_OR_NAMED | No       |
 | delay         |      | 0.01          | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+Move Pointer To ${CURDIR}/file_icon.png
+Drag And Drop On ${CURDIR}/folder_icon.png
+```
+
 <hr style="border:1px solid grey">
 
 ### Ensure \$\{destination} Does Not Match
@@ -76,6 +102,12 @@
 | ------- | ---- | ------------- | ------------------- | -------- |
 | timeout |      | 2             | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+Ensure ${CURDIR}/error.png Does Not Match    timeout=5
+```
+
 <hr style="border:1px solid grey">
 
 ### Get Center Of \$\{region}
@@ -87,6 +119,13 @@
 </ul>
 <p>of integer values for "left", "right", "top", and "bottom" keys.</p>
 <p>Return: Center of the region, as a tuple (x, y) of integers.</p>
+
+#### Example
+
+```robotframework
+${regions}=    Match    ${CURDIR}/button.png
+${center}=    Get Center Of ${regions}[0]
+```
 
 <hr style="border:1px solid grey">
 
@@ -100,6 +139,13 @@
 <p>the position will be the absolute position given by the tuple. Otherwise, if ${target} is the path of an image template file, the position will be the center of the first matching template region. ${target} can also be a string, and the position will be the center of the found text.</p>
 <p>Return: Absolute position as a tuple (x, y) of integers.</p>
 
+#### Example
+
+```robotframework
+${position}=    Get Position Of ${CURDIR}/button.png
+${position}=    Get Position Of Continue
+```
+
 <hr style="border:1px solid grey">
 
 ### Move Pointer To \$\{destination}
@@ -111,6 +157,13 @@
 </ul>
 <p>is a tuple (x, y) of integers, the pointer will move to the absolute position given by the tuple. Otherwise, if ${destination} is the path of an image template file, the pointer will move to the center of the first matching template region. ${destination} can also be a string, and the pointer will move to the center of the found text.</p>
 <p>Return: Absolute position of the pointer after the move, as a tuple (x, y) of integers.</p>
+
+#### Example
+
+```robotframework
+Move Pointer To ${CURDIR}/button.png
+Move Pointer To Continue
+```
 
 <hr style="border:1px solid grey">
 
@@ -127,6 +180,12 @@
 </ul>
 <p>Return: Absolute position of the pointer after the move, as a tuple (x, y) of integers.</p>
 
+#### Example
+
+```robotframework
+Move Pointer To Continue In ${CURDIR}/dialog.png
+```
+
 <hr style="border:1px solid grey">
 
 ### Move Pointer To (${x}, $\{y})
@@ -137,6 +196,12 @@
 <li>${x}: Integer absolute x-coordinate to move the pointer to.</li>
 <li>${y}: Integer absolute y-coordinate to move the pointer to.</li>
 </ul>
+
+#### Example
+
+```robotframework
+Move Pointer To (${640}, ${480})
+```
 
 <hr style="border:1px solid grey">
 
@@ -154,6 +219,12 @@
 <p>It must be in the range 0..1, where 0 represents the top edge, and 1 represents the bottom edge of the output.</p>
 <p>Return: Absolute position of the pointer after the move, as a tuple (x, y) of integers.</p>
 
+#### Example
+
+```robotframework
+Move Pointer To Proportional (0.5, 0.5)
+```
+
 <hr style="border:1px solid grey">
 
 ### Press \$\{button} Button
@@ -164,9 +235,17 @@
 <li>${button}: Button to press (LEFT|RIGHT|MIDDLE).</li>
 </ul>
 
+#### Example
+
+```robotframework
+Press LEFT Button
+```
+
 <hr style="border:1px solid grey">
 
 ### Press And Wait For Match
+
+<p>Press a key combination and wait for the template to match.</p>
 
 #### Positional and named arguments
 
@@ -176,6 +255,13 @@
 | template   |      |                                          | POSITIONAL_OR_NAMED | Yes      |
 | timeout    |      | 10                                       | POSITIONAL_OR_NAMED | No       |
 | tolerance  |      | \$\{DEFAULT_TEMPLATE_MATCHING_TOLERANCE} | POSITIONAL_OR_NAMED | No       |
+
+#### Example
+
+```robotframework
+${combo}=    Create List    Control_L    s
+Press And Wait For Match    ${combo}    ${CURDIR}/save_dialog.png
+```
 
 <hr style="border:1px solid grey">
 
@@ -193,6 +279,13 @@
 | timeout    |      | 2                                        | POSITIONAL_OR_NAMED | No       |
 | tolerance  |      | \$\{DEFAULT_TEMPLATE_MATCHING_TOLERANCE} | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+${combo}=    Create List    Control_L    n
+Press Combo And Match    ${combo}    ${CURDIR}/window.png
+```
+
 <hr style="border:1px solid grey">
 
 ### Press Key And Match
@@ -208,6 +301,12 @@
 | tentatives |      | 1             | POSITIONAL_OR_NAMED | No       |
 | timeout    |      | 2             | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+Press Key And Match    Down    ${CURDIR}/menu.png    tentatives=5
+```
+
 <hr style="border:1px solid grey">
 
 ### Release \$\{button} Button
@@ -218,11 +317,23 @@
 <li>${button}: Button to release (LEFT|RIGHT|MIDDLE).</li>
 </ul>
 
+#### Example
+
+```robotframework
+Release LEFT Button
+```
+
 <hr style="border:1px solid grey">
 
 ### Release Buttons
 
 <p>Release all buttons on the virtual pointer.</p>
+
+#### Example
+
+```robotframework
+Release Buttons
+```
 
 <hr style="border:1px solid grey">
 
@@ -251,6 +362,12 @@
 | step_distance |      | 16            | POSITIONAL_OR_NAMED | No       |
 | delay         |      | 0.01          | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+Walk Pointer To ${CURDIR}/button.png
+```
+
 <hr style="border:1px solid grey">
 
 ### Walk Pointer To (${x}, $\{y})
@@ -274,6 +391,12 @@
 | ------------- | ---- | ------------- | ------------------- | -------- |
 | step_distance |      | 16            | POSITIONAL_OR_NAMED | No       |
 | delay         |      | 0.01          | POSITIONAL_OR_NAMED | No       |
+
+#### Example
+
+```robotframework
+Walk Pointer To (${640}, ${480})    step_distance=32
+```
 
 <hr style="border:1px solid grey">
 
@@ -302,3 +425,9 @@
 | ------------- | ---- | ------------- | ------------------- | -------- |
 | step_distance |      | 0.01          | POSITIONAL_OR_NAMED | No       |
 | delay         |      | 0.01          | POSITIONAL_OR_NAMED | No       |
+
+#### Example
+
+```robotframework
+Walk Pointer To Proportional (0.5, 0.5)
+```

@@ -50,6 +50,9 @@ class VideoInput(VideoInputBase):
 
         Raises:
             TimeoutError: If unable to get a screenshot within the timeout period.
+
+        Example:
+            | ${image}=    Grab Screenshot
         """
         screenshot = None
         _owasp_logger.sensitive_read(
@@ -78,8 +81,18 @@ class VideoInput(VideoInputBase):
 
     @keyword
     async def stop_video_input(self) -> None:
-        pass
+        """
+        Stop the video stream. No-op for VNC.
+
+        Example:
+            | Stop Video Input
+        """
 
     @keyword
     async def start_video_input(self) -> None:
-        pass
+        """
+        Start the video stream. No-op for VNC.
+
+        Example:
+            | Start Video Input
+        """

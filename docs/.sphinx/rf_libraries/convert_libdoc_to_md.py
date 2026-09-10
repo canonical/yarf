@@ -28,6 +28,8 @@ SUFFIX = {
     RobotFile.RESOURCE: ".resource",
 }
 
+EXAMPLE_HEADINGS = ("example:", "examples:")
+
 PACKAGE = {
     RobotFile.LIBRARY: [
         Path("yarf/rf_libraries/libraries"),
@@ -86,15 +88,17 @@ def convert_json_to_markdown(json_file: Path, markdown_file: Path):
                 # h2 title in contents panel
                 content.append(f"### {keyword['name']}\n\n")
                 # Write keyword description and fix URL-encoded anchors
-                keyword_doc = fix_link_anchors(keyword['doc'])
+                doc_html, example = extract_example(keyword['doc'])
+                keyword_doc = fix_link_anchors(doc_html)
                 content.append(f"{keyword_doc}\n\n")
 
                 if (
                     "returnType" in keyword
                     and keyword["returnType"] is not None
                 ):
+                    return_type = format_type(keyword["returnType"])
                     content.append(
-                        f"### Return\n\n{keyword['returnType']}\n\n"
+                        f"#### Return\n\n```\n{return_type}\n```\n\n"
                     )
 
                 if keyword.get("args", []):
@@ -131,13 +135,70 @@ def convert_json_to_markdown(json_file: Path, markdown_file: Path):
                         md_table += f"| {name} | {arg_type} | {default} | {kind} | {required} |\n"
 
                     # Write the constructed table to markdown
-                    content.append(md_table)
+                    content.append(md_table + "\n")
+
+                if example:
+                    content.append(
+                        "#### Example\n\n"
+                        f"```robotframework\n{example}\n```\n\n"
+                    )
 
                 md.write("".join(content))
                 if i < len(data["keywords"]) - 1:
                     md.write("<hr style=\"border:1px solid grey\">\n\n")
 
     json_file.unlink(missing_ok=True)
+
+
+def format_type(type_info):
+    """
+    Render a libdoc type entry as a readable type expression, for example
+    ``list[dictionary]`` or ``tuple[integer, integer] | None``.
+
+    :param type_info: A libdoc type mapping with ``name``, ``typedoc``,
+        ``nested`` and ``union`` keys.
+    :return: The type expression as a string.
+    """
+    if not type_info:
+        return ""
+
+    nested = [format_type(entry) for entry in type_info.get("nested") or []]
+    name = type_info.get("typedoc") or type_info.get("name") or ""
+
+    if not nested:
+        return name
+    if type_info.get("union"):
+        return " | ".join(nested)
+    return f"{name}[{', '.join(nested)}]"
+
+
+def extract_example(html_text):
+    """
+    Pull the ``Example:`` section out of a keyword documentation body.
+
+    The section is written in the docstring as a Robot Framework preformatted
+    block (lines prefixed with ``|``) so that libdoc renders it as ``<pre>``.
+
+    :param html_text: The keyword documentation rendered as HTML by libdoc.
+    :return: A tuple of the documentation without the example section, and the
+        example source. The example source is ``None`` when the documentation
+        has no example section.
+    """
+    soup = BeautifulSoup(html_text, 'html.parser')
+    for paragraph in soup.find_all('p'):
+        if paragraph.get_text(strip=True).lower() not in EXAMPLE_HEADINGS:
+            continue
+
+        block = paragraph.find_next_sibling('pre')
+        if block is None:
+            continue
+
+        example = block.get_text().strip("\n")
+        block.decompose()
+        paragraph.decompose()
+        return str(soup).strip(), example
+
+    return html_text, None
 
 def fix_link_anchors(html_text):
     """

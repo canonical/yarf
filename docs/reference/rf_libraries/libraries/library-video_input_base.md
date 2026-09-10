@@ -14,9 +14,11 @@
 <p>Args: image: Image to search; grabs a screenshot if not provided. confidence: Minimum confidence (0-1) for a detection to be accepted.</p>
 <p>Returns: (x, y) absolute pixel coordinates of the cursor, or None.</p>
 
-### Return
+#### Return
 
-{'name': 'Union', 'typedoc': None, 'nested': \[{'name': 'tuple', 'typedoc': 'tuple', 'nested': \[{'name': 'int', 'typedoc': 'integer', 'nested': [], 'union': False}, {'name': 'int', 'typedoc': 'integer', 'nested': [], 'union': False}\], 'union': False}, {'name': 'None', 'typedoc': 'None', 'nested': [], 'union': False}\], 'union': True}
+```
+tuple[integer, integer] | None
+```
 
 #### Positional and named arguments
 
@@ -24,6 +26,13 @@
 | ---------- | ----- | ------------- | ------------------- | -------- |
 | image      | None  | None          | POSITIONAL_OR_NAMED | No       |
 | confidence | float | 0.85          | POSITIONAL_OR_NAMED | No       |
+
+#### Example
+
+```robotframework
+${position}=    Find Cursor Position
+${position}=    Find Cursor Position    confidence=0.8
+```
 
 <hr style="border:1px solid grey">
 
@@ -33,9 +42,11 @@
 <p>Args: text: text or regex to search for, use the format <span class="name">regex:&lt;regex-string&gt;</span> if the text we want to find is a regex. region: region to search for the text. image: image to search from. color: target color of the text. If set, matched text in the wrong color will be skipped. color_tolerance: Color tolerance threshold in %</p>
 <p>Returns: The list of matched text regions where the text was found. Each match is a dictionary with "text", "region", and "confidence".</p>
 
-### Return
+#### Return
 
-{'name': 'List', 'typedoc': 'list', 'nested': \[{'name': 'dict', 'typedoc': 'dictionary', 'nested': [], 'union': False}\], 'union': False}
+```
+list[dictionary]
+```
 
 #### Positional and named arguments
 
@@ -47,6 +58,16 @@
 | color           | None    | None          | POSITIONAL_OR_NAMED | No       |
 | color_tolerance | integer | 20            | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+${matches}=    Find Text    Continue
+${matches}=    Find Text    regex:[0-9]{3}
+&{region}=    Create Dictionary
+...    left=0    top=0    right=800    bottom=600
+${matches}=    Find Text    Continue    region=${region}
+```
+
 <hr style="border:1px solid grey">
 
 ### Get Displays
@@ -55,9 +76,11 @@
 <p>Returns: Dictionary of display indices or names and their respective resolutions</p>
 <p>Raises: ValueError: if the displays metadata is not in the expected format</p>
 
-### Return
+#### Return
 
-{'name': 'list', 'typedoc': 'list', 'nested': \[{'name': 'tuple', 'typedoc': 'tuple', 'nested': \[{'name': 'Union', 'typedoc': None, 'nested': \[{'name': 'str', 'typedoc': 'string', 'nested': [], 'union': False}, {'name': 'None', 'typedoc': 'None', 'nested': [], 'union': False}\], 'union': True}, {'name': 'str', 'typedoc': 'string', 'nested': [], 'union': False}\], 'union': False}\], 'union': False}
+```
+list[tuple[string | None, string]]
+```
 
 <hr style="border:1px solid grey">
 
@@ -67,9 +90,11 @@
 <p>Run with <span class="name">--debug</span> option (or YARF_LOG_LEVEL=DEBUG) to always log the image with the matched region.</p>
 <p>Args: text: The text to match on screen region: The region to search for the text Returns: The x and y coordinates of the center of the best match</p>
 
-### Return
+#### Return
 
-{'name': 'tuple', 'typedoc': 'tuple', 'nested': \[{'name': 'int', 'typedoc': 'integer', 'nested': [], 'union': False}, {'name': 'int', 'typedoc': 'integer', 'nested': [], 'union': False}\], 'union': False}
+```
+tuple[integer, integer]
+```
 
 #### Positional and named arguments
 
@@ -78,6 +103,13 @@
 | text   | string |               | POSITIONAL_OR_NAMED | Yes      |
 | region | None   | None          | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+${x}    ${y}=    Get Text Position    Continue
+Move Pointer To Absolute    ${x}    ${y}
+```
+
 <hr style="border:1px solid grey">
 
 ### Grab Screenshot
@@ -85,9 +117,17 @@
 <p>Grab and return a screenshot from the video feed.</p>
 <p>Returns: screenshot as an Image object</p>
 
-### Return
+#### Return
 
-{'name': 'PIL.Image.Image', 'typedoc': None, 'nested': [], 'union': False}
+```
+PIL.Image.Image
+```
+
+#### Example
+
+```robotframework
+${image}=    Grab Screenshot
+```
 
 <hr style="border:1px solid grey">
 
@@ -102,6 +142,12 @@
 | ---- | ------ | ------------- | ------------------- | -------- |
 | msg  | string |               | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+Log Screenshot    Desktop after login
+```
+
 <hr style="border:1px solid grey">
 
 ### Match
@@ -109,9 +155,11 @@
 <p>Grab screenshots and compare until there's a match with the provided template or timeout.</p>
 <p>Args: template: path to an image file to be used as template timeout: timeout in seconds tolerance: The tolerance for image comparison in the compare_images method region: the region to search for the template in Returns: list of matched regions</p>
 
-### Return
+#### Return
 
-{'name': 'List', 'typedoc': 'list', 'nested': \[{'name': 'Region', 'typedoc': None, 'nested': [], 'union': False}\], 'union': False}
+```
+list[Region]
+```
 
 #### Positional and named arguments
 
@@ -122,6 +170,13 @@
 | tolerance | float   | 0.8           | POSITIONAL_OR_NAMED | No       |
 | region    | None    | None          | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+${regions}=    Match    ${CURDIR}/button.png
+Match    ${CURDIR}/button.png    timeout=30    tolerance=0.9
+```
+
 <hr style="border:1px solid grey">
 
 ### Match All
@@ -130,9 +185,11 @@
 <p>Args: templates: sequence of paths to image files to use as templates timeout: timeout in seconds tolerance: The tolerance for image comparison in the compare_images method</p>
 <p>Returns: List of matched regions and template path matched</p>
 
-### Return
+#### Return
 
-{'name': 'List', 'typedoc': 'list', 'nested': \[{'name': 'dict', 'typedoc': 'dictionary', 'nested': [], 'union': False}\], 'union': False}
+```
+list[dictionary]
+```
 
 #### Positional and named arguments
 
@@ -141,6 +198,13 @@
 | templates | Sequence |               | POSITIONAL_OR_NAMED | Yes      |
 | timeout   | integer  | 10            | POSITIONAL_OR_NAMED | No       |
 | tolerance | float    | 0.8           | POSITIONAL_OR_NAMED | No       |
+
+#### Example
+
+```robotframework
+${templates}=    Create List    ${CURDIR}/ok.png    ${CURDIR}/cancel.png
+${matches}=    Match All    ${templates}    timeout=30
+```
 
 <hr style="border:1px solid grey">
 
@@ -150,9 +214,11 @@
 <p>Args: templates: sequence of paths to image files to use as templates timeout: timeout in seconds tolerance: The tolerance for image comparison in the compare_images method region: the region to search for the template in</p>
 <p>Returns: list of matched regions and template path matched</p>
 
-### Return
+#### Return
 
-{'name': 'List', 'typedoc': 'list', 'nested': \[{'name': 'dict', 'typedoc': 'dictionary', 'nested': [], 'union': False}\], 'union': False}
+```
+list[dictionary]
+```
 
 #### Positional and named arguments
 
@@ -162,6 +228,13 @@
 | timeout   | integer  | 10            | POSITIONAL_OR_NAMED | No       |
 | tolerance | float    | 0.8           | POSITIONAL_OR_NAMED | No       |
 | region    | None     | None          | POSITIONAL_OR_NAMED | No       |
+
+#### Example
+
+```robotframework
+${templates}=    Create List    ${CURDIR}/ok.png    ${CURDIR}/cancel.png
+${matches}=    Match Any    ${templates}    timeout=30
+```
 
 <hr style="border:1px solid grey">
 
@@ -175,9 +248,11 @@
 </ul>
 <p>Raises: ValueError: If the specified text isn't found in time</p>
 
-### Return
+#### Return
 
-{'name': 'tuple', 'typedoc': 'tuple', 'nested': \[{'name': 'list', 'typedoc': 'list', 'nested': \[{'name': 'dict', 'typedoc': 'dictionary', 'nested': [], 'union': False}\], 'union': False}, {'name': 'Image', 'typedoc': None, 'nested': [], 'union': False}\], 'union': False}
+```
+tuple[list[dictionary], Image]
+```
 
 #### Positional and named arguments
 
@@ -189,6 +264,13 @@
 | color           | None    | None          | POSITIONAL_OR_NAMED | No       |
 | color_tolerance | integer | 20            | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+${matches}    ${image}=    Match Text    Continue
+Match Text    Continue    timeout=60
+```
+
 <hr style="border:1px solid grey">
 
 ### Read Text
@@ -197,9 +279,11 @@
 <p>Args: image: image to read text from</p>
 <p>Returns: text read from the image</p>
 
-### Return
+#### Return
 
-{'name': 'str', 'typedoc': 'string', 'nested': [], 'union': False}
+```
+string
+```
 
 #### Positional and named arguments
 
@@ -207,11 +291,25 @@
 | ----- | ---- | ------------- | ------------------- | -------- |
 | image | None | None          | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+${text}=    Read Text
+${image}=    Grab Screenshot
+${text}=    Read Text    ${image}
+```
+
 <hr style="border:1px solid grey">
 
 ### Restart Video Input
 
 <p>Restart video stream process if needed.</p>
+
+#### Example
+
+```robotframework
+Restart Video Input
+```
 
 <hr style="border:1px solid grey">
 
@@ -227,17 +325,35 @@
 | ------ | ------ | ------------- | ------------------- | -------- |
 | method | string | rapidocr      | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+Set Ocr Method    tesseract
+```
+
 <hr style="border:1px solid grey">
 
 ### Start Video Input
 
 <p>Start video stream process if needed.</p>
 
+#### Example
+
+```robotframework
+Start Video Input
+```
+
 <hr style="border:1px solid grey">
 
 ### Stop Video Input
 
 <p>Stop video stream process if needed.</p>
+
+#### Example
+
+```robotframework
+Stop Video Input
+```
 
 <hr style="border:1px solid grey">
 
@@ -254,3 +370,10 @@
 | duration            | float | 30.0          | POSITIONAL_OR_NAMED | No       |
 | still_duration      | float | 10.0          | POSITIONAL_OR_NAMED | No       |
 | screenshot_interval | float | 1.0           | POSITIONAL_OR_NAMED | No       |
+
+#### Example
+
+```robotframework
+Wait Still Screen
+Wait Still Screen    duration=60    still_duration=5
+```

@@ -19,3 +19,10 @@
 | Name  | Type   | Default Value | Kind           | Required |
 | ----- | ------ | ------------- | -------------- | -------- |
 | names | string |               | VAR_POSITIONAL | No       |
+
+#### Example
+
+```robotframework
+Grab Templates
+Grab Templates    ok_button    cancel_button
+```

@@ -21,6 +21,12 @@
 | image                | None   | None          | POSITIONAL_OR_NAMED | No       |
 | custom_system_prompt | None   | None          | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+Assert State    a Continue button is visible
+```
+
 <hr style="border:1px solid grey">
 
 ### Check For Visual Corruption
@@ -30,9 +36,11 @@
 <p>Returns: A dict containing the LLM's assessment of whether the image is corrupted and a description.</p>
 <p>Raises: VQAValidationError: If the image is assessed as corrupted by the LLM.</p>
 
-### Return
+#### Return
 
-{'name': 'dict', 'typedoc': 'dictionary', 'nested': \[{'name': 'str', 'typedoc': 'string', 'nested': [], 'union': False}, {'name': 'Any', 'typedoc': 'Any', 'nested': [], 'union': False}\], 'union': False}
+```
+dictionary[string, Any]
+```
 
 #### Positional and named arguments
 
@@ -40,6 +48,12 @@
 | ------------- | ---- | ------------- | ------------------- | -------- |
 | image         | None | None          | POSITIONAL_OR_NAMED | No       |
 | custom_prompt | None | None          | POSITIONAL_OR_NAMED | No       |
+
+#### Example
+
+```robotframework
+${result}=    Check For Visual Corruption
+```
 
 <hr style="border:1px solid grey">
 
@@ -54,6 +68,14 @@
 | Name   | Type | Default Value | Kind      | Required |
 | ------ | ---- | ------------- | --------- | -------- |
 | kwargs | Any  |               | VAR_NAMED | No       |
+
+#### Example
+
+```robotframework
+Configure Llm Client
+...    model=qwen3-vl:2b-instruct
+...    server_url=http://localhost:11434/v1
+```
 
 <hr style="border:1px solid grey">
 
@@ -70,6 +92,13 @@
 | action      | dictionary |               | POSITIONAL_OR_NAMED | Yes      |
 | description | string     |               | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+${action}=    Get Single Gui Action    click the Continue button
+Execute Gui Action    ${action}    click the Continue button
+```
+
 <hr style="border:1px solid grey">
 
 ### Get Object Position
@@ -79,9 +108,11 @@
 <p>Returns: The object position as normalized relative coordinates <code>[x, y]</code>, where each value is typically in the range <code>0..1</code>.</p>
 <p>Raises: VQADetectionError: If the LLM indicates that the object was not</p>
 
-### Return
+#### Return
 
-{'name': 'list', 'typedoc': 'list', 'nested': \[{'name': 'float', 'typedoc': 'float', 'nested': [], 'union': False}\], 'union': False}
+```
+list[float]
+```
 
 #### Positional and named arguments
 
@@ -91,6 +122,12 @@
 | image                | None   | None          | POSITIONAL_OR_NAMED | No       |
 | custom_system_prompt | None   | None          | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+${point}=    Get Object Position    the Continue button
+```
+
 <hr style="border:1px solid grey">
 
 ### Get Single Gui Action
@@ -99,9 +136,11 @@
 <p>Args: task: The task description to provide to the LLM. image: Image to inspect. If omitted, a screenshot is grabbed. custom_system_prompt: Optional system prompt override.</p>
 <p>Returns: The next GUI action as returned by the LLM. For pointer-based actions, <span class="name">point_2d</span> contains the raw coordinates from the LLM's 1000x1000 grid.</p>
 
-### Return
+#### Return
 
-{'name': 'dict', 'typedoc': 'dictionary', 'nested': \[{'name': 'str', 'typedoc': 'string', 'nested': [], 'union': False}, {'name': 'Any', 'typedoc': 'Any', 'nested': [], 'union': False}\], 'union': False}
+```
+dictionary[string, Any]
+```
 
 #### Positional and named arguments
 
@@ -110,6 +149,12 @@
 | task                 | string |               | POSITIONAL_OR_NAMED | Yes      |
 | image                | None   | None          | POSITIONAL_OR_NAMED | No       |
 | custom_system_prompt | None   | None          | POSITIONAL_OR_NAMED | No       |
+
+#### Example
+
+```robotframework
+${action}=    Get Single Gui Action    click the Continue button
+```
 
 <hr style="border:1px solid grey">
 
@@ -127,6 +172,12 @@
 | custom_system_prompt | None    | None          | POSITIONAL_OR_NAMED | No       |
 | max_steps            | integer | 50            | POSITIONAL_OR_NAMED | No       |
 
+#### Example
+
+```robotframework
+Multiple Step Action    click the Continue button    max_steps=10
+```
+
 <hr style="border:1px solid grey">
 
 ### Prompt Llm
@@ -135,9 +186,11 @@
 <p>Args: prompt: The text prompt to send to the LLM. image: Optional image (PIL Image or path) to include in the prompt. system_prompt: Optional system prompt to guide the LLM.</p>
 <p>Returns: The response from the LLM.</p>
 
-### Return
+#### Return
 
-{'name': 'str', 'typedoc': 'string', 'nested': [], 'union': False}
+```
+string
+```
 
 #### Positional and named arguments
 
@@ -146,3 +199,11 @@
 | prompt        | string |               | POSITIONAL_OR_NAMED | Yes      |
 | image         | None   | None          | POSITIONAL_OR_NAMED | No       |
 | system_prompt | None   | None          | POSITIONAL_OR_NAMED | No       |
+
+#### Example
+
+```robotframework
+${answer}=    Prompt Llm    Describe the screen
+${image}=    Grab Screenshot
+${answer}=    Prompt Llm    What is shown?    ${image}
+```
