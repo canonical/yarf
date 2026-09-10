@@ -36,6 +36,8 @@ jobs:
   validate_body:
     name: Validate PR description
     runs-on: ubuntu-latest
+    # Bots (renovate, dependabot, ...) do not use the PR template.
+    if: github.event.pull_request.user.type != 'Bot'
     permissions:
       contents: read  # Required to check out repository code
       pull-requests: write  # Required to strip leftover template comments
