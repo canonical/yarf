@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+from rapidocr import ModelType, OCRVersion
 
 from yarf.rf_libraries.libraries.geometry.quad import Quad
 from yarf.rf_libraries.libraries.ocr.rapidocr import OCRResult, RapidOCRReader
@@ -48,7 +49,16 @@ class TestRapidOCR:
 
         assert first is second
         assert first.reader == mock_reader.return_value
-        mock_reader.assert_called_once_with()
+        mock_reader.assert_called_once_with(
+            params={
+                "Det.model_type": ModelType.MOBILE,
+                "Det.ocr_version": OCRVersion.PPOCRV5,
+                "Rec.model_type": ModelType.MOBILE,
+                "Rec.ocr_version": OCRVersion.PPOCRV5,
+                "Cls.model_type": ModelType.MOBILE,
+                "Cls.ocr_version": OCRVersion.PPOCRV5,
+            }
+        )
 
     def test_read(self, mock_reader):
         mock_reader.reader.return_value = MockRapidOCROutput(

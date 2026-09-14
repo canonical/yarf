@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import rapidfuzz
 from PIL import Image
-from rapidocr import RapidOCR
+from rapidocr import ModelType, OCRVersion, RapidOCR
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
 
@@ -76,7 +76,16 @@ class RapidOCRReader:
     def __init__(self) -> None:
         if hasattr(self, "reader"):
             return
-        self.reader = RapidOCR()
+        self.reader = RapidOCR(
+            params={
+                "Det.model_type": ModelType.MOBILE,
+                "Det.ocr_version": OCRVersion.PPOCRV5,
+                "Rec.model_type": ModelType.MOBILE,
+                "Rec.ocr_version": OCRVersion.PPOCRV5,
+                "Cls.model_type": ModelType.MOBILE,
+                "Cls.ocr_version": OCRVersion.PPOCRV5,
+            }
+        )
         self._last_rejected_logs: set[str] = set()
 
     def read(self, image: Image.Image | Path) -> str:
