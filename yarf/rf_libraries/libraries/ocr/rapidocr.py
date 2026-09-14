@@ -83,7 +83,8 @@ class RapidOCRReader:
                 "Rec.model_type": ModelType.MOBILE,
                 "Rec.ocr_version": OCRVersion.PPOCRV5,
                 "Cls.model_type": ModelType.MOBILE,
-                "Cls.ocr_version": OCRVersion.PPOCRV5,
+                # RapidOCR 3.7.0 does not provide a PP-OCRv5 classifier.
+                "Cls.ocr_version": OCRVersion.PPOCRV4,
             }
         )
         self._last_rejected_logs: set[str] = set()

@@ -56,7 +56,7 @@ class TestRapidOCR:
                 "Rec.model_type": ModelType.MOBILE,
                 "Rec.ocr_version": OCRVersion.PPOCRV5,
                 "Cls.model_type": ModelType.MOBILE,
-                "Cls.ocr_version": OCRVersion.PPOCRV5,
+                "Cls.ocr_version": OCRVersion.PPOCRV4,
             }
         )
 
