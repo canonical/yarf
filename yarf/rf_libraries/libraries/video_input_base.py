@@ -534,10 +534,11 @@ class VideoInputBase(ABC):
             if read != last_ocr_read:
                 elapsed = time.monotonic() - start_time
                 indented = "\n".join(f"  {line}" for line in read.splitlines())
-                logger.debug(
+                msg = (
                     f"OCR reading changed after {elapsed:.0f}s"
                     f" (waiting for '{text}'):\n{indented}"
                 )
+                log_image(image, msg)
                 last_ocr_read = read
             await self._sleep_for_minimum_iteration_time(
                 iteration_start_time, start_time + timeout
