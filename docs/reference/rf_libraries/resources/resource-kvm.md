@@ -16,17 +16,30 @@
 <li>${button}: Button to click (LEFT|RIGHT|MIDDLE).</li>
 </ul>
 
+#### Example
+
+```robotframework
+Click LEFT Button
+```
+
 <hr style="border:1px solid grey">
 
 ### Click ${button} Button On $\{destination}
 
 <p>Move the virtual pointer to the destination and click the button.</p>
-<p>See <a class="name" href="#move-pointer-to-destination">Move Pointer to ${destination}</a> for details.</p>
+<p>See <a class="name" href="#move-pointer-to-destination" title='"Move Pointer To ${destination}" keyword'>Move Pointer to ${destination}</a> for details.</p>
 <p>Embedded arguments:</p>
 <ul>
 <li>${button}: Button to click (LEFT|RIGHT|MIDDLE).</li>
 <li>${destination}: The template or location to click on.</li>
 </ul>
+
+#### Example
+
+```robotframework
+Click LEFT Button On ${CURDIR}/button.png
+Click LEFT Button On Continue
+```
 
 <hr style="border:1px solid grey">
 
@@ -39,7 +52,13 @@
 <li>${x}: Displacement along the x-axis.</li>
 <li>${y}: Displacement along the y-axis.</li>
 </ul>
-<p>Return: Displaced point, as a tuple (x, y) of integers.</p>
+<p>Displaced point, as a tuple (x, y) of integers.</p>
+
+#### Example
+
+```robotframework
+${shifted}=    Displace ${3,3} By (5, 5)
+```
 
 <hr style="border:1px solid grey">
 
@@ -50,14 +69,21 @@
 <ul>
 <li>${destination}: Can be a string, or the path of an image template file representing</li>
 </ul>
-<p>the target location to drop on, or a coordinate tuple (x, y) of integers representing the absolute position to drop on. For details please see <a class="name" href="#walk-pointer-to-destination">Walk Pointer To ${destination}</a>.</p>
+<p>the target location to drop on, or a coordinate tuple (x, y) of integers representing the absolute position to drop on. For details please see <a class="name" href="#walk-pointer-to-destination" title='"Walk Pointer To ${destination}" keyword'>Walk Pointer To ${destination}</a>.</p>
 
 #### Positional and named arguments
 
-| Name          | Type | Default Value | Kind                | Required |
-| ------------- | ---- | ------------- | ------------------- | -------- |
-| step_distance |      | 16            | POSITIONAL_OR_NAMED | No       |
-| delay         |      | 0.01          | POSITIONAL_OR_NAMED | No       |
+| Name          | Type | Default Value | Kind                | Required | Documentation |
+| ------------- | ---- | ------------- | ------------------- | -------- | ------------- |
+| step_distance |      | 16            | POSITIONAL_OR_NAMED | No       |               |
+| delay         |      | 0.01          | POSITIONAL_OR_NAMED | No       |               |
+
+#### Example
+
+```robotframework
+Move Pointer To ${CURDIR}/file_icon.png
+Drag And Drop On ${CURDIR}/folder_icon.png
+```
 
 <hr style="border:1px solid grey">
 
@@ -72,9 +98,15 @@
 
 #### Positional and named arguments
 
-| Name    | Type | Default Value | Kind                | Required |
-| ------- | ---- | ------------- | ------------------- | -------- |
-| timeout |      | 2             | POSITIONAL_OR_NAMED | No       |
+| Name    | Type | Default Value | Kind                | Required | Documentation |
+| ------- | ---- | ------------- | ------------------- | -------- | ------------- |
+| timeout |      | 2             | POSITIONAL_OR_NAMED | No       |               |
+
+#### Example
+
+```robotframework
+Ensure ${CURDIR}/error.png Does Not Match    timeout=5
+```
 
 <hr style="border:1px solid grey">
 
@@ -86,7 +118,14 @@
 <li>${region}: Rectangular region represented by a dictionary</li>
 </ul>
 <p>of integer values for "left", "right", "top", and "bottom" keys.</p>
-<p>Return: Center of the region, as a tuple (x, y) of integers.</p>
+<p>Center of the region, as a tuple (x, y) of integers.</p>
+
+#### Example
+
+```robotframework
+${regions}=    Match    ${CURDIR}/button.png
+${center}=    Get Center Of ${regions}[0]
+```
 
 <hr style="border:1px solid grey">
 
@@ -98,7 +137,14 @@
 <li>${target}: If ${target} is a tuple (x, y) of integers,</li>
 </ul>
 <p>the position will be the absolute position given by the tuple. Otherwise, if ${target} is the path of an image template file, the position will be the center of the first matching template region. ${target} can also be a string, and the position will be the center of the found text.</p>
-<p>Return: Absolute position as a tuple (x, y) of integers.</p>
+<p>Absolute position as a tuple (x, y) of integers.</p>
+
+#### Example
+
+```robotframework
+${position}=    Get Position Of ${CURDIR}/button.png
+${position}=    Get Position Of Continue
+```
 
 <hr style="border:1px solid grey">
 
@@ -110,7 +156,14 @@
 <li>${destination}: Where to move the pointer to. If ${destination}</li>
 </ul>
 <p>is a tuple (x, y) of integers, the pointer will move to the absolute position given by the tuple. Otherwise, if ${destination} is the path of an image template file, the pointer will move to the center of the first matching template region. ${destination} can also be a string, and the pointer will move to the center of the found text.</p>
-<p>Return: Absolute position of the pointer after the move, as a tuple (x, y) of integers.</p>
+<p>Absolute position of the pointer after the move, as a tuple (x, y) of integers.</p>
+
+#### Example
+
+```robotframework
+Move Pointer To ${CURDIR}/button.png
+Move Pointer To Continue
+```
 
 <hr style="border:1px solid grey">
 
@@ -125,7 +178,13 @@
 <ul>
 <li>${domain}: Given region or template to search for ${destination} within.</li>
 </ul>
-<p>Return: Absolute position of the pointer after the move, as a tuple (x, y) of integers.</p>
+<p>Absolute position of the pointer after the move, as a tuple (x, y) of integers.</p>
+
+#### Example
+
+```robotframework
+Move Pointer To Continue In ${CURDIR}/dialog.png
+```
 
 <hr style="border:1px solid grey">
 
@@ -137,6 +196,12 @@
 <li>${x}: Integer absolute x-coordinate to move the pointer to.</li>
 <li>${y}: Integer absolute y-coordinate to move the pointer to.</li>
 </ul>
+
+#### Example
+
+```robotframework
+Move Pointer To (${640}, ${480})
+```
 
 <hr style="border:1px solid grey">
 
@@ -152,7 +217,13 @@
 <li>${y}: Output-relative y-coordinate to move the pointer to.</li>
 </ul>
 <p>It must be in the range 0..1, where 0 represents the top edge, and 1 represents the bottom edge of the output.</p>
-<p>Return: Absolute position of the pointer after the move, as a tuple (x, y) of integers.</p>
+<p>Absolute position of the pointer after the move, as a tuple (x, y) of integers.</p>
+
+#### Example
+
+```robotframework
+Move Pointer To Proportional (0.5, 0.5)
+```
 
 <hr style="border:1px solid grey">
 
@@ -163,6 +234,12 @@
 <ul>
 <li>${button}: Button to press (LEFT|RIGHT|MIDDLE).</li>
 </ul>
+
+#### Example
+
+```robotframework
+Press LEFT Button
+```
 
 <hr style="border:1px solid grey">
 
@@ -178,7 +255,6 @@
 <ul>
 <li>${target}: The text of the item to move the highlight to.</li>
 </ul>
-<p>Arguments:</p>
 <ul>
 <li>${max_steps} (optional): Maximum number of key presses before</li>
 </ul>
@@ -194,24 +270,33 @@
 
 #### Positional and named arguments
 
-| Name            | Type | Default Value | Kind                | Required |
-| --------------- | ---- | ------------- | ------------------- | -------- |
-| max_steps       |      | 50            | POSITIONAL_OR_NAMED | No       |
-| settle          |      | 0.3           | POSITIONAL_OR_NAMED | No       |
-| color_tolerance |      | 20            | POSITIONAL_OR_NAMED | No       |
+| Name            | Type | Default Value | Kind                | Required | Documentation |
+| --------------- | ---- | ------------- | ------------------- | -------- | ------------- |
+| max_steps       |      | 50            | POSITIONAL_OR_NAMED | No       |               |
+| settle          |      | 0.3           | POSITIONAL_OR_NAMED | No       |               |
+| color_tolerance |      | 20            | POSITIONAL_OR_NAMED | No       |               |
 
 <hr style="border:1px solid grey">
 
 ### Press And Wait For Match
 
+<p>Press a key combination and wait for the template to match.</p>
+
 #### Positional and named arguments
 
-| Name       | Type | Default Value                            | Kind                | Required |
-| ---------- | ---- | ---------------------------------------- | ------------------- | -------- |
-| keys-combo |      |                                          | POSITIONAL_OR_NAMED | Yes      |
-| template   |      |                                          | POSITIONAL_OR_NAMED | Yes      |
-| timeout    |      | 10                                       | POSITIONAL_OR_NAMED | No       |
-| tolerance  |      | \$\{DEFAULT_TEMPLATE_MATCHING_TOLERANCE} | POSITIONAL_OR_NAMED | No       |
+| Name       | Type | Default Value                            | Kind                | Required | Documentation |
+| ---------- | ---- | ---------------------------------------- | ------------------- | -------- | ------------- |
+| keys-combo |      |                                          | POSITIONAL_OR_NAMED | Yes      |               |
+| template   |      |                                          | POSITIONAL_OR_NAMED | Yes      |               |
+| timeout    |      | 10                                       | POSITIONAL_OR_NAMED | No       |               |
+| tolerance  |      | \$\{DEFAULT_TEMPLATE_MATCHING_TOLERANCE} | POSITIONAL_OR_NAMED | No       |               |
+
+#### Example
+
+```robotframework
+${combo}=    Create List    Control_L    s
+Press And Wait For Match    ${combo}    ${CURDIR}/save_dialog.png
+```
 
 <hr style="border:1px solid grey">
 
@@ -221,13 +306,20 @@
 
 #### Positional and named arguments
 
-| Name       | Type | Default Value                            | Kind                | Required |
-| ---------- | ---- | ---------------------------------------- | ------------------- | -------- |
-| keys-combo |      |                                          | POSITIONAL_OR_NAMED | Yes      |
-| template   |      |                                          | POSITIONAL_OR_NAMED | Yes      |
-| tentatives |      | 1                                        | POSITIONAL_OR_NAMED | No       |
-| timeout    |      | 2                                        | POSITIONAL_OR_NAMED | No       |
-| tolerance  |      | \$\{DEFAULT_TEMPLATE_MATCHING_TOLERANCE} | POSITIONAL_OR_NAMED | No       |
+| Name       | Type | Default Value                            | Kind                | Required | Documentation |
+| ---------- | ---- | ---------------------------------------- | ------------------- | -------- | ------------- |
+| keys-combo |      |                                          | POSITIONAL_OR_NAMED | Yes      |               |
+| template   |      |                                          | POSITIONAL_OR_NAMED | Yes      |               |
+| tentatives |      | 1                                        | POSITIONAL_OR_NAMED | No       |               |
+| timeout    |      | 2                                        | POSITIONAL_OR_NAMED | No       |               |
+| tolerance  |      | \$\{DEFAULT_TEMPLATE_MATCHING_TOLERANCE} | POSITIONAL_OR_NAMED | No       |               |
+
+#### Example
+
+```robotframework
+${combo}=    Create List    Control_L    n
+Press Combo And Match    ${combo}    ${CURDIR}/window.png
+```
 
 <hr style="border:1px solid grey">
 
@@ -237,12 +329,18 @@
 
 #### Positional and named arguments
 
-| Name       | Type | Default Value | Kind                | Required |
-| ---------- | ---- | ------------- | ------------------- | -------- |
-| key        |      |               | POSITIONAL_OR_NAMED | Yes      |
-| template   |      |               | POSITIONAL_OR_NAMED | Yes      |
-| tentatives |      | 1             | POSITIONAL_OR_NAMED | No       |
-| timeout    |      | 2             | POSITIONAL_OR_NAMED | No       |
+| Name       | Type | Default Value | Kind                | Required | Documentation |
+| ---------- | ---- | ------------- | ------------------- | -------- | ------------- |
+| key        |      |               | POSITIONAL_OR_NAMED | Yes      |               |
+| template   |      |               | POSITIONAL_OR_NAMED | Yes      |               |
+| tentatives |      | 1             | POSITIONAL_OR_NAMED | No       |               |
+| timeout    |      | 2             | POSITIONAL_OR_NAMED | No       |               |
+
+#### Example
+
+```robotframework
+Press Key And Match    Down    ${CURDIR}/menu.png    tentatives=5
+```
 
 <hr style="border:1px solid grey">
 
@@ -254,7 +352,6 @@
 <ul>
 <li>${target}: The text of the item to move the highlight to.</li>
 </ul>
-<p>Arguments:</p>
 <ul>
 <li>${keys}: The sequence of keys to press, in order, to reach the</li>
 </ul>
@@ -270,11 +367,11 @@
 
 #### Positional and named arguments
 
-| Name            | Type | Default Value | Kind                | Required |
-| --------------- | ---- | ------------- | ------------------- | -------- |
-| keys            |      |               | POSITIONAL_OR_NAMED | Yes      |
-| settle          |      | 0.3           | POSITIONAL_OR_NAMED | No       |
-| color_tolerance |      | 20            | POSITIONAL_OR_NAMED | No       |
+| Name            | Type | Default Value | Kind                | Required | Documentation |
+| --------------- | ---- | ------------- | ------------------- | -------- | ------------- |
+| keys            |      |               | POSITIONAL_OR_NAMED | Yes      |               |
+| settle          |      | 0.3           | POSITIONAL_OR_NAMED | No       |               |
+| color_tolerance |      | 20            | POSITIONAL_OR_NAMED | No       |               |
 
 <hr style="border:1px solid grey">
 
@@ -286,11 +383,23 @@
 <li>${button}: Button to release (LEFT|RIGHT|MIDDLE).</li>
 </ul>
 
+#### Example
+
+```robotframework
+Release LEFT Button
+```
+
 <hr style="border:1px solid grey">
 
 ### Release Buttons
 
 <p>Release all buttons on the virtual pointer.</p>
+
+#### Example
+
+```robotframework
+Release Buttons
+```
 
 <hr style="border:1px solid grey">
 
@@ -310,14 +419,20 @@
 <li>${delay} (optional): Time to sleep after each step, in seconds.</li>
 </ul>
 <p>Default is 0.01.</p>
-<p>Return: Absolute position of the pointer after the walk, as a tuple (x, y) of integers.</p>
+<p>Absolute position of the pointer after the walk, as a tuple (x, y) of integers.</p>
 
 #### Positional and named arguments
 
-| Name          | Type | Default Value | Kind                | Required |
-| ------------- | ---- | ------------- | ------------------- | -------- |
-| step_distance |      | 16            | POSITIONAL_OR_NAMED | No       |
-| delay         |      | 0.01          | POSITIONAL_OR_NAMED | No       |
+| Name          | Type | Default Value | Kind                | Required | Documentation |
+| ------------- | ---- | ------------- | ------------------- | -------- | ------------- |
+| step_distance |      | 16            | POSITIONAL_OR_NAMED | No       |               |
+| delay         |      | 0.01          | POSITIONAL_OR_NAMED | No       |               |
+
+#### Example
+
+```robotframework
+Walk Pointer To ${CURDIR}/button.png
+```
 
 <hr style="border:1px solid grey">
 
@@ -338,10 +453,16 @@
 
 #### Positional and named arguments
 
-| Name          | Type | Default Value | Kind                | Required |
-| ------------- | ---- | ------------- | ------------------- | -------- |
-| step_distance |      | 16            | POSITIONAL_OR_NAMED | No       |
-| delay         |      | 0.01          | POSITIONAL_OR_NAMED | No       |
+| Name          | Type | Default Value | Kind                | Required | Documentation |
+| ------------- | ---- | ------------- | ------------------- | -------- | ------------- |
+| step_distance |      | 16            | POSITIONAL_OR_NAMED | No       |               |
+| delay         |      | 0.01          | POSITIONAL_OR_NAMED | No       |               |
+
+#### Example
+
+```robotframework
+Walk Pointer To (${640}, ${480})    step_distance=32
+```
 
 <hr style="border:1px solid grey">
 
@@ -362,11 +483,17 @@
 <li>${delay} (optional): Time to sleep after each step, in seconds.</li>
 </ul>
 <p>Default is 0.01.</p>
-<p>Return: Absolute position of the pointer after the walk, as a tuple (x, y) of integers.</p>
+<p>Absolute position of the pointer after the walk, as a tuple (x, y) of integers.</p>
 
 #### Positional and named arguments
 
-| Name          | Type | Default Value | Kind                | Required |
-| ------------- | ---- | ------------- | ------------------- | -------- |
-| step_distance |      | 0.01          | POSITIONAL_OR_NAMED | No       |
-| delay         |      | 0.01          | POSITIONAL_OR_NAMED | No       |
+| Name          | Type | Default Value | Kind                | Required | Documentation |
+| ------------- | ---- | ------------- | ------------------- | -------- | ------------- |
+| step_distance |      | 0.01          | POSITIONAL_OR_NAMED | No       |               |
+| delay         |      | 0.01          | POSITIONAL_OR_NAMED | No       |               |
+
+#### Example
+
+```robotframework
+Walk Pointer To Proportional (0.5, 0.5)
+```

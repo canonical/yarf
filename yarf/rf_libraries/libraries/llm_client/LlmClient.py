@@ -60,6 +60,11 @@ class LlmClient:
         Raises:
             TypeError: If unknown parameters are provided.
             ValueError: If parameter values are of incorrect type.
+
+        Example:
+            | Configure Llm Client
+            | ...    model=qwen3-vl:2b-instruct
+            | ...    server_url=http://localhost:11434/v1
         """
         config_fields = {"model", "server_url", "endpoint", "max_tokens"}
 
@@ -100,6 +105,11 @@ class LlmClient:
 
         Returns:
             The response from the LLM.
+
+        Example:
+            | ${answer}=    Prompt Llm    Describe the screen
+            | ${image}=    Grab Screenshot
+            | ${answer}=    Prompt Llm    What is shown?    ${image}
         """
         messages: list[dict[str, Any]] = []
 
@@ -209,6 +219,9 @@ class LlmClient:
         Raises:
             VQAValidationError: If the image is assessed as corrupted by the
                 LLM.
+
+        Example:
+            | ${result}=    Check For Visual Corruption
         """
         if image is None:
             image = await self._grab_screenshot()
@@ -393,6 +406,9 @@ class LlmClient:
 
         Raises:
             VQADetectionError: If the LLM indicates that the object was not
+
+        Example:
+            | ${point}=    Get Object Position    the Continue button
         """
         if image is None:
             image = await self._grab_screenshot()
@@ -467,6 +483,9 @@ class LlmClient:
 
         Raises:
             AssertionError: If the state does not match the description.
+
+        Example:
+            | Assert State    a Continue button is visible
         """
 
         if image is None:
@@ -524,6 +543,9 @@ class LlmClient:
             The next GUI action as returned by the LLM. For pointer-based
             actions, `point_2d` contains the raw coordinates from the LLM's
             1000x1000 grid.
+
+        Example:
+            | ${action}=    Get Single Gui Action    click the Continue button
         """
 
         if image is None:
@@ -649,6 +671,10 @@ class LlmClient:
         Raises:
             ValueError: If the action type is unsupported or if required fields
                 are missing.
+
+        Example:
+            | ${action}=    Get Single Gui Action    click the Continue button
+            | Execute Gui Action    ${action}    click the Continue button
         """
 
         self.validate_gui_action(action, description)
@@ -718,6 +744,9 @@ class LlmClient:
 
         Raises:
             RuntimeError: If the LLM cannot finish within ``max_steps``.
+
+        Example:
+            | Multiple Step Action    click the Continue button    max_steps=10
         """
 
         system_prompt = textwrap.dedent("""

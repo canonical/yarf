@@ -56,6 +56,10 @@ class Interactive:
 
         Raises:
             ValueError: If the screenshot could not be grabbed.
+
+        Example:
+            | Grab Templates
+            | Grab Templates    ok_button    cancel_button
         """
         platform_video_input = self._get_lib_instance("VideoInput")
         if (image := await platform_video_input.grab_screenshot()) is None:

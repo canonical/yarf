@@ -31,6 +31,7 @@ Test Text Keywords with Rapid Ocr
     Test Keyword Match Text
     Test Keyword Get Highlighted Text
     Test Keyword Is Highlighted Text
+    Test Keyword Text Threshold Overrides
 
 Test Text Keywords with Tesseract
     [Tags]                  yarf:certification_status: blocker
@@ -196,3 +197,30 @@ Test Keyword Is Highlighted Text
     ${result}=              Is Highlighted Text     Take a Nap
     ...                     image=${CURDIR}/text/menu_high.png
     Should Not Be True      ${result}
+
+Test Keyword Text Threshold Overrides
+    [Tags]                  yarf:certification_status: blocker
+    ${region}=              Catenate
+    ...                     SEPARATOR=,
+    ...                     ${REGEX_REGION.left}
+    ...                     ${REGEX_REGION.top}
+    ...                     ${REGEX_REGION.right}
+    ...                     ${REGEX_REGION.bottom}
+    Set Suite Variable      \${OCR_SIMILARITY_THRESHOLD}                    not_a_number
+    Set Suite Variable      \${OCR_CONFIDENCE_THRESHOLD}                    not_a_number
+    ${matched_text}=        Find Text
+    ...                     AB123cd
+    ...                     region=${REGEX_REGION}
+    ...                     similarity=100
+    ...                     confidence=70
+    Should Not Be Empty     ${matched_text}
+    Should Be Equal As Strings                      ${matched_text[0]['text']}                      AB123cd
+
+    ${matches}              ${image}=               Match Text
+    ...                     AB123cd
+    ...                     region=${region}
+    ...                     similarity=100
+    ...                     confidence=70
+    Should Not Be Empty     ${matches}
+    ${is_image}=            Evaluate                isinstance($image, __import__('PIL.Image').Image.Image)
+    Should Be True          ${is_image}

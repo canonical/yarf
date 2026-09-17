@@ -15,6 +15,9 @@ Variables           video_input_vars.py
 *** Keywords ***
 Press Key And Match
     [Documentation]    If the provided template is not already matching, press a key until it does.
+    ...
+    ...    Example:
+    ...    | Press Key And Match    Down    ${CURDIR}/menu.png    tentatives=5
     [Arguments]             ${key}                  ${template}             ${tentatives}=1         ${timeout}=2
     ${combo}=               Create List             ${key}
     Press Combo And Match
@@ -25,6 +28,10 @@ Press Key And Match
 
 Press Combo And Match
     [Documentation]    If the provided template is not already matching, press a key combination until it does.
+    ...
+    ...    Example:
+    ...    | ${combo}=    Create List    Control_L    n
+    ...    | Press Combo And Match    ${combo}    ${CURDIR}/window.png
     [Arguments]
     ...                     ${keys-combo}
     ...                     ${template}
@@ -49,6 +56,11 @@ Press Combo And Match
     IF    ${match} == ${FALSE}    Fail    No match found
 
 Press And Wait For Match
+    [Documentation]    Press a key combination and wait for the template to match.
+    ...
+    ...    Example:
+    ...    | ${combo}=    Create List    Control_L    s
+    ...    | Press And Wait For Match    ${combo}    ${CURDIR}/save_dialog.png
     [Arguments]
     ...                     ${keys-combo}
     ...                     ${template}
@@ -67,6 +79,10 @@ Get Center Of ${region}
     ...
     ...    Return:
     ...    Center of the region, as a tuple (x, y) of integers.
+    ...
+    ...    Example:
+    ...    | ${regions}=    Match    ${CURDIR}/button.png
+    ...    | ${center}=    Get Center Of ${regions}[0]
     ${point}=               Evaluate
     ...                     (int((${region}[left] + ${region}[right]) / 2), int((${region}[top] + ${region}[bottom]) / 2))
     RETURN                  ${point}
@@ -82,6 +98,9 @@ Displace ${point} By (${x}, ${y})
     ...
     ...    Return:
     ...    Displaced point, as a tuple (x, y) of integers.
+    ...
+    ...    Example:
+    ...    | ${shifted}=    Displace ${3,3} By (5, 5)
     ${point}=               Evaluate                (int(${point}[0] + ${x}), int(${point}[1] + ${y}))
     RETURN                  ${point}
 
@@ -99,6 +118,10 @@ Get Position Of ${target}
     ...
     ...    Return:
     ...    Absolute position as a tuple (x, y) of integers.
+    ...
+    ...    Example:
+    ...    | ${position}=    Get Position Of ${CURDIR}/button.png
+    ...    | ${position}=    Get Position Of Continue
     IF    ${{ isinstance($target, tuple) }}
         ${position}=            Set Variable            ${target}
     ELSE IF    ${{ isinstance($target, str) }}
@@ -122,6 +145,9 @@ Move Pointer To (${x}, ${y})
     ...    Embedded arguments:
     ...    - ${x}: Integer absolute x-coordinate to move the pointer to.
     ...    - ${y}: Integer absolute y-coordinate to move the pointer to.
+    ...
+    ...    Example:
+    ...    | Move Pointer To (${640}, ${480})
     Hid.Move Pointer To Absolute                    ${x}                    ${y}
 
 Move Pointer To ${destination}
@@ -140,6 +166,10 @@ Move Pointer To ${destination}
     ...    Return:
     ...    Absolute position of the pointer after the move, as a tuple (x, y)
     ...    of integers.
+    ...
+    ...    Example:
+    ...    | Move Pointer To ${CURDIR}/button.png
+    ...    | Move Pointer To Continue
     ${position}=            Get Position Of ${destination}
     Hid.Move Pointer To Absolute                    ${position}[0]          ${position}[1]
     RETURN                  ${position}
@@ -162,6 +192,9 @@ Move Pointer To ${destination} In ${domain}
     ...    Return:
     ...    Absolute position of the pointer after the move, as a tuple (x, y)
     ...    of integers.
+    ...
+    ...    Example:
+    ...    | Move Pointer To Continue In ${CURDIR}/dialog.png
     IF    ${{ isinstance($domain, dict) }}
         ${target_region}=       Set Variable            ${domain}
     ELSE IF    ${{ isinstance($domain, str) }}
@@ -205,6 +238,9 @@ Move Pointer To Proportional (${x}, ${y})
     ...    Return:
     ...    Absolute position of the pointer after the move, as a tuple (x, y)
     ...    of integers.
+    ...
+    ...    Example:
+    ...    | Move Pointer To Proportional (0.5, 0.5)
     ${position}=            Hid.Move Pointer To Proportional                ${x}                    ${y}
     RETURN                  ${position}
 
@@ -219,6 +255,9 @@ Walk Pointer To (${x}, ${y})
     ...    Default is 16.
     ...    - ${delay} (optional): Time to sleep after each step, in seconds.
     ...    Default is 0.01.
+    ...
+    ...    Example:
+    ...    | Walk Pointer To (${640}, ${480})    step_distance=32
     [Arguments]             ${step_distance}=16     ${delay}=0.01
     Hid.Walk Pointer To Absolute
     ...                     ${x}
@@ -247,6 +286,9 @@ Walk Pointer To ${destination}
     ...    Return:
     ...    Absolute position of the pointer after the walk, as a tuple (x, y)
     ...    of integers.
+    ...
+    ...    Example:
+    ...    | Walk Pointer To ${CURDIR}/button.png
     [Arguments]             ${step_distance}=16     ${delay}=0.01
     ${position}=            Get Position Of ${destination}
     Hid.Walk Pointer To Absolute
@@ -275,6 +317,9 @@ Walk Pointer To Proportional (${x}, ${y})
     ...    Return:
     ...    Absolute position of the pointer after the walk, as a tuple (x, y)
     ...    of integers.
+    ...
+    ...    Example:
+    ...    | Walk Pointer To Proportional (0.5, 0.5)
     [Arguments]             ${step_distance}=0.01                           ${delay}=0.01
     ${position}=            Hid.Walk Pointer To Proportional
     ...                     ${x}
@@ -288,6 +333,9 @@ Press ${button} Button
     ...
     ...    Embedded arguments:
     ...    - ${button}: Button to press (LEFT|RIGHT|MIDDLE).
+    ...
+    ...    Example:
+    ...    | Press LEFT Button
     Hid.Press Pointer Button                        ${button}
 
 Release ${button} Button
@@ -295,6 +343,9 @@ Release ${button} Button
     ...
     ...    Embedded arguments:
     ...    - ${button}: Button to release (LEFT|RIGHT|MIDDLE).
+    ...
+    ...    Example:
+    ...    | Release LEFT Button
     Hid.Release Pointer Button                      ${button}
 
 Click ${button} Button
@@ -302,6 +353,9 @@ Click ${button} Button
     ...
     ...    Embedded arguments:
     ...    - ${button}: Button to click (LEFT|RIGHT|MIDDLE).
+    ...
+    ...    Example:
+    ...    | Click LEFT Button
     Hid.Click Pointer Button                        ${button}
 
 Click ${button} Button On ${destination}
@@ -312,11 +366,18 @@ Click ${button} Button On ${destination}
     ...    Embedded arguments:
     ...    - ${button}: Button to click (LEFT|RIGHT|MIDDLE).
     ...    - ${destination}: The template or location to click on.
+    ...
+    ...    Example:
+    ...    | Click LEFT Button On ${CURDIR}/button.png
+    ...    | Click LEFT Button On Continue
     Move Pointer To ${destination}
     Click ${button} Button
 
 Release Buttons
     [Documentation]    Release all buttons on the virtual pointer.
+    ...
+    ...    Example:
+    ...    | Release Buttons
     Hid.Release Pointer Buttons
 
 Ensure ${destination} Does Not Match
@@ -329,6 +390,9 @@ Ensure ${destination} Does Not Match
     ...    Embedded arguments:
     ...    - ${destination}: The template or string to match.
     ...    This function ensures that the given destination is not found.
+    ...
+    ...    Example:
+    ...    | Ensure ${CURDIR}/error.png Does Not Match    timeout=5
     [Arguments]             ${timeout}=2
 
     IF    ${{ os.path.exists($destination) }}
@@ -352,6 +416,10 @@ Drag And Drop On ${destination}
     ...    - ${destination}: Can be a string, or the path of an image template file representing
     ...    the target location to drop on, or a coordinate tuple (x, y) of integers representing the
     ...    absolute position to drop on. For details please see `Walk Pointer To ${destination}`.
+    ...
+    ...    Example:
+    ...    | Move Pointer To ${CURDIR}/file_icon.png
+    ...    | Drag And Drop On ${CURDIR}/folder_icon.png
     ...
     [Arguments]             ${step_distance}=16     ${delay}=0.01
 

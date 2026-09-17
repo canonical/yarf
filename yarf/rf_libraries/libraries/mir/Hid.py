@@ -69,6 +69,9 @@ class Hid(HidBase):
 
         Arguments:
             string: string to type.
+
+        Example:
+            | Type String    hello world
         """
         self._virtual_keyboard.type(string)
 
@@ -95,6 +98,9 @@ class Hid(HidBase):
 
         Arguments:
             button: one of LEFT, MIDDLE, RIGHT
+
+        Example:
+            | Press Pointer Button    LEFT
         """
         self._virtual_pointer.button(Button[button], True)
 
@@ -105,6 +111,9 @@ class Hid(HidBase):
 
         Arguments:
             button: one of LEFT, MIDDLE, RIGHT
+
+        Example:
+            | Release Pointer Button    LEFT
         """
         self._virtual_pointer.button(Button[button], False)
 
@@ -115,6 +124,9 @@ class Hid(HidBase):
 
         Arguments:
             button: one of LEFT, MIDDLE, RIGHT
+
+        Example:
+            | Click Pointer Button    LEFT
         """
         self._virtual_pointer.button(Button[button], True)
         self._virtual_pointer.button(Button[button], False)
@@ -123,6 +135,9 @@ class Hid(HidBase):
     async def release_pointer_buttons(self) -> None:
         """
         Release all pointer buttons.
+
+        Example:
+            | Release Pointer Buttons
         """
         for button in Button:
             self._virtual_pointer.button(button, False)

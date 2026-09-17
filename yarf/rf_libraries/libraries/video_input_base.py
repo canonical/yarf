@@ -61,7 +61,9 @@ class VideoInputBase(ABC):
         When using RapidOCR as the OCR method, you can set the Robot Framework
         variables `${OCR_SIMILARITY_THRESHOLD}` and `${OCR_CONFIDENCE_THRESHOLD}`
         to control the minimum similarity and confidence required for text
-        matches (values between 0 and 100).
+        matches (values between 0 and 100). These can be overridden per call
+        via the `similarity` and `confidence` arguments of `Find Text` and
+        `Match Text`.
     """
 
     ROBOT_LIBRARY_SCOPE = "GLOBAL"
@@ -121,6 +123,9 @@ class VideoInputBase(ABC):
 
         Raises:
             ValueError: If the specified method is not supported.
+
+        Example:
+            | Set Ocr Method    tesseract
         """
         if method == "rapidocr":
             self.ocr = RapidOCRReader()
@@ -148,6 +153,10 @@ class VideoInputBase(ABC):
             region: the region to search for the template in
         Returns:
             list of matched regions
+
+        Example:
+            | ${regions}=    Match    ${CURDIR}/button.png
+            | Match    ${CURDIR}/button.png    timeout=30    tolerance=0.9
         """
 
         if isinstance(region, dict):
@@ -175,6 +184,10 @@ class VideoInputBase(ABC):
 
         Returns:
             List of matched regions and template path matched
+
+        Example:
+            | ${templates}=    Create List    ${CURDIR}/ok.png    ${CURDIR}/cancel.png
+            | ${matches}=    Match All    ${templates}    timeout=30
         """
         return await self._do_match(
             templates, accept_any=False, timeout=timeout, tolerance=tolerance
@@ -200,6 +213,10 @@ class VideoInputBase(ABC):
 
         Returns:
             list of matched regions and template path matched
+
+        Example:
+            | ${templates}=    Create List    ${CURDIR}/ok.png    ${CURDIR}/cancel.png
+            | ${matches}=    Match Any    ${templates}    timeout=30
         """
         if isinstance(region, dict):
             region = Region(**region)
@@ -225,6 +242,11 @@ class VideoInputBase(ABC):
 
         Returns:
             text read from the image
+
+        Example:
+            | ${text}=    Read Text
+            | ${image}=    Grab Screenshot
+            | ${text}=    Read Text    ${image}
         """
         if not image:
             image = await self._grab_and_save_screenshot()
@@ -236,21 +258,43 @@ class VideoInputBase(ABC):
         text: str,
         image: Optional[Image.Image] = None,
         region: Optional[Region] = None,
+        similarity: Optional[float] = None,
+        confidence: Optional[float] = None,
     ) -> list[dict]:
         matched_text_regions: list[dict] = []
         regex_prefix = "regex:"
+
+        if isinstance(self.ocr, RapidOCRReader):
+            if similarity is not None:
+                RapidOCRReader._validate_threshold("similarity", similarity)
+            if confidence is not None:
+                RapidOCRReader._validate_threshold("confidence", confidence)
+
+        def find_match(match_text: str) -> list[dict]:
+            if isinstance(self.ocr, RapidOCRReader):
+                return self.ocr.find(
+                    image,  # type: ignore[arg-type]
+                    match_text,
+                    region=region,
+                    similarity=similarity,
+                    confidence=confidence,
+                )
+            return self.ocr.find(
+                image,  # type: ignore[arg-type]
+                match_text,
+                region=region,
+            )
+
         if text.startswith(regex_prefix):
             image_text = self.ocr.read(image)  # type: ignore[arg-type]
             unique_match_texts = set(
                 re.findall(rf"{text[len(regex_prefix) :]}", image_text)
             )
             for match_text in unique_match_texts:
-                matched_text_regions.extend(
-                    self.ocr.find(image, match_text, region=region)  # type: ignore[arg-type]
-                )
+                matched_text_regions.extend(find_match(match_text))
 
         else:
-            matched_text_regions = self.ocr.find(image, text, region=region)  # type: ignore[arg-type]
+            matched_text_regions = find_match(text)
 
         return matched_text_regions
 
@@ -262,6 +306,8 @@ class VideoInputBase(ABC):
         image: Optional[Image.Image] = None,
         color: Optional[Union[RGB, tuple[int, int, int]]] = None,
         color_tolerance: int = 20,
+        similarity: Optional[float] = None,
+        confidence: Optional[float] = None,
     ) -> List[dict]:
         """
         Find the specified text in the provided image or grab a screenshot to
@@ -275,10 +321,25 @@ class VideoInputBase(ABC):
             image: image to search from.
             color: target color of the text. If set, matched text in the wrong color will be skipped.
             color_tolerance: Color tolerance threshold in %
+            similarity: Minimum similarity percentage (0-100) for a match when
+                  using RapidOCR. If set, overrides
+                  ${OCR_SIMILARITY_THRESHOLD} for this call only.
+            confidence: Minimum confidence percentage (0-100) for a match when
+                  using RapidOCR. If set, overrides
+                  ${OCR_CONFIDENCE_THRESHOLD} for this call only.
 
         Returns:
             The list of matched text regions where the text was found. Each
             match is a dictionary with "text", "region", and "confidence".
+
+        Example:
+            | ${matches}=    Find Text    Continue
+            | ${matches}=    Find Text    regex:[0-9]{3}
+            | &{region}=    Create Dictionary
+            | ...    left=0    top=0    right=800    bottom=600
+            | ${matches}=    Find Text    Continue    region=${region}
+            | ${matches}=    Find Text    Continue
+            | ...    similarity=90    confidence=70
         """
         if isinstance(region, dict):
             region = Region(**region)
@@ -288,7 +349,11 @@ class VideoInputBase(ABC):
 
         matched_text_regions: list[dict] = []
         ocr_text_regions: list[dict] = self._get_ocr_text_from_image(
-            text, image=image, region=region
+            text,
+            image=image,
+            region=region,
+            similarity=similarity,
+            confidence=confidence,
         )
         if color is None:
             matched_text_regions = ocr_text_regions
@@ -304,8 +369,8 @@ class VideoInputBase(ABC):
         # Log all the matches if in debug mode (If there are any matches)
         if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
             for match in matched_text_regions:
-                similarity = f"{match['similarity']:.2f}"
-                confidence = f"{match['confidence']:.2f}"
+                similarity_str = f"{match['similarity']:.2f}"
+                confidence_str = f"{match['confidence']:.2f}"
                 matched_image = self._draw_region_on_image(
                     image.copy(), match["region"]
                 )
@@ -314,7 +379,7 @@ class VideoInputBase(ABC):
                 log_image(
                     matched_image,
                     f"Found text matching '{text}' with similarity "
-                    f"{similarity}, confidence {confidence}: "
+                    f"{similarity_str}, confidence {confidence_str}: "
                     f"'{match['text']}'",
                 )
 
@@ -549,6 +614,8 @@ class VideoInputBase(ABC):
         region: Region | tuple[int] | None = None,
         color: RGB | tuple[int] | None = None,
         color_tolerance: int = 20,
+        similarity: float | None = None,
+        confidence: float | None = None,
     ) -> tuple[list[dict], Image.Image]:
         """
         Wait for specified text to appear on screen and get the position of the
@@ -562,6 +629,12 @@ class VideoInputBase(ABC):
             region: The region to search for the text
             color: The color of the searched text
             color_tolerance: The tolerance of the color of the searched text
+            similarity: Minimum similarity percentage (0-100) for a match when
+                  using RapidOCR. If set, overrides
+                  ${OCR_SIMILARITY_THRESHOLD} for this call only.
+            confidence: Minimum confidence percentage (0-100) for a match when
+                  using RapidOCR. If set, overrides
+                  ${OCR_CONFIDENCE_THRESHOLD} for this call only.
         Returns:
             It returns a tuple with:
              - The list of matched text regions where the text was found,
@@ -570,6 +643,12 @@ class VideoInputBase(ABC):
             Each match is a dictionary with "text", "region", and "confidence".
         Raises:
             ValueError: If the specified text isn't found in time
+
+        Example:
+            | ${matches}    ${image}=    Match Text    Continue
+            | Match Text    Continue    timeout=60
+            | ${matches}    ${image}=    Match Text    Continue
+            | ...    similarity=90    confidence=70
         """
         region = to_region(region)
         print(f"\nLooking for '{text}'")
@@ -596,7 +675,11 @@ class VideoInputBase(ABC):
             # if no color was given, simply find any text
             if color_rgb is None:
                 text_matches = await self.find_text(
-                    text, image=image, region=region
+                    text,
+                    image=image,
+                    region=region,
+                    similarity=similarity,
+                    confidence=confidence,
                 )
 
             else:  # a color was given.
@@ -606,6 +689,8 @@ class VideoInputBase(ABC):
                     region=region,
                     color=color_rgb,
                     color_tolerance=color_tolerance,
+                    similarity=similarity,
+                    confidence=confidence,
                 )
 
             if text_matches:
@@ -644,6 +729,10 @@ class VideoInputBase(ABC):
             region: The region to search for the text
         Returns:
             The x and y coordinates of the center of the best match
+
+        Example:
+            | ${x}    ${y}=    Get Text Position    Continue
+            | Move Pointer To Absolute    ${x}    ${y}
         """
         if isinstance(region, dict):
             region = Region(**region)
@@ -664,6 +753,9 @@ class VideoInputBase(ABC):
     async def start_video_input(self) -> None:
         """
         Start video stream process if needed.
+
+        Example:
+            | Start Video Input
         """
 
     # yarf: nocoverage
@@ -672,6 +764,9 @@ class VideoInputBase(ABC):
     async def stop_video_input(self) -> None:
         """
         Stop video stream process if needed.
+
+        Example:
+            | Stop Video Input
         """
 
     # yarf: nocoverage
@@ -679,6 +774,9 @@ class VideoInputBase(ABC):
     async def restart_video_input(self) -> None:
         """
         Restart video stream process if needed.
+
+        Example:
+            | Restart Video Input
         """
         await self.stop_video_input()
         await self.start_video_input()
@@ -691,6 +789,9 @@ class VideoInputBase(ABC):
 
         Returns:
             screenshot as an Image object
+
+        Example:
+            | ${image}=    Grab Screenshot
         """
 
     @keyword
@@ -715,6 +816,10 @@ class VideoInputBase(ABC):
 
         Returns:
             (x, y) absolute pixel coordinates of the cursor, or None.
+
+        Example:
+            | ${position}=    Find Cursor Position
+            | ${position}=    Find Cursor Position    confidence=0.8
         """
         if image is None:
             image = await self._grab_and_save_screenshot()
@@ -984,6 +1089,9 @@ class VideoInputBase(ABC):
 
         Args:
             msg: Message to log with the image
+
+        Example:
+            | Log Screenshot    Desktop after login
         """
         screenshot = await self.grab_screenshot()
         log_image(screenshot, msg)
@@ -1007,6 +1115,10 @@ class VideoInputBase(ABC):
 
         Raises:
             TimeoutError: If the screen does not remain still for the required still_duration within the total duration.
+
+        Example:
+            | Wait Still Screen
+            | Wait Still Screen    duration=60    still_duration=5
         """
         previous_img: Optional[Image.Image] = None
         start_time = time.monotonic()
