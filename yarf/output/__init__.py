@@ -14,6 +14,7 @@ from typing import Any, Callable, Optional
 from owasp_logger import OWASPLogger
 from robot.api import TestSuite
 
+from yarf.console import notice
 from yarf.loggers.owasp_logger import get_owasp_logger
 
 _owasp_logger = OWASPLogger(appid=__name__, logger=get_owasp_logger())
@@ -99,7 +100,7 @@ def output_converter(func: Callable) -> Callable:
             converter: OutputConverterBase = OUTPUT_FORMATS[output_format]()
 
         except KeyError:
-            error_msg = f"Unsupported output format: {kwargs['output_format']}"
+            error_msg = f"unsupported output format: {kwargs['output_format']}"
             _owasp_logger.sys_crash(error_msg)
             raise ValueError(error_msg)
 
@@ -113,8 +114,11 @@ def output_converter(func: Callable) -> Callable:
         with open(outdir / f"{output_format}_output.json", "w") as f:
             json.dump(formatted_output, f, indent=4)
 
-        _logger.info(
-            f"Output for '{output_format}' exported to {outdir}/{output_format}_output.json."
+        notice(
+            _logger,
+            "Output for %s exported to: %s",
+            output_format,
+            outdir / f"{output_format}_output.json",
         )
 
         return result

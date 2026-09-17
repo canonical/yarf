@@ -11,7 +11,7 @@ import os
 import re
 import sys
 import tempfile
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser, Namespace, RawDescriptionHelpFormatter
 from enum import Enum
 from importlib import metadata
 from pathlib import Path
@@ -26,6 +26,14 @@ from robot.run import RobotFramework
 from RobotStackTracer import RobotStackTracer
 
 from yarf import LABEL_PREFIX
+from yarf.console import (
+    BRIEF,
+    DEBUG,
+    QUIET,
+    VERBOSE,
+    configure_logging,
+    notice,
+)
 from yarf.errors.yarf_errors import YARFConnectionError
 from yarf.loggers.owasp_logger import get_owasp_logger
 from yarf.output import OUTPUT_FORMATS, get_outdir_path, output_converter
@@ -96,69 +104,114 @@ def parse_yarf_arguments(argv: list[str]) -> Namespace:
         SystemExit: If argument parsing fails
     """
 
-    top_level_parser = ArgumentParser()
+    top_level_parser = ArgumentParser(
+        prog="yarf",
+        add_help=False,
+        formatter_class=RawDescriptionHelpFormatter,
+        description=(
+            "Run a Robot Framework suite against a display server platform.\n"
+            "Without a suite, yarf starts an interactive console."
+        ),
+        epilog=(
+            'Arguments after "--" are passed verbatim to Robot Framework:\n'
+            "  yarf --platform Mir ./suite -- --test 'My Task'"
+        ),
+    )
     top_level_parser.add_argument(
-        "--debug",
-        action="store_const",
-        const="DEBUG",
-        dest="log_level",
-        help="be very verbose",
-        default="INFO",
+        "--help",
+        action="help",
+        help="Show this help message and exit.",
+    )
+    top_level_parser.add_argument(
+        "--version",
+        action="version",
+        version=f"yarf {YARF_VERSION}",
+        help="Show the release version and exit.",
     )
 
-    top_level_parser.add_argument(
+    verbosity = top_level_parser.add_mutually_exclusive_group()
+    verbosity.add_argument(
         "--quiet",
         action="store_const",
-        const="WARNING",
+        const=QUIET,
         dest="log_level",
-        help="be less verbose",
+        help="Report errors only.",
     )
+    verbosity.add_argument(
+        "--brief",
+        action="store_const",
+        const=BRIEF,
+        dest="log_level",
+        help="Report progress and outcome only. This is the default.",
+    )
+    verbosity.add_argument(
+        "--verbose",
+        action="store_const",
+        const=VERBOSE,
+        dest="log_level",
+        help="Report intermediate execution steps.",
+    )
+    verbosity.add_argument(
+        "--debug",
+        action="store_const",
+        const=DEBUG,
+        dest="log_level",
+        help="Report internal diagnostic detail.",
+    )
+    top_level_parser.set_defaults(log_level=BRIEF)
 
     top_level_parser.add_argument(
         "--platform",
         type=str,
         choices=SUPPORTED_PLATFORMS.keys(),
         default="Vnc",
-        help="Specify the target platform",
+        help="Target platform to run against. Defaults to Vnc.",
     )
 
     top_level_parser.add_argument(
         "--variant",
         type=str,
+        metavar="VARIANT",
         default="",
-        help="Specify the suite variant",
+        help="Suite variant to select assets for.",
     )
 
     top_level_parser.add_argument(
         "--outdir",
         type=str,
-        help="Specify output directory.",
+        metavar="DIR",
+        help="Directory to write results to.",
     )
 
     top_level_parser.add_argument(
         "--output-format",
         type=str,
         choices=OUTPUT_FORMATS.keys(),
-        help="Specify the output format.",
+        help="Additional machine readable output format to export.",
     )
 
     top_level_parser.add_argument(
         "--log-video",
         action="store_true",
-        help="Log video even if test succeeds. Alternatively, set YARF_LOG_VIDEO environment variable: '1' to always log video, '0' to never log video (even on failure), or unset for default behavior (log only on failure).",
+        help=(
+            "Log video even when the suite succeeds. Set YARF_LOG_VIDEO to "
+            "0 to never log video, or leave it unset to log on failure only."
+        ),
     )
 
     top_level_parser.add_argument(
         "suite",
         type=str,
+        metavar="SUITE",
         default=None,
         nargs="?",
-        help="Specify suite path.",
+        help="Path to the suite to run.",
     )
     try:
         return top_level_parser.parse_args(argv)
     except SystemExit as e:
-        _owasp_logger.sys_crash("Error parsing YARF arguments.")
+        if e.code:
+            _owasp_logger.sys_crash("Error parsing YARF arguments.")
         raise e
 
 
@@ -179,8 +232,8 @@ def parse_robot_arguments(args: list[str]) -> dict[str, Any]:
         try:
             options, _ = RobotFramework().parse_arguments(args)
         except Information as info:
-            _owasp_logger.sys_crash(info)
-            raise SystemExit()
+            print(info)
+            raise SystemExit(0)
     return options
 
 
@@ -299,7 +352,7 @@ def _import_listener_from_path(path: Path, **kwargs) -> object:
                 break
 
     if listener is None:
-        msg = f"No valid listener found in {path}."
+        msg = f"cannot find a valid listener in {path}"
         _owasp_logger.sys_crash(msg)
         raise ImportError(msg)
     return listener
@@ -333,7 +386,7 @@ def get_listeners(
             )
         except (ImportError, AttributeError, TypeError) as e:
             _owasp_logger.sys_crash(
-                f"Failed to load listener from {path_str}: {e}"
+                f"cannot load the listener from {path_str}: {e}"
             )
             raise
 
@@ -385,7 +438,7 @@ def run_robot_suite(
 
     # Issue: https://github.com/robotframework/robotframework/issues/5549
     if len(suite.suites) <= 0:
-        _logger.error(f"Suite '{suite.name}' contains no tests.")
+        _logger.error('suite "%s" contains no tests', suite.name)
         return DATA_ERROR
 
     with robot_in_path(lib_cls.get_pkg_path()):
@@ -460,7 +513,8 @@ def run_interactive_console(
             **cli_options,
         )
 
-    _logger.info(
+    notice(
+        _logger,
         "Interactive console log exported to: %s",
         rf_debug_history_log_path,
     )
@@ -482,6 +536,7 @@ def main(argv: Optional[list[str]] = None) -> None:
 
     args, cli_options = parse_arguments(argv)
 
+    configure_logging(args.log_level)
     os.environ["YARF_LOG_LEVEL"] = args.log_level
     if args.log_video:
         os.environ["YARF_LOG_VIDEO"] = "1"
@@ -498,7 +553,7 @@ def main(argv: Optional[list[str]] = None) -> None:
         lib_cls().check_connection()
     except YARFConnectionError as e:
         _logger.error(
-            f"Connection check failed for platform {args.platform}: {e}"
+            "cannot connect to the %s platform: %s", args.platform, e
         )
         sys.exit(e.exit_code)
 
@@ -511,7 +566,6 @@ def main(argv: Optional[list[str]] = None) -> None:
         "restricted",
         f"platform:{args.platform}",
     )
-    logging.basicConfig(level=args.log_level)
     outdir = get_outdir_path(args.outdir)
 
     _owasp_logger.session_created(getpass.getuser())
@@ -533,7 +587,7 @@ def main(argv: Optional[list[str]] = None) -> None:
                 output_format=args.output_format,
             )
 
-        _logger.info(f"Results exported to: {outdir}")
+        notice(_logger, "Results exported to: %s", outdir)
         _owasp_logger.session_expired(
             getpass.getuser(), f"test_suite_completed:exit_code_{ec}"
         )
@@ -547,7 +601,7 @@ def main(argv: Optional[list[str]] = None) -> None:
             )
         )
         if not start_console_path.exists():
-            error_msg = "Interactive console robot script is missing."
+            error_msg = "cannot find the interactive console script"
             _owasp_logger.sys_crash(error_msg)
             raise FileNotFoundError(error_msg)
 
