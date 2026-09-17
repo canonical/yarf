@@ -75,6 +75,29 @@ ${matches}=    Find Text    Continue
 
 <hr style="border:1px solid grey">
 
+### Get Highlighted Text
+
+<p>Detect the currently highlighted item in a keyboard-driven menu.</p>
+<p>Reads every text line and returns the one whose background stands out from the others, that is, the selection highlight, without needing to know the highlight color in advance. This is useful for navigating text menus where a pointer is unavailable and the current selection has to be read from the screen.</p>
+
+#### Return
+
+```
+dictionary | None
+```
+
+<p>The highlighted line as a dict with "text", "region" and "confidence", or None if no highlight is detected.</p>
+
+#### Positional and named arguments
+
+| Name            | Type    | Default Value | Kind                | Required | Documentation                                                                                                 |
+| --------------- | ------- | ------------- | ------------------- | -------- | ------------------------------------------------------------------------------------------------------------- |
+| region          | None    | None          | POSITIONAL_OR_NAMED | No       | The region to restrict the search to.                                                                         |
+| image           | None    | None          | POSITIONAL_OR_NAMED | No       | The image to analyze; a screenshot is grabbed when not given. A path to an image file may also be given.      |
+| color_tolerance | integer | 20            | POSITIONAL_OR_NAMED | No       | Background color tolerance in percent. A line whose background differs beyond this is considered highlighted. |
+
+<hr style="border:1px solid grey">
+
 ### Get Text Position
 
 <p>Get the center position of the best match for the specified text. The region to search can be also specified. The center position is round to the nearest integer.</p>
@@ -121,6 +144,30 @@ Image
 ```robotframework
 ${image}=    Grab Screenshot
 ```
+
+<hr style="border:1px solid grey">
+
+### Is Highlighted Text
+
+<p>Check whether the currently highlighted menu item matches text.</p>
+<p>Uses <a class="name" href="#get-highlighted-text" title='"Get Highlighted Text" keyword'>Get Highlighted Text</a> to read the selected item and checks whether <code>text</code> appears within it, ignoring case, so the expected label does not need to reproduce the full line exactly. Useful for asserting or waiting on the selection while navigating a menu.</p>
+
+#### Return
+
+```
+boolean
+```
+
+<p>True if the highlighted item matches <code>text</code>, False otherwise.</p>
+
+#### Positional and named arguments
+
+| Name            | Type    | Default Value | Kind                | Required | Documentation                                                                                                 |
+| --------------- | ------- | ------------- | ------------------- | -------- | ------------------------------------------------------------------------------------------------------------- |
+| text            | string  |               | POSITIONAL_OR_NAMED | Yes      | The expected text of the highlighted item.                                                                    |
+| region          | None    | None          | POSITIONAL_OR_NAMED | No       | The region to restrict the search to.                                                                         |
+| image           | None    | None          | POSITIONAL_OR_NAMED | No       | The image to analyze; a screenshot is grabbed when not given. A path to an image file may also be given.      |
+| color_tolerance | integer | 20            | POSITIONAL_OR_NAMED | No       | Background color tolerance in percent. A line whose background differs beyond this is considered highlighted. |
 
 <hr style="border:1px solid grey">
 
