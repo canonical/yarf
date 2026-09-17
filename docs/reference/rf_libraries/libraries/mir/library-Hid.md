@@ -13,13 +13,18 @@
 ### Click Pointer Button
 
 <p>Click pointer button.</p>
-<p>Arguments: button: one of LEFT, MIDDLE, RIGHT</p>
+
+#### Return
+
+```
+None
+```
 
 #### Positional and named arguments
 
-| Name   | Type   | Default Value | Kind                | Required |
-| ------ | ------ | ------------- | ------------------- | -------- |
-| button | string |               | POSITIONAL_OR_NAMED | Yes      |
+| Name   | Type   | Default Value | Kind                | Required | Documentation              |
+| ------ | ------ | ------------- | ------------------- | -------- | -------------------------- |
+| button | string |               | POSITIONAL_OR_NAMED | Yes      | one of LEFT, MIDDLE, RIGHT |
 
 #### Example
 
@@ -32,15 +37,23 @@ Click Pointer Button    LEFT
 ### Keys Combo
 
 <p>Press and release a combination of keys.</p>
-<p>Arguments: combo: first key, or a list of keys to press at the same time. *keys: remaining keys to press.</p>
-<p>Raises: AssertionError: If both combo and keys are provided.</p>
+
+#### Return
+
+```
+None
+```
+
+#### Raises
+
+- `AssertionError`: If both combo and keys are provided.
 
 #### Positional and named arguments
 
-| Name  | Type   | Default Value | Kind                | Required |
-| ----- | ------ | ------------- | ------------------- | -------- |
-| combo | None   |               | POSITIONAL_OR_NAMED | Yes      |
-| keys  | string |               | VAR_POSITIONAL      | No       |
+| Name  | Type   | Default Value | Kind                | Required | Documentation                                           |
+| ----- | ------ | ------------- | ------------------- | -------- | ------------------------------------------------------- |
+| combo | None   |               | POSITIONAL_OR_NAMED | Yes      | first key, or a list of keys to press at the same time. |
+| keys  | string |               | VAR_POSITIONAL      | No       | remaining keys to press.                                |
 
 #### Example
 
@@ -55,15 +68,23 @@ Keys Combo    ${combo}
 ### Move Pointer To Absolute
 
 <p>Move the virtual pointer to an absolute position within the output.</p>
-<p>Args: x: horizontal coordinate, 0 &lt;= x &lt;= screen width y: vertical coordinate, 0 &lt;= y &lt;= screen height</p>
-<p>Raises: AssertionError: if coordinates are out of range</p>
+
+#### Return
+
+```
+None
+```
+
+#### Raises
+
+- `AssertionError`: if coordinates are out of range
 
 #### Positional and named arguments
 
-| Name | Type    | Default Value | Kind                | Required |
-| ---- | ------- | ------------- | ------------------- | -------- |
-| x    | integer |               | POSITIONAL_OR_NAMED | Yes      |
-| y    | integer |               | POSITIONAL_OR_NAMED | Yes      |
+| Name | Type    | Default Value | Kind                | Required | Documentation                                   |
+| ---- | ------- | ------------- | ------------------- | -------- | ----------------------------------------------- |
+| x    | integer |               | POSITIONAL_OR_NAMED | Yes      | horizontal coordinate, 0 \<= x \<= screen width |
+| y    | integer |               | POSITIONAL_OR_NAMED | Yes      | vertical coordinate, 0 \<= y \<= screen height  |
 
 #### Example
 
@@ -76,15 +97,23 @@ Move Pointer To Absolute    ${640}    ${480}
 ### Move Pointer To Proportional
 
 <p>Move the virtual pointer to a position proportional to the size of the output.</p>
-<p>Args: x: horizontal coordinate, 0 &lt;= x &lt;= 1 y: vertical coordinate, 0 &lt;= y &lt;= 1</p>
-<p>Raises: AssertionError: if coordinates are out of range</p>
+
+#### Return
+
+```
+None
+```
+
+#### Raises
+
+- `AssertionError`: if coordinates are out of range
 
 #### Positional and named arguments
 
-| Name | Type  | Default Value | Kind                | Required |
-| ---- | ----- | ------------- | ------------------- | -------- |
-| x    | float |               | POSITIONAL_OR_NAMED | Yes      |
-| y    | float |               | POSITIONAL_OR_NAMED | Yes      |
+| Name | Type  | Default Value | Kind                | Required | Documentation                        |
+| ---- | ----- | ------------- | ------------------- | -------- | ------------------------------------ |
+| x    | float |               | POSITIONAL_OR_NAMED | Yes      | horizontal coordinate, 0 \<= x \<= 1 |
+| y    | float |               | POSITIONAL_OR_NAMED | Yes      | vertical coordinate, 0 \<= y \<= 1   |
 
 #### Example
 
@@ -97,13 +126,18 @@ Move Pointer To Proportional    0.5    0.5
 ### Press Pointer Button
 
 <p>Press pointer button.</p>
-<p>Arguments: button: one of LEFT, MIDDLE, RIGHT</p>
+
+#### Return
+
+```
+None
+```
 
 #### Positional and named arguments
 
-| Name   | Type   | Default Value | Kind                | Required |
-| ------ | ------ | ------------- | ------------------- | -------- |
-| button | string |               | POSITIONAL_OR_NAMED | Yes      |
+| Name   | Type   | Default Value | Kind                | Required | Documentation              |
+| ------ | ------ | ------------- | ------------------- | -------- | -------------------------- |
+| button | string |               | POSITIONAL_OR_NAMED | Yes      | one of LEFT, MIDDLE, RIGHT |
 
 #### Example
 
@@ -116,13 +150,18 @@ Press Pointer Button    LEFT
 ### Release Pointer Button
 
 <p>Release pointer button.</p>
-<p>Arguments: button: one of LEFT, MIDDLE, RIGHT</p>
+
+#### Return
+
+```
+None
+```
 
 #### Positional and named arguments
 
-| Name   | Type   | Default Value | Kind                | Required |
-| ------ | ------ | ------------- | ------------------- | -------- |
-| button | string |               | POSITIONAL_OR_NAMED | Yes      |
+| Name   | Type   | Default Value | Kind                | Required | Documentation              |
+| ------ | ------ | ------------- | ------------------- | -------- | -------------------------- |
+| button | string |               | POSITIONAL_OR_NAMED | Yes      | one of LEFT, MIDDLE, RIGHT |
 
 #### Example
 
@@ -136,6 +175,12 @@ Release Pointer Button    LEFT
 
 <p>Release all pointer buttons.</p>
 
+#### Return
+
+```
+None
+```
+
 #### Example
 
 ```robotframework
@@ -147,13 +192,18 @@ Release Pointer Buttons
 ### Type String
 
 <p>Type a string.</p>
-<p>Arguments: string: string to type.</p>
+
+#### Return
+
+```
+None
+```
 
 #### Positional and named arguments
 
-| Name   | Type   | Default Value | Kind                | Required |
-| ------ | ------ | ------------- | ------------------- | -------- |
-| string | string |               | POSITIONAL_OR_NAMED | Yes      |
+| Name   | Type   | Default Value | Kind                | Required | Documentation   |
+| ------ | ------ | ------------- | ------------------- | -------- | --------------- |
+| string | string |               | POSITIONAL_OR_NAMED | Yes      | string to type. |
 
 #### Example
 
@@ -166,17 +216,25 @@ Type String    hello world
 ### Walk Pointer To Absolute
 
 <p>Walk the virtual pointer to an absolute position within the output, maximum <span class="name">step_distance</span> at a time, with <span class="name">delay</span> seconds in between.</p>
-<p>Args: x: horizontal coordinate, 0 &lt;= x &lt;= screen width y: vertical coordinate, 0 &lt;= y &lt;= screen height step_distance: maximum distance to move per step delay: delay between steps in seconds</p>
-<p>Raises: AssertionError: if coordinates are out of range or if x and y are not integers</p>
+
+#### Return
+
+```
+None
+```
+
+#### Raises
+
+- `AssertionError`: if coordinates are out of range or if x and y are not integers
 
 #### Positional and named arguments
 
-| Name          | Type    | Default Value | Kind                | Required |
-| ------------- | ------- | ------------- | ------------------- | -------- |
-| x             | integer |               | POSITIONAL_OR_NAMED | Yes      |
-| y             | integer |               | POSITIONAL_OR_NAMED | Yes      |
-| step_distance | float   |               | POSITIONAL_OR_NAMED | Yes      |
-| delay         | float   |               | POSITIONAL_OR_NAMED | Yes      |
+| Name          | Type    | Default Value | Kind                | Required | Documentation                                   |
+| ------------- | ------- | ------------- | ------------------- | -------- | ----------------------------------------------- |
+| x             | integer |               | POSITIONAL_OR_NAMED | Yes      | horizontal coordinate, 0 \<= x \<= screen width |
+| y             | integer |               | POSITIONAL_OR_NAMED | Yes      | vertical coordinate, 0 \<= y \<= screen height  |
+| step_distance | float   |               | POSITIONAL_OR_NAMED | Yes      | maximum distance to move per step               |
+| delay         | float   |               | POSITIONAL_OR_NAMED | Yes      | delay between steps in seconds                  |
 
 #### Example
 
@@ -189,17 +247,25 @@ Walk Pointer To Absolute    ${640}    ${480}    ${10}    ${0.01}
 ### Walk Pointer To Proportional
 
 <p>Walk the virtual pointer to a position proportional to the size of the output, maximum <span class="name">step_distance</span> at a time, with <span class="name">delay</span> seconds in between.</p>
-<p>Args: x: horizontal coordinate, 0 &lt;= x &lt;= 1 y: vertical coordinate, 0 &lt;= y &lt;= 1 step_distance: maximum distance to move per step horizontally, 0 &lt; step_distance &lt;= 1 delay: delay between steps in seconds</p>
-<p>Raises: AssertionError: if coordinates are out of range</p>
+
+#### Return
+
+```
+None
+```
+
+#### Raises
+
+- `AssertionError`: if coordinates are out of range
 
 #### Positional and named arguments
 
-| Name          | Type  | Default Value | Kind                | Required |
-| ------------- | ----- | ------------- | ------------------- | -------- |
-| x             | float |               | POSITIONAL_OR_NAMED | Yes      |
-| y             | float |               | POSITIONAL_OR_NAMED | Yes      |
-| step_distance | float |               | POSITIONAL_OR_NAMED | Yes      |
-| delay         | float |               | POSITIONAL_OR_NAMED | Yes      |
+| Name          | Type  | Default Value | Kind                | Required | Documentation                                                           |
+| ------------- | ----- | ------------- | ------------------- | -------- | ----------------------------------------------------------------------- |
+| x             | float |               | POSITIONAL_OR_NAMED | Yes      | horizontal coordinate, 0 \<= x \<= 1                                    |
+| y             | float |               | POSITIONAL_OR_NAMED | Yes      | vertical coordinate, 0 \<= y \<= 1                                      |
+| step_distance | float |               | POSITIONAL_OR_NAMED | Yes      | maximum distance to move per step horizontally, 0 < step_distance \<= 1 |
+| delay         | float |               | POSITIONAL_OR_NAMED | Yes      | delay between steps in seconds                                          |
 
 #### Example
 
