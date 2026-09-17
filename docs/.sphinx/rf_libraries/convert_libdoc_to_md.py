@@ -92,14 +92,29 @@ def convert_json_to_markdown(json_file: Path, markdown_file: Path):
                 keyword_doc = fix_link_anchors(doc_html)
                 content.append(f"{keyword_doc}\n\n")
 
-                if (
-                    "returnType" in keyword
-                    and keyword["returnType"] is not None
-                ):
-                    return_type = format_type(keyword["returnType"])
-                    content.append(
-                        f"#### Return\n\n```\n{return_type}\n```\n\n"
-                    )
+                return_doc = keyword.get("returnDoc") or ""
+                return_type = (
+                    format_type(keyword["returnType"])
+                    if keyword.get("returnType")
+                    else ""
+                )
+                if return_type or return_doc:
+                    content.append("#### Return\n\n")
+                    if return_type:
+                        content.append(f"```\n{return_type}\n```\n\n")
+                    if return_doc:
+                        content.append(
+                            f"{fix_link_anchors(return_doc)}\n\n"
+                        )
+
+                raises = keyword.get("raises") or {}
+                if raises:
+                    content.append("#### Raises\n\n")
+                    for error, error_doc in raises.items():
+                        content.append(
+                            f"- `{error}`: {to_inline_html(error_doc)}\n"
+                        )
+                    content.append("\n")
 
                 if keyword.get("args", []):
                     content.append("#### Positional and named arguments\n\n")
@@ -109,6 +124,7 @@ def convert_json_to_markdown(json_file: Path, markdown_file: Path):
                         "Default Value",
                         "Kind",
                         "Required",
+                        "Documentation",
                     ]
                     md_table = "| " + " | ".join(headers) + " |\n"
                     md_table += (
@@ -131,8 +147,11 @@ def convert_json_to_markdown(json_file: Path, markdown_file: Path):
                         required = (
                             "Yes" if arg.get("required", False) else "No"
                         )
+                        arg_doc = to_inline_html(
+                            fix_link_anchors(arg.get("doc") or "")
+                        )
 
-                        md_table += f"| {name} | {arg_type} | {default} | {kind} | {required} |\n"
+                        md_table += f"| {name} | {arg_type} | {default} | {kind} | {required} | {arg_doc} |\n"
 
                     # Write the constructed table to markdown
                     content.append(md_table + "\n")
@@ -199,6 +218,26 @@ def extract_example(html_text):
         return str(soup).strip(), example
 
     return html_text, None
+
+def to_inline_html(html_text):
+    """
+    Flatten libdoc HTML into a single line so it can be embedded in a Markdown
+    table cell.
+
+    :param html_text: The documentation rendered as HTML by libdoc.
+    :return: The documentation as inline HTML on a single line.
+    """
+    if not html_text:
+        return ""
+
+    soup = BeautifulSoup(html_text, 'html.parser')
+    for line_break in soup.find_all('br'):
+        line_break.replace_with(' ')
+    for paragraph in soup.find_all('p'):
+        paragraph.insert_after(' ')
+        paragraph.unwrap()
+    return " ".join(str(soup).split()).replace("|", "\\|")
+
 
 def fix_link_anchors(html_text):
     """
