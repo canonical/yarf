@@ -179,7 +179,7 @@ tmp
     └── report.html
 ```
 
-You can read about them in [Robot's documentation](https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html#creating-reports-logs-and-output-files).
+You can read about them in [Robot's documentation](https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html##result-files).
 
 When any test fails, YARF adds two important features here:
 
