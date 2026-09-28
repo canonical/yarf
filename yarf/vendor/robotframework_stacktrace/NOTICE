@@ -1,0 +1,26 @@
+NOTICE: Vendored robotframework-stacktrace Code
+
+This directory contains code vendored from the robotframework-stacktrace project:
+- Original Repository: https://github.com/MarketSquare/robotframework-stacktrace
+- Original Version: 0.4.1
+- Original License: Apache License 2.0
+- Original Copyright: René Rohner (2020)
+
+The original robotframework-stacktrace is licensed under the Apache License 2.0.
+A copy of this license is included in the LICENSE file in this directory.
+
+MODIFICATIONS:
+- None. The module is vendored unmodified.
+
+REASON FOR VENDORING:
+The upstream project is no longer actively maintained; its last release, 0.4.1,
+was published in July 2021. The whole project is a single 161-line listener with
+no dependencies other than Robot Framework itself, so carrying it here is
+cheaper than depending on an unmaintained package. This also lets YARF be
+packaged by Linux distributions, which cannot reasonably package a project that
+upstream has abandoned.
+
+The vendored code provides the RobotStackTracer listener, which YARF enables by
+default to add keyword stack traces to failure messages.
+
+All original copyright notices and attribution are preserved.
