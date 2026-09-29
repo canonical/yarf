@@ -1864,18 +1864,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/23/e9/74f3345024645a1e874c53064787a324eaecfb0c594c189699474370a147/robotframework-sshlibrary-3.8.0.tar.gz", hash = "sha256:aedf8a02bcb7344404cf8575d0ada25d6c7dc2fcb65de2113c4e07c63d2446c2", size = 51417, upload-time = "2021-11-18T10:02:12.203Z" }
 
 [[package]]
-name = "robotframework-stacktrace"
-version = "0.4.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "robotframework" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/f6/cf/6e6934c3d037ef3f5914e88494127ec4d0fea73bd566539e08b9fa2c9324/robotframework-stacktrace-0.4.1.tar.gz", hash = "sha256:e96cb36e7e9ab55104c1f7d3606249a109e0a4c3bb6a0e294bff07d54ee6f6a5", size = 12634, upload-time = "2021-07-12T18:04:24.993Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/4e/f2/be7d680eb8a23e86ea288f6c421e1e8c30c823a8f1521dc6b9f9d7b7692b/robotframework_stacktrace-0.4.1-py3-none-any.whl", hash = "sha256:018d7a55b99733e64e3cc0b134771b61a47de61de23609ed35c7bf0a53e9290e", size = 8543, upload-time = "2021-07-12T18:04:22.85Z" },
-]
-
-[[package]]
 name = "scp"
 version = "0.15.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2194,7 +2182,6 @@ dependencies = [
     { name = "rapidocr" },
     { name = "robotframework" },
     { name = "robotframework-sshlibrary" },
-    { name = "robotframework-stacktrace" },
     { name = "typing-extensions" },
     { name = "xkbcommon" },
 ]
@@ -2237,7 +2224,6 @@ requires-dist = [
     { name = "rapidocr", specifier = "~=3.9.1" },
     { name = "robotframework", specifier = "==7.5" },
     { name = "robotframework-sshlibrary", specifier = "~=3.8.0" },
-    { name = "robotframework-stacktrace", specifier = "==0.4.1" },
     { name = "typing-extensions", specifier = "~=4.16.0" },
     { name = "xkbcommon", specifier = "<1.5" },
 ]

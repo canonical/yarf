@@ -23,7 +23,6 @@ from robot import rebot
 from robot.api import TestSuite, TestSuiteBuilder
 from robot.errors import DATA_ERROR, Information
 from robot.run import RobotFramework
-from RobotStackTracer import RobotStackTracer
 
 from yarf import LABEL_PREFIX
 from yarf.errors.yarf_errors import YARFConnectionError
@@ -33,6 +32,7 @@ from yarf.rf_libraries import robot_in_path
 from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS, PlatformBase
 from yarf.rf_libraries.libraries.metadata_listener import MetadataListener
 from yarf.rf_libraries.suite_parser import SuiteParser
+from yarf.vendor.robotframework_stacktrace import RobotStackTracer
 
 _owasp_logger = OWASPLogger(appid=__name__, logger=get_owasp_logger())
 _logger = logging.getLogger(__name__)
