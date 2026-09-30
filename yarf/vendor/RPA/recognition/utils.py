@@ -14,32 +14,67 @@
 #
 # NOTICE: This file has been modified from the original RPAFramework source.
 # Original source: https://github.com/robocorp/rpaframework
-# Modifications: Vendored for standalone use
+# Modifications: Vendored for standalone use, added docstrings.
+"""
+Image conversion and numeric helpers.
+"""
 
-import base64
-import io
 import math
-from typing import Any
+from typing import Any, overload
 
 from PIL import Image
 
 
-def to_image(obj: Any) -> Image.Image:
-    """Convert `obj` to instance of Pillow's Image class."""
+@overload
+def to_image(obj: None) -> None: ...
+
+
+@overload
+def to_image(obj: Any) -> Image.Image: ...
+
+
+def to_image(obj: Any) -> Image.Image | None:
+    """
+    Convert `obj` to instance of Pillow's Image class.
+
+    Args:
+        obj: an Image, a path to an image file or None
+
+    Returns:
+        the converted image, or None if `obj` is None
+    """
     if obj is None or isinstance(obj, Image.Image):
         return obj
     return Image.open(obj)
 
 
 def clamp(minimum: float, value: float, maximum: float) -> float:
-    """Clamp value between given minimum and maximum."""
+    """
+    Clamp value between given minimum and maximum.
+
+    Args:
+        minimum: lower bound
+        value: value to clamp
+        maximum: upper bound
+
+    Returns:
+        the clamped value
+    """
     return max(minimum, min(value, maximum))
 
 
 def log2lin(minimum: float, value: float, maximum: float) -> float:
-    """Maps logarithmic scale to linear scale of same range."""
-    assert value >= minimum
-    assert value <= maximum
+    """
+    Maps logarithmic scale to linear scale of same range.
+
+    Args:
+        minimum: lower bound of the scale, must be positive
+        value: value between `minimum` and `maximum`
+        maximum: upper bound of the scale
+
+    Returns:
+        the value on the linear scale
+    """
     return (maximum - minimum) * (math.log(value) - math.log(minimum)) / (
         math.log(maximum) - math.log(minimum)
     ) + minimum

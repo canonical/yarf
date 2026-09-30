@@ -91,7 +91,6 @@ line-length = 79
 # In addition to the standard set of exclusions, omit all tests, plus a specific file.
 extend-exclude = [
     "docs/*",
-    "yarf/vendor/RPA/*",
     "yarf/vendor/asyncvnc/*",
     "yarf/vendor/robotframework_debug/*",
 ]
@@ -121,7 +120,6 @@ markers = [
 omit = [
     "hatch_build.py",
     "yarf/lib/wayland/protocols/*.py",
-    "yarf/vendor/RPA/*",
     "yarf/vendor/asyncvnc/*",
     "yarf/vendor/robotframework_debug/*",
 ]
