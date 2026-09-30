@@ -1,91 +1,116 @@
+"""
+Keyword lookup and execution helpers.
+"""
+
 import tempfile
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator, List, Tuple
+from typing import Any
 
 from robot.libdocpkg.model import KeywordDoc, LibraryDoc
 from robot.libraries.BuiltIn import BuiltIn
 from robot.parsing import get_model
-from robot.running import TestSuite
+from robot.running import ResourceFile, TestCase, TestSuite
 
-try:
-    from robot.running import UserLibrary as ResourceFile
-except ImportError:
-    from robot.running import ResourceFile
-from robot.variables.search import is_variable
+from .robotlib import (
+    ImportedLibraryDocBuilder,
+    ImportedResourceDocBuilder,
+    Library,
+    get_libs,
+)
 
-from .globals import KEYWORD_SEP
-from .robotlib import ImportedLibraryDocBuilder, ImportedResourceDocBuilder, get_libs
-
-_lib_keywords_cache = {}
-_resource_keywords_cache = {}
-temp_resources = []
+_lib_docs_cache: dict[str, LibraryDoc] = {}
+_temp_resources: list[str] = []
 
 
-def parse_keyword(command) -> Tuple[List[str], str, List[str]]:
-    """Split a robotframework keyword string."""
-    # TODO use robotframework functions
-    variables = []
-    keyword = ""
-    args = []
-    parts = KEYWORD_SEP.split(command)
-    for part in parts:
-        if not keyword and is_variable(part.rstrip("=").strip()):
-            variables.append(part.rstrip("=").strip())
-        elif not keyword:
-            keyword = part
-        else:
-            args.append(part)
-    return variables, keyword, args
+def get_lib_keywords(library: Library) -> list[KeywordDoc]:
+    """
+    Get the keywords of an imported library or resource.
 
+    Args:
+        library: the imported library or resource
 
-def get_lib_keywords(library) -> List[KeywordDoc]:
-    """Get keywords of imported library."""
-    if library.name not in _lib_keywords_cache:
+    Returns:
+        the keyword documentations
+    """
+    if library.name not in _lib_docs_cache:
         if isinstance(library, ResourceFile):
-            _lib_keywords_cache[library.name]: LibraryDoc = ImportedResourceDocBuilder(None).build(
-                library
-            )
+            libdoc = ImportedResourceDocBuilder(None).build(library)
         else:
-            _lib_keywords_cache[library.name]: LibraryDoc = ImportedLibraryDocBuilder(None).build(
-                library
-            )
-    return _lib_keywords_cache[library.name].keywords
+            libdoc = ImportedLibraryDocBuilder(None).build(library)
+        _lib_docs_cache[library.name] = libdoc
+    return _lib_docs_cache[library.name].keywords
 
 
 def get_keywords() -> Iterator[KeywordDoc]:
-    """Get all keywords of libraries."""
+    """
+    Get the keywords of all the imported libraries and resources.
+
+    Yields:
+        the keyword documentations
+    """
     for lib in get_libs():
         yield from get_lib_keywords(lib)
 
 
-def find_keyword(keyword_name) -> List[KeywordDoc]:
-    keyword_name = keyword_name.lower()
-    return [
-        keyword
-        for lib in get_libs()
-        for keyword in get_lib_keywords(lib)
-        if normalize_kw(keyword.name) == normalize_kw(keyword_name)
-    ]
+def normalize_kw(keyword_name: str) -> str:
+    """
+    Normalize a keyword name for comparison.
 
+    Args:
+        keyword_name: the keyword name
 
-def normalize_kw(keyword_name):
+    Returns:
+        the lowercase name without spaces and underscores
+    """
     return keyword_name.lower().replace("_", "").replace(" ", "")
 
 
-def get_test_body_from_string(command):
-    if "\n" in command:
-        command = "\n  ".join(command.split("\n"))
+def find_keyword(keyword_name: str) -> list[KeywordDoc]:
+    """
+    Find the keywords with the given name in all libraries.
+
+    Args:
+        keyword_name: the keyword name
+
+    Returns:
+        the matching keyword documentations
+    """
+    name = normalize_kw(keyword_name)
+    return [
+        keyword
+        for keyword in get_keywords()
+        if normalize_kw(keyword.name) == name
+    ]
+
+
+def get_test_body_from_string(command: str) -> TestCase:
+    """
+    Parse keyword calls as the body of a test.
+
+    Args:
+        command: one or more lines of keyword calls
+
+    Returns:
+        the parsed test
+    """
+    command = "\n  ".join(command.split("\n"))
     suite_str = f"""
 *** Test Cases ***
 Fake Test
   {command}
 """
-    model = get_model(suite_str)
-    suite: TestSuite = TestSuite.from_model(model)
+    suite = TestSuite.from_model(get_model(suite_str))
     return suite.tests[0]
 
 
-def _import_resource_from_string(command):
+def import_resource_from_string(command: str) -> None:
+    """
+    Import resource file content, giving precedence to its keywords.
+
+    Args:
+        command: content of a resource file
+    """
     res_file = tempfile.NamedTemporaryFile(
         mode="w",
         prefix="RobotDebug_keywords_",
@@ -95,26 +120,27 @@ def _import_resource_from_string(command):
     )
     resource_path = Path(res_file.name)
     try:
-        res_file.write(command)
-        res_file.close()
-        temp_resources.insert(0, str(resource_path.stem))
+        with res_file:
+            res_file.write(command)
+        _temp_resources.insert(0, resource_path.stem)
         BuiltIn().import_resource(resource_path.resolve().as_posix())
-        BuiltIn().set_library_search_order(*temp_resources)
+        BuiltIn().set_library_search_order(*_temp_resources)
     finally:
         resource_path.unlink(missing_ok=True)
 
 
-def _get_assignments(body_elem):
-    if hasattr(body_elem, "assign"):
-        yield from body_elem.assign
-    elif hasattr(body_elem, "body"):
-        for child in body_elem.body:
-            yield from _get_assignments(child)
-    elif body_elem.type == "VAR":
+def get_assignments(body_elem: Any) -> Iterator[str]:
+    """
+    Get the variables assigned in a test body element.
+
+    Args:
+        body_elem: test, keyword call, control structure or VAR statement
+
+    Yields:
+        the names of the assigned variables
+    """
+    if body_elem.type == "VAR":
         yield body_elem.name
-
-
-def run_debug_if(condition, *args):
-    """Runs DEBUG if condition is true."""
-
-    return BuiltIn().run_keyword_if(condition, "RobotDebug.DEBUG", *args)
+    yield from getattr(body_elem, "assign", ())
+    for child in getattr(body_elem, "body", ()):
+        yield from get_assignments(child)

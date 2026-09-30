@@ -1,5 +1,5 @@
 # Exclude doc starter pack (but keep .md, .rst)
-exclude: '^docs/(doc-cheat-sheet.*|(?!.+\.(md|rst)).+)|hatch_build.py|yarf/lib/wayland/protocols/.*|yarf/vendor/robotframework_debug/.*$'
+exclude: '^docs/(doc-cheat-sheet.*|(?!.+\.(md|rst)).+)|hatch_build.py|yarf/lib/wayland/protocols/.*$'
 
 repos:
 - repo: local
@@ -64,8 +64,6 @@ repos:
     - docs/.*
     - --exclude
     - hatch_build.py
-    - --exclude
-    - yarf/vendor/robotframework_debug/.*
     - .
 
 - repo: https://github.com/MarketSquare/robotframework-robocop

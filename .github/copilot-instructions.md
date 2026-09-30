@@ -41,9 +41,11 @@ by the current change.
   `pyproject.toml`: Python 3.10.12 through 3.14, excluding 3.11.0 - 3.11.3.
 - [ ] Robot Framework files pass the configured Robocop formatting and lint
   rules.
-- [ ] Avoid modifying `yarf/vendor/` or generated Wayland protocol files under
+- [ ] Avoid modifying generated Wayland protocol files under
   `yarf/lib/wayland/protocols/` unless the change is specifically about
-  vendored or generated code.
+  generated code.
+- [ ] Changes under `yarf/vendor/` meet the same checks as the rest of
+  `yarf` and are recorded in the `NOTICE` file of the vendored package.
 
 ### Tests
 
