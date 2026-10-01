@@ -20,7 +20,7 @@ class RobotDebug:
     """
 
     ROBOT_LIBRARY_SCOPE = "GLOBAL"
-    ROBOT_LIBRARY_VERSION = "4.5.0"
+    ROBOT_LIBRARY_VERSION = "4.5.0+yarf"
 
     def __init__(self) -> None:
         self.show_intro = True
