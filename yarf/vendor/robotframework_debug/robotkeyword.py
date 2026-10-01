@@ -42,13 +42,13 @@ def get_lib_keywords(library) -> List[KeywordDoc]:
     """Get keywords of imported library."""
     if library.name not in _lib_keywords_cache:
         if isinstance(library, ResourceFile):
-            _lib_keywords_cache[library.name]: LibraryDoc = ImportedResourceDocBuilder().build(
-                library
-            )
+            _lib_keywords_cache[library.name]: LibraryDoc = ImportedResourceDocBuilder(
+                doc_format=None
+            ).build(library)
         else:
-            _lib_keywords_cache[library.name]: LibraryDoc = ImportedLibraryDocBuilder().build(
-                library
-            )
+            _lib_keywords_cache[library.name]: LibraryDoc = ImportedLibraryDocBuilder(
+                doc_format=None
+            ).build(library)
     return _lib_keywords_cache[library.name].keywords
 
 

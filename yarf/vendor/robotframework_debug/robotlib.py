@@ -46,8 +46,9 @@ class ImportedResourceDocBuilder(ResourceDocBuilder):
             doc=self._get_doc(resource, resource.name),
             type="RESOURCE",
             scope="GLOBAL",
+            doc_format=self.doc_format or "ROBOT",
         )
-        libdoc.keywords = KeywordDocBuilder().build_keywords(deepcopy(resource))
+        libdoc.keywords = KeywordDocBuilder(resource=True).build_keywords(deepcopy(resource))
         return libdoc
 
 
@@ -56,13 +57,15 @@ class ImportedLibraryDocBuilder(LibraryDocBuilder):
         libdoc = LibraryDoc(
             doc=self._get_doc(lib),
             version=lib.version,
-            scope=str(lib.scope),
-            doc_format=lib.doc_format,
+            scope=lib.scope.name,
+            doc_format=self.doc_format or lib.doc_format or "ROBOT",
             source=lib.source,
             lineno=lib.lineno,
             name=lib.name,
         )
         libdoc.inits = self._get_initializers(lib)
         libdoc.keywords = KeywordDocBuilder().build_keywords(lib)
-        libdoc.type_docs = TypeDocBuilder().build(libdoc.inits + libdoc.keywords, lib.converters)
+        libdoc.type_docs = TypeDocBuilder().build(
+            libdoc.inits + libdoc.keywords, lib.converters, libdoc.doc_format
+        )
         return libdoc
