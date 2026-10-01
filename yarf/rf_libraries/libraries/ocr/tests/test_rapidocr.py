@@ -1,3 +1,4 @@
+from contextlib import suppress
 from dataclasses import dataclass
 from unittest.mock import MagicMock, patch
 
@@ -26,15 +27,18 @@ def mock_to_image():
         yield p
 
 
+def reset_reader():
+    with suppress(AttributeError):
+        del RapidOCRReader.instance
+
+
 @pytest.fixture(autouse=True)
 def mock_reader():
-    if hasattr(RapidOCRReader, "instance"):
-        del RapidOCRReader.instance
+    reset_reader()
     with patch("yarf.rf_libraries.libraries.ocr.rapidocr.RapidOCR") as p:
         p.SIMILARITY_LOG_THRESHOLD = RapidOCRReader.SIMILARITY_LOG_THRESHOLD
         yield p
-    if hasattr(RapidOCRReader, "instance"):
-        del RapidOCRReader.instance
+    reset_reader()
 
 
 class TestRapidOCR:
