@@ -14,13 +14,17 @@ MODIFICATIONS:
 - Applied fix from PR #21 (https://github.com/imbus/robotframework-debug/pull/21)
   * Fixed AttributeError in keywords command when KeywordDoc lacks shortdoc attribute
   * Superseded: Robot Framework 7 keyword documentation always has shortdoc
+- Fixed the library and resource documentation builders for Robot Framework 7.5
+  * Pass the doc_format now required by LibraryDocBuilder and ResourceDocBuilder
+  * Use the library scope name, the resource keyword builder and the
+    documentation format for type docs, as Robot Framework 7.5 does
+  * Without this, building the keyword completer failed and the interactive
+    console could not show its prompt
 - The code is maintained as part of YARF: it is linted, type-checked and
   fully covered by the YARF test suite
 - Only the REPL library mode used by the YARF interactive console is kept:
   the listener, step mode (F7-F10, Shift+Tab), source listing commands,
   standalone shell and Robot Framework 6 compatibility code were removed
-- Fixed the library and resource documentation builders for Robot
-  Framework 7.5, which broke keyword completion and the keywords command
 - Variables assigned inside FOR, IF, WHILE and TRY blocks are reported
 - The `style` command reports unknown styles instead of failing
 - The prompt-toolkit key bindings moved to keybindings.py, and the command
