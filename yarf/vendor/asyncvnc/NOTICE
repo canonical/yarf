@@ -4,6 +4,7 @@ This directory contains code vendored from the AsyncVNC project:
 - Original Repository: https://github.com/barneygale/asyncvnc
 - Original License: GPL-3.0
 - Original Copyright: Barney Gale
+- Modified by: Canonical Ltd., 2025-2026
 
 The original AsyncVNC is licensed under the GNU General Public License v3.0.
 A copy of this license should be included in the LICENSE file in this directory.

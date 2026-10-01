@@ -1,7 +1,8 @@
 # NOTICE: This file has been modified from the original AsyncVNC source.
 # Original source: https://github.com/barneygale/asyncvnc
 # Original copyright: Barney Gale, licensed under GPL-3.0.
-# Modifications: see the NOTICE file in this directory.
+# Modified by Canonical Ltd. in 2025-2026, see the NOTICE file in this
+# directory.
 """
 Asynchronous VNC client.
 """
