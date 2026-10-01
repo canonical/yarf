@@ -14,21 +14,26 @@
 #
 # NOTICE: This file has been modified from the original RPAFramework source.
 # Original source: https://github.com/robocorp/rpaframework
-# Modifications: Modified imports to use vendored modules
+# Modifications: Modified imports to use vendored modules, added docstrings
+# and type hints.
+"""
+Text recognition with Tesseract.
+"""
 
 import logging
 from collections import defaultdict
+from collections.abc import Iterator
 from difflib import SequenceMatcher
 from pathlib import Path
-from typing import Union, Dict, List, Generator, Optional
+from typing import Any
 
 import pytesseract
-from pytesseract import TesseractNotFoundError
 from PIL import Image
+from pytesseract import TesseractNotFoundError
 
 from yarf.vendor.RPA.core import geometry
 from yarf.vendor.RPA.core.geometry import Region
-from yarf.vendor.RPA.recognition.utils import to_image, clamp
+from yarf.vendor.RPA.recognition.utils import clamp, to_image
 
 LOGGER = logging.getLogger(__name__)
 
@@ -42,49 +47,74 @@ DEFAULT_SIMILARITY_THRESHOLD = 80.0
 
 
 def read(
-    image: Union[Image.Image, Path],
-    language: Optional[str] = None,
-    configuration: Optional[str] = None
-):
-    """Scan image for text and return it as one string.
+    image: Image.Image | Path,
+    language: str | None = None,
+    configuration: str | None = None,
+) -> str:
+    """
+    Scan image for text and return it as one string.
 
-    :param image: Path to image or Image object
-    :param language: 3-character ISO 639-2 language code of the text.
-    This is passed directly to the pytesseract lib in the lang parameter.
-     See https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html#using-one-language
-    :param configuration: Tesseract specific parameters like Page Segmentation Modes(psm) or OCR Engine Mode (oem).
-    This is passed directly to the pytesseract lib in the config parameter.
-     See https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html
+    Args:
+        image: Path to image or Image object
+        language: 3-character ISO 639-2 language code of the text.
+            This is passed directly to the pytesseract lib in the lang
+            parameter. See https://tesseract-ocr.github.io/tessdoc/Command-
+            Line-Usage.html#using-one-language
+        configuration: Tesseract specific parameters like Page
+            Segmentation Modes(psm) or OCR Engine Mode (oem). This is passed
+            directly to the pytesseract lib in the config parameter. See
+            https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html
+
+    Returns:
+        the text found in the image
+
+    Raises:
+        OSError: if tesseract is not installed
     """
     image = to_image(image)
 
     try:
-        return pytesseract.image_to_string(image, lang=language, config=configuration).strip()
+        return pytesseract.image_to_string(
+            image, lang=language, config=configuration
+        ).strip()
     except TesseractNotFoundError as err:
-        raise EnvironmentError(INSTALL_PROMPT) from err
+        raise OSError(INSTALL_PROMPT) from err
 
 
 def find(
-    image: Union[Image.Image, Path],
+    image: Image.Image | Path,
     text: str,
     similarity_threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
-    region: Optional[Region] = None,
-    language: Optional[str] = None,
-    configuration: Optional[str] = None
-):
-    """Scan image for text and return a list of regions
-    that contain it (or something close to it).
+    region: Region | None = None,
+    language: str | None = None,
+    configuration: str | None = None,
+) -> list[dict[str, Any]]:
+    """
+    Scan image for text and return the regions that contain it.
 
-    :param image: Path to image or Image object
-    :param text: Text to find in image
-    :param similarity_threshold: Minimum similarity percentage (0-100) for text
-     matching. If the similarity between the found text and the target text is
-     below this threshold, the match is discarded. The default value is 80.0.
-    :param region: Limit the region of the screen where to look for the text
-    :param language: 3-character ISO 639-2 language code of the text.
-     This is passed directly to the pytesseract lib in the lang parameter.
-     See https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html#using-one-language
-    """  # noqa: E501
+    Args:
+        image: Path to image or Image object
+        text: Text to find in image
+        similarity_threshold: Minimum similarity percentage (0-100)
+            for text matching. If the similarity between the found text and
+            the target text is below this threshold, the match is discarded.
+        region: Limit the region of the screen where to look for the
+            text
+        language: 3-character ISO 639-2 language code of the text.
+            This is passed directly to the pytesseract lib in the lang
+            parameter. See https://tesseract-ocr.github.io/tessdoc/Command-
+            Line-Usage.html#using-one-language
+        configuration: Tesseract specific parameters, passed directly to
+            the pytesseract lib in the config parameter.
+
+    Returns:
+        the matches sorted by decreasing similarity, as dictionaries with
+        "text", "region", "similarity" and "confidence" keys
+
+    Raises:
+        ValueError: if the text to search is empty
+        OSError: if tesseract is not installed
+    """
     image = to_image(image)
     similarity_threshold = clamp(1, float(similarity_threshold), 100)
 
@@ -92,8 +122,8 @@ def find(
     if not text:
         raise ValueError("Empty search string")
 
+    region = geometry.to_region(region)
     if region is not None:
-        region = geometry.to_region(region)
         image = image.crop(region.as_tuple())
 
     params = {}
@@ -106,7 +136,7 @@ def find(
             image, **params, output_type=pytesseract.Output.DICT
         )
     except TesseractNotFoundError as err:
-        raise EnvironmentError(INSTALL_PROMPT) from err
+        raise OSError(INSTALL_PROMPT) from err
 
     lines = _dict_lines(data)
     matches = _match_lines(lines, text, similarity_threshold)
@@ -118,7 +148,17 @@ def find(
     return matches
 
 
-def _dict_lines(data: Dict) -> List:
+def _dict_lines(data: dict[str, list]) -> list[list[dict[str, Any]]]:
+    """
+    Group the words found by tesseract by line.
+
+    Args:
+        data: tesseract output, as a dictionary of columns
+
+    Returns:
+        the lines, each as a list of words with "text", "region" and
+        "confidence" keys
+    """
     lines = defaultdict(list)
     for word in _iter_rows(data):
         if word["level"] != 5:
@@ -134,27 +174,50 @@ def _dict_lines(data: Dict) -> List:
             word["left"], word["top"], word["width"], word["height"]
         )
 
-        lines[key].append({"text": word["text"], "region": region, "confidence": word["conf"]})
-        assert len(lines[key]) == word["word_num"]
+        lines[key].append(
+            {
+                "text": word["text"],
+                "region": region,
+                "confidence": word["conf"],
+            }
+        )
 
     return list(lines.values())
 
 
-def _iter_rows(data: Dict) -> Generator:
-    """Iterate dictionary of columns by row."""
+def _iter_rows(data: dict[str, list]) -> Iterator[dict[str, Any]]:
+    """
+    Iterate dictionary of columns by row.
+
+    Args:
+        data: dictionary of equally sized columns
+
+    Returns:
+        an iterator over the rows, as dictionaries
+    """
     return (dict(zip(data.keys(), values)) for values in zip(*data.values()))
 
 
-def _match_lines(lines: List[Dict], text: str, similarity_threshold: float) -> List[Dict]:
-    """Find best matches between lines of text and target text,
-    and return resulting bounding boxes and similarities.
+def _match_lines(
+    lines: list[list[dict[str, Any]]], text: str, similarity_threshold: float
+) -> list[dict[str, Any]]:
+    """
+    Find best matches between lines of text and target text.
 
     A line of N words will be matched to the given text in all 1 to N
     length sections, in every sequential position.
+
+    Args:
+        lines: lines of words, as returned by `_dict_lines`
+        text: text to search
+        similarity_threshold: minimum similarity percentage of a match
+
+    Returns:
+        the best match of each line, sorted by decreasing similarity
     """
     matches = []
     for line in lines:
-        match = {}
+        match: dict[str, Any] = {}
 
         for window in range(1, len(line) + 1):
             for index in range(len(line) - window + 1):
@@ -162,7 +225,9 @@ def _match_lines(lines: List[Dict], text: str, similarity_threshold: float) -> L
                 regions = [word["region"] for word in words]
 
                 sentence = " ".join(word["text"] for word in words)
-                similarity = SequenceMatcher(None, sentence, text).ratio() * 100.0
+                similarity = (
+                    SequenceMatcher(None, sentence, text).ratio() * 100.0
+                )
 
                 if similarity < similarity_threshold:
                     continue
@@ -172,7 +237,11 @@ def _match_lines(lines: List[Dict], text: str, similarity_threshold: float) -> L
                     continue
 
                 # Use the lowest confidence among the words in the match
-                confidence = min(word["confidence"] for word in words if word["confidence"] != -1)
+                confidence = min(
+                    word["confidence"]
+                    for word in words
+                    if word["confidence"] != -1
+                )
 
                 match = {
                     "text": sentence,
