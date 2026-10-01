@@ -67,6 +67,24 @@ class Probe:
             "FOR    ${i}    IN    a\n    ${z}=    Set Variable    ${i}\nEND",
         ) == [("#", "${i} = 'a'"), ("#", "${z} = 'a'")]
         assert run_command(
+            repl, "IF    True\n    ${a}=    Set Variable    1\nEND"
+        ) == [("#", "${a} = '1'")]
+        assert run_command(
+            repl,
+            "WHILE    $a == '1'\n    ${a}=    Set Variable    2\nEND",
+        ) == [("#", "${a} = '2'")]
+        assert run_command(
+            repl,
+            "TRY\n    ${b}=    Set Variable    3\n"
+            "EXCEPT    AS    ${err}\n    No Operation\nEND",
+        ) == [("#", "${b} = '3'"), ("#", "${err} = None")]
+        assert (
+            run_command(
+                repl, "TRY\n    Fail    boom\nEXCEPT\n    No Operation\nEND"
+            )
+            == []
+        )
+        assert run_command(
             repl, "*** Keywords ***\nProbe Keyword\n    RETURN    42"
         ) == [("i:", "Resource imported.")]
         assert run_command(repl, "Probe Keyword") == [("<", "'42'")]

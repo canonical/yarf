@@ -32,9 +32,9 @@ MODIFICATIONS:
 - Added type hints and Google style docstrings
 
 REASON FOR VENDORING:
-The upstream project is no longer actively maintained, and critical bug fixes
-(such as PR #21) are not being merged. This vendored version ensures the
-library remains functional for yarf's requirements.
+Critical bug fixes needed by yarf (such as PR #21) have not been merged
+upstream. This vendored version ensures the library remains functional for
+yarf's requirements.
 
 The vendored code includes the following modules from the RobotDebug package:
 - cmdcompleter.py (command completion functionality)

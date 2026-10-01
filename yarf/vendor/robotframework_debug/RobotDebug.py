@@ -16,7 +16,7 @@ class RobotDebug:
 
     Attributes:
         ROBOT_LIBRARY_SCOPE: The Robot Framework library scope
-        ROBOT_LIBRARY_VERSION: The upstream robotframework-debug version
+        ROBOT_LIBRARY_VERSION: The upstream version this library is based on
     """
 
     ROBOT_LIBRARY_SCOPE = "GLOBAL"

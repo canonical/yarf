@@ -141,6 +141,8 @@ def get_assignments(body_elem: Any) -> Iterator[str]:
     """
     if body_elem.type == "VAR":
         yield body_elem.name
-    yield from getattr(body_elem, "assign", ())
+    assign = getattr(body_elem, "assign", None) or ()
+    # EXCEPT branches assign a single variable with AS
+    yield from (assign,) if isinstance(assign, str) else assign
     for child in getattr(body_elem, "body", ()):
         yield from get_assignments(child)
