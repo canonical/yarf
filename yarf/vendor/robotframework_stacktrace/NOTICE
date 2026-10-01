@@ -10,7 +10,10 @@ The original robotframework-stacktrace is licensed under the Apache License 2.0.
 A copy of this license is included in the LICENSE file in this directory.
 
 MODIFICATIONS:
-- None. The module is vendored unmodified.
+- The code is maintained as part of YARF: it is linted, type-checked and
+  fully covered by the YARF test suite
+- Added type hints and Google style docstrings
+- Removed the unused failure message tracking and suite stack element kind
 
 REASON FOR VENDORING:
 The upstream project is no longer actively maintained; its last release, 0.4.1,
