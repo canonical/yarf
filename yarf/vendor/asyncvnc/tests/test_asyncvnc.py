@@ -328,3 +328,24 @@ async def test_connect():
     open_connection.assert_awaited_once_with("host", 1)
     create.assert_awaited_once_with(open_connection.return_value[0], writer)
     assert writer.method_calls[-2:] == [call.close(), call.wait_closed()]
+
+
+@pytest.mark.asyncio
+async def test_connect_handshake_failure():
+    """
+    Test that the connection is closed when the handshake fails.
+    """
+    writer = Mock()
+    writer.wait_closed = AsyncMock()
+    with (
+        patch.object(
+            asyncvnc,
+            "open_connection",
+            AsyncMock(return_value=(reader_with(b"HTTP/1.1\n"), writer)),
+        ),
+        pytest.raises(ValueError, match="not a VNC server"),
+    ):
+        async with connect("host", 1):
+            pass
+
+    assert writer.method_calls[-2:] == [call.close(), call.wait_closed()]
