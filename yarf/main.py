@@ -25,12 +25,13 @@ from robot.errors import DATA_ERROR, Information
 from robot.run import RobotFramework
 
 from yarf import LABEL_PREFIX
-from yarf.errors.yarf_errors import YARFConnectionError
+from yarf.errors.yarf_errors import YARFConnectionError, YARFCredentialError
 from yarf.loggers.owasp_logger import get_owasp_logger
 from yarf.output import OUTPUT_FORMATS, get_outdir_path, output_converter
 from yarf.rf_libraries import robot_in_path
 from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS, PlatformBase
 from yarf.rf_libraries.libraries.metadata_listener import MetadataListener
+from yarf.rf_libraries.ssh_credentials import check_ssh_credentials
 from yarf.rf_libraries.suite_parser import SuiteParser
 from yarf.vendor.robotframework_stacktrace import RobotStackTracer
 
@@ -522,6 +523,14 @@ def main(argv: Optional[list[str]] = None) -> None:
         with suite_parser.suite_in_temp_folder(
             args.variant
         ) as temp_folder_path:
+            try:
+                check_ssh_credentials(
+                    temp_folder_path, cli_options.get("variable", [])
+                )
+            except YARFCredentialError as e:
+                _logger.error(e)
+                sys.exit(e.exit_code)
+
             test_suite = TestSuite.from_file_system(temp_folder_path)
             test_suite.name = suite_parser.suite_path.absolute().name
             ec = run_robot_suite(

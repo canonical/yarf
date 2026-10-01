@@ -6,6 +6,7 @@ from enum import IntEnum
 
 
 class YARFExitCode(IntEnum):
+    CREDENTIAL_ERROR = 252
     CONNECTION_ERROR = 253
     UNKNOWN_ERROR = 255
 
@@ -30,6 +31,19 @@ class YARFConnectionError(YARFError):
     """
 
     exit_code: YARFExitCode = YARFExitCode.CONNECTION_ERROR
+
+
+class YARFCredentialError(YARFError):
+    """
+    Raised when a test suite hardcodes credentials instead of taking them from
+    the command line.
+
+    Attributes:
+        exit_code: The credential error exit code associated with this
+            error.
+    """
+
+    exit_code: YARFExitCode = YARFExitCode.CREDENTIAL_ERROR
 
 
 class VQAValidationError(Exception):

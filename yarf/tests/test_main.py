@@ -13,7 +13,11 @@ from robot.api import TestSuite as RobotSuite
 from robot.errors import Information
 
 from yarf import main
-from yarf.errors.yarf_errors import YARFConnectionError, YARFExitCode
+from yarf.errors.yarf_errors import (
+    YARFConnectionError,
+    YARFCredentialError,
+    YARFExitCode,
+)
 from yarf.main import (
     YARF_VERSION,
     _import_listener_from_path,
@@ -695,6 +699,37 @@ class TestMain:
             output_format=None,
         )
         assert os.getenv("YARF_LOG_LEVEL") == "INFO"
+
+    @patch("yarf.main.check_ssh_credentials")
+    @patch("yarf.main.TestSuite.from_file_system")
+    def test_main_credential_error(
+        self,
+        mock_test_suite: MagicMock,
+        mock_check_ssh_credentials: MagicMock,
+        fs: FakeFilesystem,  # noqa: F811
+    ) -> None:
+        """
+        Test whether the function exits without running the suite when the
+        suite hardcodes SSH credentials.
+        """
+        test_path = "suite-path"
+        fs.create_file(f"{test_path}/test.robot")
+        SUPPORTED_PLATFORMS.clear()
+        SUPPORTED_PLATFORMS["Vnc"] = Vnc
+        SUPPORTED_PLATFORMS["Vnc"].check_connection = MagicMock()
+        mock_check_ssh_credentials.side_effect = YARFCredentialError()
+
+        main.run_robot_suite = Mock()
+        main.get_outdir_path = Mock(return_value=Path("outdir"))
+        with pytest.raises(SystemExit) as cm:
+            main.main([test_path, "--", "--variable", "SSH_USER:ubuntu"])
+
+        assert cm.value.code == YARFExitCode.CREDENTIAL_ERROR
+        assert mock_check_ssh_credentials.call_args.args[1] == [
+            "SSH_USER:ubuntu"
+        ]
+        mock_test_suite.assert_not_called()
+        main.run_robot_suite.assert_not_called()
 
     def test_main_connection_error(self) -> None:
         """

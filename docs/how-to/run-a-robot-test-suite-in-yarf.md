@@ -148,6 +148,34 @@ caption: '`yarf` command with Robot-specific argument provided'
 yarf <path-to-suite>/suite -- --variable KEY1:VALUE1 --variable KEY2:VALUE2
 ```
 
+(ssh_credentials)=
+
+### SSH credentials
+
+YARF does not run a suite that stores SSH credentials in its files. When a suite imports the [SSH Library](https://marketsquare.github.io/SSHLibrary/SSHLibrary.html), the `username`, `password` and `keyfile` arguments of `Login` and `Login With Public Key` must each be a single variable, such as `${SSH_PASSWORD}`, that you pass with `--variable`:
+
+```{code-block} robotframework
+---
+caption: Suite that takes SSH credentials from the command line
+---
+*** Settings ***
+Library    SSHLibrary
+
+*** Test Cases ***
+Run A Command On The Device
+    Open Connection    ${SSH_HOST}
+    Login    ${SSH_USER}    ${SSH_PASSWORD}
+```
+
+```{code-block} bash
+---
+caption: '`yarf` command with SSH credentials'
+---
+yarf <path-to-suite>/suite -- --variable SSH_HOST:192.168.1.10 --variable SSH_USER:ubuntu --variable SSH_PASSWORD:<password>
+```
+
+If an argument is a literal value, a variable set in the suite or a keyword argument, YARF reports the file and line of each call and exits with code 252 before running any test.
+
 ## Debug failing tests
 
 When developing tests, you will often need more feedback than the command line gives you. `yarf` will output
