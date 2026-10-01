@@ -38,7 +38,7 @@ by the current change.
 - [ ] Public Python modules include module docstrings unless covered by an
   existing per-file ignore. Docstrings use Google style.
 - [ ] New code is compatible with the supported Python range in
-  `pyproject.toml`: Python 3.10.12 through 3.14, excluding 3.11.0 - 3.11.3.
+  `pyproject.toml`: Python 3.11.4 through 3.14.
 - [ ] Robot Framework files pass the configured Robocop formatting and lint
   rules.
 - [ ] Avoid modifying `yarf/vendor/` or generated Wayland protocol files under
