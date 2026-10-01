@@ -73,4 +73,7 @@ class Vnc(PlatformBase):
                 future.result()
 
         except (ConnectionRefusedError, OSError) as e:
-            raise YARFConnectionError(f"Failed to connect to VNC server: {e}")
+            raise YARFConnectionError(
+                f"the VNC server at {self.host}:{self.port} "
+                f"is not reachable: {e}"
+            )
