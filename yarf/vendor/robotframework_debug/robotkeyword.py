@@ -35,9 +35,9 @@ def get_lib_keywords(library: Library) -> list[KeywordDoc]:
     """
     if library.name not in _lib_docs_cache:
         if isinstance(library, ResourceFile):
-            libdoc = ImportedResourceDocBuilder(None).build(library)
+            libdoc = ImportedResourceDocBuilder(doc_format=None).build(library)
         else:
-            libdoc = ImportedLibraryDocBuilder(None).build(library)
+            libdoc = ImportedLibraryDocBuilder(doc_format=None).build(library)
         _lib_docs_cache[library.name] = libdoc
     return _lib_docs_cache[library.name].keywords
 
