@@ -525,7 +525,9 @@ def main(argv: Optional[list[str]] = None) -> None:
         ) as temp_folder_path:
             try:
                 check_ssh_credentials(
-                    temp_folder_path, cli_options.get("variable", [])
+                    temp_folder_path,
+                    cli_options.get("variable", []),
+                    cli_options.get("variablefile", []),
                 )
             except YARFCredentialError as e:
                 _logger.error(e)

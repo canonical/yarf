@@ -152,7 +152,7 @@ yarf <path-to-suite>/suite -- --variable KEY1:VALUE1 --variable KEY2:VALUE2
 
 ### SSH credentials
 
-YARF does not run a suite that stores SSH credentials in its files. When a suite imports the [SSH Library](https://marketsquare.github.io/SSHLibrary/SSHLibrary.html), the `username`, `password` and `keyfile` arguments of `Login` and `Login With Public Key` must each be a single variable, such as `${SSH_PASSWORD}`, that you pass with `--variable`:
+YARF does not run a suite that stores SSH credentials in its files. YARF checks the `.robot` files of the suite and the resource files they import. When a suite imports the [SSH Library](https://marketsquare.github.io/SSHLibrary/SSHLibrary.html), the `username`, `password` and `keyfile` arguments of `Login` and `Login With Public Key` must each be a single variable, such as `${SSH_PASSWORD}`, that you pass with `--variable` or define in a variable file that you pass with `--variablefile`:
 
 ```{code-block} robotframework
 ---
@@ -172,6 +172,13 @@ Run A Command On The Device
 caption: '`yarf` command with SSH credentials'
 ---
 yarf <path-to-suite>/suite -- --variable SSH_HOST:192.168.1.10 --variable SSH_USER:ubuntu --variable SSH_PASSWORD:<password>
+```
+
+```{code-block} bash
+---
+caption: '`yarf` command with SSH credentials in a variable file'
+---
+yarf <path-to-suite>/suite -- --variablefile <path-to-variables>/credentials.yaml
 ```
 
 If an argument is a literal value, a variable set in the suite or a keyword argument, YARF reports the file and line of each call and exits with code 252 before running any test.

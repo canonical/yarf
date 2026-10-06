@@ -78,7 +78,64 @@ class TestCheckSSHCredentials:
                 "image.png": "",
             },
         )
-        check_ssh_credentials(tmp_path, CLI_VARIABLES)
+        check_ssh_credentials(tmp_path, CLI_VARIABLES, [])
+
+    def test_cli_variable_files(self, tmp_path: Path) -> None:
+        """
+        Test that credentials from variable files given on the command line are
+        accepted, as passed by Zapper.
+        """
+        write_suite(
+            tmp_path,
+            {
+                "suite/suite.robot": """
+                *** Settings ***
+                Library    SSHLibrary
+
+                *** Test Cases ***
+                Test
+                    Login    ${HOST_USERNAME}    ${HOST_PASSWORD}
+                    Login With Public Key    ${SSH_USER}    ${SSH_KEY}
+                """,
+                "vars.yaml": "HOST_USERNAME: ubuntu\n",
+                "vars.json": '{"host password": "ubuntu"}',
+                "vars.py": """
+                def get_variables(user):
+                    return {"SSH_USER": user, "SSH_KEY": "id"}
+                """,
+            },
+        )
+        check_ssh_credentials(
+            tmp_path / "suite",
+            [],
+            [
+                str(tmp_path / "vars.yaml"),
+                str(tmp_path / "vars.json"),
+                f"{tmp_path / 'vars.py'}:ubuntu",
+            ],
+        )
+
+    def test_unreadable_variable_file(self, tmp_path: Path) -> None:
+        """
+        Test that a variable file that cannot be read provides no variables.
+        """
+        write_suite(
+            tmp_path,
+            {
+                "suite.robot": """
+                *** Settings ***
+                Library    SSHLibrary
+
+                *** Test Cases ***
+                Test
+                    Login    ${SSH_USER}    ${SSH_PASSWORD}
+                """,
+            },
+        )
+        with pytest.raises(YARFCredentialError):
+            check_ssh_credentials(
+                tmp_path, ["SSH_USER:ubuntu"], [str(tmp_path / "vars.yaml")]
+            )
 
     def test_no_ssh_library(self, tmp_path: Path) -> None:
         """
@@ -95,7 +152,7 @@ class TestCheckSSHCredentials:
                 """,
             },
         )
-        check_ssh_credentials(tmp_path, [])
+        check_ssh_credentials(tmp_path, [], [])
 
     @pytest.mark.parametrize(
         "arg",
@@ -128,7 +185,7 @@ class TestCheckSSHCredentials:
             },
         )
         with pytest.raises(YARFCredentialError) as exc_info:
-            check_ssh_credentials(tmp_path, CLI_VARIABLES)
+            check_ssh_credentials(tmp_path, CLI_VARIABLES, [])
 
         assert "suite.robot:7: 'Login' argument 'username'" in str(
             exc_info.value
@@ -165,7 +222,7 @@ class TestCheckSSHCredentials:
             },
         )
         with pytest.raises(YARFCredentialError) as exc_info:
-            check_ssh_credentials(tmp_path, CLI_VARIABLES)
+            check_ssh_credentials(tmp_path, CLI_VARIABLES, [])
 
         message = str(exc_info.value)
         assert "keywords/common.resource:5: 'SSHLibrary.Login' argument " in (
@@ -184,3 +241,79 @@ class TestCheckSSHCredentials:
             "password",
             "username",
         ]
+
+    def test_imported_resources(self, tmp_path: Path) -> None:
+        """
+        Test that only resource files of the suite that are imported are
+        checked, as Zapper copies unused resource files into its suites.
+        """
+        write_suite(
+            tmp_path,
+            {
+                "suite.robot": """
+                *** Settings ***
+                Library    SSHLibrary
+                Resource    kvm.resource
+                Resource    nested.resource
+                Resource    ${CURDIR}${/}keywords${/}common.resource
+
+                *** Test Cases ***
+                Test
+                    Import Resource    ${CURDIR}/dynamic.resource
+                """,
+                "keywords/common.resource": """
+                *** Settings ***
+                Resource    ../nested.resource
+                """,
+                "nested.resource": """
+                *** Keywords ***
+                Nested
+                    Login    nested    ${SSH_PASSWORD}
+                """,
+                "dynamic.resource": """
+                *** Keywords ***
+                Dynamic
+                    Login    dynamic    ${SSH_PASSWORD}
+                """,
+                "unused/flash_disk.resource": """
+                *** Keywords ***
+                Flash
+                    Login    root    ${rootpasswd}
+                """,
+            },
+        )
+        with pytest.raises(YARFCredentialError) as exc_info:
+            check_ssh_credentials(tmp_path, CLI_VARIABLES, [])
+
+        message = str(exc_info.value)
+        assert "nested.resource:4: 'Login' argument 'username'" in message
+        assert "dynamic.resource:4: 'Login' argument 'username'" in message
+        assert "flash_disk.resource" not in message
+
+    def test_unresolved_resource_import(self, tmp_path: Path) -> None:
+        """
+        Test that all resource files of the suite are checked when an import
+        path is only known at run time.
+        """
+        write_suite(
+            tmp_path,
+            {
+                "suite.robot": """
+                *** Settings ***
+                Library    SSHLibrary
+                Resource    ${RESOURCES}/common.resource
+                Resource    ${RESOURCES}/other.resource
+                """,
+                "unused/flash_disk.resource": """
+                *** Keywords ***
+                Flash
+                    Login    root    ${rootpasswd}
+                """,
+            },
+        )
+        with pytest.raises(YARFCredentialError) as exc_info:
+            check_ssh_credentials(tmp_path, CLI_VARIABLES, [])
+
+        assert "unused/flash_disk.resource:4: 'Login' argument 'username'" in (
+            str(exc_info.value)
+        )

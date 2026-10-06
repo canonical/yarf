@@ -722,12 +722,22 @@ class TestMain:
         main.run_robot_suite = Mock()
         main.get_outdir_path = Mock(return_value=Path("outdir"))
         with pytest.raises(SystemExit) as cm:
-            main.main([test_path, "--", "--variable", "SSH_USER:ubuntu"])
+            main.main(
+                [
+                    test_path,
+                    "--",
+                    "--variable",
+                    "SSH_USER:ubuntu",
+                    "--variablefile",
+                    "vars.yaml",
+                ]
+            )
 
         assert cm.value.code == YARFExitCode.CREDENTIAL_ERROR
-        assert mock_check_ssh_credentials.call_args.args[1] == [
-            "SSH_USER:ubuntu"
-        ]
+        assert mock_check_ssh_credentials.call_args.args[1:] == (
+            ["SSH_USER:ubuntu"],
+            ["vars.yaml"],
+        )
         mock_test_suite.assert_not_called()
         main.run_robot_suite.assert_not_called()
 

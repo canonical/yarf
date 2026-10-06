@@ -2,8 +2,9 @@
 Check that test suites take SSH credentials from the command line.
 
 A suite must pass the credentials of SSHLibrary login keywords as variables
-given with Robot Framework's ``--variable`` option, so that credentials are
-never stored in the suite itself.
+given with Robot Framework's ``--variable`` or ``--variablefile`` options, so
+that credentials are never stored in the suite itself. Only the suite's
+``.robot`` files and the resource files they import are checked.
 """
 
 import getpass
@@ -11,13 +12,15 @@ from pathlib import Path
 
 from owasp_logger import OWASPLogger
 from robot.api.parsing import ModelVisitor, get_model, get_resource_model
+from robot.errors import DataError
 from robot.parsing.model.statements import (
     Fixture,
     KeywordCall,
     LibraryImport,
+    ResourceImport,
 )
-from robot.utils import normalize
-from robot.variables import search_variable
+from robot.utils import normalize, split_args_from_name_or_path
+from robot.variables import Variables, contains_variable, search_variable
 
 from yarf.errors.yarf_errors import YARFCredentialError
 from yarf.loggers.owasp_logger import get_owasp_logger
@@ -56,12 +59,14 @@ LOGIN_KEYWORD_PARAMS = {
 
 class _KeywordCallCollector(ModelVisitor):
     """
-    Collect the names SSHLibrary is imported under and all keyword calls, with
-    their arguments and line numbers, of a suite file.
+    Collect the names SSHLibrary is imported under, the imported resource files
+    and all keyword calls, with their arguments and line numbers, of a suite
+    file.
     """
 
     def __init__(self) -> None:
         self.aliases: set[str] = set()
+        self.resources: list[str] = []
         self.calls: list[tuple[str, tuple[str, ...], int]] = []
 
     def visit_LibraryImport(self, node: LibraryImport) -> None:
@@ -74,14 +79,27 @@ class _KeywordCallCollector(ModelVisitor):
         if node.name == SSH_LIBRARY:
             self.aliases.add(normalize(node.alias or SSH_LIBRARY))
 
+    def visit_ResourceImport(self, node: ResourceImport) -> None:
+        """
+        Record the path of an imported resource file.
+
+        Args:
+            node: The resource import statement.
+        """
+        self.resources.append(node.name)
+
     def visit_KeywordCall(self, node: KeywordCall) -> None:
         """
-        Record a keyword call in a test or keyword body.
+        Record a keyword call in a test or keyword body, and the resource file
+        of an ``Import Resource`` call.
 
         Args:
             node: The keyword call statement.
         """
         self.calls.append((node.keyword, node.args, node.lineno))
+        name = node.keyword.rpartition(".")[2]
+        if normalize(name, ignore="_") == "importresource" and node.args:
+            self.resources.append(node.args[0])
 
     def visit_Fixture(self, node: Fixture) -> None:
         """
@@ -162,7 +180,85 @@ def _is_cli_variable(arg: str, cli_names: set[str]) -> bool:
     )
 
 
-def check_ssh_credentials(suite_dir: Path, cli_variables: list[str]) -> None:
+def _cli_variable_names(
+    cli_variables: list[str], cli_variable_files: list[str]
+) -> set[str]:
+    """
+    Get the names of the variables given on the command line.
+
+    Args:
+        cli_variables: Variables given with ``--variable``, as
+            ``NAME:value``.
+        cli_variable_files: Variable files given with ``--variablefile``, as
+            ``path`` or ``path:arg1:arg2``.
+
+    Returns:
+        The normalized variable names.
+    """
+    names = [variable.partition(":")[0] for variable in cli_variables]
+    for variable_file in cli_variable_files:
+        path, args = split_args_from_name_or_path(variable_file)
+        try:
+            names.extend(
+                name for name, _ in Variables().set_from_file(path, args)
+            )
+        except DataError:
+            # Robot reports the unreadable file when running the suite.
+            continue
+
+    return {normalize(name, ignore="_") for name in names}
+
+
+def _collect_suite(suite_dir: Path) -> dict[Path, _KeywordCallCollector]:
+    """
+    Collect the keyword calls of the ``.robot`` files of a suite and of the
+    resource files of the suite they import.
+
+    Resource files outside the suite, such as platform resources, are not
+    collected. If an import path has variables other than ``${CURDIR}`` and
+    ``${/}``, all ``.resource`` files of the suite are collected.
+
+    Args:
+        suite_dir: The directory containing the suite files.
+
+    Returns:
+        The collectors of the suite files, by path relative to the suite
+        directory.
+    """
+    suite_dir = suite_dir.resolve()
+    pending = list(suite_dir.rglob("*.robot"))
+    collectors: dict[Path, _KeywordCallCollector] = {}
+    has_unresolved_import = False
+    while pending:
+        path = pending.pop()
+        if path in collectors:
+            continue
+
+        parse = get_model if path.suffix == ".robot" else get_resource_model
+        collector = _KeywordCallCollector()
+        collector.visit(parse(path, curdir=str(path.parent)))
+        collectors[path] = collector
+        for name in collector.resources:
+            name = name.replace("${/}", "/")
+            resource = (path.parent / name).resolve()
+            if contains_variable(name):
+                if not has_unresolved_import:
+                    has_unresolved_import = True
+                    pending.extend(suite_dir.rglob("*.resource"))
+            elif resource.is_file() and resource.is_relative_to(suite_dir):
+                pending.append(resource)
+
+    return {
+        path.relative_to(suite_dir): collectors[path]
+        for path in sorted(collectors)
+    }
+
+
+def check_ssh_credentials(
+    suite_dir: Path,
+    cli_variables: list[str],
+    cli_variable_files: list[str],
+) -> None:
     """
     Check that SSHLibrary login keywords in a suite take their credentials from
     the command line.
@@ -171,27 +267,15 @@ def check_ssh_credentials(suite_dir: Path, cli_variables: list[str]) -> None:
         suite_dir: The directory containing the suite files.
         cli_variables: Variables given with ``--variable``, as
             ``NAME:value``.
+        cli_variable_files: Variable files given with ``--variablefile``, as
+            ``path`` or ``path:arg1:arg2``.
 
     Raises:
         YARFCredentialError: If a login keyword takes a credential that is
             not a variable given on the command line.
     """
-    cli_names = {
-        normalize(variable.partition(":")[0], ignore="_")
-        for variable in cli_variables
-    }
-    collectors = {}
-    for path in sorted(suite_dir.rglob("*")):
-        if path.suffix == ".robot":
-            model = get_model(path)
-        elif path.suffix == ".resource":
-            model = get_resource_model(path)
-        else:
-            continue
-
-        collector = _KeywordCallCollector()
-        collector.visit(model)
-        collectors[path.relative_to(suite_dir)] = collector
+    cli_names = _cli_variable_names(cli_variables, cli_variable_files)
+    collectors = _collect_suite(suite_dir)
 
     aliases = set().union(*(c.aliases for c in collectors.values()))
     fields = set()
@@ -210,5 +294,6 @@ def check_ssh_credentials(suite_dir: Path, cli_variables: list[str]) -> None:
         _owasp_logger.input_validation_fail(sorted(fields), getpass.getuser())
         raise YARFCredentialError(
             "SSH credentials must be variables given on the command line "
-            "with '-- --variable NAME:value':\n  " + "\n  ".join(errors)
+            "with '-- --variable NAME:value' or '-- --variablefile PATH':\n  "
+            + "\n  ".join(errors)
         )
