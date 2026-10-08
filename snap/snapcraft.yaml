@@ -1,12 +1,17 @@
 name: yarf
 base: core24
 adopt-info: yarf
+title: YARF
 summary: Yet Another Robot Framework
 description: |
   Yet Another Robot Framework (YARF) is an interface that
   allows developers to build complex test scenarios and
   bootstrap them locally, then work towards automated runs.
 license: GPL-3.0
+website: https://canonical-yarf.readthedocs-hosted.com/
+source-code: https://github.com/canonical/yarf
+issues: https://github.com/canonical/yarf/issues
+contact: https://github.com/canonical/yarf/issues
 
 grade: stable
 confinement: strict
@@ -51,6 +56,17 @@ parts:
 
       version=$(grep -Po 'version = "\K[^"]*' pyproject.toml)
       craftctl set version=$version
+
+    override-build: |
+      craftctl default
+
+      # python3-tk stages the base pip metadata too. Retain only the metadata
+      # that matches the pip code installed in YARF's virtual environment.
+      site_packages="${CRAFT_PART_INSTALL}/lib/python3.12/site-packages"
+      pip_version=$(grep -Po '^__version__ = "\K[^"]+' \
+        "${site_packages}/pip/__init__.py")
+      find "${site_packages}" -maxdepth 1 -type d -name 'pip-*.dist-info' \
+        ! -name "pip-${pip_version}.dist-info" -print -exec rm -rf {} +
 
     build-environment:
       # TODO: Drop this when this goes in:
