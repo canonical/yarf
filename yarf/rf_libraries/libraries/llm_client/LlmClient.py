@@ -7,6 +7,7 @@ import asyncio
 import json
 import os
 import textwrap
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -15,6 +16,7 @@ from PIL import Image
 from robot.api import logger
 from robot.api.deco import keyword, library
 from robot.libraries.BuiltIn import BuiltIn
+from robot.utils import is_truthy
 
 from yarf.errors.yarf_errors import VQADetectionError, VQAValidationError
 from yarf.lib.images.utils import to_base64
@@ -35,6 +37,129 @@ class HistoryItem:
         return f"Step {self.step}:\n{json.dumps(self.action, indent=2)}"
 
 
+@dataclass
+class LlmUsage:
+    """
+    Accumulated resource usage of LLM requests.
+
+    Attributes:
+        enabled: Whether requests are recorded.
+        requests: Number of recorded requests.
+        inference_time: Summed wall-clock time of the requests in seconds.
+        prompt_tokens: Number of input tokens, including image tokens.
+        completion_tokens: Number of output tokens, including reasoning.
+        reasoning_tokens: Number of output tokens spent on reasoning.
+        total_tokens: Total number of tokens processed.
+        cost: Cost reported by the server (OpenRouter credits), if any.
+        nano_aiu: Copilot billing units (nano AI units), if any.
+    """
+
+    enabled: bool = False
+    requests: int = 0
+    inference_time: float = 0.0
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    reasoning_tokens: int = 0
+    total_tokens: int = 0
+    cost: float | None = None
+    nano_aiu: int | None = None
+
+    def record(self, data: dict[str, Any], inference_time: float) -> None:
+        """
+        Add the usage of a chat completions or responses API reply, if enabled.
+
+        Args:
+            data: The JSON response from the server.
+            inference_time: Wall-clock time of the request in seconds.
+        """
+        if not self.enabled:
+            return
+
+        usage = data.get("usage") or {}
+        details = (
+            usage.get("completion_tokens_details")
+            or usage.get("output_tokens_details")
+            or {}
+        )
+        prompt_tokens = (
+            usage.get("prompt_tokens") or usage.get("input_tokens") or 0
+        )
+        completion_tokens = (
+            usage.get("completion_tokens") or usage.get("output_tokens") or 0
+        )
+        cost = usage.get("cost")
+        nano_aiu = (data.get("copilot_usage") or {}).get("total_nano_aiu")
+
+        self.requests += 1
+        self.inference_time += inference_time
+        self.prompt_tokens += prompt_tokens
+        self.completion_tokens += completion_tokens
+        self.reasoning_tokens += details.get("reasoning_tokens") or 0
+        self.total_tokens += usage.get("total_tokens") or 0
+        if cost is not None:
+            self.cost = (self.cost or 0.0) + cost
+        if nano_aiu is not None:
+            self.nano_aiu = (self.nano_aiu or 0) + nano_aiu
+
+        logger.info(
+            f"LLM request usage: {prompt_tokens} prompt tokens, "
+            f"{completion_tokens} completion tokens, "
+            f"{inference_time:.2f}s, cost {cost}, nano AIU {nano_aiu}"
+        )
+
+    def summary(self) -> dict[str, Any]:
+        """
+        Get the accumulated usage.
+
+        Returns:
+            A dict with the number of requests, token counts, inference
+            time, output throughput and cost.
+
+        Raises:
+            RuntimeError: If usage collection is disabled.
+        """
+        if not self.enabled:
+            raise RuntimeError(
+                "LLM usage collection is disabled, enable it with "
+                "'Configure Llm Client    collect_usage=True'."
+            )
+        return {
+            "requests": self.requests,
+            "prompt_tokens": self.prompt_tokens,
+            "completion_tokens": self.completion_tokens,
+            "reasoning_tokens": self.reasoning_tokens,
+            "total_tokens": self.total_tokens,
+            "inference_time": self.inference_time,
+            "output_tokens_per_second": (
+                self.completion_tokens / self.inference_time
+                if self.inference_time
+                else 0.0
+            ),
+            "cost": self.cost,
+            "nano_aiu": self.nano_aiu,
+        }
+
+
+# Presets for hosted OpenAI-compatible providers. The API key is read from
+# the environment variable to keep it out of Robot logs.
+PROVIDERS: dict[str, dict[str, str]] = {
+    "openrouter": {
+        "server_url": "https://openrouter.ai/api/v1",
+        "endpoint": "/chat/completions",
+        "api_key_env": "OPENROUTER_API_KEY",
+    },
+    "copilot": {
+        "server_url": "https://api.githubcopilot.com",
+        "endpoint": "/chat/completions",
+        "api_key_env": "GITHUB_TOKEN",
+    },
+}
+
+# Transient server errors (rate limits, gateway errors) and retry delays
+RETRY_STATUS = {429, 500, 502, 503, 504}
+RETRY_DELAYS = (5, 15, 30)
+
+
 @library
 class LlmClient:
     """
@@ -48,25 +173,64 @@ class LlmClient:
         self.server_url: str = "http://localhost:11434/v1"
         self.endpoint: str = "/chat/completions"
         self.max_tokens: int = 32768
+        self.api_key_env: str = "YARF_LLM_API_KEY"
+        self.image_format: str = "WEBP"
+        self.usage = LlmUsage()
 
     @keyword
     def configure_llm_client(self, **kwargs: Any) -> None:
         """
         Configure the LLM client with the given parameters.
 
+        Supported parameters are ``model``, ``server_url``, ``endpoint``,
+        ``max_tokens``, ``api_key_env``, ``image_format``, ``collect_usage``
+        and ``provider``.
+
+        ``provider`` applies a preset for a hosted service, which explicit
+        parameters override:
+        - ``openrouter``: OpenRouter, key read from ``OPENROUTER_API_KEY``.
+        - ``copilot``: GitHub Copilot, key read from ``GITHUB_TOKEN``
+          (e.g. ``export GITHUB_TOKEN=$(gh auth token)``).
+
+        The API key is sent as a bearer token and read from the environment
+        variable named by ``api_key_env`` (default ``YARF_LLM_API_KEY``),
+        so that it never appears in the Robot logs. No ``Authorization``
+        header is sent if the variable is unset.
+
+        Models that only support the OpenAI Responses API can be used by
+        setting ``endpoint=/responses``. For models that do not accept WEBP
+        images, set ``image_format`` to ``PNG`` or ``JPEG``.
+
+        Set ``collect_usage=True`` to record the token usage, inference time
+        and cost of each request, see `Get Llm Usage`. It is off by default.
+
         Args:
             **kwargs: Configuration parameters for the LLM client.
 
         Raises:
             TypeError: If unknown parameters are provided.
-            ValueError: If parameter values are of incorrect type.
+            ValueError: If parameter values are of incorrect type or the
+                provider is unknown.
 
         Example:
             | Configure Llm Client
             | ...    model=qwen3-vl:2b-instruct
             | ...    server_url=http://localhost:11434/v1
+            | Configure Llm Client    provider=copilot    model=gpt-4.1
+            | Configure Llm Client    provider=openrouter
+            | ...    model=qwen/qwen3-vl-8b-instruct
+            | Configure Llm Client    collect_usage=True
         """
-        config_fields = {"model", "server_url", "endpoint", "max_tokens"}
+        config_fields = {
+            "model",
+            "server_url",
+            "endpoint",
+            "max_tokens",
+            "api_key_env",
+            "image_format",
+            "collect_usage",
+            "provider",
+        }
 
         unknown = set(kwargs) - config_fields
         if unknown:
@@ -74,6 +238,18 @@ class LlmClient:
                 f"Unknown argument(s): {', '.join(sorted(unknown))}. "
                 f"Allowed: {', '.join(sorted(config_fields))}"
             )
+
+        provider = kwargs.pop("provider", None)
+        if provider is not None:
+            if provider not in PROVIDERS:
+                raise ValueError(
+                    f"Unknown provider: {provider}. "
+                    f"Allowed: {', '.join(sorted(PROVIDERS))}"
+                )
+            kwargs = {**PROVIDERS[provider], **kwargs}
+
+        if "collect_usage" in kwargs:
+            self.usage.enabled = is_truthy(kwargs.pop("collect_usage"))
 
         for k, v in kwargs.items():
             # Set the attribute if it's a valid configuration field
@@ -111,42 +287,67 @@ class LlmClient:
             | ${image}=    Grab Screenshot
             | ${answer}=    Prompt Llm    What is shown?    ${image}
         """
-        messages: list[dict[str, Any]] = []
-
-        # Include system prompt if provided
-        if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
-
-        # Build the content for the user message
-        content: list[dict[str, Any]] = []
-
-        # Always include the text prompt
-        content.append({"type": "text", "text": prompt})
-
-        # If an image is provided, include it in the message
+        image_url = None
         if image is not None:
-            pil_image = to_image(image)
-            image_base64 = self._encode_image(pil_image)
-            content.append(
-                {"type": "image_url", "image_url": {"url": image_base64}}
+            image_url = self._encode_image(to_image(image))
+
+        uses_responses_api = self.endpoint.rstrip("/").endswith("/responses")
+        payload: dict[str, Any] = {"model": self.model}
+        content: list[dict[str, Any]]
+        if uses_responses_api:
+            content = [{"type": "input_text", "text": prompt}]
+            if image_url:
+                content.append({"type": "input_image", "image_url": image_url})
+            payload["input"] = [{"role": "user", "content": content}]
+            payload["max_output_tokens"] = self.max_tokens
+            if system_prompt:
+                payload["instructions"] = system_prompt
+        else:
+            messages: list[dict[str, Any]] = []
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
+            content = [{"type": "text", "text": prompt}]
+            if image_url:
+                content.append(
+                    {"type": "image_url", "image_url": {"url": image_url}}
+                )
+            messages.append({"role": "user", "content": content})
+            payload["messages"] = messages
+            payload["max_tokens"] = self.max_tokens
+
+        headers = {"Content-Type": "application/json"}
+        api_key = os.getenv(self.api_key_env)
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+
+        for delay in (*RETRY_DELAYS, None):
+            start = time.perf_counter()
+            response = requests.post(
+                f"{self.server_url}{self.endpoint}",
+                headers=headers,
+                json=payload,
+                timeout=600,
             )
-
-        messages.append({"role": "user", "content": content})
-
-        payload = {
-            "model": self.model,
-            "messages": messages,
-            "max_tokens": self.max_tokens,
-        }
-
-        response = requests.post(
-            f"{self.server_url}{self.endpoint}",
-            headers={"Content-Type": "application/json"},
-            json=payload,
-            timeout=600,
-        )
+            inference_time = time.perf_counter() - start
+            if response.status_code not in RETRY_STATUS or delay is None:
+                break
+            logger.warn(
+                f"LLM server returned {response.status_code}, "
+                f"retrying in {delay}s"
+            )
+            time.sleep(delay)
         response.raise_for_status()
         data = response.json()
+        self.usage.record(data, inference_time)
+
+        if uses_responses_api:
+            return "".join(
+                part["text"]
+                for item in data["output"]
+                if item["type"] == "message"
+                for part in item["content"]
+                if part["type"] == "output_text"
+            )
 
         msg = data["choices"][0]["message"]
 
@@ -154,7 +355,30 @@ class LlmClient:
         if "reasoning" in msg:
             logger.info(msg["reasoning"])
 
-        return msg["content"]
+        return msg.get("content") or ""
+
+    @keyword
+    def get_llm_usage(self) -> dict[str, Any]:
+        """
+        Get the accumulated usage of all LLM requests made by this library
+        instance, e.g. during the current test. Requires ``collect_usage=True``
+        in `Configure Llm Client`.
+
+        ``inference_time`` is the summed wall-clock time of the requests in
+        seconds, including network latency. ``cost`` (OpenRouter credits) and
+        ``nano_aiu`` (Copilot billing units) are ``None`` if the server does
+        not report them.
+
+        Returns:
+            A dict with the model, number of requests, token counts,
+            inference time, output throughput and cost.
+
+        Example:
+            | Configure Llm Client    collect_usage=True
+            | ${usage}=    Get Llm Usage
+            | Log    ${usage}[total_tokens]
+        """
+        return {"model": self.model, **self.usage.summary()}
 
     def _encode_image(self, image: Image.Image) -> str:
         """
@@ -166,8 +390,8 @@ class LlmClient:
             The base64 encoded image string.
         """
 
-        b64 = to_base64(image, format="WEBP")
-        return f"data:image/webp;base64,{b64}"
+        b64 = to_base64(image, format=self.image_format)
+        return f"data:image/{self.image_format.lower()};base64,{b64}"
 
     def _get_lib_instance(self, lib_name: str) -> Any:
         """
@@ -362,6 +586,11 @@ class LlmClient:
             return {}, error
 
         error_messages: list[str] = []
+        for key, expected_types in required_keys.items():
+            # Models often omit nullable keys instead of writing null.
+            if type(None) in expected_types:
+                parsed_output.setdefault(key, None)
+
         missing_keys = required_keys.keys() - parsed_output.keys()
         if missing_keys:
             error_messages.append(

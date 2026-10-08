@@ -8,6 +8,7 @@ from yarf.errors.yarf_errors import VQADetectionError, VQAValidationError
 from yarf.rf_libraries.libraries.llm_client.LlmClient import (
     HistoryItem,
     LlmClient,
+    LlmUsage,
 )
 
 
@@ -41,11 +42,15 @@ class TestLlmClient:
     LLM_PATH = "yarf.rf_libraries.libraries.llm_client.LlmClient"
 
     def _mock_response(
-        self, content: str = "ok", reasoning: str | None = None
+        self,
+        content: str = "ok",
+        reasoning: str | None = None,
+        json_data: dict | None = None,
     ) -> MagicMock:
         resp = MagicMock()
         resp.raise_for_status = MagicMock()
-        json_data = {"choices": [{"message": {"content": content}}]}
+        if json_data is None:
+            json_data = {"choices": [{"message": {"content": content}}]}
         if reasoning:
             json_data["choices"][0]["message"]["reasoning"] = reasoning
         resp.json = MagicMock(return_value=json_data)
@@ -65,6 +70,52 @@ class TestLlmClient:
         assert client.max_tokens == 1000
 
     @pytest.mark.parametrize(
+        "value, expected",
+        [
+            (True, True),
+            (False, False),
+            ("True", True),
+            ("yes", True),
+            ("False", False),
+            ("off", False),
+            ("", False),
+        ],
+    )
+    def test_configure_llm_client_collect_usage(self, value, expected):
+        client = LlmClient()
+        client.configure_llm_client(collect_usage=value)
+        assert client.usage.enabled is expected
+
+    @pytest.mark.parametrize(
+        "provider, server_url, api_key_env",
+        [
+            (
+                "openrouter",
+                "https://openrouter.ai/api/v1",
+                "OPENROUTER_API_KEY",
+            ),
+            ("copilot", "https://api.githubcopilot.com", "GITHUB_TOKEN"),
+        ],
+    )
+    def test_configure_llm_client_provider(
+        self, provider, server_url, api_key_env
+    ):
+        client = LlmClient()
+        client.configure_llm_client(provider=provider, model="m")
+
+        assert client.server_url == server_url
+        assert client.endpoint == "/chat/completions"
+        assert client.api_key_env == api_key_env
+        assert client.model == "m"
+
+    def test_configure_llm_client_provider_overridden_by_args(self):
+        client = LlmClient()
+        client.configure_llm_client(provider="copilot", endpoint="/responses")
+
+        assert client.server_url == "https://api.githubcopilot.com"
+        assert client.endpoint == "/responses"
+
+    @pytest.mark.parametrize(
         "kwargs, exc_type, match",
         [
             (
@@ -77,6 +128,11 @@ class TestLlmClient:
                 ValueError,
                 "Invalid value for max_tokens: not_an_int. Expected type int",
             ),
+            (
+                {"provider": "unknown"},
+                ValueError,
+                "Unknown provider: unknown. Allowed: copilot, openrouter",
+            ),
         ],
     )
     def test_configure_llm_client_error(self, kwargs, exc_type, match):
@@ -84,11 +140,12 @@ class TestLlmClient:
         with pytest.raises(exc_type, match=match):
             client.configure_llm_client(**kwargs)
 
-    def test_prompt_text_without_system_prompt(self, mock_post):
-        mock_client = MagicMock()
+    def test_prompt_text_without_system_prompt(self, mock_post, monkeypatch):
+        monkeypatch.delenv("YARF_LLM_API_KEY", raising=False)
+        mock_client = LlmClient()
         mock_post.return_value = self._mock_response("hello")
 
-        result = LlmClient.prompt_llm(mock_client, "Say hi")
+        result = mock_client.prompt_llm("Say hi")
 
         assert result == "hello"
         mock_post.assert_called_once()
@@ -108,11 +165,11 @@ class TestLlmClient:
         mock_post.return_value.raise_for_status.assert_called_once()
 
     def test_prompt_text_with_system_prompt(self, mock_post):
-        mock_client = MagicMock()
+        mock_client = LlmClient()
         mock_post.return_value = self._mock_response("hello")
 
-        result = LlmClient.prompt_llm(
-            mock_client, "Say hi", system_prompt="You are a helpful assistant."
+        result = mock_client.prompt_llm(
+            "Say hi", system_prompt="You are a helpful assistant."
         )
 
         assert result == "hello"
@@ -128,13 +185,11 @@ class TestLlmClient:
         assert messages[1]["content"] == [{"type": "text", "text": "Say hi"}]
 
     def test_prompt_with_image(self, mock_post):
-        mock_client = MagicMock()
+        mock_client = LlmClient()
         mock_post.return_value = self._mock_response("hello")
 
         image = Image.new("RGB", (10, 10))
-        result = LlmClient.prompt_llm(
-            mock_client, "Describe the image", image=image
-        )
+        result = mock_client.prompt_llm("Describe the image", image=image)
 
         assert result == "hello"
         mock_post.assert_called_once()
@@ -155,7 +210,7 @@ class TestLlmClient:
         )
 
     def test_prompt_with_reasoning(self, mock_post):
-        mock_client = MagicMock()
+        mock_client = LlmClient()
         mock_post.return_value = self._mock_response(
             "hello", reasoning="This is the reasoning behind the answer."
         )
@@ -163,18 +218,169 @@ class TestLlmClient:
         with patch(
             "yarf.rf_libraries.libraries.llm_client.LlmClient.logger"
         ) as mock_logger:
-            result = LlmClient.prompt_llm(mock_client, "Ask with reasoning")
+            result = mock_client.prompt_llm("Ask with reasoning")
 
             assert result == "hello"
-            mock_logger.info.assert_called_once_with(
+            mock_logger.info.assert_any_call(
                 "This is the reasoning behind the answer."
             )
 
-    def test_encode_image(self):
-        mock_client = MagicMock()
+    def test_prompt_sends_api_key_from_env(self, mock_post, monkeypatch):
+        monkeypatch.setenv("GITHUB_TOKEN", "secret")
+        client = LlmClient()
+        client.configure_llm_client(provider="copilot", model="gpt-4.1")
+        mock_post.return_value = self._mock_response("hello")
+
+        client.prompt_llm("Say hi")
+
+        args, kwargs = mock_post.call_args
+        assert args[0] == "https://api.githubcopilot.com/chat/completions"
+        assert kwargs["headers"]["Authorization"] == "Bearer secret"
+
+    @pytest.mark.parametrize("system_prompt", [None, "Be brief."])
+    def test_prompt_responses_api(self, mock_post, system_prompt):
+        client = LlmClient()
+        client.configure_llm_client(endpoint="/responses", collect_usage=True)
+        mock_post.return_value = self._mock_response(
+            json_data={
+                "output": [
+                    {"type": "reasoning", "summary": []},
+                    {
+                        "type": "message",
+                        "content": [
+                            {"type": "output_text", "text": "hel"},
+                            {"type": "refusal", "refusal": "no"},
+                            {"type": "output_text", "text": "lo"},
+                        ],
+                    },
+                ],
+                "usage": {
+                    "input_tokens": 10,
+                    "output_tokens": 5,
+                    "output_tokens_details": {"reasoning_tokens": 2},
+                    "total_tokens": 15,
+                },
+            }
+        )
+
         image = Image.new("RGB", (10, 10))
-        encoded = LlmClient._encode_image(mock_client, image)
-        assert encoded.startswith("data:image/webp;base64,")
+        result = client.prompt_llm(
+            "Describe", image=image, system_prompt=system_prompt
+        )
+
+        assert result == "hello"
+        payload = mock_post.call_args.kwargs["json"]
+        assert payload.get("instructions") == system_prompt
+        assert payload["max_output_tokens"] == client.max_tokens
+        content = payload["input"][0]["content"]
+        assert content[0] == {"type": "input_text", "text": "Describe"}
+        assert content[1]["type"] == "input_image"
+        assert content[1]["image_url"].startswith("data:image/webp;base64,")
+        assert client.usage.requests == 1
+        assert client.usage.prompt_tokens == 10
+        assert client.usage.completion_tokens == 5
+        assert client.usage.reasoning_tokens == 2
+
+    def test_usage_record(self):
+        usage = LlmUsage(enabled=True)
+        usage.record(
+            {
+                "usage": {
+                    "prompt_tokens": 100,
+                    "completion_tokens": 20,
+                    "completion_tokens_details": {"reasoning_tokens": None},
+                    "total_tokens": 120,
+                    "cost": 0.5,
+                },
+                "copilot_usage": {"total_nano_aiu": 42},
+            },
+            1.5,
+        )
+
+        assert usage == LlmUsage(
+            enabled=True,
+            requests=1,
+            inference_time=1.5,
+            prompt_tokens=100,
+            completion_tokens=20,
+            reasoning_tokens=0,
+            total_tokens=120,
+            cost=0.5,
+            nano_aiu=42,
+        )
+
+    def test_usage_record_without_usage(self):
+        usage = LlmUsage(enabled=True)
+        usage.record({}, 2.0)
+        assert usage == LlmUsage(enabled=True, requests=1, inference_time=2.0)
+
+    def test_usage_record_disabled(self):
+        usage = LlmUsage()
+        usage.record({"usage": {"prompt_tokens": 100}}, 2.0)
+        assert usage == LlmUsage()
+
+    def test_prompt_does_not_collect_usage_by_default(self, mock_post):
+        client = LlmClient()
+        mock_post.return_value = self._mock_response("hello")
+
+        client.prompt_llm("Say hi")
+
+        assert client.usage.requests == 0
+        with pytest.raises(RuntimeError, match="collection is disabled"):
+            client.get_llm_usage()
+
+    def test_get_llm_usage_empty(self):
+        client = LlmClient()
+        client.configure_llm_client(collect_usage=True)
+        usage = client.get_llm_usage()
+
+        assert usage["requests"] == 0
+        assert usage["inference_time"] == 0
+        assert usage["output_tokens_per_second"] == 0.0
+        assert usage["cost"] is None
+        assert usage["nano_aiu"] is None
+
+    def test_get_llm_usage_sums_requests(self):
+        client = LlmClient()
+        client.configure_llm_client(collect_usage=True)
+        for prompt, completion, time_s, cost, aiu in [
+            (100, 10, 1.0, 0.25, 5),
+            (200, 30, 3.0, 0.5, 7),
+        ]:
+            client.usage.record(
+                {
+                    "usage": {
+                        "prompt_tokens": prompt,
+                        "completion_tokens": completion,
+                        "completion_tokens_details": {"reasoning_tokens": 2},
+                        "total_tokens": prompt + completion,
+                        "cost": cost,
+                    },
+                    "copilot_usage": {"total_nano_aiu": aiu},
+                },
+                time_s,
+            )
+
+        assert client.get_llm_usage() == {
+            "model": client.model,
+            "requests": 2,
+            "prompt_tokens": 300,
+            "completion_tokens": 40,
+            "reasoning_tokens": 4,
+            "total_tokens": 340,
+            "inference_time": 4.0,
+            "output_tokens_per_second": 10.0,
+            "cost": 0.75,
+            "nano_aiu": 12,
+        }
+
+    @pytest.mark.parametrize("image_format", ["WEBP", "PNG", "JPEG"])
+    def test_encode_image(self, image_format):
+        client = LlmClient()
+        client.configure_llm_client(image_format=image_format)
+        image = Image.new("RGB", (10, 10))
+        encoded = client._encode_image(image)
+        assert encoded.startswith(f"data:image/{image_format.lower()};base64,")
 
     def test_get_lib_instance(self):
         client = LlmClient()
@@ -544,6 +750,24 @@ class TestLlmClient:
             {"corrupted": [bool], "description": [str]},
         )
         assert "missing keys" in errors
+
+    def test_parse_llm_json_defaults_missing_nullable_keys(self):
+        client = LlmClient()
+        raw = json.dumps({"action_type": "Left Click", "point_2d": [1, 2]})
+        parsed, errors = client._parse_llm_json_response(
+            raw,
+            {
+                "action_type": [str],
+                "point_2d": [list, type(None)],
+                "text": [str, type(None)],
+            },
+        )
+        assert errors == ""
+        assert parsed == {
+            "action_type": "Left Click",
+            "point_2d": [1, 2],
+            "text": None,
+        }
 
     def test_parse_llm_json_wrong_type(self):
         client = LlmClient()
@@ -1049,6 +1273,42 @@ class TestLlmClient:
         )
         click_args = mock_hid.click_pointer_button.await_args_list
         assert [call.args[0] for call in click_args] == expected_buttons
+
+    def test_prompt_retries_transient_errors(self, mock_post):
+        client = LlmClient()
+        busy = MagicMock(status_code=429)
+        ok = self._mock_response("hello")
+        ok.status_code = 200
+        mock_post.side_effect = [busy, busy, ok]
+
+        with patch(f"{self.LLM_PATH}.time.sleep") as sleep:
+            assert client.prompt_llm("Say hi") == "hello"
+
+        assert mock_post.call_count == 3
+        assert [c.args[0] for c in sleep.call_args_list] == [5, 15]
+
+    def test_prompt_raises_after_retries(self, mock_post):
+        client = LlmClient()
+        busy = MagicMock(status_code=502)
+        busy.raise_for_status.side_effect = RuntimeError("502 Bad Gateway")
+        mock_post.return_value = busy
+
+        with (
+            patch(f"{self.LLM_PATH}.time.sleep") as sleep,
+            pytest.raises(RuntimeError, match="502 Bad Gateway"),
+        ):
+            client.prompt_llm("Say hi")
+
+        assert mock_post.call_count == 4
+        assert sleep.call_count == 3
+
+    def test_prompt_returns_empty_string_without_content(self, mock_post):
+        client = LlmClient()
+        mock_post.return_value = self._mock_response(
+            json_data={"choices": [{"message": {"role": "assistant"}}]}
+        )
+
+        assert client.prompt_llm("Say hi") == ""
 
     @pytest.mark.asyncio
     async def test_execute_gui_action_writes_text(self):
