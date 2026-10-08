@@ -121,3 +121,13 @@ Assert Test Keyword Drag And Drop On Destination
     ${movements}=           Evaluate
     ...                     [(17, 14), (35,28), (53, 42), (71, 57), (89, 71), (107, 85), (125, 100), (143, 114), (160, 128), (178, 143), (196, 157), (200, 171), (200, 186), (200, 200)]
     Assert Pointer Movement Events                  ${movements}
+
+Test Keyword Scroll Pointer
+    Move Pointer To (100, 100)
+    Clear Trace File
+    Scroll Pointer          3
+    Scroll Pointer          -2
+
+Assert Test Keyword Scroll Pointer
+    ${scrolls}=             Create List             ${3}                    ${-2}
+    Assert Pointer Scroll Events                    ${scrolls}

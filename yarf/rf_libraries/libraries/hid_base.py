@@ -119,6 +119,35 @@ class HidBase(ABC):
             | Release Pointer Buttons
         """
 
+    @keyword
+    async def scroll_pointer(self, steps: int) -> None:
+        """
+        Scroll the pointer wheel at the current pointer position.
+
+        Args:
+            steps: number of wheel steps; positive scrolls down, negative
+                scrolls up.
+
+        Example:
+            | Scroll Pointer    5
+            | Scroll Pointer    -3
+        """
+        await self._scroll(int(steps))
+
+    async def _scroll(self, steps: int) -> None:
+        """
+        Platform implementation of the pointer wheel scroll.
+
+        Args:
+            steps: number of wheel steps, positive scrolls down.
+
+        Raises:
+            NotImplementedError: if the platform does not support scrolling.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} does not support scrolling"
+        )
+
     @abstractmethod
     async def _keys_combo(self, combo: Sequence[str]) -> None:
         """
