@@ -963,6 +963,16 @@ class TestLlmClient:
                 "text": None,
                 "point_2d": None,
             },
+            {
+                "action_type": "Scroll Down",
+                "text": None,
+                "point_2d": [250, 500],
+            },
+            {
+                "action_type": "Press Key",
+                "text": "Return",
+                "point_2d": None,
+            },
         ],
     )
     def test_validate_gui_action_accepts_valid_actions(self, action):
@@ -1004,6 +1014,22 @@ class TestLlmClient:
                     "point_2d": None,
                 },
                 "Left Click actions must include a point.",
+            ),
+            (
+                {
+                    "action_type": "Scroll Up",
+                    "text": None,
+                    "point_2d": None,
+                },
+                "Scroll Up actions must include a point.",
+            ),
+            (
+                {
+                    "action_type": "Press Key",
+                    "text": None,
+                    "point_2d": None,
+                },
+                "Press Key actions must include text.",
             ),
         ],
     )
@@ -1049,6 +1075,60 @@ class TestLlmClient:
         )
         click_args = mock_hid.click_pointer_button.await_args_list
         assert [call.args[0] for call in click_args] == expected_buttons
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "action_type, steps",
+        [("Scroll Down", 5), ("Scroll Up", -5)],
+    )
+    async def test_execute_gui_action_scrolls(self, action_type, steps):
+        client = LlmClient()
+        mock_hid = MagicMock()
+        mock_hid.move_pointer_to_proportional = AsyncMock()
+        mock_hid.scroll_pointer = AsyncMock()
+
+        with (
+            patch.object(client, "_get_lib_instance", return_value=mock_hid),
+            patch(f"{self.LLM_PATH}.asyncio.sleep", AsyncMock()),
+        ):
+            await client.execute_gui_action(
+                {
+                    "action_type": action_type,
+                    "text": None,
+                    "point_2d": [250, 500],
+                }
+            )
+
+        mock_hid.move_pointer_to_proportional.assert_awaited_once_with(
+            0.25, 0.5
+        )
+        mock_hid.scroll_pointer.assert_awaited_once_with(steps)
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "text, keys",
+        [
+            ("Control_L+l", ["Control_L", "l"]),
+            ("ctrl + L", ["Control_L", "L"]),
+            ("Enter", ["Return"]),
+            ("Page_Down", ["Next"]),
+        ],
+    )
+    async def test_execute_gui_action_presses_keys(self, text, keys):
+        client = LlmClient()
+        mock_hid = MagicMock()
+        mock_hid.keys_combo = AsyncMock()
+
+        with patch.object(client, "_get_lib_instance", return_value=mock_hid):
+            await client.execute_gui_action(
+                {
+                    "action_type": "Press Key",
+                    "text": text,
+                    "point_2d": None,
+                }
+            )
+
+        mock_hid.keys_combo.assert_awaited_once_with(keys)
 
     @pytest.mark.asyncio
     async def test_execute_gui_action_writes_text(self):

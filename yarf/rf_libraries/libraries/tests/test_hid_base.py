@@ -174,3 +174,16 @@ class TestHidBase:
             stub_hid._keys_combo.assert_awaited_once_with(
                 pytest.approx(expected)
             )
+
+    @pytest.mark.asyncio
+    async def test_scroll_pointer_not_supported(self, stub_hid):
+        with pytest.raises(
+            NotImplementedError, match="StubHid does not support scrolling"
+        ):
+            await stub_hid.scroll_pointer("2")
+
+    @pytest.mark.asyncio
+    async def test_scroll_pointer(self, stub_hid):
+        stub_hid._scroll = AsyncMock()
+        await stub_hid.scroll_pointer("-2")
+        stub_hid._scroll.assert_awaited_once_with(-2)

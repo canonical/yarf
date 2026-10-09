@@ -189,6 +189,31 @@ Release Pointer Buttons
 
 <hr style="border:1px solid grey">
 
+### Scroll Pointer
+
+<p>Scroll the pointer wheel at the current pointer position.</p>
+
+#### Return
+
+```
+None
+```
+
+#### Positional and named arguments
+
+| Name  | Type    | Default Value | Kind                | Required | Documentation                                                      |
+| ----- | ------- | ------------- | ------------------- | -------- | ------------------------------------------------------------------ |
+| steps | integer |               | POSITIONAL_OR_NAMED | Yes      | number of wheel steps; positive scrolls down, negative scrolls up. |
+
+#### Example
+
+```robotframework
+Scroll Pointer    5
+Scroll Pointer    -3
+```
+
+<hr style="border:1px solid grey">
+
 ### Type String
 
 <p>Type a string.</p>

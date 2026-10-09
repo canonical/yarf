@@ -29,6 +29,13 @@ class Button(IntEnum):
     MIDDLE = 0x112
 
 
+# wl_pointer axis and axis_source enum values
+AXIS_VERTICAL_SCROLL = 0
+AXIS_SOURCE_WHEEL = 0
+# Scroll distance of one wheel step, as used by libinput
+SCROLL_STEP_DISTANCE = 15.0
+
+
 class VirtualPointer(WaylandClient):
     required_extensions = (
         ZwlrVirtualPointerManagerV1.name,
@@ -176,5 +183,27 @@ class VirtualPointer(WaylandClient):
         assert self.pointer is not None, "No pointer"
         assert self.display is not None, "No display"
         self.pointer.button(self.timestamp(), button, 1 if state else 0)
+        self.pointer.frame()
+        self.display.roundtrip()
+
+    def scroll(self, steps: int) -> None:
+        """
+        Scroll the vertical wheel.
+
+        Args:
+            steps: number of wheel steps, positive scrolls down.
+
+        Raises:
+            AssertionError: if the pointer, the display, or both are unavailable
+        """
+        assert self.pointer is not None, "No pointer"
+        assert self.display is not None, "No display"
+        self.pointer.axis_source(AXIS_SOURCE_WHEEL)
+        self.pointer.axis_discrete(
+            self.timestamp(),
+            AXIS_VERTICAL_SCROLL,
+            steps * SCROLL_STEP_DISTANCE,
+            steps,
+        )
         self.pointer.frame()
         self.display.roundtrip()
