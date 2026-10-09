@@ -104,13 +104,26 @@ Benchmark Teardown
     ...                     Run In Terminal         bash ~/yarf_reset.sh; exit
 
 Prepare Desktop
-    [Documentation]    Install the reset script, close the installer window
-    ...    and do the slow (~40 s) first Firefox start without its first-run
-    ...    wizard, so that the tests measure the model.
+    [Documentation]    Close the installer that the live session opens,
+    ...    install the reset script and do the slow (~40 s) first Firefox start
+    ...    without its first-run wizard, so that the tests measure the model.
+    ...    The ready desktop is saved to ${OUTPUT_DIR}/desktop-ready.png.
+    Close Installer
     Run In Terminal         echo "${RESET_SCRIPT}" > ~/yarf_reset.sh; bash ~/yarf_reset.sh; exit
     Run In Terminal
     ...                     sudo mkdir -p /etc/firefox/policies && echo '${FIREFOX_POLICIES}' | sudo tee /etc/firefox/policies/policies.json > /dev/null; firefox about:blank & sleep 60; pkill -x firefox; sleep 5; exit
     Sleep                   65s
+    ${screenshot}=          Grab Screenshot
+    Evaluate                $screenshot.save($OUTPUT_DIR + "/desktop-ready.png")
+
+Close Installer
+    [Documentation]    The live session starts the installer on its language
+    ...    page. Close it if it is open, and check that it is gone.
+    ${opened}=              Run Keyword And Return Status
+    ...                     Match Text              Choose your language    timeout=60
+    Log                     Installer open: ${opened}
+    Run In Terminal         pkill -f ubuntu-desktop-bootstrap; exit
+    Ensure Choose your language Does Not Match      timeout=5
 
 Run In Terminal
     [Arguments]             ${command}
