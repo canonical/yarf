@@ -1,4 +1,4 @@
-from unittest.mock import ANY, AsyncMock, call, patch
+from unittest.mock import AsyncMock, call, patch
 
 import pytest
 
@@ -20,9 +20,10 @@ def video_input():
 
 
 @pytest.fixture(autouse=True)
-def mock_environ():
-    with patch("os.environ") as m:
-        yield m
+def wayland_display():
+    # Patch only the variable: dependencies (e.g. omegaconf) read os.environ.
+    with patch.dict("os.environ", {"WAYLAND_DISPLAY": "wayland-test"}):
+        yield "wayland-test"
 
 
 class TestMirVideoInput:
@@ -30,33 +31,23 @@ class TestMirVideoInput:
         assert VideoInput.ROBOT_LIBRARY_SCOPE == "GLOBAL"
         assert VideoInput.ROBOT_LISTENER_API_VERSION == 3
 
-    def test_init(self, mock_environ, mock_screencopy):
+    def test_init(self, wayland_display, mock_screencopy):
         with patch(
             "yarf.rf_libraries.libraries.video_input_base.VideoInputBase.__init__"
         ) as m:
             vi = VideoInput()
 
             assert vi.ROBOT_LIBRARY_LISTENER is vi
-            mock_environ.get.assert_has_calls(
-                [
-                    call("WAYLAND_DISPLAY", ANY),
-                ]
-            )
-            mock_screencopy.assert_called_with(mock_environ.get())
+            mock_screencopy.assert_called_with(wayland_display)
             m.assert_called_once_with()
 
-    def test_init_exception(self, mock_environ, mock_screencopy):
+    def test_init_exception(self, wayland_display, mock_screencopy):
         mock_screencopy.side_effect = Exception("Test exception")
 
         with pytest.raises(Exception, match="Test exception"):
             VideoInput()
 
-        mock_environ.get.assert_has_calls(
-            [
-                call("WAYLAND_DISPLAY", ANY),
-            ]
-        )
-        mock_screencopy.assert_called_with(mock_environ.get())
+        mock_screencopy.assert_called_with(wayland_display)
 
     @pytest.mark.asyncio
     async def test_grab_screenshot(self, mock_screencopy, video_input):
