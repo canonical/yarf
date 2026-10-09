@@ -48,6 +48,8 @@ NOTES = [
      "see iso.txt of each run) in QEMU/KVM (2 vCPU, 8 GB, 1280x800), yarf "
      "--debug over VNC. Each test starts from a reset desktop (apps closed, "
      "test files and Firefox cookies removed)."),
+    ("0 tests", "The run has no results, or the desktop did not boot (suite "
+     "setup failed); it is not a model result."),
     ("Caveat: Canonical test", "'Open Canonical Release Notes' asks to open "
      "the press release but asserts the release notes documentation page."),
 ]  # fmt: skip
@@ -75,7 +77,8 @@ def load_run(run_dir: Path) -> tuple[dict[str, str], list[dict[str, Any]]]:
         run_dir: Directory with model.json, output.xml and usage.jsonl.
 
     Returns:
-        The model settings and one dict per test.
+        The model settings and one dict per test, or no tests if the run
+        has no results or its suite setup (the desktop boot) failed.
     """
     settings = json.loads((run_dir / "model.json").read_text())
     usage_file = run_dir / "usage.jsonl"
@@ -91,6 +94,8 @@ def load_run(run_dir: Path) -> tuple[dict[str, str], list[dict[str, Any]]]:
     if output.exists():
         result = ExecutionResult(str(output))
         for test in result.suite.all_tests:
+            if test.message.startswith("Parent suite setup failed"):
+                return settings, []
             u = usage.get(test.name, {})
             requests = u.get("requests", 0)
             inference = u.get("inference_time", 0.0)
