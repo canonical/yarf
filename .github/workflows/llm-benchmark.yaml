@@ -38,8 +38,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  ISO_URL: https://releases.ubuntu.com/24.04.3/ubuntu-24.04.3-desktop-amd64.iso
-  ISO_SHA256: faabcf33ae53976d2b8207a001ff32f4e5daae013505ac7188c9ea63988f8328
+  ISO_BASE_URL: https://releases.ubuntu.com/noble
 
 jobs:
   select-models:

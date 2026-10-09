@@ -44,9 +44,10 @@ NOTES = [
      "the whole suite per success. Models without a cost are excluded."),
     ("Computation power", "Hosted models do not expose FLOPs or GPU time, "
      "so cost, tokens and inference time are the compute proxies."),
-    ("Setup", "Ubuntu 24.04.3 desktop live session in QEMU/KVM (2 vCPU, "
-     "8 GB, 1280x800), yarf --debug over VNC. Each test starts from a reset "
-     "desktop (apps closed, test files and Firefox cookies removed)."),
+    ("Setup", "Ubuntu 24.04 desktop live session (the latest point release, "
+     "see iso.txt of each run) in QEMU/KVM (2 vCPU, 8 GB, 1280x800), yarf "
+     "--debug over VNC. Each test starts from a reset desktop (apps closed, "
+     "test files and Firefox cookies removed)."),
     ("Caveat: Canonical test", "'Open Canonical Release Notes' asks to open "
      "the press release but asserts the release notes documentation page."),
 ]  # fmt: skip
