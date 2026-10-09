@@ -37,6 +37,49 @@ class HistoryItem:
         return f"Step {self.step}:\n{json.dumps(self.action, indent=2)}"
 
 
+# GUI actions that target a point on the screen
+POINTER_ACTIONS = {
+    "Left Click",
+    "Right Click",
+    "Double Click",
+    "Scroll Down",
+    "Scroll Up",
+}
+# Mouse wheel steps per Scroll action
+SCROLL_STEPS = 5
+# Common key names used by LLMs, mapped to X keysyms
+KEY_ALIASES = {
+    "ctrl": "Control_L",
+    "control": "Control_L",
+    "alt": "Alt_L",
+    "shift": "Shift_L",
+    "super": "Super_L",
+    "win": "Super_L",
+    # Browser/Playwright meaning (Windows key), not the X Meta keysym on Alt
+    "meta": "Super_L",
+    "enter": "Return",
+    "return": "Return",
+    "esc": "Escape",
+    "escape": "Escape",
+    "tab": "Tab",
+    "space": "space",
+    "backspace": "BackSpace",
+    "delete": "Delete",
+    "del": "Delete",
+    "up": "Up",
+    "down": "Down",
+    "left": "Left",
+    "right": "Right",
+    # Canonical xkb names, required by the Mir keyboard (VNC accepts both)
+    "pageup": "Prior",
+    "page_up": "Prior",
+    "pagedown": "Next",
+    "page_down": "Next",
+    "home": "Home",
+    "end": "End",
+}
+
+
 @dataclass
 class LlmUsage:
     """
@@ -806,6 +849,19 @@ class LlmClient:
             action_type: Write, text: Text to enter, point_2d: null
                 Explanation: Type text without moving the pointer.
 
+            action_type: Scroll Down, text: null, point_2d: [x, y]
+                Explanation: Scroll down with the mouse wheel over the given
+                point to reveal content below the visible area.
+
+            action_type: Scroll Up, text: null, point_2d: [x, y]
+                Explanation: Scroll up with the mouse wheel over the given
+                point to reveal content above the visible area.
+
+            action_type: Press Key, text: Key name, point_2d: null
+                Explanation: Press a key or a key combination, using X keysym
+                names joined by "+", e.g. "Return", "Escape", "Tab" or
+                "Control_L+l".
+
             action_type: Failed, text: null, point_2d: null
                 Explanation: An action is impossible and cannot be performed.
                 This should whenever the model can't determine a valid action.
@@ -813,7 +869,7 @@ class LlmClient:
             Return only a valid JSON object with this exact schema:
             {
                 "action_type": "one of the available action types",
-                "text": "text to be written, or null if not applicable",
+                "text": "text to write or key to press, or null if not applicable",
                 "point_2d": "[x, y], or null if not applicable"
             }
 
@@ -858,11 +914,9 @@ class LlmClient:
                 are missing.
         """
 
-        allowed_actions = {
-            "Left Click",
-            "Right Click",
-            "Double Click",
+        allowed_actions = POINTER_ACTIONS | {
             "Write",
+            "Press Key",
             "Wait",
             "Failed",
         }
@@ -876,14 +930,14 @@ class LlmClient:
                 f"LLM indicated action can't be completed: {task}."
             )
 
-        if action_type == "Write" and not isinstance(action.get("text"), str):
-            raise ValueError("Write actions must include text.")
+        if action_type in {"Write", "Press Key"} and not isinstance(
+            action.get("text"), str
+        ):
+            raise ValueError(f"{action_type} actions must include text.")
 
-        if action_type in {
-            "Left Click",
-            "Right Click",
-            "Double Click",
-        } and not isinstance(action.get("point_2d"), list):
+        if action_type in POINTER_ACTIONS and not isinstance(
+            action.get("point_2d"), list
+        ):
             raise ValueError(f"{action_type} actions must include a point.")
 
     @keyword
@@ -911,7 +965,7 @@ class LlmClient:
 
         logger.info(f"Executing action: {action}")
 
-        if action_type in {"Left Click", "Right Click", "Double Click"}:
+        if action_type in POINTER_ACTIONS:
             hid = self._get_lib_instance("HID")
             x, y = normalize_point(action["point_2d"])
             # For click actions, draw the point on the image and log it before
@@ -936,10 +990,23 @@ class LlmClient:
                 await hid.click_pointer_button("LEFT")
                 await asyncio.sleep(0.1)
                 await hid.click_pointer_button("LEFT")
+            elif action_type == "Scroll Down":
+                await hid.scroll_pointer(SCROLL_STEPS)
+            elif action_type == "Scroll Up":
+                await hid.scroll_pointer(-SCROLL_STEPS)
 
         elif action_type == "Write":
             hid = self._get_lib_instance("HID")
             await hid.type_string(action["text"])
+
+        elif action_type == "Press Key":
+            hid = self._get_lib_instance("HID")
+            await hid.keys_combo(
+                [
+                    KEY_ALIASES.get(key.strip().lower(), key.strip())
+                    for key in action["text"].split("+")
+                ]
+            )
 
         elif action_type == "Wait":
             # For now, this is a fixed wait.
@@ -1007,6 +1074,19 @@ class LlmClient:
         Explanation: Type text using the keyboard. Use this only when a text
         field is already focused.
 
+        action_type: Press Key, text: Key name, point_2d: null
+        Explanation: Press a key or a key combination, using X keysym names
+        joined by "+", e.g. "Return" to submit a field, "Escape", "Tab" or
+        "Control_L+l".
+
+        action_type: Scroll Down, text: null, point_2d: [x, y]
+        Explanation: Scroll down with the mouse wheel over the given point to
+        reveal content below the visible area.
+
+        action_type: Scroll Up, text: null, point_2d: [x, y]
+        Explanation: Scroll up with the mouse wheel over the given point to
+        reveal content above the visible area.
+
         action_type: Wait, text: null, point_2d: null
         Explanation: Wait briefly when the UI is loading, processing,
         animating, or a task is not ready yet.
@@ -1021,7 +1101,7 @@ class LlmClient:
         - [0, 0] is the top-left of the screenshot.
         - [1000, 1000] is the bottom-right of the screenshot.
         - For pointer actions, choose the center of the target UI element.
-        - For Write, Wait, and Finish, always use null.
+        - For Write, Press Key, Wait, and Finish, always use null.
 
         Behavior rules:
         - Each step should contain a description of the chosen action to help
@@ -1029,7 +1109,10 @@ class LlmClient:
         - Be deliberate. Prefer one precise action at a time.
         - Do not repeat the same failed click endlessly; use history to adjust.
         - If a field must be typed into, first click/focus it, then on the next
-          step use Write.
+          step use Write. Check the typed text in the next screenshot, then
+          submit it with Press Key "Return" if needed.
+        - If the target is not visible, e.g. a button below the visible
+          area, use Scroll Down or Scroll Up over the area that contains it.
         - If the screen is changing or a result is loading, use Wait.
         - Usually, to open a folder, you would double click it. To open a
           context menu, you would right click it.
@@ -1042,7 +1125,7 @@ class LlmClient:
         {
             "description": "brief description for the chosen action",
             "action_type": "one of the available action types",
-            "text": "text to be written, or null",
+            "text": "text to write or key to press, or null",
             "point_2d": [x, y]
         }
         """)
