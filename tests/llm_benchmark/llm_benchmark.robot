@@ -3,8 +3,9 @@ Documentation       Benchmark of LLM-driven GUI navigation on an Ubuntu 24.04
 ...                 desktop live session over VNC. The token usage, inference
 ...                 time and cost of every test are appended to ${USAGE_FILE}.
 ...
-...                 Run locally against a VM with a VNC display:
-...                 VNC_PORT=0 yarf --platform Vnc tests/llm_benchmark --
+...                 Run locally against a VM with a VNC display, with --debug
+...                 like in CI so that the logs show the model's screenshots:
+...                 VNC_PORT=0 yarf --debug --platform Vnc tests/llm_benchmark --
 ...                 --variable PROVIDER:openrouter
 ...                 --variable MODEL:qwen/qwen3.5-9b
 Library             Collections
@@ -104,11 +105,12 @@ Benchmark Teardown
     ...                     Run In Terminal         bash ~/yarf_reset.sh; exit
 
 Prepare Desktop
-    [Documentation]    Close the installer that the live session opens,
-    ...    install the reset script and do the slow (~40 s) first Firefox start
-    ...    without its first-run wizard, so that the tests measure the model.
-    ...    The ready desktop is saved to ${OUTPUT_DIR}/desktop-ready.png.
-    Close Installer
+    [Documentation]    Wait for the live session to boot, close its
+    ...    installer, install the reset script and do the slow (~40 s) first
+    ...    Firefox start without its first-run wizard, so that the tests measure
+    ...    the model. The ready desktop is saved to
+    ...    ${OUTPUT_DIR}/desktop-ready.png.
+    Wait For Live Session And Close Installer
     Run In Terminal         echo "${RESET_SCRIPT}" > ~/yarf_reset.sh; bash ~/yarf_reset.sh; exit
     Run In Terminal
     ...                     sudo mkdir -p /etc/firefox/policies && echo '${FIREFOX_POLICIES}' | sudo tee /etc/firefox/policies/policies.json > /dev/null; firefox about:blank & sleep 60; pkill -x firefox; sleep 5; exit
@@ -116,14 +118,26 @@ Prepare Desktop
     ${screenshot}=          Grab Screenshot
     Evaluate                $screenshot.save($OUTPUT_DIR + "/desktop-ready.png")
 
-Close Installer
-    [Documentation]    The live session starts the installer on its language
-    ...    page. Close it if it is open, and check that it is gone.
-    ${opened}=              Run Keyword And Return Status
-    ...                     Match Text              Choose your language    timeout=60
-    Log                     Installer open: ${opened}
-    Run In Terminal         pkill -f ubuntu-desktop-bootstrap; exit
-    Ensure Choose your language Does Not Match      timeout=5
+Wait For Live Session And Close Installer
+    [Documentation]    The live session boots (~2 min) to the installer's
+    ...    language page. Wait for it, then close the installer.
+    # Hid starts at (0, 0), which triggers the GNOME Activities hot corner.
+    Hid.Move Pointer To Proportional                0.5                     0.5
+    Wait Until Keyword Succeeds                     10 min                  10 s
+    ...                     Installer Is Shown
+    # The installer has the keyboard focus, so a terminal cannot be opened.
+    Keys Combo              Alt_L                   F4
+    # The window fades out, so retry until its text is gone.
+    Wait Until Keyword Succeeds                     30 s                    3 s
+    ...                     Ensure Choose your language Does Not Match      timeout=1
+
+Installer Is Shown
+    [Documentation]    Check for the installer's language page, leaving the
+    ...    Activities overview first, as it hides the window contents.
+    ${overview}=            Run Keyword And Return Status
+    ...                     Match Text              Type to search          timeout=1
+    IF    ${overview}    Keys Combo    Escape
+    Match Text              Choose your language    timeout=5
 
 Run In Terminal
     [Arguments]             ${command}
