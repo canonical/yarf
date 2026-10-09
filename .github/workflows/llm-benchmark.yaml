@@ -1,0 +1,169 @@
+name: LLM GUI navigation benchmark
+
+# Runs tests/llm_benchmark against hosted vision models: each model drives an
+# Ubuntu 24.04 desktop live session (QEMU/KVM, 1280x800) over VNC. Every
+# model gets its own job and VM; the report job merges the results into a
+# marimo HTML report and the job summary.
+#
+# Secrets: OPENROUTER_API_KEY for openrouter:* models, COPILOT_GITHUB_TOKEN
+# (a token of a user with a Copilot licence) for copilot:* models.
+#
+# Pull requests that touch the benchmark run the small "pull_request" model
+# set from models.json. Fork PRs are skipped, as they get no secrets.
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/llm-benchmark.yaml'
+      - '.github/scripts/llm-benchmark/**'
+      - 'tests/llm_benchmark/*'
+      - 'yarf/rf_libraries/libraries/llm_client/**'
+  workflow_dispatch:
+    inputs:
+      models:
+        description: >-
+          Comma separated provider:model entries, e.g.
+          "copilot:gpt-5-mini, openrouter:qwen/qwen3.5-9b". Leave empty for
+          the defaults in .github/scripts/llm-benchmark/models.json.
+        required: false
+        default: ""
+  schedule:
+    - cron: '0 0 * * 0'
+
+permissions:
+  contents: read  # Required to check out repository code
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ISO_BASE_URL: https://releases.ubuntu.com/noble
+
+jobs:
+  select-models:
+    name: Select models
+    if: >-
+      (github.event_name == 'schedule' && github.repository == 'canonical/yarf')
+      || (github.event_name == 'pull_request'
+          && github.event.pull_request.head.repo.full_name == github.repository)
+      || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Build the model matrix
+        id: select
+        env:
+          MODELS: ${{ inputs.models }}
+          MODEL_SET: ${{ github.event_name == 'pull_request' && 'pull_request' || 'default' }}
+        run: python3 .github/scripts/llm-benchmark/select_models.py
+
+  benchmark:
+    name: Benchmark (${{ matrix.model.provider }}:${{ matrix.model.model }})
+    needs: select-models
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        model: ${{ fromJSON(needs.select-models.outputs.matrix) }}
+    env:
+      RESULTS_DIR: results
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-noble-env
+
+      - name: Sync Python dependencies
+        run: uv sync
+
+      - name: Start the VM
+        run: ./.github/scripts/llm-benchmark/start-vm.sh
+
+      - name: Run the benchmark
+        env:
+          GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          MODEL_JSON: ${{ toJSON(matrix.model) }}
+          PROVIDER: ${{ matrix.model.provider }}
+          MODEL: ${{ matrix.model.model }}
+          ENDPOINT: ${{ matrix.model.endpoint }}
+          IMAGE_FORMAT: ${{ matrix.model.image_format }}
+          VNC_HOST: localhost
+          VNC_PORT: "0"
+        run: |
+          mkdir -p "$RESULTS_DIR"
+          echo "$MODEL_JSON" > "$RESULTS_DIR/model.json"
+          status=0
+          uv run yarf --debug --platform Vnc --outdir "$RESULTS_DIR" \
+            tests/llm_benchmark -- \
+            --variable "PROVIDER:$PROVIDER" \
+            --variable "MODEL:$MODEL" \
+            --variable "ENDPOINT:$ENDPOINT" \
+            --variable "IMAGE_FORMAT:$IMAGE_FORMAT" \
+            > "$RESULTS_DIR/console.log" 2>&1 || status=$?
+          tail -n 30 "$RESULTS_DIR/console.log"
+          # Robot returns the number of failed tests (up to 250); failed
+          # tests are benchmark results, anything above is an error.
+          if [[ $status -gt 250 ]]; then
+            exit "$status"
+          fi
+          # The suite setup boots the desktop; its failure is not a result.
+          if grep -q "Parent suite setup failed" "$RESULTS_DIR/output.xml"; then
+            echo "::error::Suite setup failed, see log.html in the results"
+            exit 1
+          fi
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: llm-benchmark-run-${{ matrix.model.id }}
+          path: ${{ env.RESULTS_DIR }}
+          # Only passed to the report job, which bundles all results
+          retention-days: 1
+
+  report:
+    name: Report
+    needs: [select-models, benchmark]
+    if: always() && needs.select-models.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          pattern: llm-benchmark-run-*
+          path: results
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
+        with:
+          enable-cache: false
+
+      - name: Build the report
+        run: |
+          uv run --no-project --with robotframework \
+            python .github/scripts/llm-benchmark/make_report.py results
+          uv run --no-project --with marimo --with altair \
+            --with robotframework \
+            marimo export html --no-include-code \
+            .github/scripts/llm-benchmark/report.py \
+            -o llm_benchmark.html -- --results results
+
+      - name: Upload the results and report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: llm-benchmark
+          path: |
+            llm_benchmark.html
+            results

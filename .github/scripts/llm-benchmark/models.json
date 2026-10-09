@@ -1,0 +1,27 @@
+{
+  "default": [
+    "copilot:gpt-6-luna",
+    "openrouter:qwen/qwen3.5-9b",
+    "openrouter:xiaomi/mimo-v2.6-flash"
+  ],
+  "pull_request": [
+    "openrouter:qwen/qwen3.5-9b"
+  ],
+  "settings": {
+    "copilot:gpt-5.3-codex": {"endpoint": "/responses"},
+    "copilot:gpt-5.4": {"endpoint": "/responses"},
+    "copilot:gpt-5.4-mini": {"endpoint": "/responses"},
+    "copilot:gpt-5.5": {"endpoint": "/responses"},
+    "copilot:gpt-5.6-luna": {"endpoint": "/responses"},
+    "copilot:gpt-5.6-sol": {"endpoint": "/responses"},
+    "copilot:gpt-5.6-terra": {"endpoint": "/responses"},
+    "copilot:gpt-6-astra": {"endpoint": "/responses"},
+    "copilot:gpt-6-luna": {"endpoint": "/responses"},
+    "copilot:gpt-6-sol": {"endpoint": "/responses"},
+    "copilot:gpt-6.1-sol": {"endpoint": "/responses"},
+    "copilot:grok-4.5": {"endpoint": "/responses", "image_format": "PNG"},
+    "copilot:grok-4.6": {"endpoint": "/responses", "image_format": "PNG"},
+    "copilot:grok-4.7": {"endpoint": "/responses", "image_format": "PNG"},
+    "copilot:mai-code-1.1-flash": {"endpoint": "/responses"}
+  }
+}
