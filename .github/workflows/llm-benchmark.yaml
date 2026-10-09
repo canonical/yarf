@@ -89,10 +89,22 @@ jobs:
         run: ./.github/scripts/llm-benchmark/start-vm.sh
 
       - name: Wait for the desktop
+        env:
+          SCREENSHOT: ${{ env.RESULTS_DIR }}/desktop-${{ matrix.model.id }}.png
         run: |
           mkdir -p "$RESULTS_DIR"
           uv run python .github/scripts/llm-benchmark/wait_for_desktop.py \
-            "$RESULTS_DIR/desktop.png"
+            "$SCREENSHOT"
+
+      - name: Upload the desktop screenshot
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          path: ${{ env.RESULTS_DIR }}/desktop-${{ matrix.model.id }}.png
+          if-no-files-found: ignore
+          retention-days: 7
+          # A plain PNG named after the file, viewable without unzipping
+          archive: false
 
       - name: Run the benchmark
         env:

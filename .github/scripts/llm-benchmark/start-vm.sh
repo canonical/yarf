@@ -31,5 +31,5 @@ iso="${RUNNER_TEMP:-/tmp}/ubuntu-desktop.iso"
 curl -fsSL --retry 3 -o "$iso" "$ISO_BASE_URL/$iso_name"
 echo "$iso_sha256  $iso" | sha256sum --check --strict
 
-qemu-system-x86_64 -enable-kvm -m 8192M -smp 2 \
+qemu-system-x86_64 -enable-kvm -m 8192M -smp 2 -audio none \
   -cdrom "$iso" -boot d -vnc :0 -display none -daemonize
