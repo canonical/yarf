@@ -1261,6 +1261,17 @@ class TestLlmClient:
                 },
                 "Press Key actions must include text.",
             ),
+            *(
+                (
+                    {
+                        "action_type": "Press Key",
+                        "text": text,
+                        "point_2d": None,
+                    },
+                    "Invalid key combination for Press Key",
+                )
+                for text in ("", "   ", "Control_L+", "+l", "ctrl+ +l")
+            ),
         ],
     )
     def test_validate_gui_action_rejects_invalid_actions(

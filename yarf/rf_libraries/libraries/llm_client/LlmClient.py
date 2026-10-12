@@ -944,6 +944,13 @@ class LlmClient:
         ):
             raise ValueError(f"{action_type} actions must include text.")
 
+        if action_type == "Press Key" and not all(
+            key.strip() for key in action["text"].split("+")
+        ):
+            raise ValueError(
+                f"Invalid key combination for Press Key: {action['text']!r}"
+            )
+
         if action_type in POINTER_ACTIONS and not isinstance(
             action.get("point_2d"), list
         ):
