@@ -15,6 +15,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/llm-benchmark.yaml'
+      - '.github/actions/yarf-test/**'
       - '.github/scripts/llm-benchmark/**'
       - 'tests/llm_benchmark/*'
       - 'yarf/rf_libraries/libraries/llm_client/**'
@@ -73,61 +74,66 @@ jobs:
       max-parallel: 4
       matrix:
         model: ${{ fromJSON(needs.select-models.outputs.matrix) }}
-    env:
-      RESULTS_DIR: results
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
 
-      - uses: ./.github/actions/setup-noble-env
-
-      - name: Sync Python dependencies
-        run: uv sync
-
-      - name: Start the VM
-        run: ./.github/scripts/llm-benchmark/start-vm.sh
-
       - name: Run the benchmark
+        id: yarf
+        # Failed tests are benchmark results, errors are checked below
+        continue-on-error: true
+        uses: ./.github/actions/yarf-test
         env:
           GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          MODEL_JSON: ${{ toJSON(matrix.model) }}
-          PROVIDER: ${{ matrix.model.provider }}
-          MODEL: ${{ matrix.model.model }}
-          ENDPOINT: ${{ matrix.model.endpoint }}
-          IMAGE_FORMAT: ${{ matrix.model.image_format }}
           VNC_HOST: localhost
           VNC_PORT: "0"
+        with:
+          platform: Vnc
+          platform-provider: custom
+          platform-setup-command: >-
+            RESULTS_DIR="$YARF_OUTPUT_DIR"
+            ./.github/scripts/llm-benchmark/start-vm.sh
+          platform-ready-command: >-
+            timeout 60 bash -c
+            'until </dev/tcp/localhost/5900; do sleep 1; done'
+          platform-teardown-command: pkill -f qemu-system-x86_64 || true
+          test-path: tests/llm_benchmark
+          yarf-path: .
+          yarf-args: --debug
+          robotframework-args: >-
+            --variable PROVIDER:${{ matrix.model.provider }}
+            --variable MODEL:${{ matrix.model.model }}
+            --variable ENDPOINT:${{ matrix.model.endpoint }}
+            --variable IMAGE_FORMAT:${{ matrix.model.image_format }}
+          upload-artifact: "false"
+
+      - name: Check the run
+        env:
+          EXIT_CODE: ${{ steps.yarf.outputs.exit-code }}
+          OUTPUT_DIR: ${{ steps.yarf.outputs.output-dir }}
+          MODEL_JSON: ${{ toJSON(matrix.model) }}
         run: |
-          mkdir -p "$RESULTS_DIR"
-          echo "$MODEL_JSON" > "$RESULTS_DIR/model.json"
-          status=0
-          uv run yarf --debug --platform Vnc --outdir "$RESULTS_DIR" \
-            tests/llm_benchmark -- \
-            --variable "PROVIDER:$PROVIDER" \
-            --variable "MODEL:$MODEL" \
-            --variable "ENDPOINT:$ENDPOINT" \
-            --variable "IMAGE_FORMAT:$IMAGE_FORMAT" \
-            > "$RESULTS_DIR/console.log" 2>&1 || status=$?
-          tail -n 30 "$RESULTS_DIR/console.log"
           # Robot returns the number of failed tests (up to 250); failed
           # tests are benchmark results, anything above is an error.
-          if [[ $status -gt 250 ]]; then
-            exit "$status"
+          if [[ -z $EXIT_CODE || $EXIT_CODE -gt 250 ]]; then
+            echo "::error::YARF did not complete (exit code '$EXIT_CODE')"
+            exit 1
           fi
+          echo "$MODEL_JSON" > "$OUTPUT_DIR/model.json"
           # The suite setup boots the desktop; its failure is not a result.
-          if grep -q "Parent suite setup failed" "$RESULTS_DIR/output.xml"; then
+          if grep -q "Parent suite setup failed" "$OUTPUT_DIR/output.xml"; then
             echo "::error::Suite setup failed, see log.html in the results"
             exit 1
           fi
 
       - name: Upload results
-        if: always()
+        if: always() && steps.yarf.outputs.output-dir != ''
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: llm-benchmark-run-${{ matrix.model.id }}
-          path: ${{ env.RESULTS_DIR }}
+          path: ${{ steps.yarf.outputs.output-dir }}
           # Only passed to the report job, which bundles all results
           retention-days: 1
 
