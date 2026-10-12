@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
 
@@ -182,7 +182,10 @@ class TestVncHid:
                     "yarf.rf_libraries.libraries.vnc.Hid.connect",
                     new=MagicMock(),
                 ) as connect_mock,
-                patch("yarf.rf_libraries.libraries.vnc.Hid.sleep"),
+                patch(
+                    "yarf.rf_libraries.libraries.vnc.Hid.asyncio.sleep",
+                    new_callable=AsyncMock,
+                ) as sleep_mock,
             ):
                 client_mock = connect_mock.return_value.__aenter__.return_value
                 client_mock.mouse.move = MagicMock()
@@ -196,6 +199,9 @@ class TestVncHid:
                         call().__enter__(),
                         call().__exit__(None, None, None),
                     ]
+                )
+                sleep_mock.assert_has_awaits(
+                    abs(steps) * [call(0.005), call(vnc_hid.type_string_delay)]
                 )
 
     @pytest.mark.asyncio

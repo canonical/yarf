@@ -2,6 +2,7 @@
 Robot Framework HID keyword library for VNC-based interactions.
 """
 
+import asyncio
 from enum import IntEnum
 from time import sleep
 from typing import Sequence
@@ -157,8 +158,8 @@ class Hid(HidBase):
             client.mouse.move(self.curr_x, self.curr_y)
             for _ in range(abs(steps)):
                 with client.mouse.hold(button):
-                    sleep(0.005)
-                sleep(self.type_string_delay)
+                    await asyncio.sleep(0.005)
+                await asyncio.sleep(self.type_string_delay)
 
     @keyword
     async def _move_pointer(
