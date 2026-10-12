@@ -196,6 +196,13 @@ PROVIDERS: dict[str, dict[str, str]] = {
         "endpoint": "/chat/completions",
         "api_key_env": "GITHUB_TOKEN",
     },
+    "gemini": {
+        "server_url": (
+            "https://generativelanguage.googleapis.com/v1beta/openai"
+        ),
+        "endpoint": "/chat/completions",
+        "api_key_env": "GEMINI_API_KEY",
+    },
 }
 
 # Transient server errors (rate limits, gateway errors) and retry delays
@@ -234,6 +241,7 @@ class LlmClient:
         - ``openrouter``: OpenRouter, key read from ``OPENROUTER_API_KEY``.
         - ``copilot``: GitHub Copilot, key read from ``GITHUB_TOKEN``
           (e.g. ``export GITHUB_TOKEN=$(gh auth token)``).
+        - ``gemini``: Google Gemini API, key read from ``GEMINI_API_KEY``.
 
         The API key is sent as a bearer token and read from the environment
         variable named by ``api_key_env`` (default ``YARF_LLM_API_KEY``),
@@ -262,6 +270,7 @@ class LlmClient:
             | Configure Llm Client    provider=copilot    model=gpt-4.1
             | Configure Llm Client    provider=openrouter
             | ...    model=qwen/qwen3-vl-8b-instruct
+            | Configure Llm Client    provider=gemini    model=gemini-2.5-flash
             | Configure Llm Client    collect_usage=True
         """
         config_fields = {

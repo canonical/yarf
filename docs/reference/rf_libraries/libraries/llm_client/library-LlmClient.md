@@ -76,6 +76,7 @@ ${result}=    Check For Visual Corruption
 <ul>
 <li><code>openrouter</code>: OpenRouter, key read from <code>OPENROUTER_API_KEY</code>.</li>
 <li><code>copilot</code>: GitHub Copilot, key read from <code>GITHUB_TOKEN</code> (e.g. <code>export GITHUB_TOKEN=$(gh auth token)</code>).</li>
+<li><code>gemini</code>: Google Gemini API, key read from <code>GEMINI_API_KEY</code>.</li>
 </ul>
 <p>The API key is sent as a bearer token and read from the environment variable named by <code>api_key_env</code> (default <code>YARF_LLM_API_KEY</code>), so that it never appears in the Robot logs. No <code>Authorization</code> header is sent if the variable is unset.</p>
 <p>Models that only support the OpenAI Responses API can be used by setting <code>endpoint=/responses</code>. For models that do not accept WEBP images, set <code>image_format</code> to <code>PNG</code> or <code>JPEG</code>.</p>
@@ -107,6 +108,7 @@ Configure Llm Client
 Configure Llm Client    provider=copilot    model=gpt-4.1
 Configure Llm Client    provider=openrouter
 ...    model=qwen/qwen3-vl-8b-instruct
+Configure Llm Client    provider=gemini    model=gemini-2.5-flash
 Configure Llm Client    collect_usage=True
 ```
 

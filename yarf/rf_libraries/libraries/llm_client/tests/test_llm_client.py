@@ -95,6 +95,11 @@ class TestLlmClient:
                 "OPENROUTER_API_KEY",
             ),
             ("copilot", "https://api.githubcopilot.com", "GITHUB_TOKEN"),
+            (
+                "gemini",
+                "https://generativelanguage.googleapis.com/v1beta/openai",
+                "GEMINI_API_KEY",
+            ),
         ],
     )
     def test_configure_llm_client_provider(
@@ -131,7 +136,8 @@ class TestLlmClient:
             (
                 {"provider": "unknown"},
                 ValueError,
-                "Unknown provider: unknown. Allowed: copilot, openrouter",
+                "Unknown provider: unknown. "
+                "Allowed: copilot, gemini, openrouter",
             ),
         ],
     )
