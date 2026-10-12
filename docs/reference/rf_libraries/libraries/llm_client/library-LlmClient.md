@@ -130,10 +130,10 @@ None
 
 #### Positional and named arguments
 
-| Name        | Type       | Default Value | Kind                | Required | Documentation                                          |
-| ----------- | ---------- | ------------- | ------------------- | -------- | ------------------------------------------------------ |
-| action      | dictionary |               | POSITIONAL_OR_NAMED | Yes      | A dict containing the action_type, text, and point_2d. |
-| description | string     |               | POSITIONAL_OR_NAMED | No       | The description provided to the LLM.                   |
+| Name        | Type       | Default Value | Kind                | Required | Documentation                                                                                                                                                                  |
+| ----------- | ---------- | ------------- | ------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| action      | dictionary |               | POSITIONAL_OR_NAMED | Yes      | A dict containing the action_type, text, point_2d and optionally point_frame, the <code>[width, height]</code> of the point's coordinate system (default: the 1000x1000 grid). |
+| description | string     |               | POSITIONAL_OR_NAMED | No       | The description provided to the LLM.                                                                                                                                           |
 
 #### Example
 
@@ -209,7 +209,7 @@ ${point}=    Get Object Position    the Continue button
 dictionary[string, Any]
 ```
 
-<p>The next GUI action as returned by the LLM. For pointer-based actions, <span class="name">point_2d</span> contains the raw coordinates from the LLM's 1000x1000 grid.</p>
+<p>The next GUI action as returned by the LLM. For pointer-based actions, <span class="name">point_2d</span> is in the coordinate system given by <span class="name">point_frame</span> (<code>[width, height]</code>), which <a class="name" href="#execute-gui-action" title='"Execute Gui Action" keyword'>Execute Gui Action</a> converts.</p>
 
 #### Positional and named arguments
 

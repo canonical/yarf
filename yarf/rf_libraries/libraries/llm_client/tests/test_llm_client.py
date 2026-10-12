@@ -1657,6 +1657,155 @@ class TestLlmClient:
         sleep.assert_awaited_once_with(1)
         assert item == HistoryItem(step=3, action=action)
 
+    @pytest.mark.parametrize(
+        "model, expected, unexpected",
+        [
+            (
+                "claude-opus-4.8-fast",
+                "The screenshot is 1280x800 pixels: if you give point_2d in "
+                "its pixels instead, set point_frame to [1280, 800].",
+                "Set point_frame to null.",
+            ),
+            ("qwen/qwen3-vl-8b-instruct", "Set point_frame to null.", "1280"),
+        ],
+    )
+    def test_coordinate_prompt(self, model, expected, unexpected):
+        client = LlmClient()
+        client.configure_llm_client(model=model)
+
+        prompt = client._coordinate_prompt(
+            "Rules: {coordinate_rule}", Image.new("RGB", (1280, 800))
+        )
+
+        assert prompt.startswith("Rules: Give point_2d on a ")
+        assert expected in prompt
+        assert unexpected not in prompt
+
+    @pytest.mark.parametrize(
+        "point, frame, expected",
+        [
+            ([640, 400], None, [640, 400]),
+            (None, [1280, 800], None),
+            ([640, 400], [1000, 1000], [640.0, 400.0]),
+            ([640, 400], [1280, 800], [500.0, 500.0]),
+            ([[1280, 0]], [1280, 800], [1000.0, 0.0]),
+        ],
+    )
+    def test_to_grid(self, point, frame, expected):
+        assert LlmClient._to_grid(point, frame) == expected
+
+    @pytest.mark.parametrize(
+        "point, frame, match",
+        [
+            ([1, 2, 3], [1280, 800], "must each be two numbers"),
+            (["left", 2], [1280, 800], "must each be two numbers"),
+            ([1, 2], [1280], "must each be two numbers"),
+            ([1, 2], [0, 800], "Invalid point frame"),
+        ],
+    )
+    def test_to_grid_rejects_invalid_values(self, point, frame, match):
+        with pytest.raises(ValueError, match=match):
+            LlmClient._to_grid(point, frame)
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "model, expected",
+        [
+            ("claude-opus-4.8-fast", [0.25, 0.75]),
+            # Grid-native models label point_frame unreliably
+            ("qwen3-vl:8b", [0.32, 0.6]),
+        ],
+    )
+    async def test_get_object_position_converts_point_frame(
+        self, model, expected
+    ):
+        client = LlmClient()
+        client.configure_llm_client(model=model)
+        image = Image.new("RGB", (1280, 800))
+        response = {"point_2d": [320, 600], "point_frame": [1280, 800]}
+
+        with patch.object(
+            client, "prompt_llm", return_value=json.dumps(response)
+        ):
+            point = await client.get_object_position("the OK button", image)
+
+        assert point == expected
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "model, frame",
+        [("claude-opus-4.8-fast", [1280, 800]), ("Qwen3.5-9B", None)],
+    )
+    async def test_get_single_gui_action_returns_point_frame(
+        self, model, frame
+    ):
+        client = LlmClient()
+        client.configure_llm_client(model=model)
+        image = Image.new("RGB", (1280, 800))
+        response = {
+            "action_type": "Left Click",
+            "text": None,
+            "point_2d": [320, 600],
+            "point_frame": [1280, 800],
+        }
+
+        with patch.object(
+            client, "prompt_llm", return_value=json.dumps(response)
+        ) as mock_prompt:
+            action = await client.get_single_gui_action("click OK", image)
+
+        assert action.get("point_frame") == frame
+        assert action["point_2d"] == [320, 600]
+        system_prompt = mock_prompt.call_args.kwargs["system_prompt"]
+        assert "{coordinate_rule}" not in system_prompt
+
+    @pytest.mark.asyncio
+    async def test_execute_gui_action_converts_point_frame(self):
+        client = LlmClient()
+        mock_hid = MagicMock()
+        mock_hid.move_pointer_to_proportional = AsyncMock()
+        mock_hid.click_pointer_button = AsyncMock()
+
+        with (
+            patch.object(client, "_get_lib_instance", return_value=mock_hid),
+            patch(f"{self.LLM_PATH}.asyncio.sleep", AsyncMock()),
+        ):
+            await client.execute_gui_action(
+                {
+                    "action_type": "Left Click",
+                    "text": None,
+                    "point_2d": [320, 600],
+                    "point_frame": [1280, 800],
+                }
+            )
+
+        mock_hid.move_pointer_to_proportional.assert_awaited_once_with(
+            0.25, 0.75
+        )
+
+    @pytest.mark.asyncio
+    async def test_run_step_fills_coordinate_rule(self):
+        client = LlmClient()
+        screenshot = Image.new("RGB", (1280, 800))
+        action = json.loads(self.FINISH_ACTION_RESPONSE)
+
+        with (
+            patch.object(
+                client,
+                "_grab_screenshot",
+                AsyncMock(return_value=screenshot),
+            ),
+            patch.object(
+                client, "prompt_llm", return_value=json.dumps(action)
+            ) as mock_prompt,
+        ):
+            await client._run_step(1, "next action", "{coordinate_rule}")
+
+        assert (
+            "Set point_frame to null."
+            in (mock_prompt.call_args.kwargs["system_prompt"])
+        )
+
     @pytest.mark.asyncio
     async def test_run_step_returns_finish_without_executing_action(self):
         client = LlmClient()

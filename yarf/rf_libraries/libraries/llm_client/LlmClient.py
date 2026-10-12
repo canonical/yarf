@@ -208,6 +208,10 @@ PROVIDERS: dict[str, dict[str, str]] = {
 # Transient server errors (rate limits, gateway errors) and retry delays
 RETRY_STATUS = {429, 500, 502, 503, 504}
 RETRY_DELAYS = (5, 15, 30)
+GRID_SIZE = 1000
+# Model families trained on the 1000x1000 grid. They always answer on it,
+# but label point_frame unreliably, so it is ignored for them.
+GRID_NATIVE_MODELS = ("qwen",)
 
 
 @library
@@ -444,6 +448,92 @@ class LlmClient:
 
         b64 = to_base64(image, format=self.image_format)
         return f"data:image/{self.image_format.lower()};base64,{b64}"
+
+    def _coordinate_prompt(self, prompt: str, image: Image.Image) -> str:
+        """
+        Fill in the ``{coordinate_rule}`` placeholder of a system prompt.
+
+        Args:
+            prompt: The system prompt.
+            image: The screenshot sent with the prompt.
+
+        Returns:
+            The prompt, telling the model the screenshot size and to report
+            the coordinate frame of its points; grid-native models are only
+            asked for the 1000x1000 grid.
+        """
+        if self._is_grid_native():
+            rule = (
+                "Give point_2d on a normalized 1000x1000 grid over the "
+                "screenshot, where [0, 0] is the top-left and [1000, 1000] "
+                "the bottom-right. Set point_frame to null."
+            )
+            return prompt.replace("{coordinate_rule}", rule)
+        width, height = image.size
+        rule = (
+            "Give point_2d on a 1000x1000 grid over the screenshot, where "
+            "[0, 0] is the top-left and [1000, 1000] the bottom-right, and "
+            "set point_frame to [1000, 1000]. The screenshot is "
+            f"{width}x{height} pixels: if you give point_2d in its pixels "
+            f"instead, set point_frame to [{width}, {height}]. Use null for "
+            "both when no point applies."
+        )
+        return prompt.replace("{coordinate_rule}", rule)
+
+    def _is_grid_native(self) -> bool:
+        """
+        Check whether the model belongs to a family trained on the 1000x1000
+        grid.
+
+        Returns:
+            True if the model name contains a GRID_NATIVE_MODELS entry.
+        """
+        model = self.model.lower()
+        return any(family in model for family in GRID_NATIVE_MODELS)
+
+    def _drop_unreliable_frame(self, response: dict[str, Any]) -> None:
+        """
+        Remove the ``point_frame`` reported by a grid-native model, so that its
+        point is read on the 1000x1000 grid.
+
+        Args:
+            response: The parsed model response, changed in place.
+        """
+        if self._is_grid_native():
+            response.pop("point_frame", None)
+
+    @staticmethod
+    def _to_grid(point: Any, frame: Any) -> Any:
+        """
+        Convert a point from the coordinate frame reported by the model to the
+        1000x1000 grid.
+
+        Args:
+            point: The point returned by the model, or None.
+            frame: The ``[width, height]`` of the point's coordinate system,
+                or None for the 1000x1000 grid.
+
+        Returns:
+            The point on the grid; unchanged if there is no frame or point.
+
+        Raises:
+            ValueError: If the point or the frame is not two numbers, or the
+                frame is not positive.
+        """
+        if frame is None or not isinstance(point, list):
+            return point
+        if len(point) == 1 and isinstance(point[0], list):
+            point = point[0]
+        try:
+            x, y = (float(value) for value in point)
+            width, height = (float(value) for value in frame)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"Point {point} and frame {frame} must each be two numbers"
+            ) from exc
+        if width <= 0 or height <= 0:
+            raise ValueError(f"Invalid point frame: {frame}")
+        return [x * GRID_SIZE / width, y * GRID_SIZE / height]
 
     def _get_lib_instance(self, lib_name: str) -> Any:
         """
@@ -693,20 +783,21 @@ class LlmClient:
         """
         if image is None:
             image = await self._grab_screenshot()
+        else:
+            image = to_image(image)
 
         system_prompt = textwrap.dedent("""
             You are a GUI localization agent. Given an object description and a
             screenshot, identify the object's location in the screenshot.
 
             Return only a valid JSON object with this exact schema:
-            {"point_2d": [x, y]}
+            {"point_2d": [x, y], "point_frame": [width, height]}
             or:
-            {"point_2d": null}
+            {"point_2d": null, "point_frame": null}
             if the object is not present or not confidently identified.
 
             Rules:
-            - Use a normalized 1000x1000 coordinate grid, where [0, 0] is the
-              top-left of the screenshot and [1000, 1000] is the bottom-right.
+            - {coordinate_rule}
             - Return the approximate center point of the described object.
             - Coordinates must be integers.
             - If the object is partially visible, return the center of the
@@ -714,7 +805,7 @@ class LlmClient:
             - If multiple matching objects are present, return the best match
               based on the description and surrounding context.
             - If the object is not visible, or you are not confident it is
-              present, return: {"point_2d": null}
+              present, return: {"point_2d": null, "point_frame": null}
             - Do not guess. Prefer null over a low-confidence false
               positive.
             - Do not include markdown, explanations, comments, or any text
@@ -725,7 +816,9 @@ class LlmClient:
             self.prompt_llm,
             prompt=f"Find the position of this object: {description}",
             image=image,
-            system_prompt=custom_system_prompt or system_prompt,
+            system_prompt=self._coordinate_prompt(
+                custom_system_prompt or system_prompt, image
+            ),
         )
 
         parsed = await self._verify_llm_json_response(
@@ -733,13 +826,15 @@ class LlmClient:
             {"point_2d": [list, type(None)]},
         )
         point = parsed["point_2d"]
+        self._drop_unreliable_frame(parsed)
+        frame = parsed.get("point_frame")
 
-        logger.info(f"LLM indicated point: {point}")
+        logger.info(f"LLM indicated point: {point} in frame {frame}")
         if point is None:
             raise VQADetectionError(f"Object was not found: {description}")
 
         # Normalize the point to have relative coordinates
-        point = normalize_point(point)
+        point = normalize_point(self._to_grid(point, frame))
 
         if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
             image = draw_point_on_image(image, point, label=description)
@@ -822,8 +917,9 @@ class LlmClient:
 
         Returns:
             The next GUI action as returned by the LLM. For pointer-based
-            actions, `point_2d` contains the raw coordinates from the LLM's
-            1000x1000 grid.
+            actions, `point_2d` is in the coordinate system given by
+            `point_frame` (``[width, height]``), which `Execute Gui Action`
+            converts.
 
         Example:
             | ${action}=    Get Single Gui Action    click the Continue button
@@ -831,6 +927,8 @@ class LlmClient:
 
         if image is None:
             image = await self._grab_screenshot()
+        else:
+            image = to_image(image)
 
         if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
             log_image(
@@ -845,15 +943,15 @@ class LlmClient:
 
             action_type: Left Click, text: null, point_2d: [x, y]
                 Explanation: Left click a specific UI element and provide
-                coordinates on a 1000x1000 grid.
+                its coordinates.
 
             action_type: Right Click, text: null, point_2d: [x, y]
                 Explanation: Right click a specific UI element and provide
-                coordinates on a 1000x1000 grid.
+                its coordinates.
 
             action_type: Double Click, text: null, point_2d: [x, y]
                 Explanation: Double click a specific UI element and provide
-                coordinates on a 1000x1000 grid.
+                its coordinates.
 
             action_type: Write, text: Text to enter, point_2d: null
                 Explanation: Type text without moving the pointer.
@@ -879,23 +977,26 @@ class LlmClient:
             {
                 "action_type": "one of the available action types",
                 "text": "text to write or key to press, or null if not applicable",
-                "point_2d": "[x, y], or null if not applicable"
+                "point_2d": "[x, y], or null if not applicable",
+                "point_frame": "[width, height], or null if not applicable"
             }
 
             Rules:
-            - Return point_2d on a 1000x1000 grid where [0, 0] is the top-left
-              and [1000, 1000] is the bottom-right of the image.
+            - {coordinate_rule}
             - Use null when coordinates are not applicable.
             - Do not add markdown syntax or any other text.
             - If you determine that the task cannot be completed, return:
-              {"action_type": "Failed", "text": null, "point_2d": null}.
+              {"action_type": "Failed", "text": null, "point_2d": null,
+              "point_frame": null}.
             """)
 
         llm_output = await asyncio.to_thread(
             self.prompt_llm,
             prompt=task,
             image=image,
-            system_prompt=custom_system_prompt or system_prompt,
+            system_prompt=self._coordinate_prompt(
+                custom_system_prompt or system_prompt, image
+            ),
         )
 
         parsed = await self._verify_llm_json_response(
@@ -907,6 +1008,7 @@ class LlmClient:
             },
         )
 
+        self._drop_unreliable_frame(parsed)
         self.validate_gui_action(parsed, task)
         return parsed
 
@@ -964,7 +1066,9 @@ class LlmClient:
         Execute a GUI action as specified by the LLM response.
 
         Args:
-            action: A dict containing the action_type, text, and point_2d.
+            action: A dict containing the action_type, text, point_2d and
+                optionally point_frame, the ``[width, height]`` of the
+                point's coordinate system (default: the 1000x1000 grid).
             description: The description provided to the LLM.
 
         Raises:
@@ -983,7 +1087,9 @@ class LlmClient:
 
         if action_type in POINTER_ACTIONS:
             hid = self._get_lib_instance("HID")
-            x, y = normalize_point(action["point_2d"])
+            x, y = normalize_point(
+                self._to_grid(action["point_2d"], action.get("point_frame"))
+            )
             # For click actions, draw the point on the image and log it before
             # executing
             if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
@@ -1075,16 +1181,16 @@ class LlmClient:
         Available actions:
 
         action_type: Left Click, text: null, point_2d: [x, y]
-        Explanation: Left click a specific UI element and provide coordinates
-        on a 1000x1000 grid.
+        Explanation: Left click a specific UI element and provide its
+        coordinates.
 
         action_type: Right Click, text: null, point_2d: [x, y]
-        Explanation: Right click a specific UI element and provide coordinates
-        on a 1000x1000 grid.
+        Explanation: Right click a specific UI element and provide its
+        coordinates.
 
         action_type: Double Click, text: null, point_2d: [x, y]
-        Explanation: Double click a specific UI element and provide coordinates
-        on a 1000x1000 grid.
+        Explanation: Double click a specific UI element and provide its
+        coordinates.
 
         action_type: Write, text: Text to enter, point_2d: null
         Explanation: Type text using the keyboard. Use this only when a text
@@ -1112,10 +1218,7 @@ class LlmClient:
         the goal is done.
 
         Coordinate rules:
-        - point_2d is normalized to a 1000x1000 grid relative to the
-          screenshot.
-        - [0, 0] is the top-left of the screenshot.
-        - [1000, 1000] is the bottom-right of the screenshot.
+        - {coordinate_rule}
         - For pointer actions, choose the center of the target UI element.
         - For Write, Press Key, Wait, and Finish, always use null.
 
@@ -1142,7 +1245,8 @@ class LlmClient:
             "description": "brief description for the chosen action",
             "action_type": "one of the available action types",
             "text": "text to write or key to press, or null",
-            "point_2d": [x, y]
+            "point_2d": [x, y],
+            "point_frame": [width, height]
         }
         """)
 
@@ -1223,7 +1327,9 @@ class LlmClient:
                     self.prompt_llm,
                     prompt=prompt,
                     image=image,
-                    system_prompt=system_prompt,
+                    system_prompt=self._coordinate_prompt(
+                        system_prompt, image
+                    ),
                 )
                 logger.info(f"LLM proposed action: {llm_output}")
 
@@ -1237,6 +1343,7 @@ class LlmClient:
                         "point_2d": [list, type(None)],
                     },
                 )
+                self._drop_unreliable_frame(action)
 
                 if action["action_type"] != "Finish":
                     description = action.get("description", "No description")
