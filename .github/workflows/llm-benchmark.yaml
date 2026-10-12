@@ -6,7 +6,8 @@ name: LLM GUI navigation benchmark
 # marimo HTML report and the job summary.
 #
 # Secrets: OPENROUTER_API_KEY for openrouter:* models, COPILOT_GITHUB_TOKEN
-# (a token of a user with a Copilot licence) for copilot:* models.
+# (a token of a user with a Copilot licence) for copilot:* models,
+# GEMINI_API_KEY for gemini:* models.
 #
 # Pull requests that touch the benchmark run the small "pull_request" model
 # set from models.json. Fork PRs are skipped, as they get no secrets.
@@ -87,6 +88,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           VNC_HOST: localhost
           VNC_PORT: "0"
         with:

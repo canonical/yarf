@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 
 CATALOG_PATH = Path(__file__).parent / "models.json"
-PROVIDERS = {"copilot", "openrouter"}
+PROVIDERS = {"copilot", "gemini", "openrouter"}
 DEFAULT_SETTINGS = {"endpoint": "/chat/completions", "image_format": "WEBP"}
 
 

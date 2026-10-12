@@ -24,8 +24,8 @@ select_models = load_script()
 
 def test_parse_entries():
     assert select_models.parse_entries(
-        " copilot:a,\nopenrouter:b/c , ,copilot:a\n"
-    ) == ["copilot:a", "openrouter:b/c"]
+        " copilot:a,\nopenrouter:b/c , ,copilot:a\ngemini:d"
+    ) == ["copilot:a", "openrouter:b/c", "gemini:d"]
 
 
 def test_build_matrix():
@@ -61,6 +61,12 @@ def test_build_matrix():
 def test_build_matrix_rejects_invalid_entries(entry):
     with pytest.raises(ValueError, match="Invalid model entry"):
         select_models.build_matrix([entry], {})
+
+
+def test_build_matrix_accepts_gemini():
+    [entry] = select_models.build_matrix(["gemini:gemini-flash"], {})
+
+    assert entry["provider"] == "gemini"
 
 
 @pytest.mark.parametrize(
