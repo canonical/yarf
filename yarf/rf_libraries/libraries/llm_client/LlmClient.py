@@ -823,7 +823,10 @@ class LlmClient:
 
         parsed = await self._verify_llm_json_response(
             llm_output,
-            {"point_2d": [list, type(None)]},
+            {
+                "point_2d": [list, type(None)],
+                "point_frame": [list, type(None)],
+            },
         )
         point = parsed["point_2d"]
         self._drop_unreliable_frame(parsed)
@@ -977,8 +980,8 @@ class LlmClient:
             {
                 "action_type": "one of the available action types",
                 "text": "text to write or key to press, or null if not applicable",
-                "point_2d": "[x, y], or null if not applicable",
-                "point_frame": "[width, height], or null if not applicable"
+                "point_2d": [x, y],
+                "point_frame": [width, height]
             }
 
             Rules:
@@ -1004,6 +1007,7 @@ class LlmClient:
             {
                 "action_type": [str],
                 "point_2d": [list, type(None)],
+                "point_frame": [list, type(None)],
                 "text": [str, type(None)],
             },
         )
@@ -1341,6 +1345,7 @@ class LlmClient:
                         "action_type": [str],
                         "text": [str, type(None)],
                         "point_2d": [list, type(None)],
+                        "point_frame": [list, type(None)],
                     },
                 )
                 self._drop_unreliable_frame(action)
