@@ -23,7 +23,7 @@ USD_PER_AIU = 0.01
 
 NOTES = [
     ("Wall time", "Robot test duration, including GUI actions, sleeps and "
-     "the VM reset in the test teardown."),
+     "restoring the VM snapshot in the test setup."),
     ("LLM requests", "All model calls: GUI steps, Assert State and JSON "
      "correction retries."),
     ("Inference time", "Sum of the HTTP round-trip times of the LLM "
@@ -46,8 +46,8 @@ NOTES = [
      "so cost, tokens and inference time are the compute proxies."),
     ("Setup", "Ubuntu 24.04 desktop live session (the latest point release, "
      "see iso.txt of each run) in QEMU/KVM (2 vCPU, 8 GB, 1280x800), yarf "
-     "--debug over VNC. Each test starts from a reset desktop (apps closed, "
-     "test files and Firefox cookies removed)."),
+     "--debug over VNC. Each test starts from the same QEMU snapshot of the "
+     "prepared desktop."),
     ("0 tests", "The run has no results, or the desktop did not boot (suite "
      "setup failed); it is not a model result."),
     ("Caveat: Canonical test", "'Open Canonical Release Notes' asks to open "

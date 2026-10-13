@@ -95,7 +95,7 @@ jobs:
           platform: Vnc
           platform-provider: custom
           platform-setup-command: >-
-            RESULTS_DIR="$YARF_OUTPUT_DIR"
+            RESULTS_DIR="$YARF_OUTPUT_DIR" VM_STATE_DIR=/mnt/yarf-vm
             ./.github/scripts/llm-benchmark/start-vm.sh
           platform-ready-command: >-
             timeout 60 bash -c

@@ -8,16 +8,20 @@ Documentation       Benchmark of LLM-driven GUI navigation on an Ubuntu 24.04
 ...                 VNC_PORT=0 yarf --debug --platform Vnc tests/llm_benchmark --
 ...                 --variable PROVIDER:openrouter
 ...                 --variable MODEL:qwen/qwen3.5-9b
+...
+...                 The VM must be QEMU, started like in
+...                 .github/scripts/llm-benchmark/start-vm.sh with a monitor
+...                 socket at ${QEMU_MONITOR}: every test starts from a VM
+...                 snapshot of the prepared desktop.
 Library             Collections
 Library             OperatingSystem
 Library             yarf.rf_libraries.libraries.llm_client.LlmClient
+Library             vm_snapshot.py          ${QEMU_MONITOR}
 Resource            kvm.resource
 
 Suite Setup         Prepare Desktop
-Test Setup          Configure Llm Client    provider=${PROVIDER}    model=${MODEL}
-...                     endpoint=${ENDPOINT}    image_format=${IMAGE_FORMAT}
-...                     collect_usage=True
-Test Teardown       Benchmark Teardown
+Test Setup          Benchmark Setup
+Test Teardown       Record Llm Usage
 
 
 *** Variables ***
@@ -26,32 +30,8 @@ ${MODEL}                qwen/qwen3.5-9b
 ${ENDPOINT}             /chat/completions
 ${IMAGE_FORMAT}         WEBP
 ${USAGE_FILE}           ${OUTPUT_DIR}/usage.jsonl
-${FIREFOX_POLICIES}     {"policies": {"OverrideFirstRunPage": "", "OverridePostUpdatePage": "", "DontCheckDefaultBrowser": true, "DisableTelemetry": true, "UserMessaging": {"SkipOnboarding": true, "ExtensionRecommendations": false, "FeatureRecommendations": false, "MoreFromMozilla": false}, "Preferences": {"browser.sessionstore.resume_from_crash": {"Value": false, "Status": "locked"}}}}
-# Closes the apps used by the tests and reverts the files they create.
-${RESET_SCRIPT}         SEPARATOR=
-...                     pkill -u $USER -f 'gnome-text-editor|gnome-calculator|gnome-control-center
-...                     |soffice|rhythmbox|thunderbird|snap-store|yelp|totem|eog|evince
-...                     |ubuntu-desktop-bootstrap|gnome-system-monitor|baobab|gnome-disks
-...                     |gnome-logs|gnome-characters|seahorse|shotwell|transmission
-...                     |remmina|simple-scan|software-properties|update-manager
-...                     |aisleriot|gnome-mahjongg|gnome-mines|gnome-sudoku|snapshot|loupe
-...                     |gnome-clocks|gnome-weather|gnome-calendar|gnome-maps|gnome-contacts
-...                     |gnome-power-statistics|gnome-font-viewer|deja-dup|usb-creator
-...                     |apport-gtk|firmware-updater|desktop-security-center
-...                     |system-config-printer|nm-connection-editor|language-selector';
-...                     ${SPACE}pkill -x firefox;
-...                     ${SPACE}pkill -x nautilus; sleep 3;
-...                     ${SPACE}rm -rf ~/Music/classical ~/.local/share/Trash/files/*
-...                     ${SPACE}~/.local/share/Trash/info/*
-...                     ${SPACE}~/.local/share/org.gnome.TextEditor
-...                     ${SPACE}~/snap/firefox/common/.mozilla/firefox/*/cookies.sqlite*
-...                     ${SPACE}~/snap/firefox/common/.mozilla/firefox/*/sessionstore*;
-...                     ${SPACE}grep -rlZ --exclude-dir='.*' --exclude-dir=snap
-...                     ${SPACE}--exclude=yarf_reset.sh 'hello from YARF' ~
-...                     ${SPACE}| xargs -0r rm -f;
-...                     ${SPACE}gsettings reset org.gnome.Settings last-panel;
-...                     ${SPACE}gsettings set org.gnome.desktop.session idle-delay 0;
-...                     ${SPACE}pkill -u $USER -f gnome-terminal
+${FIREFOX_POLICIES}     ${CURDIR}/firefox_policies.json
+${QEMU_MONITOR}         /tmp/yarf-vm-monitor.sock
 
 
 *** Test Cases ***
@@ -99,24 +79,30 @@ Open Canonical Release Notes
 
 
 *** Keywords ***
-Benchmark Teardown
-    Record Llm Usage
-    Run Keyword And Ignore Error
-    ...                     Run In Terminal         bash ~/yarf_reset.sh; exit
+Benchmark Setup
+    Restore Vm Snapshot
+    Configure Llm Client    provider=${PROVIDER}    model=${MODEL}
+    ...                     endpoint=${ENDPOINT}    image_format=${IMAGE_FORMAT}
+    ...                     collect_usage=True
 
 Prepare Desktop
     [Documentation]    Wait for the live session to boot, close its
-    ...    installer, install the reset script and do the slow (~40 s) first
+    ...    installer, turn off screen blanking and do the slow (~40 s) first
     ...    Firefox start without its first-run wizard, so that the tests measure
-    ...    the model. The ready desktop is saved to
-    ...    ${OUTPUT_DIR}/desktop-ready.png.
+    ...    the model. Then save a VM snapshot, which every test restores. The
+    ...    ready desktop is saved to ${OUTPUT_DIR}/desktop-ready.png.
     Wait For Live Session And Close Installer
-    Run In Terminal         echo "${RESET_SCRIPT}" > ~/yarf_reset.sh; bash ~/yarf_reset.sh; exit
+    # See firefox_policies.json for why each policy is needed.
+    ${policies}=            Evaluate
+    ...                     json.dumps({"policies": json.loads(pathlib.Path($FIREFOX_POLICIES).read_text())["policies"]})
+    ...                     modules=json,pathlib
+    # Without idle-delay 0, the screen blanks during long model runs.
     Run In Terminal
-    ...                     sudo mkdir -p /etc/firefox/policies && echo '${FIREFOX_POLICIES}' | sudo tee /etc/firefox/policies/policies.json > /dev/null; firefox about:blank & sleep 60; pkill -x firefox; sleep 5; exit
+    ...                     gsettings set org.gnome.desktop.session idle-delay 0; sudo mkdir -p /etc/firefox/policies && echo '${policies}' | sudo tee /etc/firefox/policies/policies.json > /dev/null; firefox about:blank & sleep 60; pkill -x firefox; sleep 5; exit
     Sleep                   65s
     ${screenshot}=          Grab Screenshot
     Evaluate                $screenshot.save($OUTPUT_DIR + "/desktop-ready.png")
+    Save Vm Snapshot
 
 Wait For Live Session And Close Installer
     [Documentation]    The live session boots (~2 min) to the installer's
