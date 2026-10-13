@@ -775,6 +775,14 @@ class TestLlmClient:
             "text": None,
         }
 
+    def test_parse_llm_json_unknown_keys_not_defaulted(self):
+        client = LlmClient()
+        raw = json.dumps({"bbox_2d": [1, 2, 3, 4]})
+        _parsed, errors = client._parse_llm_json_response(
+            raw, {"point_2d": [list, type(None)]}
+        )
+        assert "missing keys: ['point_2d']" in errors
+
     def test_parse_llm_json_wrong_type(self):
         client = LlmClient()
         raw = json.dumps({"corrupted": "yes", "description": "ok"})
@@ -1319,6 +1327,7 @@ class TestLlmClient:
 
     def test_prompt_retries_transient_errors(self, mock_post):
         client = LlmClient()
+        client.configure_llm_client(collect_usage=True)
         busy = MagicMock(status_code=429)
         ok = self._mock_response("hello")
         ok.status_code = 200
@@ -1329,6 +1338,7 @@ class TestLlmClient:
 
         assert mock_post.call_count == 3
         assert [c.args[0] for c in sleep.call_args_list] == [5, 15]
+        assert client.usage.requests == 3
 
     def test_prompt_raises_after_retries(self, mock_post):
         client = LlmClient()

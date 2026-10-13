@@ -87,8 +87,9 @@ class LlmUsage:
 
     Attributes:
         enabled: Whether requests are recorded.
-        requests: Number of recorded requests.
-        inference_time: Summed wall-clock time of the requests in seconds.
+        requests: Number of recorded requests, including retries.
+        inference_time: Summed wall-clock time of the requests in seconds,
+            including retries and the waits between them.
         prompt_tokens: Number of input tokens, including image tokens.
         completion_tokens: Number of output tokens, including reasoning.
         reasoning_tokens: Number of output tokens spent on reasoning.
@@ -107,13 +108,16 @@ class LlmUsage:
     cost: float | None = None
     nano_aiu: int | None = None
 
-    def record(self, data: dict[str, Any], inference_time: float) -> None:
+    def record(
+        self, data: dict[str, Any], inference_time: float, attempts: int = 1
+    ) -> None:
         """
         Add the usage of a chat completions or responses API reply, if enabled.
 
         Args:
             data: The JSON response from the server.
             inference_time: Wall-clock time of the request in seconds.
+            attempts: Number of HTTP requests sent, including retries.
         """
         if not self.enabled:
             return
@@ -133,7 +137,7 @@ class LlmUsage:
         cost = usage.get("cost")
         nano_aiu = (data.get("copilot_usage") or {}).get("total_nano_aiu")
 
-        self.requests += 1
+        self.requests += attempts
         self.inference_time += inference_time
         self.prompt_tokens += prompt_tokens
         self.completion_tokens += completion_tokens
@@ -372,15 +376,14 @@ class LlmClient:
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
 
-        for delay in (*RETRY_DELAYS, None):
-            start = time.perf_counter()
+        start = time.perf_counter()
+        for attempt, delay in enumerate((*RETRY_DELAYS, None), start=1):
             response = requests.post(
                 f"{self.server_url}{self.endpoint}",
                 headers=headers,
                 json=payload,
                 timeout=600,
             )
-            inference_time = time.perf_counter() - start
             if response.status_code not in RETRY_STATUS or delay is None:
                 break
             logger.warn(
@@ -388,9 +391,10 @@ class LlmClient:
                 f"retrying in {delay}s"
             )
             time.sleep(delay)
+        inference_time = time.perf_counter() - start
         response.raise_for_status()
         data = response.json()
-        self.usage.record(data, inference_time)
+        self.usage.record(data, inference_time, attempts=attempt)
 
         if uses_responses_api:
             return "".join(
@@ -417,7 +421,9 @@ class LlmClient:
         in `Configure Llm Client`.
 
         ``inference_time`` is the summed wall-clock time of the requests in
-        seconds, including network latency. ``cost`` (OpenRouter credits) and
+        seconds, including network latency. Retries of transient server
+        errors count as requests, and their time and the waits between them
+        are part of ``inference_time``. ``cost`` (OpenRouter credits) and
         ``nano_aiu`` (Copilot billing units) are ``None`` if the server does
         not report them.
 
@@ -638,10 +644,12 @@ class LlmClient:
             return {}, error
 
         error_messages: list[str] = []
-        for key, expected_types in required_keys.items():
-            # Models often omit nullable keys instead of writing null.
-            if type(None) in expected_types:
-                parsed_output.setdefault(key, None)
+        # Models often omit nullable keys instead of writing null, but unknown
+        # keys (e.g. bbox_2d for point_2d) need the correction path instead.
+        if parsed_output.keys() <= required_keys.keys():
+            for key, expected_types in required_keys.items():
+                if type(None) in expected_types:
+                    parsed_output.setdefault(key, None)
 
         missing_keys = required_keys.keys() - parsed_output.keys()
         if missing_keys:
