@@ -37,6 +37,10 @@ NOTES = {
         "correction retries, and retries after rate limits or server "
         "errors (HTTP 429 and 5xx)."
     ),
+    "Retries": (
+        "LLM requests retried after rate limits or server errors (HTTP 429 "
+        "and 5xx); a sign of provider load, not of the model's quality."
+    ),
     "Inference time": (
         "Sum of the HTTP round-trip times of the LLM requests (server "
         "queueing + inference + network, incl. image upload), including "
@@ -187,6 +191,7 @@ def load_run(run_dir: Path) -> tuple[dict[str, str], list[dict[str, Any]]]:
                         test.elapsed_time.total_seconds(), 1
                     ),
                     "LLM requests": requests,
+                    "Retries": u.get("retries", 0),
                     "Prompt tokens": u.get("prompt_tokens", 0),
                     "Completion tokens": u.get("completion_tokens", 0),
                     "Reasoning tokens": u.get("reasoning_tokens", 0),
@@ -230,6 +235,7 @@ def summarise(
         for key in (
             "Wall time (s)",
             "LLM requests",
+            "Retries",
             "Prompt tokens",
             "Completion tokens",
             "Reasoning tokens",
@@ -253,6 +259,7 @@ def summarise(
         "Pass rate": round(passed / len(tests), 2) if tests else 0,
         "Wall time (s)": round(total["Wall time (s)"], 1),
         "LLM requests": requests,
+        "Retries": total["Retries"],
         "Prompt tokens": total["Prompt tokens"],
         "Completion tokens": total["Completion tokens"],
         "Reasoning tokens": total["Reasoning tokens"],
@@ -310,15 +317,15 @@ def markdown_summary(summary: list[dict[str, Any]]) -> str:
         "## LLM benchmark",
         "",
         (
-            "| Model | Passed | Requests | Total tokens "
+            "| Model | Passed | Requests | Retries | Total tokens "
             "| Inference time (s) | Cost (USD) |"
         ),
-        "| --- | --- | --- | --- | --- | --- |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
     ]
     for s in summary:
         lines.append(
             f"| {s['Model']} | {s['Passed']}/{s['Tests']} "
-            f"| {s['LLM requests']} | {s['Total tokens']} "
+            f"| {s['LLM requests']} | {s['Retries']} | {s['Total tokens']} "
             f"| {s['Inference time (s)']} | {s['Cost (USD)']} |"
         )
     lines += [

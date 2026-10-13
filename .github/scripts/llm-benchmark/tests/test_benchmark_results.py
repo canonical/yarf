@@ -49,3 +49,28 @@ def test_gemini_cost_is_zero_when_unknown(provider, model):
     settings = {"provider": provider, "model": model}
 
     assert benchmark_results.gemini_cost(settings, USAGE) == 0.0
+
+
+def test_load_results_counts_retries(tmp_path):
+    run = tmp_path / "run"
+    run.mkdir()
+    (run / "model.json").write_text(
+        '{"provider": "openrouter", "model": "m", "endpoint": "/e", '
+        '"image_format": "WEBP"}'
+    )
+    (run / "output.xml").write_text(
+        '<robot generator="Robot 7.5"><suite id="s1" name="S">'
+        '<test id="s1-t1" name="A"><status status="PASS"/></test>'
+        '<test id="s1-t2" name="B"><status status="FAIL"/></test>'
+        '<status status="FAIL"/></suite></robot>'
+    )
+    (run / "usage.jsonl").write_text(
+        '{"test": "A", "requests": 5, "retries": 2}\n'
+        '{"test": "B", "requests": 3}\n'
+    )
+
+    summary, per_test = benchmark_results.load_results(tmp_path)
+
+    assert [t["Retries"] for t in per_test] == [2, 0]
+    assert summary[0]["Retries"] == 2
+    assert "| 8 | 2 |" in benchmark_results.markdown_summary(summary)
