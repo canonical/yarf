@@ -88,6 +88,7 @@ class LlmUsage:
     Attributes:
         enabled: Whether requests are recorded.
         requests: Number of recorded requests, including retries.
+        retries: Number of retries of transient server errors.
         inference_time: Summed wall-clock time of the requests in seconds,
             including retries and the waits between them.
         prompt_tokens: Number of input tokens, including image tokens.
@@ -100,6 +101,7 @@ class LlmUsage:
 
     enabled: bool = False
     requests: int = 0
+    retries: int = 0
     inference_time: float = 0.0
     prompt_tokens: int = 0
     completion_tokens: int = 0
@@ -138,6 +140,7 @@ class LlmUsage:
         nano_aiu = (data.get("copilot_usage") or {}).get("total_nano_aiu")
 
         self.requests += attempts
+        self.retries += attempts - 1
         self.inference_time += inference_time
         self.prompt_tokens += prompt_tokens
         self.completion_tokens += completion_tokens
@@ -172,6 +175,7 @@ class LlmUsage:
             )
         return {
             "requests": self.requests,
+            "retries": self.retries,
             "prompt_tokens": self.prompt_tokens,
             "completion_tokens": self.completion_tokens,
             "reasoning_tokens": self.reasoning_tokens,
@@ -422,14 +426,14 @@ class LlmClient:
 
         ``inference_time`` is the summed wall-clock time of the requests in
         seconds, including network latency. Retries of transient server
-        errors count as requests, and their time and the waits between them
-        are part of ``inference_time``. ``cost`` (OpenRouter credits) and
-        ``nano_aiu`` (Copilot billing units) are ``None`` if the server does
-        not report them.
+        errors count as requests, and also in ``retries``. Their time and the
+        waits between them are part of ``inference_time``. ``cost``
+        (OpenRouter credits) and ``nano_aiu`` (Copilot billing units) are
+        ``None`` if the server does not report them.
 
         Returns:
-            A dict with the model, number of requests, token counts,
-            inference time, output throughput and cost.
+            A dict with the model, number of requests and retries, token
+            counts, inference time, output throughput and cost.
 
         Example:
             | Configure Llm Client    collect_usage=True

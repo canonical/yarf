@@ -341,6 +341,7 @@ class TestLlmClient:
         usage = client.get_llm_usage()
 
         assert usage["requests"] == 0
+        assert usage["retries"] == 0
         assert usage["inference_time"] == 0
         assert usage["output_tokens_per_second"] == 0.0
         assert usage["cost"] is None
@@ -370,6 +371,7 @@ class TestLlmClient:
         assert client.get_llm_usage() == {
             "model": client.model,
             "requests": 2,
+            "retries": 0,
             "prompt_tokens": 300,
             "completion_tokens": 40,
             "reasoning_tokens": 4,
@@ -1339,6 +1341,7 @@ class TestLlmClient:
         assert mock_post.call_count == 3
         assert [c.args[0] for c in sleep.call_args_list] == [5, 15]
         assert client.usage.requests == 3
+        assert client.usage.retries == 2
 
     def test_prompt_raises_after_retries(self, mock_post):
         client = LlmClient()
