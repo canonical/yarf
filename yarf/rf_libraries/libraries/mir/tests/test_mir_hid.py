@@ -109,6 +109,6 @@ class TestMirHid:
         )
 
     @pytest.mark.asyncio
-    async def test_scroll_pointer(self, mir_hid, mock_pointer):
-        await mir_hid.scroll_pointer(-3)
+    async def test_scroll_pointer_wheel(self, mir_hid, mock_pointer):
+        await mir_hid.scroll_pointer_wheel(-3)
         mock_pointer.scroll.assert_called_once_with(-3)
