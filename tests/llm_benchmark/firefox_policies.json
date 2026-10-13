@@ -1,6 +1,6 @@
 {
   "_comments": {
-    "purpose": "Firefox enterprise policies for the benchmark VM. The suite setup writes the 'policies' object to /etc/firefox/policies/policies.json. They stop pop-ups and extra pages that the model would otherwise have to dismiss, so that the Firefox tests measure the task, not dialog handling. JSON has no comments, so they live here; this object is not sent to the VM.",
+    "purpose": "Firefox enterprise policies for the benchmark VM. The suite setup writes the 'policies' object to /etc/firefox/policies/policies.json. They stop pop-ups and extra pages that the model would otherwise have to dismiss, so that the Firefox tests measure the task, not dialog handling.",
     "OverrideFirstRunPage": "No 'Welcome to Firefox' tab on the first start.",
     "OverridePostUpdatePage": "No 'What's new' tab after an update.",
     "DontCheckDefaultBrowser": "No 'Make Firefox your default browser?' bar.",
