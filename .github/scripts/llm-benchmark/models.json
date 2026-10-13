@@ -5,7 +5,8 @@
     "openrouter:xiaomi/mimo-v2.6-flash"
   ],
   "pull_request": [
-    "openrouter:qwen/qwen3.5-9b"
+    "openrouter:qwen/qwen3.5-9b",
+    "openrouter:google/gemma-3-4b-it"
   ],
   "settings": {
     "copilot:gpt-5.3-codex": {"endpoint": "/responses"},
