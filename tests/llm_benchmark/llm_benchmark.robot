@@ -32,6 +32,7 @@ ${IMAGE_FORMAT}         WEBP
 ${USAGE_FILE}           ${OUTPUT_DIR}/usage.jsonl
 ${FIREFOX_POLICIES}     ${CURDIR}/firefox_policies.json
 ${QEMU_MONITOR}         /tmp/yarf-vm-monitor.sock
+${PROMPT}               ubuntu@ubuntu
 
 
 *** Test Cases ***
@@ -87,8 +88,8 @@ Benchmark Setup
 
 Prepare Desktop
     [Documentation]    Wait for the live session to boot, close its
-    ...    installer, turn off screen blanking and do the slow (~40 s) first
-    ...    Firefox start without its first-run wizard, so that the tests measure
+    ...    installer, turn off screen blanking and do the slow first Firefox
+    ...    start without its first-run wizard, so that the tests measure
     ...    the model. Then save a VM snapshot, which every test restores. The
     ...    ready desktop is saved to ${OUTPUT_DIR}/desktop-ready.png.
     Wait For Live Session And Close Installer
@@ -97,9 +98,17 @@ Prepare Desktop
     ...                     json.dumps({"policies": json.loads(pathlib.Path($FIREFOX_POLICIES).read_text())["policies"]})
     ...                     modules=json,pathlib
     # Without idle-delay 0, the screen blanks during long model runs.
+    ${command}=             Catenate                SEPARATOR=${SPACE}&&${SPACE}
+    ...                     gsettings set org.gnome.desktop.session idle-delay 0
+    ...                     sudo mkdir -p /etc/firefox/policies
+    ...                     echo '${policies}' | sudo tee /etc/firefox/policies/policies.json > /dev/null
+    Run In Terminal         ${command}
+    # Start Firefox once, so that the snapshot has its profile and snap set
+    # up and the tests do not pay for the slow first start. Headless, as a
+    # window would hide the terminal; --screenshot makes it exit once loaded.
     Run In Terminal
-    ...                     gsettings set org.gnome.desktop.session idle-delay 0; sudo mkdir -p /etc/firefox/policies && echo '${policies}' | sudo tee /etc/firefox/policies/policies.json > /dev/null; firefox about:blank & sleep 60; pkill -x firefox; sleep 5; exit
-    Sleep                   65s
+    ...                     firefox --headless --screenshot /tmp/warmup.png about:blank
+    ...                     timeout=300
     ${screenshot}=          Grab Screenshot
     Evaluate                $screenshot.save($OUTPUT_DIR + "/desktop-ready.png")
     Save Vm Snapshot
@@ -126,14 +135,17 @@ Installer Is Shown
     Match Text              Choose your language    timeout=5
 
 Run In Terminal
-    [Arguments]             ${command}
+    [Documentation]    Run a command in a new terminal, which closes once
+    ...    the command succeeds. Fail if it is still open after ${timeout} s.
+    [Arguments]             ${command}              ${timeout}=60
     # Hid starts at (0, 0), which triggers the GNOME Activities hot corner.
     Hid.Move Pointer To Proportional                0.5                     0.5
     Keys Combo              Control_L               Alt_L                   t
-    Sleep                   8s
-    Type String             ${command}
+    Match Text              ${PROMPT}               timeout=60
+    Type String             (${command}) && exit
     Keys Combo              Return
-    Sleep                   6s
+    Wait Until Keyword Succeeds                     ${timeout} s            2 s
+    ...                     Ensure ${PROMPT} Does Not Match                 timeout=1
 
 Record Llm Usage
     ${usage}=               Get Llm Usage

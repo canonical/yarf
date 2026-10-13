@@ -3,9 +3,11 @@ Build the GitHub Actions matrix of models for the LLM benchmark.
 
 Reads a comma or newline separated list of ``provider:model`` entries from
 the ``MODELS`` environment variable, or if it is empty, the list in
-models.json named by ``MODEL_SET`` (default: ``default``). Writes
-``matrix=<json>`` to ``$GITHUB_OUTPUT``. The endpoint and image format come
-from models.json, defaulting to ``/chat/completions`` and ``WEBP``.
+models.json named by ``MODEL_SET`` (default: ``default``). Models whose
+provider has no credentials, i.e. ``<PROVIDER>_KEY_SET`` is not ``true``, are
+left out. Writes ``matrix=<json>`` to ``$GITHUB_OUTPUT``. The endpoint and
+image format come from models.json, defaulting to ``/chat/completions`` and
+``WEBP``.
 """
 
 import json
@@ -84,6 +86,18 @@ def main() -> None:
         )
     except ValueError as error:
         sys.exit(str(error))
+
+    skipped = [
+        item
+        for item in matrix
+        if os.environ.get(f"{item['provider'].upper()}_KEY_SET") != "true"
+    ]
+    for item in skipped:
+        print(
+            f"::warning::Skipping {item['provider']}:{item['model']}, "
+            f"no {item['provider']} credentials"
+        )
+    matrix = [item for item in matrix if item not in skipped]
 
     print(json.dumps(matrix, indent=2))
     with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:

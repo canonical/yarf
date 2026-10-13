@@ -1,58 +1,83 @@
 """
 Load the LLM benchmark results, and write the Markdown job summary.
 
-Usage: make_report.py RESULTS_DIR
+Usage: benchmark_results.py RESULTS_DIR
 
 Each directory under RESULTS_DIR with a model.json holds one model run:
 model.json (provider, model, endpoint, image format), output.xml and
-usage.jsonl. The full report is the marimo notebook report.py, which uses
-this module to load the results. The summary is appended to
+usage.jsonl. The full report is the marimo notebook benchmark_report.py,
+which uses this module to load the results. The summary is appended to
 ``$GITHUB_STEP_SUMMARY``, or printed when it is not set.
 """
 
 import json
 import os
 import sys
+import urllib.error
+import urllib.request
+from functools import cache
 from pathlib import Path
 from typing import Any
 
 from robot.api import ExecutionResult
 
-# Inferred from the claude-haiku-4.5 token prices, not a published rate
+# Fixed rate of GitHub AI credits, see
+# https://docs.github.com/en/copilot/concepts/billing/billing-for-individuals
 USD_PER_AIU = 0.01
+# Public model list with per-token list prices, used for Gemini models
+PRICES_URL = "https://openrouter.ai/api/v1/models"
 
-NOTES = [
-    ("Wall time", "Robot test duration, including GUI actions, sleeps and "
-     "restoring the VM snapshot in the test setup."),
-    ("LLM requests", "All model calls: GUI steps, Assert State and JSON "
-     "correction retries."),
-    ("Inference time", "Sum of the HTTP round-trip times of the LLM "
-     "requests (server queueing + inference + network, incl. image "
-     "upload)."),
-    ("Output tokens/s", "Completion tokens / inference time (end-to-end "
-     "throughput, not pure decode speed)."),
-    ("Reasoning tokens", "Hidden thinking tokens, as reported by the server "
-     "(subset of completion tokens; 0 if not reported)."),
-    ("Cost (USD)", "OpenRouter: cost reported by the server. Copilot: "
-     f"billing units (AIU) x {USD_PER_AIU}, a rate inferred from the "
-     "claude-haiku-4.5 token prices, not a published one. Copilot is billed "
-     "by subscription, so its USD figures are price-equivalents."),
-    ("Copilot AIU", "Copilot billing units (copilot_usage.total_nano_aiu / "
-     "1e9)."),
-    ("Cost efficiency", "Passed tests per $1 = passed / total cost (higher "
-     "is better). The cost of failed tests counts too, so it is the cost of "
-     "the whole suite per success. Models without a cost are excluded."),
-    ("Computation power", "Hosted models do not expose FLOPs or GPU time, "
-     "so cost, tokens and inference time are the compute proxies."),
-    ("Setup", "Ubuntu 24.04 desktop live session (the latest point release, "
-     "see iso.txt of each run) in QEMU/KVM (2 vCPU, 8 GB, 1280x800), yarf "
-     "--debug over VNC. Each test starts from the same QEMU snapshot of the "
-     "prepared desktop."),
-    ("0 tests", "The run has no results, or the desktop did not boot (suite "
-     "setup failed); it is not a model result."),
-    ("Caveat: Canonical test", "'Open Canonical Release Notes' asks to open "
-     "the press release but asserts the release notes documentation page."),
-]  # fmt: skip
+NOTES = {
+    "Wall time": (
+        "Robot test duration, including GUI actions, sleeps and restoring "
+        "the VM snapshot in the test setup."
+    ),
+    "LLM requests": (
+        "All model calls: GUI steps, Assert State and JSON correction retries."
+    ),
+    "Inference time": (
+        "Sum of the HTTP round-trip times of the LLM requests (server "
+        "queueing + inference + network, incl. image upload)."
+    ),
+    "Output tokens/s": (
+        "Completion tokens / inference time (end-to-end throughput, not "
+        "pure decode speed)."
+    ),
+    "Reasoning tokens": (
+        "Hidden thinking tokens, as reported by the server (subset of "
+        "completion tokens; 0 if not reported)."
+    ),
+    "Cost (USD)": (
+        "OpenRouter: cost reported by the server. Copilot: GitHub AI "
+        f"credits (AIU) x {USD_PER_AIU}, GitHub's fixed rate. Within a "
+        "plan's monthly allowance, Copilot usage is prepaid by the "
+        "subscription. Gemini: the API reports no cost, so it is estimated "
+        "as tokens x Google's list prices, from OpenRouter's model list (0 "
+        "if the model is not listed)."
+    ),
+    "Copilot AIU": (
+        "GitHub AI credits used (copilot_usage.total_nano_aiu / 1e9)."
+    ),
+    "Cost efficiency": (
+        "Passed tests per $1 = passed / total cost (higher is better). The "
+        "cost of failed tests counts too, so it is the cost of the whole "
+        "suite per success. Models without a cost are excluded."
+    ),
+    "Computation power": (
+        "Hosted models do not expose FLOPs or GPU time, so cost, tokens "
+        "and inference time are the compute proxies."
+    ),
+    "Setup": (
+        "Ubuntu 24.04 desktop live session (the latest point release, see "
+        "'Using ...' in the job log) in QEMU/KVM (2 vCPU, 8 GB, 1280x800), "
+        "yarf --debug over VNC. Each test starts from the same QEMU "
+        "snapshot of the prepared desktop."
+    ),
+    "0 tests": (
+        "The run has no results, or the desktop did not boot (suite setup "
+        "failed); it is not a model result."
+    ),
+}
 
 
 def per_second(amount: float, seconds: float) -> float:
@@ -67,6 +92,56 @@ def per_second(amount: float, seconds: float) -> float:
         The rate, rounded to one decimal.
     """
     return round(amount / seconds, 1) if seconds else 0.0
+
+
+@cache
+def token_prices() -> dict[str, tuple[float, float]]:
+    """
+    Fetch the list prices of hosted models.
+
+    Returns:
+        The USD prices per prompt and completion token, by OpenRouter
+        model ID such as ``google/gemini-2.5-flash``, or no prices if the
+        list cannot be fetched.
+    """
+    try:
+        with urllib.request.urlopen(PRICES_URL, timeout=30) as response:
+            models = json.load(response)["data"]
+
+    except (urllib.error.URLError, TimeoutError, ValueError) as error:
+        print(f"::warning::Cannot fetch model prices: {error}")
+        return {}
+
+    return {
+        m["id"]: (
+            float(m["pricing"]["prompt"]),
+            float(m["pricing"]["completion"]),
+        )
+        for m in models
+    }
+
+
+def gemini_cost(settings: dict[str, str], usage: dict[str, Any]) -> float:
+    """
+    Estimate the cost of a Gemini test, as the Gemini API reports none.
+
+    Args:
+        settings: The model settings from model.json.
+        usage: The usage of the test from usage.jsonl.
+
+    Returns:
+        The tokens at Google's list prices in USD, or 0 for other providers
+        or unlisted models.
+    """
+    if settings["provider"] != "gemini":
+        return 0.0
+    prompt, completion = token_prices().get(
+        f"google/{settings['model']}", (0.0, 0.0)
+    )
+    return (
+        usage.get("prompt_tokens", 0) * prompt
+        + usage.get("completion_tokens", 0) * completion
+    )
 
 
 def load_run(run_dir: Path) -> tuple[dict[str, str], list[dict[str, Any]]]:
@@ -120,7 +195,12 @@ def load_run(run_dir: Path) -> tuple[dict[str, str], list[dict[str, Any]]]:
                     "Output tokens/s": per_second(
                         u.get("completion_tokens", 0), inference
                     ),
-                    "Cost (USD)": round(u.get("cost") or aiu * USD_PER_AIU, 4),
+                    "Cost (USD)": round(
+                        u.get("cost")
+                        or aiu * USD_PER_AIU
+                        or gemini_cost(settings, u),
+                        4,
+                    ),
                     "Copilot AIU": round(aiu, 4),
                     "Failure message": test.message[:500],
                 }
@@ -226,8 +306,10 @@ def markdown_summary(summary: list[dict[str, Any]]) -> str:
     lines = [
         "## LLM benchmark",
         "",
-        "| Model | Passed | Requests | Total tokens | Inference time (s) "
-        "| Cost (USD) |",
+        (
+            "| Model | Passed | Requests | Total tokens "
+            "| Inference time (s) | Cost (USD) |"
+        ),
         "| --- | --- | --- | --- | --- | --- |",
     ]
     for s in summary:
@@ -238,8 +320,11 @@ def markdown_summary(summary: list[dict[str, Any]]) -> str:
         )
     lines += [
         "",
-        "The llm-benchmark artifact has the report (llm_benchmark.html) and "
-        "the Robot logs of every model.",
+        (
+            "The llm-benchmark artifact has the report "
+            "(llm-benchmark-report/llm_benchmark.html) and the Robot logs "
+            "of every model (llm-benchmark-run-*)."
+        ),
     ]
     return "\n".join(lines) + "\n"
 

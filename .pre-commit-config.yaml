@@ -127,7 +127,7 @@ repos:
   hooks:
   - id: interrogate
     # Marimo notebook cells are anonymous functions
-    exclude: 'tests/.*|\.github/scripts/llm-benchmark/report\.py'
+    exclude: 'tests/.*|\.github/scripts/llm-benchmark/benchmark_report\.py'
     args: [
       --verbose,
       --fail-under=61.8,

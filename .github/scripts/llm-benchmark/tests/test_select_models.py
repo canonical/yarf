@@ -84,6 +84,8 @@ def test_main_writes_matrix(
     monkeypatch.setenv("GITHUB_OUTPUT", str(output))
     monkeypatch.setenv("MODELS", models)
     monkeypatch.setenv("MODEL_SET", model_set)
+    for provider in select_models.PROVIDERS:
+        monkeypatch.setenv(f"{provider.upper()}_KEY_SET", "true")
 
     select_models.main()
 
@@ -97,6 +99,20 @@ def test_main_writes_matrix(
         ]
     else:
         assert [item["model"] for item in matrix] == expected
+
+
+def test_main_skips_models_without_credentials(tmp_path, monkeypatch, capsys):
+    output = tmp_path / "output"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(output))
+    monkeypatch.setenv("MODELS", "copilot:a, openrouter:b")
+    monkeypatch.setenv("OPENROUTER_KEY_SET", "true")
+    monkeypatch.setenv("COPILOT_KEY_SET", "false")
+
+    select_models.main()
+
+    matrix = json.loads(output.read_text().partition("=")[2])
+    assert [item["model"] for item in matrix] == ["b"]
+    assert "::warning::Skipping copilot:a" in capsys.readouterr().out
 
 
 def test_main_exits_on_invalid_entry(tmp_path, monkeypatch):

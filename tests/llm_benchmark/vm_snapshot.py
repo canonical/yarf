@@ -1,6 +1,10 @@
 """
-Keywords to save and restore QEMU VM snapshots through the HMP monitor socket,
-so that every test starts from the same desktop.
+Keywords to save and restore QEMU VM snapshots, so that every test starts from
+the same desktop.
+
+They send commands to the QEMU Human Monitor Protocol (HMP), the text
+console of a running VM, through the Unix socket given to QEMU with
+-monitor.
 """
 
 import re
@@ -10,6 +14,8 @@ from robot.api import logger
 from robot.api.deco import keyword, library
 
 PROMPT = b"(qemu) "
+# Most bytes read from the socket at once; socket.recv() requires it
+RECV_SIZE = 4096
 # HMP echoes the typed command with terminal control sequences
 ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 
@@ -35,11 +41,11 @@ class vm_snapshot:
             sock.connect(self.monitor)
             output = b""
             while not output.endswith(PROMPT):
-                output += sock.recv(4096)
+                output += sock.recv(RECV_SIZE)
             sock.sendall(command.encode() + b"\n")
             output = b""
             while not output.endswith(PROMPT):
-                chunk = sock.recv(4096)
+                chunk = sock.recv(RECV_SIZE)
                 if not chunk:
                     break
                 output += chunk

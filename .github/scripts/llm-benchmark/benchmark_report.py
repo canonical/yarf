@@ -2,23 +2,22 @@
 Marimo notebook with the LLM benchmark report.
 
 Export to static HTML:
-marimo export html --no-include-code report.py -o report.html -- \
+marimo export html --no-include-code benchmark_report.py -o report.html -- \
     --results RESULTS_DIR
 
 Open interactively:
-marimo edit report.py -- --results RESULTS_DIR
+marimo edit benchmark_report.py -- --results RESULTS_DIR
 
-RESULTS_DIR is loaded with make_report.load_results().
+RESULTS_DIR is loaded with benchmark_results.load_results().
 """
 
 import marimo
 
-__generated_with = "0.25.1"
 app = marimo.App(width="full", app_title="LLM benchmark")
 
 
 @app.cell
-def _():
+def load():
     import sys
     from pathlib import Path
 
@@ -26,18 +25,27 @@ def _():
     import marimo as mo
 
     sys.path.insert(0, str(mo.notebook_dir()))
-    import make_report
+    import benchmark_results
 
     results_dir = Path(mo.cli_args().get("results", "results"))
-    summary, per_test = make_report.load_results(results_dir)
+    summary, per_test = benchmark_results.load_results(results_dir)
     data = alt.Data(values=summary)
     height = max(120, 22 * len(summary))
-    return alt, data, height, make_report, mo, per_test, results_dir, summary
+    return (
+        alt,
+        benchmark_results,
+        data,
+        height,
+        mo,
+        per_test,
+        results_dir,
+        summary,
+    )
 
 
 @app.cell
-def _(alt, height):
-    def bar(data, field: str, title: str, sort: str = "-x") -> alt.Chart:
+def chart_helpers(alt, height):
+    def bar(data, field: str, title: str, sort: str = "-x"):
         return (
             alt.Chart(data, title=title)
             .transform_filter(f"isValid(datum['{field}'])")
@@ -55,7 +63,7 @@ def _(alt, height):
 
 
 @app.cell
-def _(mo, per_test, results_dir, summary):
+def title(mo, per_test, results_dir, summary):
     mo.md(
         f"""
         # LLM GUI navigation benchmark
@@ -65,19 +73,17 @@ def _(mo, per_test, results_dir, summary):
         the notes at the end.
         """
     )
-    return
 
 
 @app.cell
-def _(mo, summary):
+def summary_table(mo, summary):
     mo.vstack(
         [mo.md("## Summary per model"), mo.ui.table(summary, selection=None)]
     )
-    return
 
 
 @app.cell
-def _(alt, bar, height, mo, summary):
+def cost_efficiency(alt, bar, height, mo, summary):
     _efficiency = [
         {
             "Model": s["Model"],
@@ -123,11 +129,10 @@ def _(alt, bar, height, mo, summary):
             ).properties(width=900, height=max(400, height)),
         ]
     )
-    return
 
 
 @app.cell
-def _(alt, bar, data, height, mo):
+def charts(alt, bar, data, height, mo):
     _tokens = (
         alt.Chart(data, title="Tokens per model")
         .transform_fold(
@@ -162,11 +167,10 @@ def _(alt, bar, data, height, mo):
             ).resolve_scale(color="independent"),
         ]
     )
-    return
 
 
 @app.cell
-def _(mo, per_test, summary):
+def pass_matrix(mo, per_test, summary):
     _tests = list(dict.fromkeys(t["Test"] for t in per_test))
     _status = {(t["Model"], t["Test"]): t["Status"] for t in per_test}
     _matrix = [
@@ -178,22 +182,21 @@ def _(mo, per_test, summary):
         for s in summary
     ]
     mo.vstack([mo.md("## Pass matrix"), mo.ui.table(_matrix, selection=None)])
-    return
 
 
 @app.cell
-def _(mo, per_test):
+def per_test_table(mo, per_test):
     mo.vstack([mo.md("## Per test"), mo.ui.table(per_test, selection=None)])
-    return
 
 
 @app.cell
-def _(make_report, mo):
+def notes(benchmark_results, mo):
     mo.md(
         "## Notes\n\n"
-        + "\n".join(f"- **{k}**: {v}" for k, v in make_report.NOTES)
+        + "\n".join(
+            f"- **{k}**: {v}" for k, v in benchmark_results.NOTES.items()
+        )
     )
-    return
 
 
 if __name__ == "__main__":

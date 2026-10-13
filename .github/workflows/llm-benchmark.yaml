@@ -10,7 +10,8 @@ name: LLM GUI navigation benchmark
 # GEMINI_API_KEY for gemini:* models.
 #
 # Pull requests that touch the benchmark run the small "pull_request" model
-# set from models.json. Fork PRs are skipped, as they get no secrets.
+# set from models.json. Models whose provider has no secret are skipped, e.g.
+# all of them for PRs from forks, which do not get this repository's secrets.
 
 on:
   pull_request:
@@ -45,11 +46,6 @@ env:
 jobs:
   select-models:
     name: Select models
-    if: >-
-      (github.event_name == 'schedule' && github.repository == 'canonical/yarf')
-      || (github.event_name == 'pull_request'
-          && github.event.pull_request.head.repo.full_name == github.repository)
-      || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.select.outputs.matrix }}
@@ -63,16 +59,20 @@ jobs:
         env:
           MODELS: ${{ inputs.models }}
           MODEL_SET: ${{ github.event_name == 'pull_request' && 'pull_request' || 'default' }}
+          COPILOT_KEY_SET: ${{ secrets.COPILOT_GITHUB_TOKEN != '' }}
+          GEMINI_KEY_SET: ${{ secrets.GEMINI_API_KEY != '' }}
+          OPENROUTER_KEY_SET: ${{ secrets.OPENROUTER_API_KEY != '' }}
         run: python3 .github/scripts/llm-benchmark/select_models.py
 
   benchmark:
     name: Benchmark (${{ matrix.model.provider }}:${{ matrix.model.model }})
     needs: select-models
+    if: needs.select-models.outputs.matrix != '[]'
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     strategy:
       fail-fast: false
-      max-parallel: 4
+      max-parallel: 10
       matrix:
         model: ${{ fromJSON(needs.select-models.outputs.matrix) }}
     steps:
@@ -82,7 +82,6 @@ jobs:
 
       - name: Run the benchmark
         id: yarf
-        # Failed tests are benchmark results, errors are checked below
         continue-on-error: true
         uses: ./.github/actions/yarf-test
         env:
@@ -94,9 +93,7 @@ jobs:
         with:
           platform: Vnc
           platform-provider: custom
-          platform-setup-command: >-
-            RESULTS_DIR="$YARF_OUTPUT_DIR" VM_STATE_DIR=/mnt/yarf-vm
-            ./.github/scripts/llm-benchmark/start-vm.sh
+          platform-setup-command: ./.github/scripts/llm-benchmark/start-vm.sh
           platform-ready-command: >-
             timeout 60 bash -c
             'until </dev/tcp/localhost/5900; do sleep 1; done'
@@ -118,8 +115,10 @@ jobs:
           MODEL_JSON: ${{ toJSON(matrix.model) }}
         run: |
           # Robot returns the number of failed tests (up to 250); failed
-          # tests are benchmark results, anything above is an error.
-          if [[ -z $EXIT_CODE || $EXIT_CODE -gt 250 ]]; then
+          # tests are benchmark results, anything above is an error. A crash
+          # also exits with 1, but leaves no output.xml.
+          if [[ -z $EXIT_CODE || $EXIT_CODE -gt 250
+                || ! -f $OUTPUT_DIR/output.xml ]]; then
             echo "::error::YARF did not complete (exit code '$EXIT_CODE')"
             exit 1
           fi
@@ -136,13 +135,15 @@ jobs:
         with:
           name: llm-benchmark-run-${{ matrix.model.id }}
           path: ${{ steps.yarf.outputs.output-dir }}
-          # Only passed to the report job, which bundles all results
+          # Merged into the llm-benchmark artifact by the report job
           retention-days: 1
 
   report:
     name: Report
     needs: [select-models, benchmark]
-    if: always() && needs.select-models.result == 'success'
+    if: >-
+      always() && needs.select-models.result == 'success'
+      && needs.select-models.outputs.matrix != '[]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -161,17 +162,24 @@ jobs:
       - name: Build the report
         run: |
           uv run --no-project --with robotframework \
-            python .github/scripts/llm-benchmark/make_report.py results
+            python .github/scripts/llm-benchmark/benchmark_results.py results
           uv run --no-project --with marimo --with altair \
             --with robotframework \
             marimo export html --no-include-code \
-            .github/scripts/llm-benchmark/report.py \
+            .github/scripts/llm-benchmark/benchmark_report.py \
             -o llm_benchmark.html -- --results results
 
-      - name: Upload the results and report
+      - name: Upload the report
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
+          name: llm-benchmark-report
+          path: llm_benchmark.html
+          retention-days: 1
+
+      - name: Merge the report and results into one artifact
+        uses: actions/upload-artifact/merge@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
           name: llm-benchmark
-          path: |
-            llm_benchmark.html
-            results
+          pattern: llm-benchmark-*
+          separate-directories: true
+          delete-merged: true
