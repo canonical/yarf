@@ -33,15 +33,18 @@ NOTES = {
         "the VM snapshot in the test setup."
     ),
     "LLM requests": (
-        "All model calls: GUI steps, Assert State and JSON correction retries."
+        "All HTTP requests to the model: GUI steps, Assert State, JSON "
+        "correction retries, and retries after rate limits or server "
+        "errors (HTTP 429 and 5xx)."
     ),
     "Inference time": (
         "Sum of the HTTP round-trip times of the LLM requests (server "
-        "queueing + inference + network, incl. image upload)."
+        "queueing + inference + network, incl. image upload), including "
+        "retried requests and the waits before each retry (5, 15 and 30 s)."
     ),
     "Output tokens/s": (
-        "Completion tokens / inference time (end-to-end throughput, not "
-        "pure decode speed)."
+        "Completion tokens / inference time (end-to-end throughput incl. "
+        "retries, not pure decode speed)."
     ),
     "Reasoning tokens": (
         "Hidden thinking tokens, as reported by the server (subset of "
