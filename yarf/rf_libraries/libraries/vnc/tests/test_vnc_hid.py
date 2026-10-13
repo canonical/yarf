@@ -173,7 +173,9 @@ class TestVncHid:
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize("steps, button", [(2, 4), (-3, 3)])
-    async def test_scroll_pointer(self, monkeypatch, vnc_hid, steps, button):
+    async def test_scroll_pointer_wheel(
+        self, monkeypatch, vnc_hid, steps, button
+    ):
         with monkeypatch.context() as m:
             m.setenv("VNC_PORT", "1")
             m.setenv("VNC_HOST", "localhost")
@@ -190,7 +192,7 @@ class TestVncHid:
                 client_mock = connect_mock.return_value.__aenter__.return_value
                 client_mock.mouse.move = MagicMock()
                 client_mock.mouse.hold = MagicMock()
-                await vnc_hid.scroll_pointer(steps)
+                await vnc_hid.scroll_pointer_wheel(steps)
                 client_mock.mouse.move.assert_called_once_with(0, 0)
                 client_mock.mouse.hold.assert_has_calls(
                     abs(steps)

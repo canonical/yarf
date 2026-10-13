@@ -120,7 +120,7 @@ class HidBase(ABC):
         """
 
     @keyword
-    async def scroll_pointer(self, steps: int) -> None:
+    async def scroll_pointer_wheel(self, steps: int) -> None:
         """
         Scroll the pointer wheel at the current pointer position.
 
@@ -129,8 +129,8 @@ class HidBase(ABC):
                 scrolls up.
 
         Example:
-            | Scroll Pointer    5
-            | Scroll Pointer    -3
+            | Scroll Pointer Wheel    5
+            | Scroll Pointer Wheel    -3
         """
         await self._scroll(int(steps))
 

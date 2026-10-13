@@ -1362,7 +1362,7 @@ class TestLlmClient:
         client = LlmClient()
         mock_hid = MagicMock()
         mock_hid.move_pointer_to_proportional = AsyncMock()
-        mock_hid.scroll_pointer = AsyncMock()
+        mock_hid.scroll_pointer_wheel = AsyncMock()
 
         with (
             patch.object(client, "_get_lib_instance", return_value=mock_hid),
@@ -1379,7 +1379,7 @@ class TestLlmClient:
         mock_hid.move_pointer_to_proportional.assert_awaited_once_with(
             0.25, 0.5
         )
-        mock_hid.scroll_pointer.assert_awaited_once_with(steps)
+        mock_hid.scroll_pointer_wheel.assert_awaited_once_with(steps)
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(

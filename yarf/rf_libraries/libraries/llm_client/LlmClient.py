@@ -1117,9 +1117,9 @@ class LlmClient:
                 await asyncio.sleep(0.1)
                 await hid.click_pointer_button("LEFT")
             elif action_type == "Scroll Down":
-                await hid.scroll_pointer(SCROLL_STEPS)
+                await hid.scroll_pointer_wheel(SCROLL_STEPS)
             elif action_type == "Scroll Up":
-                await hid.scroll_pointer(-SCROLL_STEPS)
+                await hid.scroll_pointer_wheel(-SCROLL_STEPS)
 
         elif action_type == "Write":
             hid = self._get_lib_instance("HID")

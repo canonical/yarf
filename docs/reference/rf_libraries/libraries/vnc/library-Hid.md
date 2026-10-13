@@ -220,7 +220,7 @@ Release Pointer Buttons
 
 <hr style="border:1px solid grey">
 
-### Scroll Pointer
+### Scroll Pointer Wheel
 
 <p>Scroll the pointer wheel at the current pointer position.</p>
 
@@ -239,8 +239,8 @@ None
 #### Example
 
 ```robotframework
-Scroll Pointer    5
-Scroll Pointer    -3
+Scroll Pointer Wheel    5
+Scroll Pointer Wheel    -3
 ```
 
 <hr style="border:1px solid grey">
