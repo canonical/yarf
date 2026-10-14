@@ -87,10 +87,10 @@ class LlmUsage:
 
     Attributes:
         enabled: Whether requests are recorded.
-        requests: Number of recorded requests, including retries.
+        requests: Number of recorded requests, excluding retries.
         retries: Number of retries of transient server errors.
         inference_time: Summed wall-clock time of the requests in seconds,
-            including retries and the waits between them.
+            counting only the final attempt of each request.
         prompt_tokens: Number of input tokens, including image tokens.
         completion_tokens: Number of output tokens, including reasoning.
         reasoning_tokens: Number of output tokens spent on reasoning.
@@ -118,7 +118,7 @@ class LlmUsage:
 
         Args:
             data: The JSON response from the server.
-            inference_time: Wall-clock time of the request in seconds.
+            inference_time: Wall-clock time of the final attempt in seconds.
             attempts: Number of HTTP requests sent, including retries.
         """
         if not self.enabled:
@@ -139,7 +139,7 @@ class LlmUsage:
         cost = usage.get("cost")
         nano_aiu = (data.get("copilot_usage") or {}).get("total_nano_aiu")
 
-        self.requests += attempts
+        self.requests += 1
         self.retries += attempts - 1
         self.inference_time += inference_time
         self.prompt_tokens += prompt_tokens
@@ -380,14 +380,15 @@ class LlmClient:
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
 
-        start = time.perf_counter()
         for attempt, delay in enumerate((*RETRY_DELAYS, None), start=1):
+            start = time.perf_counter()
             response = requests.post(
                 f"{self.server_url}{self.endpoint}",
                 headers=headers,
                 json=payload,
                 timeout=600,
             )
+            inference_time = time.perf_counter() - start
             if response.status_code not in RETRY_STATUS or delay is None:
                 break
             logger.warn(
@@ -395,7 +396,6 @@ class LlmClient:
                 f"retrying in {delay}s"
             )
             time.sleep(delay)
-        inference_time = time.perf_counter() - start
         response.raise_for_status()
         data = response.json()
         self.usage.record(data, inference_time, attempts=attempt)
@@ -426,8 +426,8 @@ class LlmClient:
 
         ``inference_time`` is the summed wall-clock time of the requests in
         seconds, including network latency. Retries of transient server
-        errors count as requests, and also in ``retries``. Their time and the
-        waits between them are part of ``inference_time``. ``cost``
+        errors are counted separately in ``retries``; only the final attempt
+        of each request counts in ``requests`` and ``inference_time``. ``cost``
         (OpenRouter credits) and ``nano_aiu`` (Copilot billing units) are
         ``None`` if the server does not report them.
 

@@ -1335,13 +1335,20 @@ class TestLlmClient:
         ok.status_code = 200
         mock_post.side_effect = [busy, busy, ok]
 
-        with patch(f"{self.LLM_PATH}.time.sleep") as sleep:
+        with (
+            patch(f"{self.LLM_PATH}.time.sleep") as sleep,
+            patch(
+                f"{self.LLM_PATH}.time.perf_counter",
+                side_effect=[0.0, 1.0, 10.0, 12.0, 20.0, 23.0],
+            ),
+        ):
             assert client.prompt_llm("Say hi") == "hello"
 
         assert mock_post.call_count == 3
         assert [c.args[0] for c in sleep.call_args_list] == [5, 15]
-        assert client.usage.requests == 3
+        assert client.usage.requests == 1
         assert client.usage.retries == 2
+        assert client.usage.inference_time == 3.0
 
     def test_prompt_raises_after_retries(self, mock_post):
         client = LlmClient()
