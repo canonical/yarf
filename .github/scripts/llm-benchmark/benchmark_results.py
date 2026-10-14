@@ -81,8 +81,9 @@ NOTES = {
         "snapshot of the prepared desktop."
     ),
     "0 tests": (
-        "The run has no results, or the desktop did not boot (suite setup "
-        "failed); it is not a model result."
+        "The run has no results, or a suite or test setup failed (booting "
+        "the desktop, restoring the VM snapshot or configuring the LLM "
+        "client); it is not a model result."
     ),
 }
 
@@ -160,7 +161,7 @@ def load_run(run_dir: Path) -> tuple[dict[str, str], list[dict[str, Any]]]:
 
     Returns:
         The model settings and one dict per test, or no tests if the run
-        has no results or its suite setup (the desktop boot) failed.
+        has no results or a suite or test setup failed.
     """
     settings = json.loads((run_dir / "model.json").read_text())
     usage_file = run_dir / "usage.jsonl"
@@ -176,7 +177,9 @@ def load_run(run_dir: Path) -> tuple[dict[str, str], list[dict[str, Any]]]:
     if output.exists():
         result = ExecutionResult(str(output))
         for test in result.suite.all_tests:
-            if test.message.startswith("Parent suite setup failed"):
+            if test.message.startswith(
+                ("Parent suite setup failed", "Setup failed")
+            ):
                 return settings, []
             u = usage.get(test.name, {})
             requests = u.get("requests", 0)

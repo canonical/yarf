@@ -74,3 +74,17 @@ def test_load_results_counts_retries(tmp_path):
     assert [t["Retries"] for t in per_test] == [2, 0]
     assert summary[0]["Retries"] == 2
     assert "| 8 | 2 |" in benchmark_results.markdown_summary(summary)
+
+
+@pytest.mark.parametrize(
+    "message", ["Parent suite setup failed:\nboot", "Setup failed:\nsnapshot"]
+)
+def test_load_run_skips_setup_failures(tmp_path, message):
+    (tmp_path / "model.json").write_text('{"provider": "p", "model": "m"}')
+    (tmp_path / "output.xml").write_text(
+        '<robot generator="Robot 7.5"><suite id="s1" name="S">'
+        f'<test id="s1-t1" name="A"><status status="FAIL">{message}'
+        '</status></test><status status="FAIL"/></suite></robot>'
+    )
+
+    assert benchmark_results.load_run(tmp_path)[1] == []

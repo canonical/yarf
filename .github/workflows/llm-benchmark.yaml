@@ -123,9 +123,11 @@ jobs:
             exit 1
           fi
           echo "$MODEL_JSON" > "$OUTPUT_DIR/model.json"
-          # The suite setup boots the desktop; its failure is not a result.
-          if grep -q "Parent suite setup failed" "$OUTPUT_DIR/output.xml"; then
-            echo "::error::Suite setup failed, see log.html in the results"
+          # A failed suite setup (desktop boot) or test setup (snapshot
+          # restore, client configuration) is not a model result.
+          if grep -qE "Parent suite setup failed|>Setup failed:" \
+              "$OUTPUT_DIR/output.xml"; then
+            echo "::error::Suite or test setup failed, see log.html"
             exit 1
           fi
 

@@ -39,18 +39,33 @@ class vm_snapshot:
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
             sock.settimeout(timeout)
             sock.connect(self.monitor)
-            output = b""
-            while not output.endswith(PROMPT):
-                output += sock.recv(RECV_SIZE)
+            self._read_until_prompt(sock)
             sock.sendall(command.encode() + b"\n")
-            output = b""
-            while not output.endswith(PROMPT):
-                chunk = sock.recv(RECV_SIZE)
-                if not chunk:
-                    break
-                output += chunk
+            output = self._read_until_prompt(sock)
         text = ANSI_ESCAPE.sub("", output.decode(errors="replace"))
         return text.removesuffix(PROMPT.decode()).split("\r\n", 1)[-1].strip()
+
+    @staticmethod
+    def _read_until_prompt(sock: socket.socket) -> bytes:
+        """
+        Read from the monitor until its prompt.
+
+        Args:
+            sock: The connected monitor socket.
+
+        Returns:
+            Everything read, ending with the prompt.
+
+        Raises:
+            ConnectionError: If QEMU closes the socket first.
+        """
+        output = b""
+        while not output.endswith(PROMPT):
+            chunk = sock.recv(RECV_SIZE)
+            if not chunk:
+                raise ConnectionError("QEMU closed the monitor connection")
+            output += chunk
+        return output
 
     def _run(self, command: str) -> None:
         """
