@@ -55,7 +55,7 @@ jobs:
         run: .github/scripts/snap/add-commit-sha.sh "${COMMIT_SHA}" "${COMMIT_SHORT_SHA}"
 
       - name: Upload updated project files
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: updated-project-files
           path: |
@@ -104,7 +104,7 @@ jobs:
       id: snapcraft
 
     - name: Upload artifact
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
       with:
         name: yarf-${{ matrix.arch }}
         path: ${{ steps.snapcraft.outputs.snap }}
