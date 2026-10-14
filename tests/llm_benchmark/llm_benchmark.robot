@@ -95,13 +95,13 @@ Prepare Desktop
     Wait For Live Session And Close Installer
     # See firefox_policies.json for why each policy is needed.
     ${policies}=            Evaluate
-    ...                     json.dumps({"policies": json.loads(pathlib.Path($FIREFOX_POLICIES).read_text())["policies"]})
-    ...                     modules=json,pathlib
+    ...                     shlex.quote(json.dumps({"policies": json.loads(pathlib.Path($FIREFOX_POLICIES).read_text())["policies"]}))
+    ...                     modules=json,pathlib,shlex
     # Without idle-delay 0, the screen blanks during long model runs.
     ${command}=             Catenate                SEPARATOR=${SPACE}&&${SPACE}
     ...                     gsettings set org.gnome.desktop.session idle-delay 0
     ...                     sudo mkdir -p /etc/firefox/policies
-    ...                     echo '${policies}' | sudo tee /etc/firefox/policies/policies.json > /dev/null
+    ...                     echo ${policies} | sudo tee /etc/firefox/policies/policies.json > /dev/null
     Run In Terminal         ${command}
     # Start Firefox once, so that the snapshot has its profile and snap set
     # up and the tests do not pay for the slow first start. Headless, as a
