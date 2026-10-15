@@ -38,7 +38,7 @@ dependencies = [
     "rapidfuzz>=3.12.1",
     "rapidocr~=3.10.0",
     # omegaconf 2.4 YAML alias limit breaks loading rapidocr's config.yaml
-    "omegaconf<2.4",
+    "omegaconf<2.5",
     "robotframework==7.5",
     "robotframework-sshlibrary~=3.8.0",
     "paramiko>=5.0.0,<6",  # Keep SSHLibrary's transitive dependency safe.
