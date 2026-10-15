@@ -147,7 +147,7 @@ Execute Gui Action    ${action}    click the Continue button
 ### Get Llm Usage
 
 <p>Get the accumulated usage of all LLM requests made by this library instance, e.g. during the current test. Requires <code>collect_usage=True</code> in <a class="name" href="#configure-llm-client" title='"Configure Llm Client" keyword'>Configure Llm Client</a>.</p>
-<p><code>inference_time</code> is the summed wall-clock time of the requests in seconds, including network latency. <code>cost</code> (OpenRouter credits) and <code>nano_aiu</code> (Copilot billing units) are <code>None</code> if the server does not report them.</p>
+<p><code>inference_time</code> is the summed wall-clock time of the requests in seconds, including network latency. Retries of transient server errors are counted separately in <code>retries</code>; only the final attempt of each request counts in <code>requests</code> and <code>inference_time</code>. <code>cost</code> (OpenRouter credits) and <code>nano_aiu</code> (Copilot billing units) are <code>None</code> if the server does not report them.</p>
 
 #### Return
 
@@ -155,7 +155,7 @@ Execute Gui Action    ${action}    click the Continue button
 dictionary[string, Any]
 ```
 
-<p>A dict with the model, number of requests, token counts, inference time, output throughput and cost.</p>
+<p>A dict with the model, number of requests and retries, token counts, inference time, output throughput and cost.</p>
 
 #### Example
 

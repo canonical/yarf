@@ -87,8 +87,10 @@ class LlmUsage:
 
     Attributes:
         enabled: Whether requests are recorded.
-        requests: Number of recorded requests.
-        inference_time: Summed wall-clock time of the requests in seconds.
+        requests: Number of recorded requests, excluding retries.
+        retries: Number of retries of transient server errors.
+        inference_time: Summed wall-clock time of the requests in seconds,
+            counting only the final attempt of each request.
         prompt_tokens: Number of input tokens, including image tokens.
         completion_tokens: Number of output tokens, including reasoning.
         reasoning_tokens: Number of output tokens spent on reasoning.
@@ -99,6 +101,7 @@ class LlmUsage:
 
     enabled: bool = False
     requests: int = 0
+    retries: int = 0
     inference_time: float = 0.0
     prompt_tokens: int = 0
     completion_tokens: int = 0
@@ -107,13 +110,16 @@ class LlmUsage:
     cost: float | None = None
     nano_aiu: int | None = None
 
-    def record(self, data: dict[str, Any], inference_time: float) -> None:
+    def record(
+        self, data: dict[str, Any], inference_time: float, attempts: int = 1
+    ) -> None:
         """
         Add the usage of a chat completions or responses API reply, if enabled.
 
         Args:
             data: The JSON response from the server.
-            inference_time: Wall-clock time of the request in seconds.
+            inference_time: Wall-clock time of the final attempt in seconds.
+            attempts: Number of HTTP requests sent, including retries.
         """
         if not self.enabled:
             return
@@ -134,6 +140,7 @@ class LlmUsage:
         nano_aiu = (data.get("copilot_usage") or {}).get("total_nano_aiu")
 
         self.requests += 1
+        self.retries += attempts - 1
         self.inference_time += inference_time
         self.prompt_tokens += prompt_tokens
         self.completion_tokens += completion_tokens
@@ -168,6 +175,7 @@ class LlmUsage:
             )
         return {
             "requests": self.requests,
+            "retries": self.retries,
             "prompt_tokens": self.prompt_tokens,
             "completion_tokens": self.completion_tokens,
             "reasoning_tokens": self.reasoning_tokens,
@@ -376,7 +384,7 @@ class LlmClient:
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
 
-        for delay in (*RETRY_DELAYS, None):
+        for attempt, delay in enumerate((*RETRY_DELAYS, None), start=1):
             start = time.perf_counter()
             response = requests.post(
                 f"{self.server_url}{self.endpoint}",
@@ -394,7 +402,7 @@ class LlmClient:
             time.sleep(delay)
         response.raise_for_status()
         data = response.json()
-        self.usage.record(data, inference_time)
+        self.usage.record(data, inference_time, attempts=attempt)
 
         if uses_responses_api:
             return "".join(
@@ -421,13 +429,15 @@ class LlmClient:
         in `Configure Llm Client`.
 
         ``inference_time`` is the summed wall-clock time of the requests in
-        seconds, including network latency. ``cost`` (OpenRouter credits) and
-        ``nano_aiu`` (Copilot billing units) are ``None`` if the server does
-        not report them.
+        seconds, including network latency. Retries of transient server
+        errors are counted separately in ``retries``; only the final attempt
+        of each request counts in ``requests`` and ``inference_time``. ``cost``
+        (OpenRouter credits) and ``nano_aiu`` (Copilot billing units) are
+        ``None`` if the server does not report them.
 
         Returns:
-            A dict with the model, number of requests, token counts,
-            inference time, output throughput and cost.
+            A dict with the model, number of requests and retries, token
+            counts, inference time, output throughput and cost.
 
         Example:
             | Configure Llm Client    collect_usage=True
@@ -728,10 +738,12 @@ class LlmClient:
             return {}, error
 
         error_messages: list[str] = []
-        for key, expected_types in required_keys.items():
-            # Models often omit nullable keys instead of writing null.
-            if type(None) in expected_types:
-                parsed_output.setdefault(key, None)
+        # Models often omit nullable keys instead of writing null, but unknown
+        # keys (e.g. bbox_2d for point_2d) need the correction path instead.
+        if parsed_output.keys() <= required_keys.keys():
+            for key, expected_types in required_keys.items():
+                if type(None) in expected_types:
+                    parsed_output.setdefault(key, None)
 
         missing_keys = required_keys.keys() - parsed_output.keys()
         if missing_keys:
