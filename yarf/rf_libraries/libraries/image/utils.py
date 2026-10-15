@@ -87,7 +87,8 @@ def normalize_point(point: list) -> list[float]:
     Normalize a point to proportional screen coordinates.
 
     Args:
-        point: A point as [x, y] on a 1000x1000 grid
+        point: A point as [x, y] on a 1000x1000 grid. A single nested point
+            ``[[x, y]]``, as returned by Qwen-VL models, is also accepted.
 
     Returns:
         The point as normalized ``[x, y]`` coordinates.
@@ -95,6 +96,9 @@ def normalize_point(point: list) -> list[float]:
     Raises:
         ValueError: If the point is not valid.
     """
+    if len(point) == 1 and isinstance(point[0], list):
+        point = point[0]
+
     if len(point) != 2:
         raise ValueError("Point must contain exactly two coordinates.")
 

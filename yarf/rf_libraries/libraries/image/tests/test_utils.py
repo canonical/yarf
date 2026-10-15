@@ -36,6 +36,7 @@ class TestImageUtils:
             ([250, 500], [0.25, 0.5]),
             ([1000, 1000], [1.0, 1.0]),
             (["125", "875"], [0.125, 0.875]),
+            ([[250, 500]], [0.25, 0.5]),
         ],
     )
     def test_normalize_point(self, point, expected):
@@ -46,6 +47,8 @@ class TestImageUtils:
         [
             ([1], "exactly two coordinates"),
             ([1, 2, 3], "exactly two coordinates"),
+            ([[1, 2], [3, 4]], "must be numeric"),
+            ([[1]], "exactly two coordinates"),
             (["x", 2], "must be numeric"),
             ([-1, 500], "inside the screen"),
             ([500, 1001], "inside the screen"),
