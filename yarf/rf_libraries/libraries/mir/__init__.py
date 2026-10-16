@@ -3,7 +3,6 @@ Mir Wayland display server platform implementation for YARF.
 """
 
 import asyncio
-import logging
 import os
 from pathlib import Path
 
@@ -17,7 +16,6 @@ from yarf.lib.wayland.wayland_client import WaylandClient
 from yarf.loggers.owasp_logger import get_owasp_logger
 from yarf.rf_libraries.libraries import PlatformBase
 
-_logger = logging.getLogger(__name__)
 _owasp_logger = OWASPLogger(appid=__name__, logger=get_owasp_logger())
 
 
@@ -83,9 +81,7 @@ class Mir(PlatformBase):
 
         except (ValueError, AssertionError, RuntimeError) as e:
             _owasp_logger.sys_monitor_disabled("system", "mir")
-            _logger.error(
-                f"Failed to connect to Mir display server at {display_name} - {e}"
-            )
             raise YARFConnectionError(
-                f"Failed to connect to Mir display server: {e}"
+                f"the Mir display server at {display_name} "
+                f"is not reachable: {e}"
             )
