@@ -6,6 +6,7 @@ server using OpenAPI.
 import asyncio
 import json
 import os
+import re
 import textwrap
 import time
 from dataclasses import dataclass
@@ -219,8 +220,9 @@ RETRY_DELAYS = (5, 15, 30)
 GRID_SIZE = 1000
 # Model families trained on one coordinate system: the 1000x1000 grid or the
 # screenshot pixels. They answer in it but label point_frame unreliably, so
-# they are only asked for it and their reported frame is ignored.
-NATIVE_FRAMES = {"qwen3": "grid", "qwen2-vl": "grid", "qwen2.5-vl": "pixels"}
+# they are only asked for it and their reported frame is ignored. Keys have
+# no separators, as providers name the same model with "-", "_" or ".".
+NATIVE_FRAMES = {"qwen3": "grid", "qwen2vl": "grid", "qwen25vl": "pixels"}
 
 
 @library
@@ -508,7 +510,7 @@ class LlmClient:
         Returns:
             "grid", "pixels", or None if the model reports its frame.
         """
-        model = self.model.lower()
+        model = re.sub(r"[-._]", "", self.model.lower())
         return next(
             (
                 kind

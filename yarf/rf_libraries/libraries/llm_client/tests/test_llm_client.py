@@ -1727,6 +1727,10 @@ class TestLlmClient:
             ("qwen/qwen2.5-vl-72b-instruct", [0.25, 0.75]),
             ("qwen3-vl:8b", [0.32, 0.6]),
             ("Qwen3.5-9B", [0.32, 0.6]),
+            ("Qwen/Qwen2-VL-7B-Instruct", [0.32, 0.6]),
+            ("qwen2_vl_7b", [0.32, 0.6]),
+            ("qwen2_5_vl_7b", [0.25, 0.75]),
+            ("Qwen2.5_VL-7B", [0.25, 0.75]),
         ],
     )
     async def test_get_object_position_converts_point_frame(
