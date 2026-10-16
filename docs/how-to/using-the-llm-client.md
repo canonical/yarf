@@ -308,9 +308,11 @@ Click The OK Button
     Execute Gui Action    ${action}
 ```
 
-Pointer actions returned by `Get Single Gui Action` use the model's 1000x1000
-coordinate grid internally. `Execute Gui Action` normalizes that point before
-moving the pointer with the active `HID` library.
+Pointer actions returned by `Get Single Gui Action` contain a proportional
+point in the screenshot as `point`, like the point returned by
+`Get Object Position`: `[0.5, 0.5]` is the center of the screen.
+`Execute Gui Action` moves the pointer there with the active `HID` library.
+The model's raw answer is logged.
 
 For typing text directly, the action contains `action_type=Write` and the text
 to enter:

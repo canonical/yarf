@@ -130,16 +130,19 @@ None
 
 #### Positional and named arguments
 
-| Name        | Type       | Default Value | Kind                | Required | Documentation                                          |
-| ----------- | ---------- | ------------- | ------------------- | -------- | ------------------------------------------------------ |
-| action      | dictionary |               | POSITIONAL_OR_NAMED | Yes      | A dict containing the action_type, text, and point_2d. |
-| description | string     |               | POSITIONAL_OR_NAMED | No       | The description provided to the LLM.                   |
+| Name        | Type       | Default Value | Kind                | Required | Documentation                                                                                                                                                |
+| ----------- | ---------- | ------------- | ------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| action      | dictionary |               | POSITIONAL_OR_NAMED | Yes      | A dict containing the action_type, text and point, the proportional <code>[x, y]</code> position on the screen, e.g. <code>[0.5, 0.5]</code> for its center. |
+| description | string     |               | POSITIONAL_OR_NAMED | No       | The description provided to the LLM.                                                                                                                         |
 
 #### Example
 
 ```robotframework
 ${action}=    Get Single Gui Action    click the Continue button
 Execute Gui Action    ${action}    click the Continue button
+${action}=    Create Dictionary    action_type=Left Click
+...    text=${None}    point=${{[0.5, 0.5]}}
+Execute Gui Action    ${action}
 ```
 
 <hr style="border:1px solid grey">
@@ -209,7 +212,7 @@ ${point}=    Get Object Position    the Continue button
 dictionary[string, Any]
 ```
 
-<p>The next GUI action as returned by the LLM. For pointer-based actions, <span class="name">point_2d</span> contains the raw coordinates from the LLM's 1000x1000 grid.</p>
+<p>The next GUI action, a dict with <code>action_type</code>, <code>text</code> and <code>point</code>. For pointer-based actions, <code>point</code> is the proportional <code>[x, y]</code> position on the screenshot, e.g. <code>[0.5, 0.5]</code> for its center; otherwise it is None.</p>
 
 #### Positional and named arguments
 

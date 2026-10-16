@@ -43,6 +43,30 @@ class TestImageUtils:
         assert normalize_point(point) == expected
 
     @pytest.mark.parametrize(
+        "point, frame, expected",
+        [
+            ([640, 400], [1280, 800], [0.5, 0.5]),
+            ([[1280, 0]], [1280, 800], [1.0, 0.0]),
+            ([0.25, 0.5], (1, 1), [0.25, 0.5]),
+        ],
+    )
+    def test_normalize_point_in_frame(self, point, frame, expected):
+        assert normalize_point(point, frame) == expected
+
+    @pytest.mark.parametrize(
+        "point, frame, match",
+        [
+            ([1, 2], [1280], "Invalid point frame"),
+            ([1, 2], "[1280, 800]", "Invalid point frame"),
+            ([1, 2], [0, 800], "Invalid point frame"),
+            ([1281, 400], [1280, 800], "inside the screen"),
+        ],
+    )
+    def test_normalize_point_in_frame_error(self, point, frame, match):
+        with pytest.raises(ValueError, match=match):
+            normalize_point(point, frame)
+
+    @pytest.mark.parametrize(
         "point, match",
         [
             ([1], "exactly two coordinates"),
