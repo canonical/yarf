@@ -21,8 +21,8 @@ def video_input():
 
 @pytest.fixture(autouse=True)
 def mock_environ():
-    with patch("os.environ") as m:
-        yield m
+    with patch("yarf.rf_libraries.libraries.mir.VideoInput.os") as m:
+        yield m.environ
 
 
 class TestMirVideoInput:
