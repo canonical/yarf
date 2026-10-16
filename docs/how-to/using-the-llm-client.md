@@ -308,12 +308,11 @@ Click The OK Button
     Execute Gui Action    ${action}
 ```
 
-Pointer actions returned by `Get Single Gui Action` contain the model's point
-in `point_2d`, and in `point_frame` the size of the coordinate system it used:
-a 1000x1000 grid over the screenshot, or the pixels of the screenshot. Models
-such as Qwen-VL, which are trained on the grid but report the frame
-unreliably, are always read on the grid. `Execute Gui Action` converts the
-point before moving the pointer with the active `HID` library.
+Pointer actions returned by `Get Single Gui Action` contain a proportional
+point in the screenshot as `point`, like the point returned by
+`Get Object Position`: `[0.5, 0.5]` is the center of the screen.
+`Execute Gui Action` moves the pointer there with the active `HID` library.
+The model's raw answer is logged.
 
 For typing text directly, the action contains `action_type=Write` and the text
 to enter:

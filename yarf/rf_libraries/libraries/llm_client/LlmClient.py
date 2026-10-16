@@ -217,9 +217,10 @@ PROVIDERS: dict[str, dict[str, str]] = {
 RETRY_STATUS = {429, 500, 502, 503, 504}
 RETRY_DELAYS = (5, 15, 30)
 GRID_SIZE = 1000
-# Model families trained on the 1000x1000 grid. They always answer on it,
-# but label point_frame unreliably, so it is ignored for them.
-GRID_NATIVE_MODELS = ("qwen",)
+# Model families trained on one coordinate system: the 1000x1000 grid or the
+# screenshot pixels. They answer in it but label point_frame unreliably, so
+# they are only asked for it and their reported frame is ignored.
+NATIVE_FRAMES = {"qwen3": "grid", "qwen2-vl": "grid", "qwen2.5-vl": "pixels"}
 
 
 @library
@@ -469,17 +470,26 @@ class LlmClient:
 
         Returns:
             The prompt, telling the model the screenshot size and to report
-            the coordinate frame of its points; grid-native models are only
-            asked for the 1000x1000 grid.
+            the coordinate frame of its points; models with a native
+            coordinate system are only asked for that one.
         """
-        if self._is_grid_native():
+        native = self._native_frame()
+        width, height = image.size
+        if native == "grid":
             rule = (
                 "Give point_2d on a normalized 1000x1000 grid over the "
                 "screenshot, where [0, 0] is the top-left and [1000, 1000] "
                 "the bottom-right. Set point_frame to null."
             )
             return prompt.replace("{coordinate_rule}", rule)
-        width, height = image.size
+        if native == "pixels":
+            rule = (
+                f"Give point_2d in pixels of the {width}x{height} "
+                "screenshot, where [0, 0] is the top-left and "
+                f"[{width}, {height}] the bottom-right. Set point_frame to "
+                "null."
+            )
+            return prompt.replace("{coordinate_rule}", rule)
         rule = (
             "Give point_2d on a 1000x1000 grid over the screenshot, where "
             "[0, 0] is the top-left and [1000, 1000] the bottom-right, and "
@@ -490,60 +500,52 @@ class LlmClient:
         )
         return prompt.replace("{coordinate_rule}", rule)
 
-    def _is_grid_native(self) -> bool:
+    def _native_frame(self) -> str | None:
         """
-        Check whether the model belongs to a family trained on the 1000x1000
-        grid.
+        Get the coordinate system the model is trained on, if it belongs to a
+        family in NATIVE_FRAMES.
 
         Returns:
-            True if the model name contains a GRID_NATIVE_MODELS entry.
+            "grid", "pixels", or None if the model reports its frame.
         """
         model = self.model.lower()
-        return any(family in model for family in GRID_NATIVE_MODELS)
+        return next(
+            (
+                kind
+                for family, kind in NATIVE_FRAMES.items()
+                if family in model
+            ),
+            None,
+        )
 
-    def _drop_unreliable_frame(self, response: dict[str, Any]) -> None:
+    def _to_proportional(
+        self, response: dict[str, Any], image: Image.Image
+    ) -> list[float] | None:
         """
-        Remove the ``point_frame`` reported by a grid-native model, so that its
-        point is read on the 1000x1000 grid.
+        Convert the ``point_2d`` of a model response from its ``point_frame``
+        to proportional coordinates. Models with a native coordinate system are
+        read in it, whatever frame they report.
 
         Args:
-            response: The parsed model response, changed in place.
-        """
-        if self._is_grid_native():
-            response.pop("point_frame", None)
-
-    @staticmethod
-    def _to_grid(point: Any, frame: Any) -> Any:
-        """
-        Convert a point from the coordinate frame reported by the model to the
-        1000x1000 grid.
-
-        Args:
-            point: The point returned by the model, or None.
-            frame: The ``[width, height]`` of the point's coordinate system,
-                or None for the 1000x1000 grid.
+            response: The parsed model response.
+            image: The screenshot sent with the prompt.
 
         Returns:
-            The point on the grid; unchanged if there is no frame or point.
-
-        Raises:
-            ValueError: If the point or the frame is not two numbers, or the
-                frame is not positive.
+            The point as proportional ``[x, y]``, or None if there is no
+            point.
         """
-        if frame is None or not isinstance(point, list):
-            return point
-        if len(point) == 1 and isinstance(point[0], list):
-            point = point[0]
-        try:
-            x, y = (float(value) for value in point)
-            width, height = (float(value) for value in frame)
-        except (TypeError, ValueError) as exc:
-            raise ValueError(
-                f"Point {point} and frame {frame} must each be two numbers"
-            ) from exc
-        if width <= 0 or height <= 0:
-            raise ValueError(f"Invalid point frame: {frame}")
-        return [x * GRID_SIZE / width, y * GRID_SIZE / height]
+        point = response.get("point_2d")
+        if point is None:
+            return None
+        grid = (GRID_SIZE, GRID_SIZE)
+        native = self._native_frame()
+        if native == "grid":
+            frame = grid
+        elif native == "pixels":
+            frame = image.size
+        else:
+            frame = response.get("point_frame") or grid
+        return normalize_point(point, frame)
 
     def _get_lib_instance(self, lib_name: str) -> Any:
         """
@@ -840,16 +842,10 @@ class LlmClient:
                 "point_frame": [list, type(None)],
             },
         )
-        point = parsed["point_2d"]
-        self._drop_unreliable_frame(parsed)
-        frame = parsed.get("point_frame")
-
-        logger.info(f"LLM indicated point: {point} in frame {frame}")
+        logger.info(f"LLM response: {llm_output}")
+        point = self._to_proportional(parsed, image)
         if point is None:
             raise VQADetectionError(f"Object was not found: {description}")
-
-        # Normalize the point to have relative coordinates
-        point = normalize_point(self._to_grid(point, frame))
 
         if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
             image = draw_point_on_image(image, point, label=description)
@@ -931,10 +927,10 @@ class LlmClient:
             custom_system_prompt: Optional system prompt override.
 
         Returns:
-            The next GUI action as returned by the LLM. For pointer-based
-            actions, `point_2d` is in the coordinate system given by
-            `point_frame` (``[width, height]``), which `Execute Gui Action`
-            converts.
+            The next GUI action, a dict with ``action_type``, ``text`` and
+            ``point``. For pointer-based actions, ``point`` is the
+            proportional ``[x, y]`` position on the screenshot, e.g.
+            ``[0.5, 0.5]`` for its center; otherwise it is None.
 
         Example:
             | ${action}=    Get Single Gui Action    click the Continue button
@@ -1023,17 +1019,22 @@ class LlmClient:
                 "text": [str, type(None)],
             },
         )
+        logger.info(f"LLM proposed action: {llm_output}")
 
-        self._drop_unreliable_frame(parsed)
-        self.validate_gui_action(parsed, task)
-        return parsed
+        action = {
+            "action_type": parsed["action_type"],
+            "text": parsed["text"],
+            "point": self._to_proportional(parsed, image),
+        }
+        self.validate_gui_action(action, task)
+        return action
 
     def validate_gui_action(self, action: dict[str, Any], task: str) -> None:
         """
         Validate a GUI action dictionary.
 
         Args:
-            action: A dict containing action_type, text, and point_2d.
+            action: A dict containing action_type, text, and point.
             task: The task description provided to the LLM.
 
         Raises:
@@ -1070,7 +1071,7 @@ class LlmClient:
             )
 
         if action_type in POINTER_ACTIONS and not isinstance(
-            action.get("point_2d"), list
+            action.get("point"), list
         ):
             raise ValueError(f"{action_type} actions must include a point.")
 
@@ -1082,9 +1083,9 @@ class LlmClient:
         Execute a GUI action as specified by the LLM response.
 
         Args:
-            action: A dict containing the action_type, text, point_2d and
-                optionally point_frame, the ``[width, height]`` of the
-                point's coordinate system (default: the 1000x1000 grid).
+            action: A dict containing the action_type, text and point, the
+                proportional ``[x, y]`` position on the screen, e.g.
+                ``[0.5, 0.5]`` for its center.
             description: The description provided to the LLM.
 
         Raises:
@@ -1094,6 +1095,9 @@ class LlmClient:
         Example:
             | ${action}=    Get Single Gui Action    click the Continue button
             | Execute Gui Action    ${action}    click the Continue button
+            | ${action}=    Create Dictionary    action_type=Left Click
+            | ...    text=${None}    point=${{[0.5, 0.5]}}
+            | Execute Gui Action    ${action}
         """
 
         self.validate_gui_action(action, description)
@@ -1103,9 +1107,7 @@ class LlmClient:
 
         if action_type in POINTER_ACTIONS:
             hid = self._get_lib_instance("HID")
-            x, y = normalize_point(
-                self._to_grid(action["point_2d"], action.get("point_frame"))
-            )
+            x, y = normalize_point(action["point"], (1, 1))
             # For click actions, draw the point on the image and log it before
             # executing
             if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
@@ -1360,11 +1362,16 @@ class LlmClient:
                         "point_frame": [list, type(None)],
                     },
                 )
-                self._drop_unreliable_frame(action)
-
                 if action["action_type"] != "Finish":
                     description = action.get("description", "No description")
-                    await self.execute_gui_action(action, description)
+                    # The history keeps the model's own coordinates
+                    await self.execute_gui_action(
+                        {
+                            **action,
+                            "point": self._to_proportional(action, image),
+                        },
+                        description,
+                    )
                     await asyncio.sleep(1)
 
                 return HistoryItem(step=step, action=action)
