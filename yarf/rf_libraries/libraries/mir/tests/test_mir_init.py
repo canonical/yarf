@@ -1,8 +1,9 @@
+import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from yarf.errors.yarf_errors import YARFConnectionError
+from yarf.errors.yarf_errors import YARFConnectionError, YARFExitCode
 from yarf.rf_libraries.libraries.mir import Mir
 
 
@@ -21,12 +22,26 @@ class TestMir:
     def test_check_connection(self) -> None:
         """
         Test whether the "check_connection" method raises a YARFConnectionError
-        when it fails to connect.
+        reporting the unreachable display server when it fails to connect.
         """
 
         mir = Mir()
-        with pytest.raises(YARFConnectionError):
+        with (
+            patch.dict(os.environ, {"WAYLAND_DISPLAY": "wayland-99"}),
+            patch(
+                "yarf.rf_libraries.libraries.mir.screencopy.Screencopy.connect",
+                new_callable=AsyncMock,
+                side_effect=RuntimeError("no such display"),
+            ),
+            pytest.raises(YARFConnectionError) as exc_info,
+        ):
             mir.check_connection()
+
+        assert exc_info.value.exit_code == YARFExitCode.CONNECTION_ERROR
+        assert str(exc_info.value) == (
+            "the Mir display server at wayland-99 "
+            "is not reachable: no such display"
+        )
 
     def test_check_connection_success(self) -> None:
         """
