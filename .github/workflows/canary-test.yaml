@@ -209,6 +209,33 @@ jobs:
           pkill -f mpv || true
           wlrctl pointer move -1280 -1024
 
+      - name: Run Keyword tests - Highlighted text grid
+        env:
+          TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
+        run: |
+          # The word grid is a GTK4/libadwaita app managed by uv. As with the
+          # other keyword suites, launch it from the workflow (outside the
+          # strict snap) so it renders on the shared Mir display; the snap yarf
+          # only captures and drives it.
+          sudo apt-get --yes --no-install-recommends install \
+            python3-gi \
+            gir1.2-gtk-4.0 \
+            libadwaita-1-dev \
+            gir1.2-adw-1
+          uv venv --python=/usr/bin/python3 --system-site-packages \
+            --project="${TEST_SUITE_PATH}/keyword_suite/grid"
+
+          dbus-run-session -- uv --project ${TEST_SUITE_PATH}/keyword_suite/grid \
+            run grid-app --contrast 0.85 &
+          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite grid_test
+          pkill -f grid-app || true
+
+          dbus-run-session -- uv --project ${TEST_SUITE_PATH}/keyword_suite/grid \
+            run grid-app --contrast 0.55 &
+          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- \
+            --suite grid_test --variable COLOR_TOLERANCE:10
+          pkill -f grid-app || true
+
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
