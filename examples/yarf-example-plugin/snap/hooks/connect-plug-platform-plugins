@@ -5,7 +5,7 @@ set -e
 # when we run the `platform-plugins` connection.
 # For details on how this hook work, please visit:
 # https://snapcraft.io/docs/interface-hooks
-SRC="$SNAP/lib/python3.12/site-packages/yarf_plugin_example"
+SRC="$SNAP/lib/python3.14/site-packages/yarf_plugin_example"
 DEST="$SNAP_COMMON/platform_plugins/yarf_plugin_example"
 
 [ -d "$DEST" ] && rm -rf "$DEST"
