@@ -273,6 +273,7 @@ extensions = [
 # Excludes files or directories from processing
 
 exclude_patterns = [
+    "AGENTS.md",
     "doc-cheat-sheet*",
     "**/README*",
     "CONTRIBUTING*",
