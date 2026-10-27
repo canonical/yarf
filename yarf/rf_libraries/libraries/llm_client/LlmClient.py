@@ -4,13 +4,16 @@ server using OpenAPI.
 """
 
 import asyncio
+import functools
+import inspect
 import json
 import os
 import re
 import textwrap
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TypeVar, cast
 
 import requests
 from PIL import Image
@@ -21,6 +24,18 @@ from robot.utils import is_truthy
 
 from yarf.errors.yarf_errors import VQADetectionError, VQAValidationError
 from yarf.lib.images.utils import to_base64
+from yarf.lib.llm_tracing import (
+    AGENT,
+    CHAIN,
+    LLM,
+    PARSER,
+    TOOL,
+    LlmTracer,
+    as_outputs,
+    describe,
+    llm_attributes,
+)
+from yarf.rf_libraries.libraries.hid_base import HidBase
 from yarf.rf_libraries.libraries.image.utils import (
     draw_point_on_image,
     log_image,
@@ -111,6 +126,41 @@ class LlmUsage:
     cost: float | None = None
     nano_aiu: int | None = None
 
+    @staticmethod
+    def parse(data: dict[str, Any]) -> dict[str, Any]:
+        """
+        Extract the usage of a chat completions or responses API reply.
+
+        Args:
+            data: The JSON response from the server.
+
+        Returns:
+            A dict with the prompt, completion, reasoning and total token
+            counts, the cost and the nano AIU, None if not reported.
+        """
+        usage = data.get("usage") or {}
+        details = (
+            usage.get("completion_tokens_details")
+            or usage.get("output_tokens_details")
+            or {}
+        )
+        return {
+            "prompt_tokens": (
+                usage.get("prompt_tokens") or usage.get("input_tokens") or 0
+            ),
+            "completion_tokens": (
+                usage.get("completion_tokens")
+                or usage.get("output_tokens")
+                or 0
+            ),
+            "reasoning_tokens": details.get("reasoning_tokens") or 0,
+            "total_tokens": usage.get("total_tokens") or 0,
+            "cost": usage.get("cost"),
+            "nano_aiu": (data.get("copilot_usage") or {}).get(
+                "total_nano_aiu"
+            ),
+        }
+
     def record(
         self, data: dict[str, Any], inference_time: float, attempts: int = 1
     ) -> None:
@@ -125,28 +175,19 @@ class LlmUsage:
         if not self.enabled:
             return
 
-        usage = data.get("usage") or {}
-        details = (
-            usage.get("completion_tokens_details")
-            or usage.get("output_tokens_details")
-            or {}
-        )
-        prompt_tokens = (
-            usage.get("prompt_tokens") or usage.get("input_tokens") or 0
-        )
-        completion_tokens = (
-            usage.get("completion_tokens") or usage.get("output_tokens") or 0
-        )
-        cost = usage.get("cost")
-        nano_aiu = (data.get("copilot_usage") or {}).get("total_nano_aiu")
+        usage = self.parse(data)
+        prompt_tokens = usage["prompt_tokens"]
+        completion_tokens = usage["completion_tokens"]
+        cost = usage["cost"]
+        nano_aiu = usage["nano_aiu"]
 
         self.requests += 1
         self.retries += attempts - 1
         self.inference_time += inference_time
         self.prompt_tokens += prompt_tokens
         self.completion_tokens += completion_tokens
-        self.reasoning_tokens += details.get("reasoning_tokens") or 0
-        self.total_tokens += usage.get("total_tokens") or 0
+        self.reasoning_tokens += usage["reasoning_tokens"]
+        self.total_tokens += usage["total_tokens"]
         if cost is not None:
             self.cost = (self.cost or 0.0) + cost
         if nano_aiu is not None:
@@ -224,6 +265,72 @@ GRID_SIZE = 1000
 # no separators, as providers name the same model with "-", "_" or ".".
 NATIVE_FRAMES = {"qwen3": "grid", "qwen2vl": "grid", "qwen25vl": "pixels"}
 
+F = TypeVar("F", bound=Callable[..., Any])
+
+
+def keyword_name(func_name: str) -> str:
+    """
+    Get the Robot keyword name of a function.
+
+    Args:
+        func_name: The function name, e.g. ``click_pointer_button``.
+
+    Returns:
+        The keyword name, e.g. ``Click Pointer Button``.
+    """
+    return func_name.strip("_").replace("_", " ").title()
+
+
+def _traced(span_type: str) -> Callable[[F], F]:
+    """
+    Record a keyword as a span named after it, with its arguments as inputs and
+    its return value as outputs.
+
+    Args:
+        span_type: The MLflow span type.
+
+    Returns:
+        The decorator, for both sync and async keywords.
+    """
+
+    def decorator(func: F) -> F:
+        name = keyword_name(func.__name__)
+        signature = inspect.signature(func)
+
+        def inputs(*args: Any, **kwargs: Any) -> dict[str, Any]:
+            bound = signature.bind(*args, **kwargs).arguments
+            return {k: describe(v) for k, v in bound.items() if k != "self"}
+
+        if inspect.iscoroutinefunction(func):
+
+            @functools.wraps(func)
+            async def async_wrapper(
+                self: "LlmClient", *args: Any, **kwargs: Any
+            ) -> Any:
+                with self.tracer.span(
+                    name, span_type, inputs(self, *args, **kwargs)
+                ) as span:
+                    result = await func(self, *args, **kwargs)
+                    if result is not None:
+                        span.set_outputs(as_outputs(result))
+                    return result
+
+            return cast(F, async_wrapper)
+
+        @functools.wraps(func)
+        def wrapper(self: "LlmClient", *args: Any, **kwargs: Any) -> Any:
+            with self.tracer.span(
+                name, span_type, inputs(self, *args, **kwargs)
+            ) as span:
+                result = func(self, *args, **kwargs)
+                if result is not None:
+                    span.set_outputs(as_outputs(result))
+                return result
+
+        return cast(F, wrapper)
+
+    return decorator
+
 
 @library
 class LlmClient:
@@ -240,7 +347,9 @@ class LlmClient:
         self.max_tokens: int = 32768
         self.api_key_env: str = "YARF_LLM_API_KEY"
         self.image_format: str = "WEBP"
+        self.experiment: str = "yarf"
         self.usage = LlmUsage()
+        self.tracer = LlmTracer()
 
     @keyword
     def configure_llm_client(self, **kwargs: Any) -> None:
@@ -248,8 +357,8 @@ class LlmClient:
         Configure the LLM client with the given parameters.
 
         Supported parameters are ``model``, ``server_url``, ``endpoint``,
-        ``max_tokens``, ``api_key_env``, ``image_format``, ``collect_usage``
-        and ``provider``.
+        ``max_tokens``, ``api_key_env``, ``image_format``, ``collect_usage``,
+        ``tracing``, ``experiment`` and ``provider``.
 
         ``provider`` applies a preset for a hosted service, which explicit
         parameters override:
@@ -270,6 +379,19 @@ class LlmClient:
         Set ``collect_usage=True`` to record the token usage, inference time
         and cost of each request, see `Get Llm Usage`. It is off by default.
 
+        Set ``tracing=True`` to record each LLM keyword as an MLflow trace,
+        in the experiment named by ``experiment`` (default ``yarf``). A trace
+        shows the prompts and screenshots sent to the model, its answers,
+        token usage, latency, response parsing and the GUI actions taken.
+        Traces are tagged with the Robot suite and test, grouped in one
+        session per test, and get automatic feedback such as
+        ``keyword_passed`` and ``valid_json_first_try``. Attach your own with
+        `Log Llm Feedback` and `Log Llm Expectation`, and judge them with
+        `Evaluate Llm Traces`. Tracing requires ``pip install yarf[mlflow]``.
+        Traces are sent to ``MLFLOW_TRACKING_URI`` if set, otherwise to
+        ``mlflow.db`` in the Robot output directory, viewed with
+        ``mlflow ui --backend-store-uri sqlite:///<outdir>/mlflow.db``.
+
         Args:
             **kwargs: Configuration parameters for the LLM client.
 
@@ -287,6 +409,7 @@ class LlmClient:
             | ...    model=qwen/qwen3-vl-8b-instruct
             | Configure Llm Client    provider=gemini    model=gemini-2.5-flash
             | Configure Llm Client    collect_usage=True
+            | Configure Llm Client    tracing=True    experiment=installer
         """
         config_fields = {
             "model",
@@ -296,6 +419,8 @@ class LlmClient:
             "api_key_env",
             "image_format",
             "collect_usage",
+            "tracing",
+            "experiment",
             "provider",
         }
 
@@ -318,6 +443,12 @@ class LlmClient:
         if "collect_usage" in kwargs:
             self.usage.enabled = is_truthy(kwargs.pop("collect_usage"))
 
+        tracing = kwargs.pop("tracing", None)
+        if tracing is not None:
+            tracing = is_truthy(tracing)
+        elif "experiment" in kwargs:
+            tracing = self.tracer.enabled
+
         for k, v in kwargs.items():
             # Set the attribute if it's a valid configuration field
             # taking care of type conversion if necessary
@@ -330,7 +461,13 @@ class LlmClient:
                     f"Expected type {field_type.__name__}"
                 )
 
+        if tracing:
+            self.tracer.enable(self.experiment)
+        elif tracing is not None:
+            self.tracer.enabled = False
+
     @keyword
+    @_traced(CHAIN)
     def prompt_llm(
         self,
         prompt: str,
@@ -387,24 +524,33 @@ class LlmClient:
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
 
-        for attempt, delay in enumerate((*RETRY_DELAYS, None), start=1):
-            start = time.perf_counter()
-            response = requests.post(
-                f"{self.server_url}{self.endpoint}",
-                headers=headers,
-                json=payload,
-                timeout=600,
+        with self.tracer.span(
+            self.endpoint.strip("/"), LLM, inputs=payload
+        ) as span:
+            for attempt, delay in enumerate((*RETRY_DELAYS, None), start=1):
+                start = time.perf_counter()
+                response = requests.post(
+                    f"{self.server_url}{self.endpoint}",
+                    headers=headers,
+                    json=payload,
+                    timeout=600,
+                )
+                inference_time = time.perf_counter() - start
+                if response.status_code not in RETRY_STATUS or delay is None:
+                    break
+                logger.warn(
+                    f"LLM server returned {response.status_code}, "
+                    f"retrying in {delay}s"
+                )
+                time.sleep(delay)
+            response.raise_for_status()
+            data = response.json()
+            span.set_outputs(data)
+            span.set_attributes(
+                llm_attributes(
+                    self.model, LlmUsage.parse(data), inference_time, attempt
+                )
             )
-            inference_time = time.perf_counter() - start
-            if response.status_code not in RETRY_STATUS or delay is None:
-                break
-            logger.warn(
-                f"LLM server returned {response.status_code}, "
-                f"retrying in {delay}s"
-            )
-            time.sleep(delay)
-        response.raise_for_status()
-        data = response.json()
         self.usage.record(data, inference_time, attempts=attempt)
 
         if uses_responses_api:
@@ -448,6 +594,129 @@ class LlmClient:
             | Log    ${usage}[total_tokens]
         """
         return {"model": self.model, **self.usage.summary()}
+
+    @keyword
+    def log_llm_feedback(
+        self, name: str, value: Any, rationale: str | None = None
+    ) -> None:
+        """
+        Attach a feedback, a judgement of the result, to the last LLM trace of
+        the current test. Requires ``tracing=True`` in `Configure Llm Client`.
+
+        MLflow aggregates feedback per name, e.g. to compare the accuracy of
+        prompts or models across runs.
+
+        Args:
+            name: The feedback name.
+            value: The feedback value, e.g. a boolean or a score.
+            rationale: Optional explanation of the value.
+
+        Example:
+            | ${point}=    Get Object Position    the OK button
+            | ${ok}=    Evaluate    0.4 < ${point}[0] < 0.6
+            | Log Llm Feedback    found_ok_button    ${ok}
+        """
+        self.tracer.log_feedback(name, value, rationale)
+
+    @keyword
+    def log_llm_expectation(self, name: str, value: Any) -> None:
+        """
+        Attach an expectation, the ground truth, to the last LLM trace of the
+        current test. Requires ``tracing=True`` in `Configure Llm Client`.
+
+        Expectations turn traces into an evaluation dataset, e.g. for judges
+        that compare the output with the expected facts.
+
+        Args:
+            name: The expectation name.
+            value: The expected value.
+
+        Example:
+            | ${action}=    Get Single Gui Action    click the OK button
+            | Log Llm Expectation    expected_action    Left Click
+        """
+        self.tracer.log_expectation(name, value)
+
+    @keyword
+    def evaluate_llm_traces(
+        self,
+        *guidelines: str,
+        judge_model: str | None = None,
+        scope: str = "suite",
+        screenshots: bool = True,
+    ) -> dict[str, Any]:
+        """
+        Evaluate the LLM traces against guidelines with an LLM judge, and
+        against their expected tool calls. Requires ``tracing=True`` in
+        `Configure Llm Client`.
+
+        The judge reads the keyword inputs and outputs of each trace, the GUI
+        actions it took in order, and looks at the screenshots sent to the
+        model, then decides whether they follow all the guidelines. Its
+        verdict and rationale are attached to the traces as a ``guidelines``
+        feedback, and the evaluation is logged as an MLflow run. Traces
+        without an LLM request, such as those of `Execute Gui Action`, are not
+        judged. An answer other than yes or no is recorded as an error, and
+        left out of the metrics.
+
+        The trajectory of the traces with an ``expected_tool_calls``
+        expectation, see `Log Llm Expectation`, is checked without an LLM:
+        the HID keywords called by the GUI actions must match the expected
+        ones, in order. An expected call is a keyword name, e.g. ``Click
+        Pointer Button``, or a dict with a ``name`` and the ``arguments`` to
+        compare, e.g. ``{"name": "Type String", "arguments": {"string":
+        "42"}}``. The result is a ``tool_calls`` feedback, with the
+        mismatches as rationale. Guidelines are optional when such
+        expectations are logged.
+
+        Seeing the screenshots requires a vision model as the judge. Set
+        ``screenshots=False`` for a text-only judge, or to save tokens on
+        traces with many screenshots, e.g. from `Multiple Step Action`.
+
+        By default the judge is the configured model on the configured
+        server. Any MLflow model URI can be used instead, e.g.
+        ``openai:/gpt-4.1-mini``, with the provider credentials in the
+        environment, e.g. ``OPENAI_API_KEY`` and ``OPENAI_BASE_URL``. Judges
+        are called one at a time, unless ``MLFLOW_GENAI_EVAL_MAX_WORKERS`` and
+        ``MLFLOW_GENAI_EVAL_MAX_SCORER_WORKERS`` are set.
+
+        Args:
+            *guidelines: The rules that the keyword outputs must follow.
+            judge_model: Optional MLflow model URI of the judge.
+            scope: The traces to judge: those of the current ``test``,
+                ``suite`` or of the whole ``run``.
+            screenshots: Whether the judge sees the screenshots sent to the
+                model.
+
+        Returns:
+            The evaluation metrics, e.g. ``guidelines/mean`` for the share of
+            traces that follow the guidelines, ``tool_calls/mean`` for the
+            share of traces with the expected tool calls.
+
+        Example:
+            | ${metrics}=    Evaluate Llm Traces
+            | ...    The reasoning must describe the visible window.
+            | ...    A missing object must not be reported as found.
+            | Should Be True    ${metrics}[guidelines/mean] >= 0.8
+            | Evaluate Llm Traces    The answer is polite.    screenshots=False
+            | Multiple Step Action    compute 6 times 7
+            | Log Llm Expectation    expected_tool_calls
+            | ...    ${{["Move Pointer To Proportional", "Click Pointer Button"] * 4}}
+            | ${metrics}=    Evaluate Llm Traces    scope=test
+            | Should Be Equal As Numbers    ${metrics}[tool_calls/mean]    1
+        """
+        judge_env: dict[str, str | None] = {}
+        if judge_model is None:
+            judge_model = f"openai:/{self.model}"
+            judge_env = {
+                "OPENAI_BASE_URL": self.server_url,
+                # Takes precedence over OPENAI_BASE_URL
+                "OPENAI_API_BASE": None,
+                "OPENAI_API_KEY": os.getenv(self.api_key_env) or "unused",
+            }
+        return self.tracer.evaluate(
+            list(guidelines), judge_model, scope, judge_env, screenshots
+        )
 
     def _encode_image(self, image: Image.Image) -> str:
         """
@@ -579,6 +848,7 @@ class LlmClient:
         return image
 
     @keyword
+    @_traced(CHAIN)
     async def check_for_visual_corruption(
         self,
         image: Image.Image | str | None = None,
@@ -630,16 +900,19 @@ class LlmClient:
         parsed = await self._verify_llm_json_response(
             llm_output, required_keys
         )
+        self.tracer.set_outputs(parsed)
 
         if parsed["corrupted"]:
             log_image(
                 image, "Corrupted image detected: " + parsed["description"]
             )
+            self.tracer.log_image(image, "Corrupted image")
             raise VQAValidationError(
                 f"Image is corrupted: {parsed['description']}"
             )
         return parsed
 
+    @_traced(PARSER)
     async def _verify_llm_json_response(
         self,
         llm_output: str,
@@ -664,6 +937,9 @@ class LlmClient:
 
         parsed_output, errors = self._parse_llm_json_response(
             llm_output, required_keys
+        )
+        self.tracer.feedback(
+            "valid_json_first_try", not errors, rationale=errors
         )
 
         if errors:
@@ -772,6 +1048,7 @@ class LlmClient:
         return parsed_output, "\n".join(error_messages)
 
     @keyword
+    @_traced(CHAIN)
     async def get_object_position(
         self,
         description: str,
@@ -849,13 +1126,17 @@ class LlmClient:
         if point is None:
             raise VQADetectionError(f"Object was not found: {description}")
 
-        if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
-            image = draw_point_on_image(image, point, label=description)
-            log_image(image, f"LLM indicated point for: {description}")
+        debug = os.getenv("YARF_LOG_LEVEL") == "DEBUG"
+        if debug or self.tracer.enabled:
+            annotated = draw_point_on_image(image, point, label=description)
+            if debug:
+                log_image(annotated, f"LLM indicated point for: {description}")
+            self.tracer.log_image(annotated, "LLM indicated point")
 
         return point
 
     @keyword
+    @_traced(CHAIN)
     async def assert_state(
         self,
         description: str,
@@ -905,15 +1186,18 @@ class LlmClient:
             llm_output,
             {"matches_description": [bool], "reasoning": [str]},
         )
+        self.tracer.set_outputs(parsed)
 
         if not parsed["matches_description"]:
             log_image(image=image, msg="Current state")
+            self.tracer.log_image(image, "Current state")
             raise AssertionError(
                 f"State does NOT match description: {description}. "
                 f"Reasoning: {parsed['reasoning']}"
             )
 
     @keyword
+    @_traced(CHAIN)
     async def get_single_gui_action(
         self,
         task: str,
@@ -1078,11 +1362,16 @@ class LlmClient:
             raise ValueError(f"{action_type} actions must include a point.")
 
     @keyword
+    @_traced(CHAIN)
     async def execute_gui_action(
         self, action: dict[str, Any], description: str = ""
     ) -> None:
         """
         Execute a GUI action as specified by the LLM response.
+
+        When tracing, each HID keyword the action calls is recorded as a tool
+        call with its arguments, e.g. ``Move Pointer To Proportional`` then
+        ``Click Pointer Button`` for a ``Left Click``.
 
         Args:
             action: A dict containing the action_type, text and point, the
@@ -1101,53 +1390,52 @@ class LlmClient:
             | ...    text=${None}    point=${{[0.5, 0.5]}}
             | Execute Gui Action    ${action}
         """
-
         self.validate_gui_action(action, description)
         action_type = action["action_type"]
+        debug = os.getenv("YARF_LOG_LEVEL") == "DEBUG"
+        capture = debug or self.tracer.enabled
 
         logger.info(f"Executing action: {action}")
 
         if action_type in POINTER_ACTIONS:
-            hid = self._get_lib_instance("HID")
             x, y = normalize_point(action["point"], (1, 1))
-            # For click actions, draw the point on the image and log it before
-            # executing
-            if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
+            if capture:
                 image = await self._grab_screenshot()
                 label = action.get("description", action_type)
                 annotated = draw_point_on_image(image, [x, y], label=label)
-                log_image(
-                    annotated,
-                    f"LLM indicated action point for: {label}",
-                )
+                if debug:
+                    log_image(
+                        annotated,
+                        f"LLM indicated action point for: {label}",
+                    )
+                self.tracer.log_image(annotated, "Action point")
 
-            await hid.move_pointer_to_proportional(x, y)
+            await self._hid("move_pointer_to_proportional", x, y)
             await asyncio.sleep(0.5)
 
             if action_type == "Left Click":
-                await hid.click_pointer_button("LEFT")
+                await self._hid("click_pointer_button", "LEFT")
             elif action_type == "Right Click":
-                await hid.click_pointer_button("RIGHT")
+                await self._hid("click_pointer_button", "RIGHT")
             elif action_type == "Double Click":
-                await hid.click_pointer_button("LEFT")
+                await self._hid("click_pointer_button", "LEFT")
                 await asyncio.sleep(0.1)
-                await hid.click_pointer_button("LEFT")
+                await self._hid("click_pointer_button", "LEFT")
             elif action_type == "Scroll Down":
-                await hid.scroll_pointer_wheel(SCROLL_STEPS)
+                await self._hid("scroll_pointer_wheel", SCROLL_STEPS)
             elif action_type == "Scroll Up":
-                await hid.scroll_pointer_wheel(-SCROLL_STEPS)
+                await self._hid("scroll_pointer_wheel", -SCROLL_STEPS)
 
         elif action_type == "Write":
-            hid = self._get_lib_instance("HID")
-            await hid.type_string(action["text"])
+            await self._hid("type_string", action["text"])
 
         elif action_type == "Press Key":
-            hid = self._get_lib_instance("HID")
-            await hid.keys_combo(
+            await self._hid(
+                "keys_combo",
                 [
                     KEY_ALIASES.get(key.strip().lower(), key.strip())
                     for key in action["text"].split("+")
-                ]
+                ],
             )
 
         elif action_type == "Wait":
@@ -1157,14 +1445,37 @@ class LlmClient:
         else:
             raise ValueError(f"Unsupported GUI action: {action_type}")
 
-        if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
+        if capture:
             # Wait for a moment to let the screen update after the action
             await asyncio.sleep(1)
             image = await self._grab_screenshot()
-            logger.info(f"Executed action: {action_type}")
-            log_image(image=image, msg="Screenshot after executing action")
+            if debug:
+                logger.info(f"Executed action: {action_type}")
+                log_image(image=image, msg="Screenshot after executing action")
+            self.tracer.log_image(image, "Screenshot after action")
+
+    async def _hid(self, method: str, *args: Any) -> None:
+        """
+        Call a keyword of the HID library, recorded as a tool call named after
+        the keyword, with its arguments as inputs.
+
+        Args:
+            method: The name of the HID method, e.g. ``click_pointer_button``.
+            *args: The arguments of the keyword.
+        """
+        hid = self._get_lib_instance("HID")
+        # Bound on HidBase, as the platform libraries share its signatures
+        arguments = (
+            inspect.signature(getattr(HidBase, method))
+            .bind(hid, *args)
+            .arguments
+        )
+        arguments.pop("self")
+        with self.tracer.span(keyword_name(method), TOOL, inputs=arguments):
+            await getattr(hid, method)(*args)
 
     @keyword
+    @_traced(AGENT)
     async def multiple_step_action(
         self,
         task: str,
@@ -1288,14 +1599,22 @@ class LlmClient:
                 task=task,
                 history="\n".join(str(item) for item in history),
             )
-            history_item = await self._run_step(
-                step,
-                llm_prompt,
-                system_prompt=custom_system_prompt or system_prompt,
-            )
+            with self.tracer.span(
+                f"Step {step}", CHAIN, inputs={"prompt": llm_prompt}
+            ) as span:
+                history_item = await self._run_step(
+                    step,
+                    llm_prompt,
+                    system_prompt=custom_system_prompt or system_prompt,
+                )
+                span.set_outputs(history_item.action)
             history.append(history_item)
+            self.tracer.set_outputs(
+                {"actions": [item.action for item in history]}
+            )
 
             if history_item.action["action_type"] == "Finish":
+                self.tracer.feedback("steps", step)
                 logger.info(
                     f"Task finished successfully in {step} steps. History:\n"
                     + "\n".join(str(item) for item in history)
@@ -1305,6 +1624,7 @@ class LlmClient:
         # Grab a final screenshot to log the end state
         image = await self._grab_screenshot()
         log_image(image, msg="Final screenshot after multiple step action")
+        self.tracer.log_image(image, "Final screenshot")
 
         raise RuntimeError(
             "Multiple step action sequence completed without reaching Finish "
