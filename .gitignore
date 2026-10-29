@@ -23,3 +23,6 @@ package*.json
 results
 squashfs-root
 .pi
+
+# Per-checkout Spec Kit integration catalog indexes
+/.specify/integrations/.cache/
