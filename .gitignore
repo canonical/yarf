@@ -28,6 +28,7 @@ squashfs-root
 /.specify/integrations/.cache/
 
 /specs/
+/.specify/workflows/runs/
 /requirements/*
 !/requirements/AGENTS.md
 !/requirements/*/

@@ -162,6 +162,45 @@ class CheckRequirementsTests(unittest.TestCase):
             )
         )
 
+    def test_specify_workflow_run_state_is_ignored_but_definition_is_tracked(
+        self,
+    ):
+        repository_root = Path(__file__).resolve().parents[3]
+        self.write(".gitignore", (repository_root / ".gitignore").read_text())
+        generated_paths = (
+            ".specify/workflows/runs/feature/inputs.json",
+            ".specify/workflows/runs/feature/state.json",
+            ".specify/workflows/runs/feature/log.jsonl",
+            ".specify/workflows/runs/feature/workflow.yml",
+        )
+        for path in generated_paths:
+            self.write(path, "generated workflow state")
+        definition = ".specify/workflows/speckit/workflow.yml"
+        self.write(definition, "workflow definition")
+
+        ignored = subprocess.run(
+            ["git", "check-ignore", "--", *generated_paths],
+            cwd=self.repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(list(generated_paths), ignored.stdout.splitlines())
+
+        subprocess.run(["git", "add", "-A"], cwd=self.repo, check=True)
+        tracked = subprocess.run(
+            ["git", "ls-files"],
+            cwd=self.repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        tracked_paths = tracked.stdout.splitlines()
+        self.assertIn(definition, tracked_paths)
+        self.assertTrue(
+            all(path not in tracked_paths for path in generated_paths)
+        )
+
     def test_tracked_ancillary_requirements_file_is_forbidden(self):
         self.add_valid_requirement()
         self.write("requirements/001-console-status/plan.md", "not a contract")
