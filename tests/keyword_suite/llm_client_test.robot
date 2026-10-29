@@ -66,3 +66,12 @@ Collect Usage
     Should Be Equal As Numbers                      ${usage}[cost]          0.5
     Should Be Equal         ${usage}[nano_aiu]      ${None}
     Should Be True          ${usage}[inference_time] > 0
+
+Tracing Disabled By Default
+    Prompt Llm              This is my prompt
+    Run Keyword And Expect Error                    *tracing is disabled*
+    ...                     Log Llm Feedback        correct                 ${True}
+    Run Keyword And Expect Error                    *tracing is disabled*
+    ...                     Log Llm Expectation     answer                  4
+    Run Keyword And Expect Error                    *tracing is disabled*
+    ...                     Evaluate Llm Traces     The answer is polite.

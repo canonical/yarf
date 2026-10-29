@@ -55,9 +55,16 @@ dependencies = [
     "typing-extensions~=4.16.0",  # implicitly required by owasp-logger
 ]
 
+[project.optional-dependencies]
+# Tracing and evaluation of LLM Client prompts, see `Configure Llm Client`.
+mlflow = [
+    "mlflow~=3.17",
+]
+
 [dependency-groups]
 dev = [
     "licensecheck",
+    "mlflow~=3.17",
     "mypy",
     "prek",
     "pyfakefs",

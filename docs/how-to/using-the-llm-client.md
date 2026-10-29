@@ -12,6 +12,7 @@ In this guide, we will cover:
 1. [Using images in prompts](#using-images-in-prompts)
 1. [Using LLM GUI keywords](#using-llm-gui-keywords)
 1. [Using multi-step GUI navigation](#using-multi-step-gui-navigation)
+1. [Tracing and evaluating prompts](#tracing-and-evaluating-prompts)
 1. [Configuring the client](#configuring-the-client)
 
 ## Setting up an LLM server
@@ -364,6 +365,225 @@ Open Settings Panel
 
 You can use multi-step navigation for workflows where the exact number of
 clicks depends on the current UI state.
+
+## Tracing and evaluating prompts
+
+To understand why a prompt works or fails, YARF can record each Robot test as
+an [MLflow](https://mlflow.org/) trace. A trace is a tree of steps, called
+spans, with their inputs, outputs, duration and errors. It has a span for the
+test, and one for each keyword the test runs, with its arguments:
+
+```{code-block} text
+---
+caption: Spans of a traced test
+---
+Click OK Button                    test -> status, message
+├── Get Single Gui Action          task -> action
+│   ├── Prompt Llm                 prompt, system prompt -> answer
+│   │   └── chat/completions       messages and screenshot -> reply, tokens
+│   └── Verify Llm Json Response   answer -> parsed JSON
+└── Execute Gui Action             action
+    ├── Move Pointer To Proportional   x, y
+    └── Click Pointer Button           button
+```
+
+The HID keywords that the LLM Client calls, such as `Click Pointer Button`,
+are recorded as tool calls: the actions the model took on the system.
+
+In the MLflow web interface, you can see the exact prompts and screenshots sent
+to the model, its answers and reasoning, the token usage and latency of each
+request, and which step failed.
+
+### Enabling tracing
+
+Tracing needs MLflow, an optional dependency of YARF:
+
+```{code-block} bash
+---
+caption: Install YARF with MLflow
+---
+pip install "yarf[mlflow]"
+```
+
+```{note}
+The YARF snap does not include MLflow, so tracing is not available there.
+```
+
+Then enable tracing in the client configuration, optionally with the name of
+the MLflow experiment, `yarf` by default. Robot creates a new LLM Client for
+each test, so enable it in the test setup. A test is recorded from the moment
+it enables tracing:
+
+```{code-block} robotframework
+---
+caption: Enable tracing for every test
+---
+*** Settings ***
+Library        yarf.rf_libraries.libraries.llm_client.LlmClient
+Test Setup     Configure Llm Client    tracing=True    experiment=installer
+```
+
+By default, traces are saved in `mlflow.db` in the YARF output directory. To
+browse them, start the MLflow interface and open `http://localhost:5000`:
+
+```{code-block} bash
+---
+caption: Browse the traces of a run
+---
+mlflow ui --backend-store-uri sqlite:///<outdir>/mlflow.db --port 5000
+```
+
+To collect the traces of several runs in one place, for example from CI, set
+`MLFLOW_TRACKING_URI` to an MLflow server before running YARF.
+
+Each trace is named after its test, tagged with the Robot suite, test and
+status, and the traces of a suite form a session. In the trace list, the
+**Input** column shows the test name and the **Output** column its Robot
+status, `PASS`, `FAIL` or `SKIP`, with the failure message. The **State**
+column is MLflow's own and can only be `OK` or `ERROR`. The **Trace name** and
+**robot_status** columns are also available from the **Display** menu. YARF
+also attaches automatic feedback to the traces:
+
+- `robot_status`: the Robot status of the test, `PASS`, `FAIL` or `SKIP`, with
+  the failure message.
+- `keyword_passed`: whether an LLM Client keyword succeeded, with the error
+  otherwise.
+- `valid_json_first_try`: whether the model answered with the expected JSON,
+  without a correction prompt.
+- `steps`: the number of steps `Multiple Step Action` took to finish.
+
+MLflow aggregates feedback across traces, so you can compare prompts, models or
+runs, for example by running the same suite with different
+`custom_system_prompt` or `model` values in separate experiments.
+
+```{note}
+Traces record whole tests when run with `yarf`, which registers the trace
+listener. With `robot`, add `--listener yarf.lib.llm_trace_listener.LlmTraceListener`
+to do the same, otherwise each LLM Client keyword is a trace of its own.
+```
+
+### Adding your own feedback and expectations
+
+`Log Llm Feedback` and `Log Llm Expectation` attach a judgement or the ground
+truth to the trace of the current test:
+
+```{code-block} robotframework
+---
+caption: Record whether the model found the right button
+---
+*** Test Cases ***
+Find OK Button
+    ${point}=    Get Object Position    the OK button
+    Log Llm Expectation    expected_region    bottom right
+    ${ok}=    Evaluate    $point[0] > 0.5 and $point[1] > 0.5
+    Log Llm Feedback    found_ok_button    ${ok}
+```
+
+### Judging traces with an LLM
+
+`Evaluate Llm Traces` asks an LLM judge whether each traced test follows your
+guidelines. The judge reads the test and its result, the inputs and outputs of
+its LLM Client keywords and the GUI actions taken, in order, and sees the
+screenshots sent to the model, so it can catch answers that do not match the
+screen. The verdicts and rationales are attached to the traces, and the
+evaluation is logged as an MLflow run. Traces without an LLM request are not
+judged. If the judge answers anything other than yes or no, the answer is
+recorded as an error and left out of the metrics. The `scope` argument selects
+the traces of the current `test`, `suite` (default) or of the whole `run`.
+
+The trace of a test ends with the test, so evaluate the traces from the
+`Suite Teardown`. Robot creates a new LLM Client for each test, so enable
+tracing again there:
+
+```{code-block} robotframework
+---
+caption: Judge the traces of a suite
+---
+*** Settings ***
+Test Setup        Configure Llm Client    tracing=True
+Suite Teardown    Judge Traces
+
+*** Keywords ***
+Judge Traces
+    Configure Llm Client    tracing=True
+    ${metrics}=    Evaluate Llm Traces
+    ...    The reasoning must describe what is visible on the screen.
+    ...    A state that is not visible must not be reported as present.
+    Log    ${metrics}[guidelines/mean]
+```
+
+By default, the judge is the configured model and server. A larger model is
+usually a better judge; to use one, set `judge_model` to an
+[MLflow model URI](https://mlflow.org/docs/latest/genai/eval-monitor/scorers/llm-judge/guidelines/)
+and the provider's credentials in the environment, for example
+`judge_model=openai:/gpt-4.1-mini` with `OPENAI_API_KEY`.
+
+Seeing the screenshots requires a judge that accepts images. For a text-only
+judge, or to save tokens on traces with many screenshots, such as those of
+`Multiple Step Action`, set `screenshots=False`. Small local judges often fail
+on traces with many screenshots:
+
+```{code-block} robotframework
+---
+caption: Judge the traces without the screenshots
+---
+Evaluate Llm Traces    The answer is in English.    screenshots=False
+```
+
+### Checking the GUI actions taken
+
+`Execute Gui Action` records each HID keyword it calls as a tool call, with
+the keyword arguments as inputs. Only these are tool calls: the keywords that
+the suite calls itself, such as `Click Pointer Button`, are in the trace for
+context, but they are not part of the evaluation. For example, a `Left Click` calls
+`Move Pointer To Proportional` then `Click Pointer Button`, and a `Write`
+calls `Type String`. The trace also has screenshots: the click point drawn on
+the screen before a pointer action, and the screen after each action. In the
+trace of a test, the tool calls form its trajectory, for example the actions
+of a `Multiple Step Action`:
+
+```{code-block} text
+---
+caption: Spans of a test with a Multiple Step Action
+---
+Compute With Clicks                    test -> status
+└── Multiple Step Action               task -> actions
+    ├── Step 1                         prompt -> action
+    │   ├── Prompt Llm
+    │   ├── Verify Llm Json Response
+    │   └── Execute Gui Action         action
+    │       ├── Action point                    screenshot
+    │       ├── Move Pointer To Proportional    x, y
+    │       ├── Click Pointer Button            button
+    │       └── Screenshot after action         screenshot
+    └── Step 2                         prompt -> Finish
+```
+
+To check the trajectory without an LLM, log the expected tool calls as an
+`expected_tool_calls` expectation, then evaluate the traces. The tool calls
+must match the expected ones, in order. An expected call is a keyword name, or
+a dictionary with a `name` and the `arguments` to compare. Leave out the
+arguments that can vary, such as the exact position of a click:
+
+```{code-block} robotframework
+---
+caption: Check that the calculator was driven with clicks only
+---
+*** Test Cases ***
+Compute With Clicks
+    Multiple Step Action    click the buttons 6, ×, 7 then = to compute 6×7
+    ${click}=    Evaluate
+    ...    [{"name": "Move Pointer To Proportional"},
+    ...     {"name": "Click Pointer Button", "arguments": {"button": "LEFT"}}]
+    ${expected}=    Evaluate    $click * 4
+    Log Llm Expectation    expected_tool_calls    ${expected}
+```
+
+The tool calls are the HID keywords that the LLM Client called in the test,
+in order. When `Evaluate Llm Traces` runs from the `Suite Teardown`, each trace
+gets a `tool_calls` feedback, with the mismatched calls as the rationale, and
+the metrics get `tool_calls/mean`. Guidelines are optional when expected tool
+calls are logged.
 
 ## Configuring the client
 

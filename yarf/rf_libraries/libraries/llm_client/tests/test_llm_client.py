@@ -1,5 +1,5 @@
 import json
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
 from PIL import Image
@@ -1943,3 +1943,406 @@ class TestLlmClient:
             await client._run_step(4, "next action", "system prompt")
 
         assert grab_screenshot.await_count == 3
+
+
+class TestLlmClientTracing:
+    LLM_PATH = "yarf.rf_libraries.libraries.llm_client.LlmClient"
+
+    @pytest.fixture
+    def client(self):
+        client = LlmClient()
+        client.tracer = MagicMock()
+        self.span = MagicMock()
+        client.tracer.span.return_value.__enter__.return_value = self.span
+        return client
+
+    def spans(self, client):
+        return [c.args for c in client.tracer.span.call_args_list]
+
+    @pytest.mark.parametrize(
+        "enabled, kwargs, expected_calls, expected_enabled",
+        [
+            (False, {"tracing": True, "experiment": "exp"}, ["exp"], True),
+            (True, {"tracing": "False"}, [], False),
+            (True, {"experiment": "new"}, ["new"], True),
+            (False, {"experiment": "new"}, [], False),
+            (True, {"model": "m"}, [], True),
+        ],
+    )
+    def test_configure_tracing(
+        self, enabled, kwargs, expected_calls, expected_enabled
+    ):
+        client = LlmClient()
+        client.tracer.enabled = enabled
+        with patch.object(client.tracer, "enable") as enable:
+            client.configure_llm_client(**kwargs)
+
+        assert [c.args[0] for c in enable.call_args_list] == expected_calls
+        if not expected_calls:
+            assert client.tracer.enabled is expected_enabled
+        assert client.experiment == kwargs.get("experiment", "yarf")
+
+    def test_prompt_llm_spans(self, client, mock_post):
+        data = {
+            "choices": [{"message": {"content": "answer"}}],
+            "usage": {
+                "prompt_tokens": 3,
+                "completion_tokens": 2,
+                "total_tokens": 5,
+            },
+        }
+        mock_post.return_value.status_code = 200
+        mock_post.return_value.json.return_value = data
+        image = Image.new("RGB", (8, 6))
+
+        assert client.prompt_llm("hello", image=image) == "answer"
+
+        keyword, request = self.spans(client)
+        assert keyword == (
+            "Prompt Llm",
+            "CHAIN",
+            {"prompt": "hello", "image": "<image 8x6>"},
+        )
+        assert request[:2] == ("chat/completions", "LLM")
+        assert (
+            client.tracer.span.call_args.kwargs["inputs"]
+            == (mock_post.call_args.kwargs["json"])
+        )
+        self.span.set_outputs.assert_any_call(data)
+        self.span.set_outputs.assert_called_with("answer")
+        attributes = self.span.set_attributes.call_args.args[0]
+        assert attributes["mlflow.llm.model"] == client.model
+        assert attributes["mlflow.chat.tokenUsage"]["total_tokens"] == 5
+        assert attributes["yarf.attempts"] == 1
+
+    @pytest.mark.asyncio
+    async def test_keyword_outputs(self, client):
+        image = Image.new("RGB", (100, 100))
+        with patch.object(
+            client,
+            "prompt_llm",
+            return_value='{"point_2d": [500, 500], "point_frame": null}',
+        ):
+            point = await client.get_object_position("button", image=image)
+
+        assert point == [0.5, 0.5]
+        assert self.spans(client) == [
+            (
+                "Get Object Position",
+                "CHAIN",
+                {"description": "button", "image": "<image 100x100>"},
+            ),
+            (
+                "Verify Llm Json Response",
+                "PARSER",
+                {
+                    "llm_output": (
+                        '{"point_2d": [500, 500], "point_frame": null}'
+                    ),
+                    "required_keys": {
+                        "point_2d": [list, type(None)],
+                        "point_frame": [list, type(None)],
+                    },
+                },
+            ),
+        ]
+        self.span.set_outputs.assert_called_with({"result": [0.5, 0.5]})
+        client.tracer.feedback.assert_called_once_with(
+            "valid_json_first_try", True, rationale=""
+        )
+
+    @pytest.mark.asyncio
+    async def test_assert_state_outputs(self, client):
+        parsed = {"matches_description": False, "reasoning": "no"}
+        with (
+            patch.object(
+                client, "prompt_llm", return_value=json.dumps(parsed)
+            ),
+            patch(f"{self.LLM_PATH}.log_image"),
+            pytest.raises(AssertionError),
+        ):
+            await client.assert_state(
+                "desktop", image=Image.new("RGB", (1, 1))
+            )
+
+        client.tracer.set_outputs.assert_called_once_with(parsed)
+
+    @pytest.mark.asyncio
+    async def test_check_for_visual_corruption_outputs(self, client):
+        parsed = {"corrupted": False, "description": "fine"}
+        with patch.object(
+            client, "prompt_llm", return_value=json.dumps(parsed)
+        ):
+            await client.check_for_visual_corruption(
+                image=Image.new("RGB", (1, 1))
+            )
+
+        client.tracer.set_outputs.assert_called_once_with(parsed)
+
+    @pytest.mark.asyncio
+    async def test_multiple_step_action_spans(self, client):
+        action = {"action_type": "Finish"}
+        with patch.object(
+            client,
+            "_run_step",
+            AsyncMock(return_value=HistoryItem(step=1, action=action)),
+        ):
+            await client.multiple_step_action("task", max_steps=2)
+
+        keyword, step = self.spans(client)
+        assert keyword[:2] == ("Multiple Step Action", "AGENT")
+        assert step[:2] == ("Step 1", "CHAIN")
+        self.span.set_outputs.assert_called_once_with(action)
+        client.tracer.feedback.assert_called_once_with("steps", 1)
+        client.tracer.set_outputs.assert_called_once_with(
+            {"actions": [action]}
+        )
+
+    @pytest.fixture
+    def hid(self, client):
+        hid = MagicMock()
+        for method in (
+            "move_pointer_to_proportional",
+            "click_pointer_button",
+            "scroll_pointer_wheel",
+            "type_string",
+            "keys_combo",
+        ):
+            setattr(hid, method, AsyncMock())
+        video = MagicMock()
+        video.grab_screenshot = AsyncMock(
+            return_value=Image.new("RGB", (10, 10))
+        )
+        with (
+            patch.object(
+                client,
+                "_get_lib_instance",
+                side_effect=lambda name: {"HID": hid, "VideoInput": video}[
+                    name
+                ],
+            ),
+            patch(f"{self.LLM_PATH}.asyncio.sleep", AsyncMock()),
+        ):
+            yield hid
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "action, tool_calls",
+        [
+            (
+                {
+                    "action_type": "Double Click",
+                    "text": None,
+                    "point": [0.2, 0.4],
+                },
+                [
+                    (
+                        "Move Pointer To Proportional",
+                        {"x": 0.2, "y": 0.4},
+                    ),
+                    ("Click Pointer Button", {"button": "LEFT"}),
+                    ("Click Pointer Button", {"button": "LEFT"}),
+                ],
+            ),
+            (
+                {
+                    "action_type": "Scroll Up",
+                    "text": None,
+                    "point": [0.5, 0.5],
+                },
+                [
+                    (
+                        "Move Pointer To Proportional",
+                        {"x": 0.5, "y": 0.5},
+                    ),
+                    ("Scroll Pointer Wheel", {"steps": -5}),
+                ],
+            ),
+            (
+                {"action_type": "Write", "text": "42", "point": None},
+                [("Type String", {"string": "42"})],
+            ),
+            (
+                {"action_type": "Press Key", "text": "ctrl+c", "point": None},
+                [("Keys Combo", {"combo": ["Control_L", "c"]})],
+            ),
+            ({"action_type": "Wait", "text": None, "point": None}, []),
+        ],
+    )
+    async def test_execute_gui_action_tool_calls(
+        self, client, hid, action, tool_calls
+    ):
+        with patch(f"{self.LLM_PATH}.draw_point_on_image"):
+            await client.execute_gui_action(action, "do it")
+
+        keyword, *tools = client.tracer.span.call_args_list
+        assert keyword.args == (
+            "Execute Gui Action",
+            "CHAIN",
+            {"action": action, "description": "do it"},
+        )
+        assert [(c.args[0], c.kwargs["inputs"]) for c in tools] == tool_calls
+        assert {c.args[1] for c in tools} <= {"TOOL"}
+
+    @pytest.mark.asyncio
+    async def test_execute_gui_action_logs_screenshots_when_tracing(
+        self, client, hid
+    ):
+        annotated = Image.new("RGB", (10, 10))
+        with (
+            patch(
+                f"{self.LLM_PATH}.draw_point_on_image", return_value=annotated
+            ),
+            patch(f"{self.LLM_PATH}.log_image") as mock_log_image,
+        ):
+            await client.execute_gui_action(
+                {
+                    "action_type": "Left Click",
+                    "text": None,
+                    "point": [0.25, 0.5],
+                }
+            )
+
+        mock_log_image.assert_not_called()
+        assert [c.args[1] for c in client.tracer.log_image.call_args_list] == [
+            "Action point",
+            "Screenshot after action",
+        ]
+        assert client.tracer.log_image.call_args_list[0].args[0] is annotated
+
+    @pytest.mark.asyncio
+    async def test_execute_gui_action_skips_screenshots_without_tracing(
+        self, client, hid
+    ):
+        client.tracer.enabled = False
+        with patch(f"{self.LLM_PATH}.draw_point_on_image") as mock_draw_point:
+            await client.execute_gui_action(
+                {
+                    "action_type": "Left Click",
+                    "text": None,
+                    "point": [0.25, 0.5],
+                }
+            )
+
+        mock_draw_point.assert_not_called()
+        client._get_lib_instance(
+            "VideoInput"
+        ).grab_screenshot.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_get_object_position_logs_point_when_tracing(self, client):
+        image = Image.new("RGB", (100, 100))
+        annotated = Image.new("RGB", (100, 100))
+        with (
+            patch.object(
+                client,
+                "prompt_llm",
+                return_value='{"point_2d": [500, 500], "point_frame": null}',
+            ),
+            patch(
+                f"{self.LLM_PATH}.draw_point_on_image", return_value=annotated
+            ) as mock_draw_point,
+            patch(f"{self.LLM_PATH}.log_image") as mock_log_image,
+        ):
+            await client.get_object_position("button", image=image)
+
+        mock_draw_point.assert_called_once_with(
+            image, [0.5, 0.5], label="button"
+        )
+        mock_log_image.assert_not_called()
+        client.tracer.log_image.assert_called_once_with(
+            annotated, "LLM indicated point"
+        )
+
+    @pytest.mark.asyncio
+    async def test_failure_screenshots_are_traced(self, client):
+        image = Image.new("RGB", (10, 10))
+        with (
+            patch.object(
+                client,
+                "prompt_llm",
+                side_effect=[
+                    json.dumps(
+                        {"matches_description": False, "reasoning": "no"}
+                    ),
+                    json.dumps({"corrupted": True, "description": "noise"}),
+                ],
+            ),
+            patch(f"{self.LLM_PATH}.log_image"),
+        ):
+            with pytest.raises(AssertionError):
+                await client.assert_state("desktop", image=image)
+            with pytest.raises(VQAValidationError):
+                await client.check_for_visual_corruption(image=image)
+
+        assert client.tracer.log_image.call_args_list == [
+            call(image, "Current state"),
+            call(image, "Corrupted image"),
+        ]
+
+    @pytest.mark.asyncio
+    async def test_multiple_step_action_traces_final_screenshot(self, client):
+        screenshot = Image.new("RGB", (10, 10))
+        action = {"action_type": "Wait"}
+        with (
+            patch.object(
+                client,
+                "_run_step",
+                AsyncMock(return_value=HistoryItem(step=1, action=action)),
+            ),
+            patch.object(
+                client, "_grab_screenshot", AsyncMock(return_value=screenshot)
+            ),
+            patch(f"{self.LLM_PATH}.log_image"),
+            pytest.raises(RuntimeError, match="max_steps=1"),
+        ):
+            await client.multiple_step_action("task", max_steps=1)
+
+        client.tracer.log_image.assert_called_once_with(
+            screenshot, "Final screenshot"
+        )
+
+    def test_log_llm_feedback(self, client):
+        client.log_llm_feedback("correct", True, rationale="why")
+        client.tracer.log_feedback.assert_called_once_with(
+            "correct", True, "why"
+        )
+
+    def test_log_llm_expectation(self, client):
+        client.log_llm_expectation("answer", "4")
+        client.tracer.log_expectation.assert_called_once_with("answer", "4")
+
+    @pytest.mark.parametrize(
+        "api_key, expected_key", [("k", "k"), (None, "unused")]
+    )
+    def test_evaluate_llm_traces_default_judge(
+        self, client, monkeypatch, api_key, expected_key
+    ):
+        if api_key is None:
+            monkeypatch.delenv("YARF_LLM_API_KEY", raising=False)
+        else:
+            monkeypatch.setenv("YARF_LLM_API_KEY", api_key)
+        client.tracer.evaluate.return_value = {"guidelines/mean": 1.0}
+
+        metrics = client.evaluate_llm_traces("rule 1", "rule 2", scope="test")
+
+        assert metrics == {"guidelines/mean": 1.0}
+        client.tracer.evaluate.assert_called_once_with(
+            ["rule 1", "rule 2"],
+            f"openai:/{client.model}",
+            "test",
+            {
+                "OPENAI_BASE_URL": client.server_url,
+                "OPENAI_API_BASE": None,
+                "OPENAI_API_KEY": expected_key,
+            },
+            True,
+        )
+
+    def test_evaluate_llm_traces_custom_judge(self, client):
+        client.evaluate_llm_traces(
+            "rule", judge_model="openai:/gpt-4.1", screenshots=False
+        )
+        client.tracer.evaluate.assert_called_once_with(
+            ["rule"], "openai:/gpt-4.1", "suite", {}, False
+        )

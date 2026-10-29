@@ -398,7 +398,11 @@ class TestMain:
         [
             (
                 None,
-                {"MetadataListener": 1, "RobotStackTracer": 1},
+                {
+                    "MetadataListener": 1,
+                    "RobotStackTracer": 1,
+                    "LlmTraceListener": 1,
+                },
             ),
             (
                 ["dummy/keywords_listener.py"],
@@ -488,6 +492,7 @@ class TestMain:
             with pytest.raises(error):
                 get_listeners(["dummy/invalid_listener.py"])
 
+    @patch("yarf.main.LlmTraceListener")
     @patch("yarf.main.RobotStackTracer")
     @patch("yarf.main.MetadataListener")
     @patch("yarf.main.get_robot_reserved_settings")
@@ -500,6 +505,7 @@ class TestMain:
         mock_get_robot_reserved_settings: MagicMock,
         mock_metadata_listener: MagicMock,
         mock_robot_stack_tracer: MagicMock,
+        mock_llm_trace_listener: MagicMock,
     ) -> None:
         """
         Test if the function runs the robot suite with the specified variables
@@ -543,7 +549,11 @@ class TestMain:
         mock_test_suite.run.assert_called_once_with(
             variable=["VAR1:value1", "VAR2:value2", "VAR3:value3"],
             outputdir=outdir,
-            listener=[mock_metadata_listener(), mock_robot_stack_tracer()],
+            listener=[
+                mock_metadata_listener(),
+                mock_robot_stack_tracer(),
+                mock_llm_trace_listener(),
+            ],
             extra_arg="extra_value",
         )
         mock_rebot.assert_called_once_with(
