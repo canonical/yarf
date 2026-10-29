@@ -4,7 +4,7 @@ import os
 import sys
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import mlflow
 import pandas as pd
@@ -17,8 +17,10 @@ from yarf.lib import llm_tracing
 from yarf.lib.llm_tracing import (
     LLM,
     TRACES,
+    TRACING,
     LlmTracer,
     NoopSpan,
+    RobotTestTrace,
     TraceRecord,
     as_outputs,
     check_tool_calls,
@@ -28,6 +30,7 @@ from yarf.lib.llm_tracing import (
     image_urls,
     judge_trace,
     llm_attributes,
+    llm_keywords,
     output_dir,
     patched_env,
     robot_context,
@@ -64,6 +67,13 @@ def traces():
     TRACES.clear()
     yield TRACES
     TRACES[:] = saved
+
+
+@pytest.fixture(autouse=True)
+def test_tracing():
+    TRACING.__init__()
+    yield TRACING
+    TRACING.__init__()
 
 
 @pytest.fixture
@@ -387,7 +397,19 @@ class TestEvaluate:
 
     def test_no_traces(self, tracer, traces, evaluate):
         traces.append(TraceRecord("tr-1", "Suite", "Other"))
-        with pytest.raises(RuntimeError, match="recorded in this test"):
+        with pytest.raises(RuntimeError, match="recorded in this test.$"):
+            tracer.evaluate(["g"], "openai:/m", "test")
+
+    def test_no_traces_in_running_test(self, tracer, evaluate):
+        with (
+            patch.object(
+                type(TRACING),
+                "trace_id",
+                new_callable=PropertyMock,
+                return_value="tr-open",
+            ),
+            pytest.raises(RuntimeError, match="from the suite teardown"),
+        ):
             tracer.evaluate(["g"], "openai:/m", "test")
 
     @pytest.mark.parametrize(
@@ -487,6 +509,7 @@ def span(
     name="span",
     start=0,
     status=("OK", ""),
+    attributes=None,
 ):
     return SimpleNamespace(
         span_type=span_type,
@@ -496,6 +519,7 @@ def span(
         span_id=span_id,
         name=name,
         start_time_ns=start,
+        attributes=attributes or {},
         status=SimpleNamespace(status_code=status[0], description=status[1]),
     )
 
@@ -784,3 +808,234 @@ class TestJudge:
 
         assert feedback.value is None
         assert "instead of yes or no" in feedback.error.error_message
+
+
+class TestRobotTestTrace:
+    @pytest.fixture
+    def tracing(self, tracer, context):
+        tracing = RobotTestTrace()
+        tracing.start_test("Test", {"documentation": "doc", "tags": ["t"]})
+        tracing.enabled = True
+        return tracing
+
+    def test_not_in_test(self):
+        tracing = RobotTestTrace()
+        assert not tracing.in_test
+        assert tracing.trace_id is None
+        tracing.end_keyword(None, False, "")
+        tracing.end_test("PASS", "")
+        assert not tracing.in_test
+
+    def test_trace(self, tracing, traces):
+        tracing.start_keyword("User Keyword", llm_tracing.CHAIN, {"x": 1})
+        tracing.start_keyword("Click", llm_tracing.TOOL, {"button": "LEFT"})
+        tracing.end_keyword(None, False, "")
+        tracing.end_keyword({"${r}": 2}, False, "")
+        trace_id = tracing.trace_id
+        tracing.end_test("PASS", "")
+
+        trace = get_trace(trace_id)
+        test, keyword, tool = sorted(
+            trace.data.spans, key=lambda s: s.start_time_ns
+        )
+        assert test.name == "Test"
+        assert test.inputs == {
+            "test": "Test",
+            "documentation": "doc",
+            "tags": ["t"],
+        }
+        assert test.outputs == {"status": "PASS", "message": ""}
+        assert test.attributes[llm_tracing.TEST_ATTRIBUTE] is True
+        assert keyword.parent_id == test.span_id
+        assert keyword.inputs == {"x": 1}
+        assert keyword.outputs == {"${r}": 2}
+        assert tool.parent_id == keyword.span_id
+        assert tool.span_type == llm_tracing.TOOL
+        assert trace.info.tags["robot.test"] == "Test"
+        assert trace.info.tags["mlflow.traceName"] == "Test"
+        assert trace.info.tags["robot.status"] == "PASS"
+        assert trace.info.trace_metadata["mlflow.trace.session"] == (
+            f"{llm_tracing.RUN_ID} Suite"
+        )
+        assert assessments(trace)["robot_status"].value == "PASS"
+        assert traces == [TraceRecord(trace_id, "Suite", "Test")]
+        assert not tracing.in_test
+        assert not tracing.enabled
+
+    def test_failure(self, tracing):
+        tracing.start_keyword("Fail", llm_tracing.CHAIN, {})
+        tracing.end_keyword(None, True, "boom")
+        trace_id = tracing.trace_id
+        tracing.end_test("FAIL", "boom")
+
+        trace = get_trace(trace_id)
+        assert trace.info.state == "ERROR"
+        failed = [s for s in trace.data.spans if s.name == "Fail"][0]
+        assert failed.status.status_code == "ERROR"
+        assert failed.status.description == "boom"
+        status = assessments(trace)["robot_status"]
+        assert status.value == "FAIL"
+        assert status.rationale == "boom"
+        assert trace.info.tags["robot.status"] == "FAIL"
+
+    def test_skip(self, tracing):
+        tracing.start_keyword("Skip", llm_tracing.CHAIN, {})
+        tracing.end_keyword(None, False, "")
+        trace_id = tracing.trace_id
+        tracing.end_test("SKIP", "not today")
+
+        trace = get_trace(trace_id)
+        assert trace.info.state == "OK"
+        assert trace.info.tags["robot.status"] == "SKIP"
+        assert assessments(trace)["robot_status"].value == "SKIP"
+
+    def test_disabled_keywords(self, tracer, context, traces):
+        tracing = RobotTestTrace()
+        tracing.start_test("Test", {})
+        tracing.start_keyword("Before Tracing", llm_tracing.CHAIN, {})
+        tracing.skip_keyword()
+        tracing.end_keyword(None, False, "")
+        tracing.end_keyword(None, False, "")
+        tracing.end_test("PASS", "")
+
+        assert tracing.trace_id is None
+        assert traces == []
+
+    def test_unended_keywords(self, tracing):
+        tracing.start_keyword("Outer", llm_tracing.CHAIN, {})
+        tracing.skip_keyword()
+        trace_id = tracing.trace_id
+        tracing.end_test("FAIL", "aborted")
+
+        trace = get_trace(trace_id)
+        assert [s.name for s in trace.data.spans] == ["Test", "Outer"]
+
+    def test_enabled_without_keywords(self, tracing):
+        tracing.end_test("PASS", "")
+
+        assert TRACES[-1].test == "Test"
+
+    def test_llm_keyword_in_test(self, tracer, tracing):
+        tracing.start_keyword("User Keyword", llm_tracing.CHAIN, {})
+        with patch.object(llm_tracing, "TRACING", tracing):
+            with tracer.span("Assert State", llm_tracing.CHAIN, {"d": 1}):
+                with tracer.span("Prompt Llm", llm_tracing.CHAIN):
+                    pass
+        tracing.end_keyword(None, False, "")
+        trace_id = tracing.trace_id
+        tracing.end_test("PASS", "")
+
+        trace = get_trace(trace_id)
+        spans = {s.name: s for s in trace.data.spans}
+        assert spans["Assert State"].parent_id == spans["User Keyword"].span_id
+        assert spans["Assert State"].attributes[llm_tracing.KEYWORD_ATTRIBUTE]
+        assert llm_tracing.KEYWORD_ATTRIBUTE not in (
+            spans["Prompt Llm"].attributes
+        )
+        passed = [
+            a for a in trace.info.assessments if a.name == "keyword_passed"
+        ]
+        assert [a.span_id for a in passed] == [spans["Assert State"].span_id]
+        assert len(TRACES) == 1
+
+    def test_feedback_on_test_trace(self, tracer, tracing):
+        with patch.object(llm_tracing, "TRACING", tracing):
+            tracing.start_keyword("Keyword", llm_tracing.CHAIN, {})
+            tracing.end_keyword(None, False, "")
+            tracer.log_feedback("correct", True)
+            tracer.log_expectation("expected_tool_calls", ["Click"])
+        trace_id = tracing.trace_id
+        tracing.end_test("PASS", "")
+
+        found = assessments(get_trace(trace_id))
+        assert found["correct"].value is True
+        assert found["expected_tool_calls"].value == ["Click"]
+
+    def test_enable_enables_test_tracing(self, mlflow_dir, monkeypatch):
+        monkeypatch.delenv("MLFLOW_TRACKING_URI", raising=False)
+        monkeypatch.setattr(llm_tracing, "output_dir", lambda: mlflow_dir)
+
+        LlmTracer().enable("yarf-test")
+
+        assert TRACING.enabled
+
+
+class TestLlmKeywords:
+    def test_llm_keywords(self):
+        keyword = {llm_tracing.KEYWORD_ATTRIBUTE: True}
+        trace = SimpleNamespace(
+            data=SimpleNamespace(
+                spans=[
+                    span(
+                        llm_tracing.CHAIN,
+                        parent_id=None,
+                        span_id="test",
+                        attributes={llm_tracing.TEST_ATTRIBUTE: True},
+                    ),
+                    span(
+                        llm_tracing.CHAIN,
+                        {"d": "state"},
+                        {"ok": True},
+                        parent_id="test",
+                        span_id="assert",
+                        name="Assert State",
+                        start=2,
+                        attributes=keyword,
+                    ),
+                    span(
+                        llm_tracing.AGENT,
+                        {"task": "t"},
+                        parent_id="test",
+                        span_id="multi",
+                        name="Multiple Step Action",
+                        start=1,
+                        attributes=keyword,
+                    ),
+                    span(LLM, parent_id="assert", span_id="r1"),
+                    span(LLM, parent_id="step", span_id="r2"),
+                    span(LLM, parent_id="step", span_id="r3"),
+                    span(llm_tracing.CHAIN, parent_id="multi", span_id="step"),
+                    span(LLM, parent_id="missing", span_id="r4"),
+                ]
+            )
+        )
+
+        assert llm_keywords(trace) == [
+            {
+                "name": "Multiple Step Action",
+                "inputs": {"task": "t"},
+                "outputs": None,
+            },
+            {
+                "name": "Assert State",
+                "inputs": {"d": "state"},
+                "outputs": {"ok": True},
+            },
+        ]
+
+    def test_judge_trace_test(self):
+        trace = SimpleNamespace(
+            data=SimpleNamespace(
+                spans=[
+                    span(
+                        llm_tracing.CHAIN,
+                        {"test": "T"},
+                        {"status": "PASS"},
+                        parent_id=None,
+                        span_id="test",
+                        attributes={llm_tracing.TEST_ATTRIBUTE: True},
+                    ),
+                ]
+            )
+        )
+        with (
+            patch(f"{MODULE}.llm_keywords", return_value=[{"name": "K"}]),
+            patch(
+                "mlflow.genai.judges.utils.invoke_judge_model",
+                return_value=Feedback(name="guidelines", value="yes"),
+            ) as invoke,
+        ):
+            judge_trace(trace, ["rule"], "openai:/judge", False)
+
+        prompt = invoke.call_args.args[1][0].content[-1]["text"]
+        assert '<llm_keywords>[{"name": "K"}]</llm_keywords>' in prompt

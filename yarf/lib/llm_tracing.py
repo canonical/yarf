@@ -7,6 +7,7 @@ It is imported only once tracing is enabled.
 
 import json
 import os
+import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -39,6 +40,17 @@ JUDGE_MAX_TOKENS = 4096
 IMAGE_URL_PREFIXES = ("data:image/", "mlflow-attachment://")
 # Identifies the traces recorded by this YARF process
 RUN_ID = datetime.now().isoformat(timespec="seconds")
+# Marks the LLM Client keywords that record their own span
+TRACED = "_yarf_traced"
+# Marks the span of an LLM Client keyword called from Robot
+KEYWORD_ATTRIBUTE = "yarf.llm_keyword"
+# Marks the span of a Robot test, the root of its trace
+TEST_ATTRIBUTE = "yarf.test"
+# The Robot status of a test: PASS, FAIL, SKIP or NOT RUN
+STATUS_TAG = "robot.status"
+STATUS_FEEDBACK = "robot_status"
+# Shown as the trace name in the trace list
+TRACE_NAME = "mlflow.traceName"
 
 
 @dataclass(frozen=True)
@@ -59,6 +71,270 @@ class TraceRecord:
 
 # Shared by all library instances, as Robot creates one per test
 TRACES: list[TraceRecord] = []
+
+
+class RobotTestTrace:
+    """
+    The trace of the running Robot test, shared by the trace listener and the
+    LLM Client.
+
+    The trace starts with the first keyword run once a test enables tracing,
+    so that the keywords before `Configure Llm Client` are not recorded.
+    ``enabled`` tells whether the running test enabled tracing.
+    """
+
+    def __init__(self) -> None:
+        self.enabled = False
+        self._test: tuple[str, dict[str, Any], int] | None = None
+        self._context: tuple[str | None, str | None] = (None, None)
+        self._root: Any = None
+        self._root_token: Any = None
+        self._stack: list[tuple[Any, Any] | None] = []
+        self._spans: set[str] = set()
+
+    @property
+    def in_test(self) -> bool:
+        """
+        Whether a Robot test is running.
+
+        Returns:
+            True between the start and the end of a test.
+        """
+        return self._test is not None
+
+    @property
+    def trace_id(self) -> str | None:
+        """
+        Get the ID of the trace of the running test.
+
+        Returns:
+            The trace ID, None if the test is not traced yet.
+        """
+        return self._root.trace_id if self._root is not None else None
+
+    def owns(self, span_id: str) -> bool:
+        """
+        Check whether a span is the test span or a Robot keyword span.
+
+        Args:
+            span_id: The span ID.
+
+        Returns:
+            Whether the span was started by the trace listener.
+        """
+        return span_id in self._spans
+
+    def start_test(self, name: str, inputs: dict[str, Any]) -> None:
+        """
+        Start a Robot test. It is traced once it enables tracing.
+
+        Args:
+            name: The test name.
+            inputs: The inputs of the test span.
+        """
+        # Robot creates a new LLM Client, with tracing disabled, per test
+        self.enabled = False
+        self._test = (name, inputs, time.time_ns())
+        self._context = robot_context()
+
+    def _ensure_root(self) -> None:
+        """
+        Start the span of the test, back-dated to the start of the test.
+        """
+        if self._root is not None or self._test is None:
+            return
+
+        import mlflow
+
+        name, inputs, start_time_ns = self._test
+        self._root = mlflow.start_span_no_context(
+            name=name,
+            span_type=CHAIN,
+            inputs={"test": name, **inputs},
+            attributes={TEST_ATTRIBUTE: True},
+            start_time_ns=start_time_ns,
+        )
+        # Makes the test span the parent of the keyword and LLM spans; MLflow
+        # has no public API to activate a span started without a context
+        self._root_token = _activate(self._root)
+        self._spans.add(self._root.span_id)
+        suite, test = self._context
+        tags = {"yarf.run": RUN_ID, "robot.test": name, TRACE_NAME: name}
+        if suite is not None:
+            tags["robot.suite"] = suite
+        # The Trace name column is hidden by default in the trace list, so
+        # the Input column shows the test name
+        mlflow.update_current_trace(
+            tags=tags,
+            session_id=f"{RUN_ID} {suite}" if suite is not None else None,
+            request_preview=name,
+        )
+
+    def start_keyword(
+        self, name: str, span_type: str, inputs: dict[str, Any]
+    ) -> None:
+        """
+        Start the span of a Robot keyword, if the test is traced.
+
+        Args:
+            name: The keyword name.
+            span_type: The MLflow span type.
+            inputs: The keyword arguments.
+        """
+        if not self.enabled:
+            self._stack.append(None)
+            return
+
+        import mlflow
+
+        self._ensure_root()
+        span = mlflow.start_span_no_context(
+            name=name,
+            span_type=span_type,
+            parent_span=mlflow.get_current_active_span(),
+            inputs=inputs,
+        )
+        self._spans.add(span.span_id)
+        self._stack.append((span, _activate(span)))
+
+    def skip_keyword(self) -> None:
+        """
+        Record that a keyword is not traced by the listener, e.g. an LLM Client
+        keyword that records its own span, so that its end is ignored.
+
+        Its span still needs the test span as its parent.
+        """
+        if self.enabled:
+            self._ensure_root()
+        self._stack.append(None)
+
+    def end_keyword(
+        self, outputs: dict[str, Any] | None, failed: bool, message: str
+    ) -> None:
+        """
+        End the span of the last keyword started.
+
+        Args:
+            outputs: The variables the keyword assigned.
+            failed: Whether the keyword failed.
+            message: The failure message.
+        """
+        if not self._stack:
+            return
+        entry = self._stack.pop()
+        if entry is None:
+            return
+        span, token = entry
+        _deactivate(token)
+        _end_span(span, outputs, failed, message)
+
+    def end_test(self, status: str, message: str) -> None:
+        """
+        End the trace of the running test, with its result.
+
+        Args:
+            status: The test status, e.g. ``PASS``.
+            message: The test message, e.g. the failure.
+        """
+        if self.enabled:
+            self._ensure_root()
+        while self._stack:
+            self.end_keyword(None, False, "")
+        if self._root is not None:
+            self._end_root(status, message)
+        self.enabled = False
+        self._test = None
+        self._root = None
+        self._spans.clear()
+
+    def _end_root(self, status: str, message: str) -> None:
+        """
+        End the test span, and record the trace for `Evaluate Llm Traces`.
+
+        Args:
+            status: The test status.
+            message: The test message.
+        """
+        import mlflow
+        from mlflow.entities import AssessmentSource, AssessmentSourceType
+
+        # The trace state can only be OK or ERROR, so the Robot status is a
+        # tag, a feedback, and the Output column of the trace list
+        mlflow.update_current_trace(
+            tags={STATUS_TAG: status},
+            response_preview=f"{status}: {message}" if message else status,
+        )
+        mlflow.log_feedback(
+            trace_id=self._root.trace_id,
+            name=STATUS_FEEDBACK,
+            value=status,
+            rationale=message or None,
+            source=AssessmentSource(
+                source_type=AssessmentSourceType.CODE, source_id=SOURCE_ID
+            ),
+        )
+        _deactivate(self._root_token)
+        _end_span(
+            self._root,
+            {"status": status, "message": message},
+            status == "FAIL",
+            message,
+        )
+        suite, test = self._context
+        TRACES.append(TraceRecord(self._root.trace_id, suite, test))
+
+
+def _activate(span: Any) -> Any:
+    """
+    Make a span the parent of the spans started next in this context.
+
+    Args:
+        span: The MLflow span.
+
+    Returns:
+        The token to deactivate the span with.
+    """
+    from mlflow.tracing.provider import set_span_in_context
+
+    return set_span_in_context(span)
+
+
+def _deactivate(token: Any) -> None:
+    """
+    Restore the active span from before a span was activated.
+
+    Args:
+        token: The token returned when activating the span.
+    """
+    from mlflow.tracing.provider import detach_span_from_context
+
+    detach_span_from_context(token)
+
+
+def _end_span(
+    span: Any, outputs: dict[str, Any] | None, failed: bool, message: str
+) -> None:
+    """
+    End a span, with an error status if it failed.
+
+    Args:
+        span: The MLflow span.
+        outputs: The span outputs, if any.
+        failed: Whether the span failed.
+        message: The failure message.
+    """
+    from mlflow.entities import SpanStatus, SpanStatusCode
+
+    status = (
+        SpanStatus(SpanStatusCode.ERROR, message)
+        if failed
+        else SpanStatus(SpanStatusCode.OK)
+    )
+    span.end(outputs=outputs, status=status)
+
+
+# Shared by the trace listener and all LLM Client instances
+TRACING = RobotTestTrace()
 
 
 class NoopSpan:
@@ -260,6 +536,7 @@ class LlmTracer:
                 )
         mlflow.set_experiment(experiment)
         self.enabled = True
+        TRACING.enabled = True
         logger.info(
             f"Tracing LLM requests to MLflow experiment '{experiment}' "
             f"at {mlflow.get_tracking_uri()}"
@@ -276,9 +553,10 @@ class LlmTracer:
         """
         Record a block of code as a span, if tracing is enabled.
 
-        A span without a parent starts a new trace. The trace is tagged with
-        the Robot context and gets a ``keyword_passed`` feedback, with the
-        error as the rationale if the block raised.
+        Inside a Robot test, the span is part of the trace of the test.
+        Otherwise, a span without a parent starts a new trace. A keyword
+        called from Robot gets a ``keyword_passed`` feedback, with the error
+        as the rationale if the block raised.
 
         Args:
             name: The span name.
@@ -298,18 +576,23 @@ class LlmTracer:
 
         import mlflow
 
-        is_root = mlflow.get_current_active_span() is None
+        parent = mlflow.get_current_active_span()
+        is_root = parent is None
+        # A keyword called from Robot, rather than from another LLM keyword
+        is_keyword = is_root or TRACING.owns(parent.span_id)
         with mlflow.start_span(
             name=name, span_type=span_type, attributes=attributes
         ) as span:
             if inputs is not None:
                 span.set_inputs(inputs)
-            if not is_root:
+            if not is_keyword:
                 yield span
                 return
 
-            suite, test = robot_context()
-            self._tag_trace(suite, test)
+            span.set_attribute(KEYWORD_ATTRIBUTE, True)
+            if is_root:
+                suite, test = robot_context()
+                self._tag_trace(suite, test)
             try:
                 yield span
             except Exception as e:
@@ -318,7 +601,8 @@ class LlmTracer:
             else:
                 self.feedback("keyword_passed", True)
             finally:
-                TRACES.append(TraceRecord(span.trace_id, suite, test))
+                if is_root:
+                    TRACES.append(TraceRecord(span.trace_id, suite, test))
 
     def _tag_trace(self, suite: str | None, test: str | None) -> None:
         """
@@ -426,7 +710,8 @@ class LlmTracer:
 
     def _last_trace_id(self) -> str:
         """
-        Get the last trace recorded by the running Robot test or suite.
+        Get the trace of the running Robot test, or the last trace recorded by
+        the running test or suite.
 
         Returns:
             The trace ID.
@@ -434,6 +719,8 @@ class LlmTracer:
         Raises:
             RuntimeError: If no trace was recorded yet.
         """
+        if TRACING.trace_id is not None:
+            return TRACING.trace_id
         context = robot_context()
         for record in reversed(TRACES):
             if (record.suite, record.test) == context:
@@ -563,7 +850,15 @@ class LlmTracer:
         mlflow.flush_trace_async_logging()
         traces = [mlflow.get_trace(trace_id) for trace_id in trace_ids]
         if not traces:
-            raise RuntimeError(f"No LLM trace was recorded in this {scope}.")
+            hint = (
+                " The trace of a test ends with the test: evaluate it from "
+                "the suite teardown."
+                if TRACING.trace_id is not None
+                else ""
+            )
+            raise RuntimeError(
+                f"No LLM trace was recorded in this {scope}.{hint}"
+            )
         scorers = [tool_calls_check]
         if guidelines:
             scorers.insert(0, guidelines_judge)
@@ -611,6 +906,37 @@ def has_expected_tool_calls(trace: Any) -> bool:
         a.name == EXPECTED_TOOL_CALLS and a.expectation is not None
         for a in trace.info.assessments
     )
+
+
+def llm_keywords(trace: Any) -> list[dict[str, Any]]:
+    """
+    Get the LLM Client keywords a test trace ran, in order.
+
+    These are the keyword spans with an LLM request, e.g. `Assert State`,
+    so that the judge reads what the model was asked and answered.
+
+    Args:
+        trace: The MLflow trace of a Robot test.
+
+    Returns:
+        The name, inputs and outputs of each LLM keyword.
+    """
+    spans = {span.span_id: span for span in trace.data.spans}
+    keywords: dict[str, Any] = {}
+    for span in trace.data.spans:
+        if span.span_type != LLM:
+            continue
+        parent = spans.get(span.parent_id)
+        while parent is not None and not parent.attributes.get(
+            KEYWORD_ATTRIBUTE
+        ):
+            parent = spans.get(parent.parent_id)
+        if parent is not None:
+            keywords[parent.span_id] = parent
+    return [
+        {"name": span.name, "inputs": span.inputs, "outputs": span.outputs}
+        for span in sorted(keywords.values(), key=lambda s: s.start_time_ns)
+    ]
 
 
 def tool_calls(trace: Any) -> list[dict[str, Any]]:
@@ -814,6 +1140,8 @@ def judge_trace(
         "request": json.dumps(root.inputs, default=str),
         "response": json.dumps(root.outputs, default=str),
     }
+    if root.attributes.get(TEST_ATTRIBUTE):
+        context["llm_keywords"] = json.dumps(llm_keywords(trace), default=str)
     calls = tool_calls(trace)
     if calls:
         context["tool_calls"] = json.dumps(calls, default=str)

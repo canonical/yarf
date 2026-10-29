@@ -20,12 +20,12 @@ yarf --platform {Mir,Vnc}
 
 For more specific use-cases, refer to the [YARF how-to guides][how-to].
 
-## Tracing LLM keywords with MLflow
+## Tracing tests with MLflow
 
-The LLM Client can record each LLM keyword as an [MLflow] trace: the prompts
-and screenshots sent to the model, its answers, token usage, latency and the
-GUI actions taken. Tracing needs the optional `mlflow` extra, which the snap
-does not include:
+YARF can record each Robot test as an [MLflow] trace: every keyword with its
+arguments, the prompts and screenshots sent to the LLM, its answers, token
+usage, latency and the GUI actions taken. Tracing needs the optional `mlflow`
+extra, which the snap does not include:
 
 ```shell
 pip install "yarf[mlflow]"

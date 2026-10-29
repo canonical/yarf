@@ -30,6 +30,7 @@ from yarf.lib.llm_tracing import (
     LLM,
     PARSER,
     TOOL,
+    TRACED,
     LlmTracer,
     as_outputs,
     describe,
@@ -315,6 +316,7 @@ def _traced(span_type: str) -> Callable[[F], F]:
                         span.set_outputs(as_outputs(result))
                     return result
 
+            setattr(async_wrapper, TRACED, True)
             return cast(F, async_wrapper)
 
         @functools.wraps(func)
@@ -327,6 +329,7 @@ def _traced(span_type: str) -> Callable[[F], F]:
                     span.set_outputs(as_outputs(result))
                 return result
 
+        setattr(wrapper, TRACED, True)
         return cast(F, wrapper)
 
     return decorator
@@ -379,13 +382,20 @@ class LlmClient:
         Set ``collect_usage=True`` to record the token usage, inference time
         and cost of each request, see `Get Llm Usage`. It is off by default.
 
-        Set ``tracing=True`` to record each LLM keyword as an MLflow trace,
-        in the experiment named by ``experiment`` (default ``yarf``). A trace
-        shows the prompts and screenshots sent to the model, its answers,
-        token usage, latency, response parsing and the GUI actions taken.
-        Traces are tagged with the Robot suite and test, grouped in one
-        session per test, and get automatic feedback such as
-        ``keyword_passed`` and ``valid_json_first_try``. Attach your own with
+        Set ``tracing=True`` to record the running test, and the next ones,
+        as MLflow traces in the experiment named by ``experiment`` (default
+        ``yarf``). Robot creates a new LLM Client for each test, so enable
+        tracing in the test setup. Run with YARF, a trace records a whole
+        test: each keyword with its arguments, the prompts and screenshots
+        sent to the model, its answers, token usage, latency, response
+        parsing and the GUI actions taken. The HID keywords that the LLM
+        Client calls are recorded as tool calls; keywords that the suite
+        calls itself are only context, left out of the evaluation. Traces are
+        named after the test, tagged with the Robot suite, test and status,
+        grouped in one session per suite, and get automatic feedback such as
+        ``robot_status``, ``keyword_passed`` and ``valid_json_first_try``.
+        Without YARF's listener, e.g. with ``robot``, each LLM keyword is a
+        trace of its own. Attach your own with
         `Log Llm Feedback` and `Log Llm Expectation`, and judge them with
         `Evaluate Llm Traces`. Tracing requires ``pip install yarf[mlflow]``.
         Traces are sent to ``MLFLOW_TRACKING_URI`` if set, otherwise to
@@ -600,8 +610,9 @@ class LlmClient:
         self, name: str, value: Any, rationale: str | None = None
     ) -> None:
         """
-        Attach a feedback, a judgement of the result, to the last LLM trace of
-        the current test. Requires ``tracing=True`` in `Configure Llm Client`.
+        Attach a feedback, a judgement of the result, to the trace of the
+        current test, or to its last LLM trace without YARF's listener.
+        Requires ``tracing=True`` in `Configure Llm Client`.
 
         MLflow aggregates feedback per name, e.g. to compare the accuracy of
         prompts or models across runs.
@@ -621,8 +632,9 @@ class LlmClient:
     @keyword
     def log_llm_expectation(self, name: str, value: Any) -> None:
         """
-        Attach an expectation, the ground truth, to the last LLM trace of the
-        current test. Requires ``tracing=True`` in `Configure Llm Client`.
+        Attach an expectation, the ground truth, to the trace of the current
+        test, or to its last LLM trace without YARF's listener. Requires
+        ``tracing=True`` in `Configure Llm Client`.
 
         Expectations turn traces into an evaluation dataset, e.g. for judges
         that compare the output with the expected facts.
@@ -650,14 +662,18 @@ class LlmClient:
         against their expected tool calls. Requires ``tracing=True`` in
         `Configure Llm Client`.
 
-        The judge reads the keyword inputs and outputs of each trace, the GUI
-        actions it took in order, and looks at the screenshots sent to the
-        model, then decides whether they follow all the guidelines. Its
-        verdict and rationale are attached to the traces as a ``guidelines``
-        feedback, and the evaluation is logged as an MLflow run. Traces
-        without an LLM request, such as those of `Execute Gui Action`, are not
-        judged. An answer other than yes or no is recorded as an error, and
-        left out of the metrics.
+        The judge reads each trace: the test and its result, or the keyword
+        inputs and outputs, the LLM Client keywords it ran, the GUI actions
+        it took in order, and looks at the screenshots sent to the model,
+        then decides whether they follow all the guidelines. Its verdict and
+        rationale are attached to the traces as a ``guidelines`` feedback,
+        and the evaluation is logged as an MLflow run. Traces without an LLM
+        request are not judged. An answer other than yes or no is recorded as
+        an error, and left out of the metrics.
+
+        A test is traced until it ends, so its trace is evaluated from a
+        later test or from the ``Suite Teardown``, e.g. with the default
+        ``scope=suite``.
 
         The trajectory of the traces with an ``expected_tool_calls``
         expectation, see `Log Llm Expectation`, is checked without an LLM:
@@ -702,7 +718,8 @@ class LlmClient:
             | Multiple Step Action    compute 6 times 7
             | Log Llm Expectation    expected_tool_calls
             | ...    ${{["Move Pointer To Proportional", "Click Pointer Button"] * 4}}
-            | ${metrics}=    Evaluate Llm Traces    scope=test
+            | # In the Suite Teardown, as a test trace ends with its test
+            | ${metrics}=    Evaluate Llm Traces
             | Should Be Equal As Numbers    ${metrics}[tool_calls/mean]    1
         """
         judge_env: dict[str, str | None] = {}
