@@ -2,9 +2,9 @@
   "schema_version": "1.0",
   "workflows": {
     "speckit": {
-      "name": "Full SDD Cycle",
-      "version": "1.0.1",
-      "description": "Runs specify \u2192 plan \u2192 tasks \u2192 implement with review gates",
+      "name": "YARF Feature Planning",
+      "version": "1.1.0",
+      "description": "Runs specify \u2192 clarify \u2192 plan \u2192 tasks with review gates",
       "source": "bundled",
       "installed_at": "2026-10-09T14:04:45.679245+00:00",
       "updated_at": "2026-10-09T14:04:45.679255+00:00"

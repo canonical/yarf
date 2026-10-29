@@ -86,6 +86,8 @@ Notes:
   request text, review comments, commit messages, or agent replies.
 - Read `.kb/documentation.md` and `docs/AGENTS.md` before changing user-facing
   behavior or documentation.
+- Read `.kb/spec-kit.md` before starting or reviewing Spec Kit feature work.
+  Committed feature contracts follow `requirements/AGENTS.md`.
 - Prefer surgical edits. This repository has vendored code, generated code, and
   several CI-specific workflows under `.github/workflows/`.
 
@@ -95,6 +97,7 @@ Notes:
 - `tests/` - Robot keyword, platform plugin, and smoke test suites.
 - `docs/` - User documentation built with Sphinx and MyST.
 - `snap/` - Snap package definition and packaging support.
+- `requirements/` - Committed Spec Kit feature contracts.
 - `.github/` - CI workflows, actions, and pull request validation.
 
 # Documents
@@ -102,7 +105,9 @@ Notes:
 - `.kb/agents.md` - Knowledge-base organization and header rules.
 - `.kb/documentation.md` - Documentation scope, location, validation, and maintenance.
 - `.kb/pull-requests.md` - Pull request scope, structure, review, and verification.
+- `.kb/spec-kit.md` - Spec Kit workflow, contract adoption, and feature delivery.
 - `.kb/writing-style.md` - Writing rules for contributor guidance and pull requests.
 - `CONTRIBUTING.md` - Development environment, testing, and Snap build instructions.
 - `docs/AGENTS.md` - Documentation-specific contributor guidance.
 - `docs/CONTRIBUTING.md` - Documentation build and quality-check instructions.
+- `requirements/AGENTS.md` - Feature contract format and lifecycle.

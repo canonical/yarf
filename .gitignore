@@ -27,3 +27,10 @@ squashfs-root
 
 # Per-checkout Spec Kit integration catalog indexes
 /.specify/integrations/.cache/
+
+/specs/
+/requirements/*
+!/requirements/AGENTS.md
+!/requirements/*/
+/requirements/*/**
+!/requirements/*/requirements.md
