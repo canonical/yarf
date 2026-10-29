@@ -1,5 +1,5 @@
 # Exclude doc starter pack (but keep .md, .rst) and Spec Kit's managed files.
-exclude: '^docs/(doc-cheat-sheet.*|(?!.+\.(md|rst)).+)|hatch_build.py|yarf/lib/wayland/protocols/.*$|^\.specify/.*$'
+exclude: '^docs/(doc-cheat-sheet.*|(?!.+\.(md|rst)).+)|hatch_build.py|yarf/lib/wayland/protocols/.*$|^\.specify/.*$|^\.pi/prompts/speckit\..*\.md$|^\.opencode/commands/speckit\..*\.md$|^\.github/skills/speckit-[^/]+/SKILL\.md$'
 
 repos:
 - repo: local
