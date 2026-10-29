@@ -24,7 +24,7 @@ Write independently valuable, prioritized user stories as `### US-NN: <title> (P
 through `P5`. State the user, need, and outcome as
 `As <user>, I want <capability>, so that <outcome>.` Give each story at least
 one verifiable scenario in the form `- **Given** ..., **When** ..., **Then** ...`.
-Use unique `FR-NNN` identifiers with exactly three digits. Each functional
+Use stable, unique `FR-NNN` identifiers with exactly three digits. Each functional
 requirement must be a Markdown bullet with a bold identifier, colon, and space,
 followed by one of these EARS forms:
 
