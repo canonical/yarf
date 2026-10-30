@@ -34,7 +34,7 @@ uv run prek run --all-files --hook-stage manual
 
 Notes:
 
-- `.python-version` is `3.12`, but tox targets 3.10, 3.12, 3.13, 3.14.
+- `.python-version` is `3.12`, but tox targets 3.12, 3.13, 3.14.
 - `tox` is the best "full repo" check: it runs manual `prek` hooks plus pytest
   with coverage. `prek` is the project's pre-commit tool (wraps
   `pre-commit`).
