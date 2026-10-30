@@ -32,6 +32,13 @@ class YARFConnectionError(YARFError):
     exit_code: YARFExitCode = YARFExitCode.CONNECTION_ERROR
 
 
+class KeywordNotAllowedError(YARFError):
+    """
+    Raised when the MCP server refuses to run a keyword or an argument
+    requested by an LLM.
+    """
+
+
 class VQAValidationError(Exception):
     """
     Raised when VQA-driven validation fails.

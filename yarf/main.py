@@ -28,7 +28,7 @@ from yarf import LABEL_PREFIX
 from yarf.errors.yarf_errors import YARFConnectionError
 from yarf.loggers.owasp_logger import get_owasp_logger
 from yarf.output import OUTPUT_FORMATS, get_outdir_path, output_converter
-from yarf.rf_libraries import robot_in_path
+from yarf.rf_libraries import get_platform_imports, robot_in_path
 from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS, PlatformBase
 from yarf.rf_libraries.libraries.metadata_listener import MetadataListener
 from yarf.rf_libraries.suite_parser import SuiteParser
@@ -428,21 +428,9 @@ def run_interactive_console(
             log file
         cli_options: extra options given by CLI
     """
-    platform_library_paths = []
-    for file_path in Path(lib_cls.get_pkg_path()).glob("*.py"):
-        if file_path.name == "__init__.py":
-            continue
-
-        platform_library_paths.append(str(file_path))
-
-    resources = []
-    for resource_path in (
-        Path(__file__)
-        .resolve()
-        .parent.joinpath("rf_libraries/resources")
-        .glob("*.resource")
-    ):
-        resources.append(str(resource_path))
+    platform_library_paths, resources = get_platform_imports(
+        lib_cls.get_pkg_path()
+    )
 
     variables = [
         f"PLATFORM_LIBRARIES:{','.join(platform_library_paths)}",
@@ -478,6 +466,16 @@ def main(argv: Optional[list[str]] = None) -> None:
     Raises:
         FileNotFoundError: If the start_console.robot file is not found
     """
+    if argv is None:
+        argv = sys.argv[1:]
+
+    # A subcommand can't be told apart from the optional `suite` argument
+    # by argparse, so it is handled first.
+    if argv and argv[0] == "mcp":
+        from yarf.mcp_server.cli import main as mcp_main
+
+        sys.exit(mcp_main(argv[1:]))
+
     _owasp_logger.sys_startup(getpass.getuser())
 
     args, cli_options = parse_arguments(argv)

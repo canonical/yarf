@@ -160,7 +160,7 @@ repos:
   hooks:
     - id: licensecheck
       name: licensecheck
-      entry: licensecheck --zero --show-only-failing --requirements-paths=pyproject.toml
+      entry: licensecheck --zero --show-only-failing --requirements-paths=pyproject.toml --extras mcp
       language: python
       types: [python]
       pass_filenames: false

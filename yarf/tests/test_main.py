@@ -812,6 +812,38 @@ class TestMain:
             cli_options={},
         )
 
+    @pytest.mark.parametrize("exit_code", [0, 1])
+    @patch("yarf.mcp_server.cli.main")
+    def test_main_mcp_subcommand(
+        self, mock_mcp_main: MagicMock, exit_code: int
+    ) -> None:
+        """
+        Test whether `yarf mcp` hands the remaining arguments to the MCP server
+        and exits with its exit code.
+        """
+        mock_mcp_main.return_value = exit_code
+
+        with pytest.raises(SystemExit) as cm:
+            main.main(["mcp", "--platform", "Vnc"])
+
+        assert cm.value.code == exit_code
+        mock_mcp_main.assert_called_once_with(["--platform", "Vnc"])
+
+    @patch("yarf.mcp_server.cli.main")
+    def test_main_mcp_subcommand_from_sys_argv(
+        self, mock_mcp_main: MagicMock
+    ) -> None:
+        """
+        Test whether `yarf mcp` is also found in the arguments of the process.
+        """
+        mock_mcp_main.return_value = 0
+
+        with patch.object(sys, "argv", ["yarf", "mcp", "--quiet"]):
+            with pytest.raises(SystemExit):
+                main.main()
+
+        mock_mcp_main.assert_called_once_with(["--quiet"])
+
     @patch("yarf.main.Path.exists")
     def test_main_interactive_console_start_robot_not_exist(
         self, mock_path_exists: MagicMock

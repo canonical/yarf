@@ -55,9 +55,16 @@ dependencies = [
     "typing-extensions~=4.16.0",  # implicitly required by owasp-logger
 ]
 
+[project.optional-dependencies]
+# Lets an LLM drive YARF through the Model Context Protocol (`yarf mcp`)
+mcp = [
+    "mcp>=2.3,<3",
+]
+
 [dependency-groups]
 dev = [
     "licensecheck",
+    "mcp>=2.3,<3",  # keep in sync with the `mcp` extra, so tests can run
     "mypy",
     "prek",
     "pyfakefs",

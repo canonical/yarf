@@ -19,6 +19,29 @@ ROBOT_VARIABLES_PATH = os.path.abspath(
 )
 
 
+def get_platform_imports(lib_path: str) -> tuple[list[str], list[str]]:
+    """
+    Get the files a Robot Framework session has to import to use a platform.
+
+    Args:
+        lib_path: Path to the platform's library directory.
+
+    Returns:
+        The paths of the platform libraries, and the paths of the YARF
+        resources.
+    """
+    libraries = [
+        str(file_path)
+        for file_path in Path(lib_path).glob("*.py")
+        if file_path.name != "__init__.py"
+    ]
+    resources = [
+        str(resource_path)
+        for resource_path in Path(ROBOT_RESOURCE_PATH).glob("*.resource")
+    ]
+    return libraries, resources
+
+
 @contextmanager
 def robot_in_path(lib_path: str) -> Generator[None, Any, None]:
     """

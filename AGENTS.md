@@ -14,6 +14,8 @@ and `docs/CONTRIBUTING.md` for full contributor docs.
 ## Where to look first
 
 - `yarf/main.py` - CLI startup
+- `yarf/mcp_server/` - `yarf mcp`, the MCP server that lets an LLM drive YARF
+  (explore mode); the agent skill is in `.github/skills/yarf-explore/`
 - `yarf/rf_libraries/` - Robot Framework libraries, parser, resources, variables
 - `yarf/lib/` - internal helpers, including Wayland support
 - `yarf/errors/` - custom exceptions
