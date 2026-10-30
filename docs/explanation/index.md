@@ -7,4 +7,5 @@ Learn about the key concepts behind YARF, architecture considerations, and how t
 titlesonly:
 ---
 key-concepts.md
+Explore mode and MCP <./explore-mode-and-mcp.md>
 ```

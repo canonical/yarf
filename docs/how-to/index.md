@@ -30,6 +30,18 @@ Using The Vnc Backend <./using-the-vnc-backend.md>
 Organising a test plan for a specific output format <./organising-a-test-plan-for-a-specific-output-format.md>
 ```
 
+## Explore with an LLM
+
+Let an AI agent discover the tests of an application, and drive YARF through the Model Context Protocol.
+
+```{toctree}
+---
+titlesonly:
+---
+Discover a test suite with explore mode <./discover-a-test-suite-with-explore-mode.md>
+Use YARF with an LLM through MCP <./using-the-mcp-server.md>
+```
+
 ## Extend YARF
 
 Create a platform plugin and make it available in YARF.
