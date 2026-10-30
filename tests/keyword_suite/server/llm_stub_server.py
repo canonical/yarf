@@ -47,7 +47,16 @@ def make_handler(port: int):
                 f"{req.get('messages')}"
             )
 
-            payload = {"choices": [{"message": {"content": content}}]}
+            payload = {
+                "choices": [{"message": {"content": content}}],
+                "usage": {
+                    "prompt_tokens": 10,
+                    "completion_tokens": 5,
+                    "completion_tokens_details": {"reasoning_tokens": 2},
+                    "total_tokens": 15,
+                    "cost": 0.25,
+                },
+            }
             return _json_response(self, 200, payload)
 
     return Handler

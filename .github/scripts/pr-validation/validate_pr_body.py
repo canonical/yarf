@@ -4,13 +4,15 @@ Check that every section of the PR template is present in the PR body.
 The PR body is read from the ``PR_BODY`` environment variable. Comments coming
 from the template and left behind by the author are removed from the pull
 request, which requires ``GITHUB_TOKEN``, ``REPO`` and ``PR_NUMBER`` to be set
-as well.
+as well. The removal is best effort: pull requests from forks get a read-only
+``GITHUB_TOKEN``, in which case the body is left untouched.
 """
 
 import json
 import os
 import re
 import sys
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -105,11 +107,24 @@ def main() -> int:
         0 if every template section is present, 1 otherwise.
     """
     template = TEMPLATE_PATH.read_text(encoding="utf-8")
-    body = os.environ.get("PR_BODY") or ""
-    cleaned_body = strip_comments(body, parse_comments(template))
-    if cleaned_body.strip() != body.strip():
+    # GitHub's web editor submits CRLF line endings, the template uses LF.
+    body = (os.environ.get("PR_BODY") or "").replace("\r\n", "\n")
+    leftover_comments = [
+        comment for comment in parse_comments(template) if comment in body
+    ]
+    cleaned_body = strip_comments(body, leftover_comments)
+    # Only update the PR when comments were actually removed, not on mere
+    # whitespace changes: fork PRs get a read-only token, see module docstring.
+    if leftover_comments:
         print("Removing the template comments left in the PR description.")
-        update_pr_body(cleaned_body)
+        try:
+            update_pr_body(cleaned_body)
+        except urllib.error.HTTPError as error:
+            print(
+                f"Could not update the PR description (HTTP {error.code}), "
+                "leaving it as is. This is expected for pull requests from "
+                "forks, whose GITHUB_TOKEN is read-only."
+            )
 
     template_headings = parse_headings(template)
     body_headings = set(parse_headings(cleaned_body))

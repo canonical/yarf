@@ -14,15 +14,24 @@ MODIFICATIONS:
 - Import statements have been modified to use relative imports
 - Some dependencies have been removed or replaced
 - Code has been adapted to work as a standalone vendor package
+- The code is maintained as part of YARF: it is linted, type-checked and
+  fully covered by the YARF test suite
+- Code unused by YARF has been removed, including the exact template
+  matcher, image cropping and RGB helpers of RPA.Images
+- RPA.Images delegates template matching to RPA.recognition.templates and
+  shares its ImageNotFoundError
+- Region.contains() raises TypeError for unsupported elements
+- Runtime assertions have been removed
+- Docstrings use the Google style and type hints were added
 
 The vendored code includes minimal subsets of the following modules:
 - RPA.core.geometry (Region, Point classes and utilities)
-- RPA.Images (basic image manipulation and template matching)
+- RPA.Images (RGB container and template matching)
 - RPA.recognition.ocr (OCR functionality using pytesseract)
 - RPA.recognition.templates (template matching using OpenCV)
 - RPA.recognition.utils (image conversion utilities)
 
-This vendoring was done to reduce dependencies while maintaining 
+This vendoring was done to reduce dependencies while maintaining
 compatibility with existing code that relies on these specific modules.
 
 All original copyright notices and attribution are preserved.

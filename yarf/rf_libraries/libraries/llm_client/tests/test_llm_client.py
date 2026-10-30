@@ -8,6 +8,7 @@ from yarf.errors.yarf_errors import VQADetectionError, VQAValidationError
 from yarf.rf_libraries.libraries.llm_client.LlmClient import (
     HistoryItem,
     LlmClient,
+    LlmUsage,
 )
 
 
@@ -41,11 +42,15 @@ class TestLlmClient:
     LLM_PATH = "yarf.rf_libraries.libraries.llm_client.LlmClient"
 
     def _mock_response(
-        self, content: str = "ok", reasoning: str | None = None
+        self,
+        content: str = "ok",
+        reasoning: str | None = None,
+        json_data: dict | None = None,
     ) -> MagicMock:
         resp = MagicMock()
         resp.raise_for_status = MagicMock()
-        json_data = {"choices": [{"message": {"content": content}}]}
+        if json_data is None:
+            json_data = {"choices": [{"message": {"content": content}}]}
         if reasoning:
             json_data["choices"][0]["message"]["reasoning"] = reasoning
         resp.json = MagicMock(return_value=json_data)
@@ -65,6 +70,57 @@ class TestLlmClient:
         assert client.max_tokens == 1000
 
     @pytest.mark.parametrize(
+        "value, expected",
+        [
+            (True, True),
+            (False, False),
+            ("True", True),
+            ("yes", True),
+            ("False", False),
+            ("off", False),
+            ("", False),
+        ],
+    )
+    def test_configure_llm_client_collect_usage(self, value, expected):
+        client = LlmClient()
+        client.configure_llm_client(collect_usage=value)
+        assert client.usage.enabled is expected
+
+    @pytest.mark.parametrize(
+        "provider, server_url, api_key_env",
+        [
+            (
+                "openrouter",
+                "https://openrouter.ai/api/v1",
+                "OPENROUTER_API_KEY",
+            ),
+            ("copilot", "https://api.githubcopilot.com", "GITHUB_TOKEN"),
+            (
+                "gemini",
+                "https://generativelanguage.googleapis.com/v1beta/openai",
+                "GEMINI_API_KEY",
+            ),
+        ],
+    )
+    def test_configure_llm_client_provider(
+        self, provider, server_url, api_key_env
+    ):
+        client = LlmClient()
+        client.configure_llm_client(provider=provider, model="m")
+
+        assert client.server_url == server_url
+        assert client.endpoint == "/chat/completions"
+        assert client.api_key_env == api_key_env
+        assert client.model == "m"
+
+    def test_configure_llm_client_provider_overridden_by_args(self):
+        client = LlmClient()
+        client.configure_llm_client(provider="copilot", endpoint="/responses")
+
+        assert client.server_url == "https://api.githubcopilot.com"
+        assert client.endpoint == "/responses"
+
+    @pytest.mark.parametrize(
         "kwargs, exc_type, match",
         [
             (
@@ -77,6 +133,12 @@ class TestLlmClient:
                 ValueError,
                 "Invalid value for max_tokens: not_an_int. Expected type int",
             ),
+            (
+                {"provider": "unknown"},
+                ValueError,
+                "Unknown provider: unknown. "
+                "Allowed: copilot, gemini, openrouter",
+            ),
         ],
     )
     def test_configure_llm_client_error(self, kwargs, exc_type, match):
@@ -84,11 +146,12 @@ class TestLlmClient:
         with pytest.raises(exc_type, match=match):
             client.configure_llm_client(**kwargs)
 
-    def test_prompt_text_without_system_prompt(self, mock_post):
-        mock_client = MagicMock()
+    def test_prompt_text_without_system_prompt(self, mock_post, monkeypatch):
+        monkeypatch.delenv("YARF_LLM_API_KEY", raising=False)
+        mock_client = LlmClient()
         mock_post.return_value = self._mock_response("hello")
 
-        result = LlmClient.prompt_llm(mock_client, "Say hi")
+        result = mock_client.prompt_llm("Say hi")
 
         assert result == "hello"
         mock_post.assert_called_once()
@@ -108,11 +171,11 @@ class TestLlmClient:
         mock_post.return_value.raise_for_status.assert_called_once()
 
     def test_prompt_text_with_system_prompt(self, mock_post):
-        mock_client = MagicMock()
+        mock_client = LlmClient()
         mock_post.return_value = self._mock_response("hello")
 
-        result = LlmClient.prompt_llm(
-            mock_client, "Say hi", system_prompt="You are a helpful assistant."
+        result = mock_client.prompt_llm(
+            "Say hi", system_prompt="You are a helpful assistant."
         )
 
         assert result == "hello"
@@ -128,13 +191,11 @@ class TestLlmClient:
         assert messages[1]["content"] == [{"type": "text", "text": "Say hi"}]
 
     def test_prompt_with_image(self, mock_post):
-        mock_client = MagicMock()
+        mock_client = LlmClient()
         mock_post.return_value = self._mock_response("hello")
 
         image = Image.new("RGB", (10, 10))
-        result = LlmClient.prompt_llm(
-            mock_client, "Describe the image", image=image
-        )
+        result = mock_client.prompt_llm("Describe the image", image=image)
 
         assert result == "hello"
         mock_post.assert_called_once()
@@ -155,7 +216,7 @@ class TestLlmClient:
         )
 
     def test_prompt_with_reasoning(self, mock_post):
-        mock_client = MagicMock()
+        mock_client = LlmClient()
         mock_post.return_value = self._mock_response(
             "hello", reasoning="This is the reasoning behind the answer."
         )
@@ -163,18 +224,171 @@ class TestLlmClient:
         with patch(
             "yarf.rf_libraries.libraries.llm_client.LlmClient.logger"
         ) as mock_logger:
-            result = LlmClient.prompt_llm(mock_client, "Ask with reasoning")
+            result = mock_client.prompt_llm("Ask with reasoning")
 
             assert result == "hello"
-            mock_logger.info.assert_called_once_with(
+            mock_logger.info.assert_any_call(
                 "This is the reasoning behind the answer."
             )
 
-    def test_encode_image(self):
-        mock_client = MagicMock()
+    def test_prompt_sends_api_key_from_env(self, mock_post, monkeypatch):
+        monkeypatch.setenv("GITHUB_TOKEN", "secret")
+        client = LlmClient()
+        client.configure_llm_client(provider="copilot", model="gpt-4.1")
+        mock_post.return_value = self._mock_response("hello")
+
+        client.prompt_llm("Say hi")
+
+        args, kwargs = mock_post.call_args
+        assert args[0] == "https://api.githubcopilot.com/chat/completions"
+        assert kwargs["headers"]["Authorization"] == "Bearer secret"
+
+    @pytest.mark.parametrize("system_prompt", [None, "Be brief."])
+    def test_prompt_responses_api(self, mock_post, system_prompt):
+        client = LlmClient()
+        client.configure_llm_client(endpoint="/responses", collect_usage=True)
+        mock_post.return_value = self._mock_response(
+            json_data={
+                "output": [
+                    {"type": "reasoning", "summary": []},
+                    {
+                        "type": "message",
+                        "content": [
+                            {"type": "output_text", "text": "hel"},
+                            {"type": "refusal", "refusal": "no"},
+                            {"type": "output_text", "text": "lo"},
+                        ],
+                    },
+                ],
+                "usage": {
+                    "input_tokens": 10,
+                    "output_tokens": 5,
+                    "output_tokens_details": {"reasoning_tokens": 2},
+                    "total_tokens": 15,
+                },
+            }
+        )
+
         image = Image.new("RGB", (10, 10))
-        encoded = LlmClient._encode_image(mock_client, image)
-        assert encoded.startswith("data:image/webp;base64,")
+        result = client.prompt_llm(
+            "Describe", image=image, system_prompt=system_prompt
+        )
+
+        assert result == "hello"
+        payload = mock_post.call_args.kwargs["json"]
+        assert payload.get("instructions") == system_prompt
+        assert payload["max_output_tokens"] == client.max_tokens
+        content = payload["input"][0]["content"]
+        assert content[0] == {"type": "input_text", "text": "Describe"}
+        assert content[1]["type"] == "input_image"
+        assert content[1]["image_url"].startswith("data:image/webp;base64,")
+        assert client.usage.requests == 1
+        assert client.usage.prompt_tokens == 10
+        assert client.usage.completion_tokens == 5
+        assert client.usage.reasoning_tokens == 2
+
+    def test_usage_record(self):
+        usage = LlmUsage(enabled=True)
+        usage.record(
+            {
+                "usage": {
+                    "prompt_tokens": 100,
+                    "completion_tokens": 20,
+                    "completion_tokens_details": {"reasoning_tokens": None},
+                    "total_tokens": 120,
+                    "cost": 0.5,
+                },
+                "copilot_usage": {"total_nano_aiu": 42},
+            },
+            1.5,
+        )
+
+        assert usage == LlmUsage(
+            enabled=True,
+            requests=1,
+            inference_time=1.5,
+            prompt_tokens=100,
+            completion_tokens=20,
+            reasoning_tokens=0,
+            total_tokens=120,
+            cost=0.5,
+            nano_aiu=42,
+        )
+
+    def test_usage_record_without_usage(self):
+        usage = LlmUsage(enabled=True)
+        usage.record({}, 2.0)
+        assert usage == LlmUsage(enabled=True, requests=1, inference_time=2.0)
+
+    def test_usage_record_disabled(self):
+        usage = LlmUsage()
+        usage.record({"usage": {"prompt_tokens": 100}}, 2.0)
+        assert usage == LlmUsage()
+
+    def test_prompt_does_not_collect_usage_by_default(self, mock_post):
+        client = LlmClient()
+        mock_post.return_value = self._mock_response("hello")
+
+        client.prompt_llm("Say hi")
+
+        assert client.usage.requests == 0
+        with pytest.raises(RuntimeError, match="collection is disabled"):
+            client.get_llm_usage()
+
+    def test_get_llm_usage_empty(self):
+        client = LlmClient()
+        client.configure_llm_client(collect_usage=True)
+        usage = client.get_llm_usage()
+
+        assert usage["requests"] == 0
+        assert usage["retries"] == 0
+        assert usage["inference_time"] == 0
+        assert usage["output_tokens_per_second"] == 0.0
+        assert usage["cost"] is None
+        assert usage["nano_aiu"] is None
+
+    def test_get_llm_usage_sums_requests(self):
+        client = LlmClient()
+        client.configure_llm_client(collect_usage=True)
+        for prompt, completion, time_s, cost, aiu in [
+            (100, 10, 1.0, 0.25, 5),
+            (200, 30, 3.0, 0.5, 7),
+        ]:
+            client.usage.record(
+                {
+                    "usage": {
+                        "prompt_tokens": prompt,
+                        "completion_tokens": completion,
+                        "completion_tokens_details": {"reasoning_tokens": 2},
+                        "total_tokens": prompt + completion,
+                        "cost": cost,
+                    },
+                    "copilot_usage": {"total_nano_aiu": aiu},
+                },
+                time_s,
+            )
+
+        assert client.get_llm_usage() == {
+            "model": client.model,
+            "requests": 2,
+            "retries": 0,
+            "prompt_tokens": 300,
+            "completion_tokens": 40,
+            "reasoning_tokens": 4,
+            "total_tokens": 340,
+            "inference_time": 4.0,
+            "output_tokens_per_second": 10.0,
+            "cost": 0.75,
+            "nano_aiu": 12,
+        }
+
+    @pytest.mark.parametrize("image_format", ["WEBP", "PNG", "JPEG"])
+    def test_encode_image(self, image_format):
+        client = LlmClient()
+        client.configure_llm_client(image_format=image_format)
+        image = Image.new("RGB", (10, 10))
+        encoded = client._encode_image(image)
+        assert encoded.startswith(f"data:image/{image_format.lower()};base64,")
 
     def test_get_lib_instance(self):
         client = LlmClient()
@@ -277,6 +491,7 @@ class TestLlmClient:
             "action_type": "Finish",
             "text": None,
             "point_2d": None,
+            "point_frame": None,
         }
     )
 
@@ -545,6 +760,32 @@ class TestLlmClient:
         )
         assert "missing keys" in errors
 
+    def test_parse_llm_json_defaults_missing_nullable_keys(self):
+        client = LlmClient()
+        raw = json.dumps({"action_type": "Left Click", "point_2d": [1, 2]})
+        parsed, errors = client._parse_llm_json_response(
+            raw,
+            {
+                "action_type": [str],
+                "point_2d": [list, type(None)],
+                "text": [str, type(None)],
+            },
+        )
+        assert errors == ""
+        assert parsed == {
+            "action_type": "Left Click",
+            "point_2d": [1, 2],
+            "text": None,
+        }
+
+    def test_parse_llm_json_unknown_keys_not_defaulted(self):
+        client = LlmClient()
+        raw = json.dumps({"bbox_2d": [1, 2, 3, 4]})
+        _parsed, errors = client._parse_llm_json_response(
+            raw, {"point_2d": [list, type(None)]}
+        )
+        assert "missing keys: ['point_2d']" in errors
+
     def test_parse_llm_json_wrong_type(self):
         client = LlmClient()
         raw = json.dumps({"corrupted": "yes", "description": "ok"})
@@ -786,7 +1027,7 @@ class TestLlmClient:
                 {
                     "action_type": "Left Click",
                     "text": None,
-                    "point_2d": [250, 500],
+                    "point": [0.25, 0.5],
                 },
             ),
             (
@@ -795,7 +1036,7 @@ class TestLlmClient:
                 {
                     "action_type": "Write",
                     "text": "hello",
-                    "point_2d": None,
+                    "point": None,
                 },
             ),
             (
@@ -804,7 +1045,7 @@ class TestLlmClient:
                 {
                     "action_type": "Wait",
                     "text": None,
-                    "point_2d": None,
+                    "point": None,
                 },
             ),
         ],
@@ -899,7 +1140,7 @@ class TestLlmClient:
         ):
             action = await client.get_single_gui_action("click OK")
 
-        assert action["point_2d"] == [250, 500]
+        assert action["point"] == [0.25, 0.5]
         assert mock_prompt.call_args.kwargs["image"] is screenshot
         mock_grab.assert_awaited_once()
 
@@ -941,27 +1182,37 @@ class TestLlmClient:
             {
                 "action_type": "Left Click",
                 "text": None,
-                "point_2d": [250, 500],
+                "point": [0.25, 0.5],
             },
             {
                 "action_type": "Right Click",
                 "text": None,
-                "point_2d": [250, 500],
+                "point": [0.25, 0.5],
             },
             {
                 "action_type": "Double Click",
                 "text": None,
-                "point_2d": [250, 500],
+                "point": [0.25, 0.5],
             },
             {
                 "action_type": "Write",
                 "text": "hello",
-                "point_2d": None,
+                "point": None,
             },
             {
                 "action_type": "Wait",
                 "text": None,
-                "point_2d": None,
+                "point": None,
+            },
+            {
+                "action_type": "Scroll Down",
+                "text": None,
+                "point": [0.25, 0.5],
+            },
+            {
+                "action_type": "Press Key",
+                "text": "Return",
+                "point": None,
             },
         ],
     )
@@ -1001,9 +1252,44 @@ class TestLlmClient:
                 {
                     "action_type": "Left Click",
                     "text": None,
-                    "point_2d": None,
+                    "point": None,
                 },
                 "Left Click actions must include a point.",
+            ),
+            (
+                {
+                    "action_type": "Left Click",
+                    "text": None,
+                    "point_2d": [250, 500],
+                },
+                "Left Click actions must include a point.",
+            ),
+            (
+                {
+                    "action_type": "Scroll Up",
+                    "text": None,
+                    "point": None,
+                },
+                "Scroll Up actions must include a point.",
+            ),
+            (
+                {
+                    "action_type": "Press Key",
+                    "text": None,
+                    "point_2d": None,
+                },
+                "Press Key actions must include text.",
+            ),
+            *(
+                (
+                    {
+                        "action_type": "Press Key",
+                        "text": text,
+                        "point_2d": None,
+                    },
+                    "Invalid key combination for Press Key",
+                )
+                for text in ("", "   ", "Control_L+", "+l", "ctrl+ +l")
             ),
         ],
     )
@@ -1040,7 +1326,7 @@ class TestLlmClient:
                 {
                     "action_type": action_type,
                     "text": None,
-                    "point_2d": [250, 500],
+                    "point": [0.25, 0.5],
                 }
             )
 
@@ -1049,6 +1335,106 @@ class TestLlmClient:
         )
         click_args = mock_hid.click_pointer_button.await_args_list
         assert [call.args[0] for call in click_args] == expected_buttons
+
+    def test_prompt_retries_transient_errors(self, mock_post):
+        client = LlmClient()
+        client.configure_llm_client(collect_usage=True)
+        busy = MagicMock(status_code=429)
+        ok = self._mock_response("hello")
+        ok.status_code = 200
+        mock_post.side_effect = [busy, busy, ok]
+
+        with (
+            patch(f"{self.LLM_PATH}.time.sleep") as sleep,
+            patch(
+                f"{self.LLM_PATH}.time.perf_counter",
+                side_effect=[0.0, 1.0, 10.0, 12.0, 20.0, 23.0],
+            ),
+        ):
+            assert client.prompt_llm("Say hi") == "hello"
+
+        assert mock_post.call_count == 3
+        assert [c.args[0] for c in sleep.call_args_list] == [5, 15]
+        assert client.usage.requests == 1
+        assert client.usage.retries == 2
+        assert client.usage.inference_time == 3.0
+
+    def test_prompt_raises_after_retries(self, mock_post):
+        client = LlmClient()
+        busy = MagicMock(status_code=502)
+        busy.raise_for_status.side_effect = RuntimeError("502 Bad Gateway")
+        mock_post.return_value = busy
+
+        with (
+            patch(f"{self.LLM_PATH}.time.sleep") as sleep,
+            pytest.raises(RuntimeError, match="502 Bad Gateway"),
+        ):
+            client.prompt_llm("Say hi")
+
+        assert mock_post.call_count == 4
+        assert sleep.call_count == 3
+
+    def test_prompt_returns_empty_string_without_content(self, mock_post):
+        client = LlmClient()
+        mock_post.return_value = self._mock_response(
+            json_data={"choices": [{"message": {"role": "assistant"}}]}
+        )
+
+        assert client.prompt_llm("Say hi") == ""
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "action_type, steps",
+        [("Scroll Down", 5), ("Scroll Up", -5)],
+    )
+    async def test_execute_gui_action_scrolls(self, action_type, steps):
+        client = LlmClient()
+        mock_hid = MagicMock()
+        mock_hid.move_pointer_to_proportional = AsyncMock()
+        mock_hid.scroll_pointer_wheel = AsyncMock()
+
+        with (
+            patch.object(client, "_get_lib_instance", return_value=mock_hid),
+            patch(f"{self.LLM_PATH}.asyncio.sleep", AsyncMock()),
+        ):
+            await client.execute_gui_action(
+                {
+                    "action_type": action_type,
+                    "text": None,
+                    "point": [0.25, 0.5],
+                }
+            )
+
+        mock_hid.move_pointer_to_proportional.assert_awaited_once_with(
+            0.25, 0.5
+        )
+        mock_hid.scroll_pointer_wheel.assert_awaited_once_with(steps)
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "text, keys",
+        [
+            ("Control_L+l", ["Control_L", "l"]),
+            ("ctrl + L", ["Control_L", "L"]),
+            ("Enter", ["Return"]),
+            ("Page_Down", ["Next"]),
+        ],
+    )
+    async def test_execute_gui_action_presses_keys(self, text, keys):
+        client = LlmClient()
+        mock_hid = MagicMock()
+        mock_hid.keys_combo = AsyncMock()
+
+        with patch.object(client, "_get_lib_instance", return_value=mock_hid):
+            await client.execute_gui_action(
+                {
+                    "action_type": "Press Key",
+                    "text": text,
+                    "point_2d": None,
+                }
+            )
+
+        mock_hid.keys_combo.assert_awaited_once_with(keys)
 
     @pytest.mark.asyncio
     async def test_execute_gui_action_writes_text(self):
@@ -1135,7 +1521,7 @@ class TestLlmClient:
                 {
                     "action_type": "Left Click",
                     "text": None,
-                    "point_2d": [250, 500],
+                    "point": [0.25, 0.5],
                 }
             )
 
@@ -1275,6 +1661,7 @@ class TestLlmClient:
             "action_type": "Wait",
             "text": None,
             "point_2d": None,
+            "point_frame": None,
         }
 
         with (
@@ -1296,9 +1683,186 @@ class TestLlmClient:
             item = await client._run_step(3, "next action", "system prompt")
 
         grab_screenshot.assert_awaited_once()
-        execute_action.assert_awaited_once_with(action, "Wait for loading")
+        execute_action.assert_awaited_once_with(
+            {**action, "point": None}, "Wait for loading"
+        )
         sleep.assert_awaited_once_with(1)
         assert item == HistoryItem(step=3, action=action)
+
+    @pytest.mark.parametrize(
+        "model, expected, unexpected",
+        [
+            (
+                "claude-opus-4.8-fast",
+                "The screenshot is 1280x800 pixels: if you give point_2d in "
+                "its pixels instead, set point_frame to [1280, 800].",
+                "Set point_frame to null.",
+            ),
+            ("qwen/qwen3-vl-8b-instruct", "Set point_frame to null.", "1280"),
+            (
+                "qwen/qwen2.5-vl-72b-instruct",
+                "Give point_2d in pixels of the 1280x800 screenshot",
+                "1000",
+            ),
+        ],
+    )
+    def test_coordinate_prompt(self, model, expected, unexpected):
+        client = LlmClient()
+        client.configure_llm_client(model=model)
+
+        prompt = client._coordinate_prompt(
+            "Rules: {coordinate_rule}", Image.new("RGB", (1280, 800))
+        )
+
+        assert prompt.startswith("Rules: Give point_2d ")
+        assert expected in prompt
+        assert unexpected not in prompt
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "model, expected",
+        [
+            ("claude-opus-4.8-fast", [0.25, 0.75]),
+            # Native-frame models label point_frame unreliably
+            ("qwen/qwen2.5-vl-72b-instruct", [0.25, 0.75]),
+            ("qwen3-vl:8b", [0.32, 0.6]),
+            ("Qwen3.5-9B", [0.32, 0.6]),
+            ("Qwen/Qwen2-VL-7B-Instruct", [0.32, 0.6]),
+            ("qwen2_vl_7b", [0.32, 0.6]),
+            ("qwen2_5_vl_7b", [0.25, 0.75]),
+            ("Qwen2.5_VL-7B", [0.25, 0.75]),
+        ],
+    )
+    async def test_get_object_position_converts_point_frame(
+        self, model, expected
+    ):
+        client = LlmClient()
+        client.configure_llm_client(model=model)
+        image = Image.new("RGB", (1280, 800))
+        response = {"point_2d": [320, 600], "point_frame": [1280, 800]}
+
+        with patch.object(
+            client, "prompt_llm", return_value=json.dumps(response)
+        ):
+            point = await client.get_object_position("the OK button", image)
+
+        assert point == expected
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "model, point",
+        [
+            ("claude-opus-4.8-fast", [0.25, 0.75]),
+            ("Qwen3.5-9B", [0.32, 0.6]),
+            ("qwen2.5-vl:7b", [0.25, 0.75]),
+        ],
+    )
+    async def test_get_single_gui_action_converts_point_frame(
+        self, model, point
+    ):
+        client = LlmClient()
+        client.configure_llm_client(model=model)
+        image = Image.new("RGB", (1280, 800))
+        response = {
+            "action_type": "Left Click",
+            "text": None,
+            "point_2d": [320, 600],
+            "point_frame": ([1000, 1000] if "2.5" in model else [1280, 800]),
+        }
+
+        with (
+            patch(f"{self.LLM_PATH}.logger") as mock_logger,
+            patch.object(
+                client, "prompt_llm", return_value=json.dumps(response)
+            ) as mock_prompt,
+        ):
+            action = await client.get_single_gui_action("click OK", image)
+
+        assert action == {
+            "action_type": "Left Click",
+            "text": None,
+            "point": point,
+        }
+        mock_logger.info.assert_any_call(
+            f"LLM proposed action: {json.dumps(response)}"
+        )
+        system_prompt = mock_prompt.call_args.kwargs["system_prompt"]
+        assert "{coordinate_rule}" not in system_prompt
+
+    @pytest.mark.asyncio
+    async def test_execute_gui_action_rejects_point_outside_screen(self):
+        client = LlmClient()
+
+        with (
+            patch.object(client, "_get_lib_instance"),
+            pytest.raises(ValueError, match="inside the screen"),
+        ):
+            await client.execute_gui_action(
+                {
+                    "action_type": "Left Click",
+                    "text": None,
+                    "point": [250, 500],
+                }
+            )
+
+    @pytest.mark.asyncio
+    async def test_run_step_executes_converted_point(self):
+        client = LlmClient()
+        client.configure_llm_client(model="claude-opus-4.8-fast")
+        screenshot = Image.new("RGB", (1280, 800))
+        action = {
+            "description": "Click OK",
+            "action_type": "Left Click",
+            "text": None,
+            "point_2d": [320, 600],
+            "point_frame": [1280, 800],
+        }
+
+        with (
+            patch.object(
+                client,
+                "_grab_screenshot",
+                AsyncMock(return_value=screenshot),
+            ),
+            patch.object(
+                client, "prompt_llm", return_value=json.dumps(action)
+            ),
+            patch.object(
+                client,
+                "execute_gui_action",
+                AsyncMock(),
+            ) as execute_action,
+            patch(f"{self.LLM_PATH}.asyncio.sleep", AsyncMock()),
+        ):
+            item = await client._run_step(1, "next action", "system prompt")
+
+        execute_action.assert_awaited_once_with(
+            {**action, "point": [0.25, 0.75]}, "Click OK"
+        )
+        assert item == HistoryItem(step=1, action=action)
+
+    @pytest.mark.asyncio
+    async def test_run_step_fills_coordinate_rule(self):
+        client = LlmClient()
+        screenshot = Image.new("RGB", (1280, 800))
+        action = json.loads(self.FINISH_ACTION_RESPONSE)
+
+        with (
+            patch.object(
+                client,
+                "_grab_screenshot",
+                AsyncMock(return_value=screenshot),
+            ),
+            patch.object(
+                client, "prompt_llm", return_value=json.dumps(action)
+            ) as mock_prompt,
+        ):
+            await client._run_step(1, "next action", "{coordinate_rule}")
+
+        assert (
+            "Set point_frame to null."
+            in (mock_prompt.call_args.kwargs["system_prompt"])
+        )
 
     @pytest.mark.asyncio
     async def test_run_step_returns_finish_without_executing_action(self):

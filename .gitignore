@@ -22,3 +22,4 @@ report.html
 package*.json
 results
 squashfs-root
+.pi

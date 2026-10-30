@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
 
@@ -170,6 +170,41 @@ class TestVncHid:
                 await vnc_hid.release_pointer_buttons()
                 client_mock.mouse.move.assert_called_once_with(0, 0)
                 client_mock.mouse.release_all.assert_called_once()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("steps, button", [(2, 4), (-3, 3)])
+    async def test_scroll_pointer_wheel(
+        self, monkeypatch, vnc_hid, steps, button
+    ):
+        with monkeypatch.context() as m:
+            m.setenv("VNC_PORT", "1")
+            m.setenv("VNC_HOST", "localhost")
+            with (
+                patch(
+                    "yarf.rf_libraries.libraries.vnc.Hid.connect",
+                    new=MagicMock(),
+                ) as connect_mock,
+                patch(
+                    "yarf.rf_libraries.libraries.vnc.Hid.asyncio.sleep",
+                    new_callable=AsyncMock,
+                ) as sleep_mock,
+            ):
+                client_mock = connect_mock.return_value.__aenter__.return_value
+                client_mock.mouse.move = MagicMock()
+                client_mock.mouse.hold = MagicMock()
+                await vnc_hid.scroll_pointer_wheel(steps)
+                client_mock.mouse.move.assert_called_once_with(0, 0)
+                client_mock.mouse.hold.assert_has_calls(
+                    abs(steps)
+                    * [
+                        call(button),
+                        call().__enter__(),
+                        call().__exit__(None, None, None),
+                    ]
+                )
+                sleep_mock.assert_has_awaits(
+                    abs(steps) * [call(0.005), call(vnc_hid.type_string_delay)]
+                )
 
     @pytest.mark.asyncio
     async def test_move_pointer(self, monkeypatch, vnc_hid):

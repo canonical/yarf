@@ -85,6 +85,9 @@ outputs:
   result:
     description: passed or failed.
     value: ${{ steps.run.outputs.result }}
+  exit-code:
+    description: Exit code of the yarf command.
+    value: ${{ steps.run.outputs.exit-code }}
 
 runs:
   using: composite

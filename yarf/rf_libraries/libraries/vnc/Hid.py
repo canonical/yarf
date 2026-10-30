@@ -2,6 +2,7 @@
 Robot Framework HID keyword library for VNC-based interactions.
 """
 
+import asyncio
 from enum import IntEnum
 from time import sleep
 from typing import Sequence
@@ -26,6 +27,11 @@ class MouseTranslation(IntEnum):
     LEFT = 0
     MIDDLE = 1
     RIGHT = 2
+
+
+# RFB pointer button mask positions of the scroll wheel
+WHEEL_UP = 3
+WHEEL_DOWN = 4
 
 
 @library
@@ -139,6 +145,21 @@ class Hid(HidBase):
         async with connect(self.vnc.host, self.vnc.port) as client:
             client.mouse.move(self.curr_x, self.curr_y)
             client.mouse.release_all()
+
+    async def _scroll(self, steps: int) -> None:
+        """
+        Scroll the pointer wheel, one wheel button click per step.
+
+        Args:
+            steps: number of wheel steps, positive scrolls down.
+        """
+        button = WHEEL_DOWN if steps > 0 else WHEEL_UP
+        async with connect(self.vnc.host, self.vnc.port) as client:
+            client.mouse.move(self.curr_x, self.curr_y)
+            for _ in range(abs(steps)):
+                with client.mouse.hold(button):
+                    await asyncio.sleep(0.005)
+                await asyncio.sleep(self.type_string_delay)
 
     @keyword
     async def _move_pointer(

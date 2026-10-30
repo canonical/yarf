@@ -55,8 +55,11 @@ Notes:
 - Coverage for `yarf` is gated at **100%** in tox.
 - To exclude a keyword from keyword coverage, use `yarf: nocoverage` and explain
   why.
-- Avoid editing `yarf/vendor/` and `yarf/lib/wayland/protocols/` unless the task
-  is specifically about vendored/generated code.
+- Avoid editing `yarf/lib/wayland/protocols/` unless the task is specifically
+  about generated code.
+- `yarf/vendor/` is third-party code maintained in-tree: it follows the same
+  lint, typing, docstring and coverage rules as the rest of `yarf`. Record
+  modifications in the `NOTICE` file of the vendored package.
 
 ## Easy-to-miss checks
 
