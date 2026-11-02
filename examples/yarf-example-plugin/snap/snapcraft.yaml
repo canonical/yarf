@@ -1,5 +1,5 @@
 name: yarf-example-plugin
-base: core24
+base: core26
 version: '0.0.1'
 summary: YARF example plugin library
 description: |
