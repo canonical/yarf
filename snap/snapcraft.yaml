@@ -70,6 +70,9 @@ parts:
 
     build-environment:
       - C_INCLUDE_PATH: /snap/gnome-core26-sdk/current/usr/include:${C_INCLUDE_PATH:-}
+      # The gnome extension prepends the SDK's dist-packages to PYTHONPATH,
+      # which shadows the pip installed in YARF's virtual environment.
+      - PYTHONPATH: ""
 
     organize:
       usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/blas/*: usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
