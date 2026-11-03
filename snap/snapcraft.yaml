@@ -48,6 +48,8 @@ parts:
       - ffmpeg
       - libblas3
       - liblapack3
+      # core26 has no Python: ship the interpreter used by the venv.
+      - python3-minimal
       - tesseract-ocr
       - python3-tk
       - xclip
@@ -101,17 +103,13 @@ parts:
         cd "/snap/$snap/current"
         find . -type f,l -name *.so.* -exec sh -c 'rm -fv "$CRAFT_PRIME/{}"*' \;
         if [ -d usr ]; then
-          find usr -type f,l -exec rm -fv "$CRAFT_PRIME/{}" \;
+          # Keep the staged interpreter, the venv's bin/python3 links to it.
+          find usr -type f,l ! -path 'usr/bin/python3*' \
+            -exec rm -fv "$CRAFT_PRIME/{}" \;
         fi
       done
 
       find "$CRAFT_PRIME" -type d -empty -delete
-
-      # core26 ships no Python interpreter and the venv's dangling symlink is
-      # dropped by the gpu cleanup, so install a launcher for the gnome
-      # content snap's Python (see snap/local/python3).
-      install -Dm755 "$CRAFT_PROJECT_DIR/snap/local/python3" \
-        "$CRAFT_PRIME/bin/python3"
 
       sed -i -e "s|/snap/gnome-core26-sdk/current||g" ${CRAFT_PRIME}/pyvenv.cfg
       sed -i -E "s|/snap/gnome-core26-sdk/[0-9]+||g" ${CRAFT_PRIME}/pyvenv.cfg

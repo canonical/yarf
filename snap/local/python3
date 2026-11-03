@@ -1,6 +1,0 @@
-#!/bin/bash
-# core26 ships no Python interpreter, so run the gnome content snap's one.
-# A symlink would be removed at build time as dangling (the content snap is
-# only mounted at runtime). exec -a keeps argv[0] pointing at this venv path,
-# so Python still detects the venv through the adjacent pyvenv.cfg.
-exec -a "$0" "${0%/*}/../gnome-platform/usr/bin/python3.14" "$@"
