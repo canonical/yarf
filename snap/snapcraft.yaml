@@ -69,6 +69,8 @@ parts:
         ! -name "pip-${pip_version}.dist-info" -print -exec rm -rf {} +
 
     build-environment:
+      # GNOME's PYTHONPATH puts the SDK's pip ahead of the virtualenv's copy.
+      - PYTHONPATH: ""
       - C_INCLUDE_PATH: /snap/gnome-core26-sdk/current/usr/include:${C_INCLUDE_PATH:-}
 
     organize:
