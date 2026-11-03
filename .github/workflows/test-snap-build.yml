@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/test-snap-build.yml
       - snap/**
+      - scripts/**
       - pyproject.toml
   workflow_dispatch:
 
@@ -39,6 +40,14 @@ jobs:
 
     - name: Build snap
       uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
+
+    - name: Smoke test snap
+      run: |
+        sudo snap install --dangerous ./*.snap
+        snap connections yarf
+        snap run yarf --help
+        snap run --shell yarf -c \
+          '"$SNAP/bin/python3" -c "import numpy, tkinter, rapidocr, yarf.main"'
 
     - name: Upload snap artifact
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
