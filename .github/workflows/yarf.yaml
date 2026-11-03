@@ -32,9 +32,9 @@ jobs:
     - name: Sync Python dependencies
       run: uv sync --python 3.12
 
-  unit-tests-noble:
-    name: Noble - Unit tests
-    runs-on: ubuntu-24.04
+  unit-tests-resolute:
+    name: Resolute - Unit tests
+    runs-on: ubuntu-26.04
     needs: install-noble
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -43,9 +43,9 @@ jobs:
         fetch-depth: 0
         persist-credentials: false
 
-    - uses: ./.github/actions/setup-noble-env
+    - uses: ./.github/actions/setup-resolute-env
 
-    - name: Run Noble - Unit tests
+    - name: Run Resolute - Unit tests
       run: ./.github/scripts/yarf/run-unit-tests.sh
 
     - name: Upload Coverage Report
@@ -62,9 +62,9 @@ jobs:
       with:
         limit-access-to-actor: true
 
-  integration-tests-noble:
-    name: Noble - Integration tests
-    runs-on: ubuntu-24.04
+  integration-tests-resolute:
+    name: Resolute - Integration tests
+    runs-on: ubuntu-26.04
     needs: install-noble
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -72,12 +72,17 @@ jobs:
         lfs: true
         persist-credentials: false
 
+    - name: Set up Python
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+      with:
+        python-version: "3.14"
+
     - name: Install the app under test
       run: |
         sudo apt-get update -qq
         sudo apt-get install -y --no-install-recommends gnome-calculator
 
-    - name: Run Noble - Integration tests
+    - name: Run Resolute - Integration tests
       id: yarf
       uses: ./.github/actions/yarf-test
       with:
@@ -99,9 +104,9 @@ jobs:
       with:
         limit-access-to-actor: true
 
-  tutorial-tests-noble:
-    name: Noble - Tutorial tests (${{ matrix.variant || 'default' }})
-    runs-on: ubuntu-24.04
+  tutorial-tests-resolute:
+    name: Resolute - Tutorial tests (${{ matrix.variant || 'default' }})
+    runs-on: ubuntu-26.04
     needs: install-noble
     strategy:
       fail-fast: false
@@ -116,10 +121,15 @@ jobs:
         lfs: true
         persist-credentials: false
 
+    - name: Set up Python
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+      with:
+        python-version: "3.14"
+
     - name: Set up the simple counter example
       run: ./.github/scripts/yarf/setup-tutorial-app.sh
 
-    - name: Run Noble - Tutorial tests (${{ matrix.variant || 'default' }})
+    - name: Run Resolute - Tutorial tests (${{ matrix.variant || 'default' }})
       uses: ./.github/actions/yarf-test
       with:
         platform: Mir
@@ -135,9 +145,9 @@ jobs:
       with:
         limit-access-to-actor: true
 
-  keyword-tests-noble:
-    name: Noble - Keyword tests (${{ matrix.suite }})
-    runs-on: ubuntu-24.04
+  keyword-tests-resolute:
+    name: Resolute - Keyword tests (${{ matrix.suite }})
+    runs-on: ubuntu-26.04
     needs: install-noble
     strategy:
       fail-fast: false
@@ -166,10 +176,15 @@ jobs:
         lfs: true
         persist-credentials: false
 
+    - name: Set up Python
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+      with:
+        python-version: "3.14"
+
     - name: Install suite dependencies
       run: ./.github/scripts/yarf/install-suite-deps.sh
 
-    - name: Run Noble - Keyword tests (${{ matrix.suite }})
+    - name: Run Resolute - Keyword tests (${{ matrix.suite }})
       uses: ./.github/actions/yarf-test
       with:
         platform: Mir
@@ -196,10 +211,10 @@ jobs:
       with:
         limit-access-to-actor: true
 
-  keyword-coverage-noble:
-    name: Noble - Keyword coverage check
-    runs-on: ubuntu-latest
-    needs: keyword-tests-noble
+  keyword-coverage-resolute:
+    name: Resolute - Keyword coverage check
+    runs-on: ubuntu-26.04
+    needs: keyword-tests-resolute
     if: always()
     env:
       KEYWORDS_COVERAGE_CHECKER: .github/scripts/yarf/check_unused_keywords.py
@@ -212,7 +227,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
       with:
-        python-version: "3.12"
+        python-version: "3.14"
 
     - name: Download per-suite coverage artifacts
       uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
