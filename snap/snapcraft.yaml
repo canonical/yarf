@@ -48,6 +48,8 @@ parts:
       - ffmpeg
       - libblas3
       - liblapack3
+      # core26 has no Python: ship the interpreter used by the venv.
+      - python3-minimal
       - tesseract-ocr
       - python3-tk
       - xclip
@@ -101,7 +103,9 @@ parts:
         cd "/snap/$snap/current"
         find . -type f,l -name *.so.* -exec sh -c 'rm -fv "$CRAFT_PRIME/{}"*' \;
         if [ -d usr ]; then
-          find usr -type f,l -exec rm -fv "$CRAFT_PRIME/{}" \;
+          # Keep the staged interpreter, the venv's bin/python3 links to it.
+          find usr -type f,l ! -path 'usr/bin/python3*' \
+            -exec rm -fv "$CRAFT_PRIME/{}" \;
         fi
       done
 
