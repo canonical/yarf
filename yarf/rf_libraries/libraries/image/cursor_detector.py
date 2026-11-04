@@ -14,6 +14,9 @@ from yarf.rf_libraries.variables.video_input_vars import (
     DEFAULT_CURSOR_DETECTION_CONFIDENCE,
 )
 
+# This additionally disables the platform telemetry provider used by Windows.
+ort.disable_telemetry_events()
+
 # Note: The model is trained to detect three cursor types: regular arrow,
 # hand pointer, and text I-beam. At the moment, the model is only reliable for
 # detecting the regular arrow cursor on Dell and Hp bios menus. Until we have
