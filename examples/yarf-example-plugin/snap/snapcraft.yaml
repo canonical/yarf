@@ -31,5 +31,9 @@ parts:
       # its scanner needs the wayland-protocols pkg-config data.
       - wayland-protocols
     stage-packages:
+      # core26 has no Python: ship the interpreter used by the venv.
+      - python3-minimal
+      # The python plugin creates that venv from staged packages.
+      - python3-venv
       - libxkbcommon0
       - bash
