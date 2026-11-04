@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
+import onnxruntime as ort
 import rapidfuzz
 from PIL import Image
 from rapidocr import RapidOCR
@@ -16,6 +17,10 @@ from robot.libraries.BuiltIn import BuiltIn
 from yarf.rf_libraries.libraries.geometry.quad import Quad
 from yarf.vendor.RPA.core.geometry import Region
 from yarf.vendor.RPA.recognition.utils import to_image
+
+# Cover the legacy Windows telemetry provider. The 1DS provider is disabled
+# before this import by yarf.__init__.
+ort.disable_telemetry_events()
 
 
 @dataclass
