@@ -148,6 +148,24 @@ caption: '`yarf` command with Robot-specific argument provided'
 yarf <path-to-suite>/suite -- --variable KEY1:VALUE1 --variable KEY2:VALUE2
 ```
 
+## Control the output verbosity
+
+YARF follows the Canonical CLI standard verbosity modes. Exactly one of the
+following flags may be given:
+
+| Flag        | Reports                                                    |
+| ----------- | ---------------------------------------------------------- |
+| `--quiet`   | Errors only.                                               |
+| `--brief`   | Progress and outcome only. This is the default.            |
+| `--verbose` | Intermediate execution steps, such as the assets selected. |
+| `--debug`   | Internal diagnostic detail, and extra debugging artefacts. |
+
+Warnings and errors are written to standard error, everything else to standard
+output. In `--verbose` and `--debug` modes each line is prefixed with an
+ISO 8601 timestamp. Coloured output is used only when the stream is an
+interactive terminal and the [`NO_COLOR`](https://no-color.org/) environment
+variable is unset.
+
 ## Debug failing tests
 
 When developing tests, you will often need more feedback than the command line gives you. `yarf` will output

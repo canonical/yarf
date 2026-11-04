@@ -30,10 +30,19 @@ from yarf.output import OUTPUT_FORMATS
 from yarf.output.test_submission_schema import TestSubmissionSchema
 from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS
 from yarf.rf_libraries.libraries.vnc import Vnc
-from yarf.tests.fixtures import fs  # noqa: F401
+from yarf.tests.fixtures import fs, root_logger  # noqa: F401
 
 
 class TestMain:
+    @pytest.fixture(autouse=True)
+    def _isolate_logging(
+        self,
+        root_logger,  # noqa: F811
+    ) -> None:
+        """
+        Stop CLI logging configuration from leaking between tests.
+        """
+
     def test_version_is_development_placeholder(self) -> None:
         """
         Test that the version in the repository is the development placeholder
@@ -83,8 +92,11 @@ class TestMain:
         "argv,expected",
         [
             (["suite/", "--"], {"suite": "suite/"}),
+            ([], {"log_level": "NOTICE"}),
+            (["--brief"], {"log_level": "NOTICE"}),
+            (["--verbose"], {"log_level": "INFO"}),
             (["--debug"], {"log_level": "DEBUG"}),
-            (["--quiet"], {"log_level": "WARNING"}),
+            (["--quiet"], {"log_level": "ERROR"}),
             (["--variant", "var1/var2/var3"], {"variant": "var1/var2/var3"}),
             (["--outdir", "out/dir"], {"outdir": "out/dir"}),
         ],
@@ -127,19 +139,24 @@ class TestMain:
         assert args.platform == "Vnc"
 
     @patch("yarf.main.RobotFramework")
-    @patch("yarf.main._owasp_logger")
-    def test_parse_robot_arguments_info(self, mock_logger, mock_rf):
+    def test_parse_robot_arguments_info(
+        self,
+        mock_rf: MagicMock,
+        capsys: pytest.CaptureFixture,
+    ) -> None:
         """
         Test whether the parser catches the Information exception when raised
-        by Robot parser with --help or --version, prints the information and
-        exit w/o errors.
+        by Robot parser with --help or --version, prints the information to
+        stdout and exits successfully.
         """
 
         info = Information("helper")
         mock_rf.return_value.parse_arguments.side_effect = info
-        with pytest.raises(SystemExit):
+        with pytest.raises(SystemExit) as cm:
             parse_robot_arguments(["--help"])
-        mock_logger.sys_crash.assert_called_once_with(info)
+
+        assert cm.value.code == 0
+        assert capsys.readouterr().out == "helper\n"
 
     def test_parse_arguments_system_argv(self) -> None:
         """
@@ -176,6 +193,30 @@ class TestMain:
         argv = ["--platform", "InvalidPlatform", "suite-path"]
         with pytest.raises(SystemExit):
             parse_arguments(argv)
+
+    @patch("yarf.main._owasp_logger")
+    def test_parse_arguments_version(
+        self,
+        mock_owasp_logger: MagicMock,
+        capsys: pytest.CaptureFixture,
+    ) -> None:
+        """
+        Test whether "--version" reports the release version and exits
+        successfully without recording a crash.
+        """
+        with pytest.raises(SystemExit) as cm:
+            parse_arguments(["--version"])
+
+        assert cm.value.code == 0
+        assert capsys.readouterr().out.strip() == f"yarf {YARF_VERSION}"
+        mock_owasp_logger.sys_crash.assert_not_called()
+
+    def test_parse_arguments_conflicting_verbosity(self) -> None:
+        """
+        Test whether the verbosity flags are mutually exclusive.
+        """
+        with pytest.raises(SystemExit):
+            parse_arguments(["--quiet", "--debug"])
 
     def test_get_yarf_settings(self, fs: FakeFilesystem) -> None:  # noqa: F811
         """
@@ -659,7 +700,7 @@ class TestMain:
         mock_rebot.assert_called_once_with(
             f"{outdir}/output.xml", outputdir=outdir
         )
-        mock_logger.info.assert_called_once()
+        mock_logger.log.assert_called_once()
 
     @patch("yarf.main.TestSuite.from_file_system")
     def test_main(
@@ -694,7 +735,7 @@ class TestMain:
             cli_options={},
             output_format=None,
         )
-        assert os.getenv("YARF_LOG_LEVEL") == "INFO"
+        assert os.getenv("YARF_LOG_LEVEL") == "NOTICE"
 
     def test_main_connection_error(self) -> None:
         """
