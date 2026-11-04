@@ -39,7 +39,7 @@ USER_STORY = re.compile(r"^As .+, I want .+, so that .+$")
 ACCEPTANCE_SCENARIO = re.compile(
     r"^- \*\*Given\*\* .+, \*\*When\*\* .+, \*\*Then\*\* .+$"
 )
-FR_CANDIDATE = re.compile(r"^\s*-\s+(?:\*\*)?FR-")
+FR_CANDIDATE = re.compile(r"^\s*(?:-\s+)?(?:\*\*)?FR-")
 FR_LINE = re.compile(
     r"^- \*\*FR-(?P<number>[0-9]{3})\*\*: "
     r"(?:The system MUST(?: NOT)? .+|"
@@ -48,10 +48,19 @@ FR_LINE = re.compile(
     r"Where .+, the system MUST(?: NOT)? .+|"
     r"If .+, then the system MUST(?: NOT)? .+)\.?$"
 )
-SC_CANDIDATE = re.compile(r"^\s*-\s+(?:\*\*)?SC-")
+SC_CANDIDATE = re.compile(r"^\s*(?:-\s+)?(?:\*\*)?SC-")
 SC_LINE = re.compile(r"^- \*\*SC-(?P<number>[0-9]{3})\*\*: (?P<text>.+)$")
 MEASUREMENT = re.compile(
-    r"(?<![A-Za-z0-9-])-?[0-9]+(?:\.[0-9]+)?(?:\s*|-)(?:%|(?:[^\W\d_]+|[°µμ][^\W\d_]+)(?:[-/][^\W\d_]+)*)",
+    r"(?<![A-Za-z0-9-])-?[0-9]+(?:\.[0-9]+)?(?:\s*|-)(?:%|"
+    r"milliseconds?|ms|seconds?|s|minutes?|mins?|hours?|hrs?|days?|"
+    r"hertz|hz|kilohertz|khz|megahertz|mhz|gigahertz|ghz|"
+    r"bytes?|kb|mb|gb|tb|bits?|kilobits?|megabits?|gigabits?|"
+    r"volts?|mv|millivolts?|kv|kilovolts?|amps?|ma|milliamps?|"
+    r"watts?|mw|milliwatts?|°[cf]|degrees? (?:celsius|fahrenheit)|"
+    r"pixels?|px|frames?|fps|retr(?:y|ies)|attempts?|requests?|"
+    r"operations?|items?|records?|files?|users?|hosts?|nodes?|"
+    r"devices?|connections?|errors?|failures?|tests?|cases?|steps?|"
+    r"lines?)(?![A-Za-z])",
     re.IGNORECASE,
 )
 REQUIRED_HEADINGS = (
@@ -71,7 +80,17 @@ class GitError(Exception):
 
 def run_git(repo_root: Path, *args: str) -> bytes:
     """
-    Return the output of a git command, raising GitError when it fails.
+    Return the output of a Git command.
+
+    Args:
+        repo_root: Repository in which to run the command.
+        *args: Arguments following the `git` executable name.
+
+    Returns:
+        Standard output from the command.
+
+    Raises:
+        GitError: The command cannot run or exits unsuccessfully.
     """
     try:
         result = subprocess.run(
@@ -93,6 +112,12 @@ def run_git(repo_root: Path, *args: str) -> bytes:
 def logical_lines(text: str) -> list[str]:
     """
     Join Markdown soft wraps without crossing headings, lists, or blanks.
+
+    Args:
+        text: Markdown document to normalize.
+
+    Returns:
+        Normalized logical lines.
     """
     lines: list[str] = []
     for raw_line in text.splitlines():
@@ -100,7 +125,12 @@ def logical_lines(text: str) -> list[str]:
         if not line:
             lines.append("")
             continue
-        if line.startswith("#") or line.startswith("- "):
+        if (
+            line.startswith("#")
+            or line.startswith("- ")
+            or FR_CANDIDATE.match(line)
+            or SC_CANDIDATE.match(line)
+        ):
             lines.append(line)
             continue
         if lines and lines[-1] and not lines[-1].startswith("#"):
@@ -117,6 +147,15 @@ def tracked_index_entries(
     Return stage-0 index paths with their modes and object IDs.
 
     A path with a conflict or a duplicate entry maps to None.
+
+    Args:
+        repo_root: Repository whose Git index is read.
+
+    Returns:
+        Index entries keyed by Git path.
+
+    Raises:
+        GitError: Git cannot read the index.
     """
     entries: dict[str, tuple[str, str] | None] = {}
     for record in run_git(repo_root, "ls-files", "--stage", "-z").split(b"\0"):
@@ -137,8 +176,15 @@ def tracked_index_entries(
 
 def check_document(repo_root: Path, path: str, object_id: str) -> list[str]:
     """
-    Problems in the sections, stories, EARS requirements, and criteria of one
-    document.
+    Check the sections, stories, requirements, and criteria of one document.
+
+    Args:
+        repo_root: Repository containing the indexed document.
+        path: Git-relative path used in reported problems.
+        object_id: Git object ID of the indexed document content.
+
+    Returns:
+        Problems found in the requirements document.
     """
     problems: list[str] = []
     try:
@@ -330,9 +376,17 @@ def check_document(repo_root: Path, path: str, object_id: str) -> list[str]:
 
 def check_repository(repo_root: Path) -> list[str]:
     """
-    Problems among the files Git tracks.
+    Check the requirements-related files Git tracks.
 
-    An empty list means it is compliant.
+    Args:
+        repo_root: Repository whose Git index is checked.
+
+    Returns:
+        Problems found in the tracked requirements tree. An empty list means
+        the tree is compliant.
+
+    Raises:
+        GitError: Git cannot read the repository or its index.
     """
     index_entries = tracked_index_entries(repo_root)
     paths = set(index_entries)

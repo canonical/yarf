@@ -277,11 +277,12 @@ class CheckRequirementsTests(unittest.TestCase):
     def test_malformed_fr_and_sc_entries_fail_alongside_valid_entries(self):
         invalid = VALID_REQUIREMENTS.replace(
             "\n## Success Criteria",
-            "\n- FR-002: The system should disconnect eventually.\n\n## Success Criteria",
+            "\nFR-002: The system should disconnect eventually.\n\n"
+            "## Success Criteria",
         ).replace(
             "- **SC-002**: At least 90% of status requests return the current console state.",
             "- **SC-002**: At least 90% of status requests return the current console state.\n"
-            "- SC-003: Status should appear quickly.",
+            "SC-003: Status should appear quickly.",
         )
         self.write("requirements/001-console-status/requirements.md", invalid)
         self.track("requirements")
@@ -322,6 +323,20 @@ class CheckRequirementsTests(unittest.TestCase):
         invalid = VALID_REQUIREMENTS.replace(
             "At least 90% of status requests return the current console state.",
             "All requirements including FR-001 are met.",
+        )
+        self.write("requirements/001-console-status/requirements.md", invalid)
+        self.track("requirements")
+
+        errors = checker.check_repository(self.repo)
+
+        self.assertTrue(
+            any("SC-002 needs a concrete numeric" in error for error in errors)
+        )
+
+    def test_success_criteria_reject_unrecognized_measurement_words(self):
+        invalid = VALID_REQUIREMENTS.replace(
+            "At least 90% of status requests return the current console state.",
+            "At least 1 of the users can view the console at version 2 of the protocol.",
         )
         self.write("requirements/001-console-status/requirements.md", invalid)
         self.track("requirements")

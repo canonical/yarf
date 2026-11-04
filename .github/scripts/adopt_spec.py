@@ -39,7 +39,17 @@ def feature_source(
     repo_root: Path, feature_directory: str
 ) -> tuple[Path, str, int]:
     """
-    Resolve and validate a direct child of the local specs working directory.
+    Resolve and validate a direct child of the local `specs/` directory.
+
+    Args:
+        repo_root: Repository containing the local working directory.
+        feature_directory: Path to a proposed feature directory.
+
+    Returns:
+        The `spec.md` path, feature slug, and numeric feature ID.
+
+    Raises:
+        AdoptError: The proposed directory is not a valid local Spec Kit draft.
     """
     raw_path = Path(feature_directory)
     candidate = raw_path if raw_path.is_absolute() else repo_root / raw_path
@@ -89,6 +99,15 @@ def feature_source(
 def used_feature_numbers(requirements_root: Path) -> set[int]:
     """
     Return numeric identifiers used by existing requirement entries.
+
+    Args:
+        requirements_root: Directory holding committed feature contracts.
+
+    Returns:
+        Numeric identifiers already used by requirement directories.
+
+    Raises:
+        AdoptError: The requirements path is a symlink or a regular file.
     """
     if requirements_root.is_symlink():
         raise AdoptError(
@@ -109,6 +128,17 @@ def used_feature_numbers(requirements_root: Path) -> set[int]:
 def adopt_spec(repo_root: Path, feature_directory: str) -> Path:
     """
     Copy a draft spec to a unique requirement path without overwriting files.
+
+    Args:
+        repo_root: Repository that contains the draft and requirements tree.
+        feature_directory: Path to a local Spec Kit feature directory.
+
+    Returns:
+        Path of the copied requirements document.
+
+    Raises:
+        AdoptError: The repository, source draft, or destination is invalid.
+        OSError: A required file operation fails.
     """
     repo_root = repo_root.resolve(strict=True)
     if not repo_root.is_dir():

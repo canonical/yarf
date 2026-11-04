@@ -43,7 +43,11 @@ Use `MUST NOT` instead of `MUST` for a prohibited behavior. For example:
 
 Write unique `SC-NNN` success criteria with exactly three digits. Each must be a
 Markdown bullet in the form `- **SC-NNN**: <observable outcome>` and include a
-concrete numeric target with a unit or percentage. For example:
+concrete numeric target with a percentage or a recognized unit. Recognized
+units include time, frequency, data size, voltage, current, power, temperature,
+pixels, frames, retries, attempts, requests, operations, items, records, files,
+users, hosts, nodes, devices, connections, errors, failures, tests, cases,
+steps, and lines. For example:
 
 ```markdown
 - **SC-001**: The system reports a display state within 2 seconds.

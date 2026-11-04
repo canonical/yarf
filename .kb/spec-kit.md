@@ -65,11 +65,14 @@ implementation.
 
 Map each accepted user story, `FR-*` requirement, and success criterion to an
 implementation deliverable. Name the component, behavior, and tests for each
-deliverable and preserve dependency order. Add each deliverable above the base
-pull request as a dependent layer. Tests travel with the behavior they verify.
-Keep tightly coupled behavior and its tests together when splitting them would
-make review or validation misleading. If a review changes the contract, amend
-the base pull request and rebase its implementation layers.
+deliverable and preserve dependency order. A task list must include focused
+automated-test tasks for every behavior change unless automation is not
+practical. In that exception, record the reason and reproducible manual
+validation. Add each deliverable above the base pull request as a dependent
+layer. Tests travel with the behavior they verify. Keep tightly coupled
+behavior and its tests together when splitting them would make review or
+validation misleading. If a review changes the contract, amend the base pull
+request and rebase its implementation layers.
 
 Requirements state intended behavior and measurable outcomes. Use an ADR under
 `adr/` for a non-obvious, durable architectural decision such as a new process
