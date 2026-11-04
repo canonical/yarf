@@ -1,0 +1,29 @@
+{
+  "_comments": {
+    "purpose": "Firefox enterprise policies for the benchmark VM. The suite setup writes the 'policies' object to /etc/firefox/policies/policies.json. They stop pop-ups and extra pages that the model would otherwise have to dismiss, so that the Firefox tests measure the task, not dialog handling.",
+    "OverrideFirstRunPage": "No 'Welcome to Firefox' tab on the first start.",
+    "OverridePostUpdatePage": "No 'What's new' tab after an update.",
+    "DontCheckDefaultBrowser": "No 'Make Firefox your default browser?' bar.",
+    "DisableTelemetry": "No telemetry, and no data-sharing notice on the first run.",
+    "UserMessaging": "No onboarding wizard and no extension, feature or 'More from Mozilla' recommendations.",
+    "browser.sessionstore.resume_from_crash": "The suite setup stops Firefox with pkill after its first start, which Firefox treats as a crash. Without this, the next start offers to restore the old tabs instead of opening a clean browser. 'locked' stops the page from changing it."
+  },
+  "policies": {
+    "OverrideFirstRunPage": "",
+    "OverridePostUpdatePage": "",
+    "DontCheckDefaultBrowser": true,
+    "DisableTelemetry": true,
+    "UserMessaging": {
+      "SkipOnboarding": true,
+      "ExtensionRecommendations": false,
+      "FeatureRecommendations": false,
+      "MoreFromMozilla": false
+    },
+    "Preferences": {
+      "browser.sessionstore.resume_from_crash": {
+        "Value": false,
+        "Status": "locked"
+      }
+    }
+  }
+}
