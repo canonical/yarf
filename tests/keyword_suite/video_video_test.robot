@@ -40,6 +40,7 @@ Wait For Video Playback
 
 Start Video
     [Documentation]    Generate and start a video with given duration (seconds).
+    ...                Use a shared-memory output for Mir screencopy compatibility.
     [Arguments]             ${duration}
     Start Process
     ...                     ffmpeg
@@ -58,4 +59,5 @@ Start Video
     ...                     --
     ...                     mpv
     ...                     --fs
+    ...                     --vo\=wlshm
     ...                     ${CURDIR}/videos/test_video_${duration}.mp4
