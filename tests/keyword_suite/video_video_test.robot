@@ -40,6 +40,7 @@ Wait For Video Playback
 
 Start Video
     [Documentation]    Generate and start a video with given duration (seconds).
+    ...                Use OpenGL so the Mir screencopy feed receives each frame.
     [Arguments]             ${duration}
     Start Process
     ...                     ffmpeg
@@ -58,4 +59,6 @@ Start Video
     ...                     --
     ...                     mpv
     ...                     --fs
+    ...                     --vo=gpu
+    ...                     --gpu-api=opengl
     ...                     ${CURDIR}/videos/test_video_${duration}.mp4
