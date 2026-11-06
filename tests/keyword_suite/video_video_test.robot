@@ -59,6 +59,6 @@ Start Video
     ...                     --
     ...                     mpv
     ...                     --fs
-    ...                     --vo=gpu
-    ...                     --gpu-api=opengl
+    ...                     --vo\=gpu
+    ...                     --gpu-api\=opengl
     ...                     ${CURDIR}/videos/test_video_${duration}.mp4
