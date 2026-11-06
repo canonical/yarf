@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
+import pytest
 from PIL import Image
 
 from yarf.rf_libraries.libraries.image.segmentation import SegmentationTool
@@ -74,6 +75,78 @@ class TestSegmentation:
         mask = np.zeros((20, 20), dtype="uint8")
         tup = seg._robust_hsv_color(image, mask)
         assert len(tup) == 3
+
+    def test_get_background_color(self):
+        seg = SegmentationTool()
+        seg.get_text_mask = Mock(return_value=np.zeros((10, 10), "uint8"))
+        image = Image.fromarray(np.full((10, 10, 3), 128, "uint8"))
+        hsv = seg.get_background_color(image)
+        assert len(hsv) == 3
+
+    def test_consensus_hsv_color(self):
+        seg = SegmentationTool()
+        hue, sat, val = seg._consensus_hsv_color(
+            [(0.0, 10.0, 100.0), (0.0, 10.0, 100.0), (90.0, 200.0, 250.0)]
+        )
+        assert sat == 10.0
+        assert val == 100.0
+        assert hue == pytest.approx(0.0, abs=1.0)
+
+    def test_find_outlier_region_index_too_few(self):
+        seg = SegmentationTool()
+        regions = [to_region("0,0,1,1")]
+        assert seg.find_outlier_region_index(Mock(), regions) is None
+
+    @patch("yarf.rf_libraries.libraries.image.segmentation.log_image")
+    def test_find_outlier_region_index_found(self, mock_log_image):
+        seg = SegmentationTool()
+        seg.crop_image_with_padding = Mock(side_effect=lambda img, r, pad: r)
+        seg.get_background_color = Mock(
+            side_effect=[
+                (0.0, 0.0, 100.0),
+                (0.0, 0.0, 100.0),
+                (0.0, 0.0, 250.0),
+            ]
+        )
+        regions = [
+            to_region("0,0,1,1"),
+            to_region("0,1,1,2"),
+            to_region("0,2,1,3"),
+        ]
+        index = seg.find_outlier_region_index(Mock(), regions, tolerance=20)
+        assert index == 2
+        mock_log_image.assert_called_once()
+
+    @patch("yarf.rf_libraries.libraries.image.segmentation.log_image")
+    def test_find_outlier_region_index_none(self, mock_log_image):
+        seg = SegmentationTool()
+        seg.crop_image_with_padding = Mock(side_effect=lambda img, r, pad: r)
+        seg.get_background_color = Mock(return_value=(0.0, 0.0, 100.0))
+        regions = [to_region("0,0,1,1"), to_region("0,1,1,2")]
+        assert seg.find_outlier_region_index(Mock(), regions) is None
+        mock_log_image.assert_called_once()
+
+    def test_is_background_similar(self):
+        seg = SegmentationTool()
+        # Hues 1 and 179 are only 2 apart on the 0-179 circle, so similar.
+        assert seg._is_background_similar(
+            (1.0, 0.0, 100.0), (179.0, 0.0, 100.0), 20
+        )
+        # A large value difference is not similar.
+        assert not seg._is_background_similar(
+            (0.0, 0.0, 10.0), (0.0, 0.0, 250.0), 20
+        )
+
+    def test_create_background_comparison_image(self):
+        seg = SegmentationTool()
+        image = seg.create_background_comparison_image(
+            [(0.0, 0.0, 100.0), (0.0, 0.0, 250.0)],
+            (0.0, 0.0, 100.0),
+            outlier_index=1,
+        )
+        assert isinstance(image, Image.Image)
+        # consensus + 2 line swatches -> 3 columns
+        assert image.size == (3 * (80 + 8) + 8, 80 + 40)
 
     def test_convert_hsv_to_rgb(self):
         seg = SegmentationTool()
