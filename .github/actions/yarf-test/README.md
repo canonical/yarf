@@ -140,6 +140,7 @@ accepted in any casing.
 | ------------ | ----------------------------------------- |
 | `output-dir` | Absolute path to YARF's output directory. |
 | `result`     | `passed` or `failed`.                     |
+| `exit-code`  | Exit code of the `yarf` command.          |
 
 The output directory is `$TMPDIR/yarf-outdir`. The action passes it to YARF as
 `--outdir` and exposes it via `output-dir`, so downstream steps and the artifact

@@ -164,11 +164,16 @@ jobs:
       - name: Assert the action reported a passing run
         env:
           RESULT: ${{ steps.action.outputs.result }}
+          EXIT_CODE: ${{ steps.action.outputs.exit-code }}
           OUTPUT_DIR: ${{ steps.action.outputs.output-dir }}
         run: |
           set -euo pipefail
           if [ "${RESULT}" != "passed" ]; then
             echo "Expected result 'passed', got '${RESULT}'" >&2
+            exit 1
+          fi
+          if [ "${EXIT_CODE}" != "0" ]; then
+            echo "Expected exit code '0', got '${EXIT_CODE}'" >&2
             exit 1
           fi
           if [ ! -d "${OUTPUT_DIR}" ]; then

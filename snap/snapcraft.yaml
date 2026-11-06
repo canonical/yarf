@@ -1,12 +1,17 @@
 name: yarf
-base: core24
+base: core26
 adopt-info: yarf
+title: YARF
 summary: Yet Another Robot Framework
 description: |
   Yet Another Robot Framework (YARF) is an interface that
   allows developers to build complex test scenarios and
   bootstrap them locally, then work towards automated runs.
 license: GPL-3.0
+website: https://canonical-yarf.readthedocs-hosted.com/
+source-code: https://github.com/canonical/yarf
+issues: https://github.com/canonical/yarf/issues
+contact: https://github.com/canonical/yarf/issues
 
 grade: stable
 confinement: strict
@@ -22,10 +27,10 @@ layout:
     bind: $SNAP/usr/share/tesseract-ocr
   /usr/share/ffmpeg:
     bind: $SNAP/usr/share/ffmpeg
-  /usr/lib/python3.12/tkinter:
-    bind: $SNAP/usr/lib/python3.12/tkinter
-  /usr/lib/python3.12/lib-dynload/_tkinter.cpython-312-$CRAFT_ARCH_TRIPLET_BUILD_FOR.so:
-    symlink: $SNAP/usr/lib/python3.12/lib-dynload/_tkinter.cpython-312-$CRAFT_ARCH_TRIPLET_BUILD_FOR.so
+  /usr/lib/python3.14/tkinter:
+    bind: $SNAP/usr/lib/python3.14/tkinter
+  /usr/lib/python3.14/lib-dynload/_tkinter.cpython-314-$CRAFT_ARCH_TRIPLET_BUILD_FOR.so:
+    symlink: $SNAP/usr/lib/python3.14/lib-dynload/_tkinter.cpython-314-$CRAFT_ARCH_TRIPLET_BUILD_FOR.so
   /usr/lib/tcltk:
     symlink: $SNAP/gnome-platform/usr/lib/tcltk
   /usr/share/tcltk:
@@ -43,6 +48,8 @@ parts:
       - ffmpeg
       - libblas3
       - liblapack3
+      # core26 has no Python: ship the interpreter used by the venv.
+      - python3-minimal
       - tesseract-ocr
       - python3-tk
       - xclip
@@ -52,10 +59,22 @@ parts:
       version=$(grep -Po 'version = "\K[^"]*' pyproject.toml)
       craftctl set version=$version
 
+    override-build: |
+      craftctl default
+
+      # python3-tk stages the base pip metadata too. Retain only the metadata
+      # that matches the pip code installed in YARF's virtual environment.
+      site_packages="${CRAFT_PART_INSTALL}/lib/python3.14/site-packages"
+      pip_version=$(grep -Po '^__version__ = "\K[^"]+' \
+        "${site_packages}/pip/__init__.py")
+      find "${site_packages}" -maxdepth 1 -type d -name 'pip-*.dist-info' \
+        ! -name "pip-${pip_version}.dist-info" -print -exec rm -rf {} +
+
     build-environment:
-      # TODO: Drop this when this goes in:
-      #  https://github.com/canonical/snapcraft/pull/5514
-      - C_INCLUDE_PATH: /snap/gnome-46-2404-sdk/current/usr/include:${C_INCLUDE_PATH:-}
+      - C_INCLUDE_PATH: /snap/gnome-core26-sdk/current/usr/include:${C_INCLUDE_PATH:-}
+      # The gnome extension prepends the SDK's dist-packages to PYTHONPATH,
+      # which shadows the pip installed in YARF's virtual environment.
+      - PYTHONPATH: ""
 
     organize:
       usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/blas/*: usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
@@ -72,7 +91,7 @@ parts:
   cleanup:
     after: [ yarf ]
     plugin: nil
-    build-snaps: [core24, mesa-2404, gnome-46-2404 ]
+    build-snaps: [core26, mesa-2604, gnome-core26 ]
     override-prime: |
       set -eux
 
@@ -80,15 +99,20 @@ parts:
       # duplicate files, in particular:
       #  - All the libraries (any so-version) that we ship in content snaps
       #  - All the "usr" files that are already part of the content snaps
-      for snap in "core24" "mesa-2404" "gnome-46-2404"; do
-        cd "/snap/$snap/current" && find . -type f,l -name *.so.* -exec sh -c 'rm -fv "$CRAFT_PRIME/{}"*' \;
-        cd "/snap/$snap/current" && find usr -type f,l -exec rm -fv "$CRAFT_PRIME/{}" \;
+      for snap in "core26" "mesa-2604" "gnome-core26"; do
+        cd "/snap/$snap/current"
+        find . -type f,l -name *.so.* -exec sh -c 'rm -fv "$CRAFT_PRIME/{}"*' \;
+        if [ -d usr ]; then
+          # Keep the staged interpreter, the venv's bin/python3 links to it.
+          find usr -type f,l ! -path 'usr/bin/python3*' \
+            -exec rm -fv "$CRAFT_PRIME/{}" \;
+        fi
       done
 
       find "$CRAFT_PRIME" -type d -empty -delete
 
-      sed -i -e "s|/snap/gnome-46-2404-sdk/current||g" ${CRAFT_PRIME}/pyvenv.cfg
-      sed -i -E "s|/snap/gnome-46-2404-sdk/[0-9]+||g" ${CRAFT_PRIME}/pyvenv.cfg
+      sed -i -e "s|/snap/gnome-core26-sdk/current||g" ${CRAFT_PRIME}/pyvenv.cfg
+      sed -i -E "s|/snap/gnome-core26-sdk/[0-9]+||g" ${CRAFT_PRIME}/pyvenv.cfg
 
 apps:
   yarf:

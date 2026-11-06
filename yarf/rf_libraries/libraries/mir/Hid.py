@@ -142,6 +142,15 @@ class Hid(HidBase):
         for button in Button:
             self._virtual_pointer.button(button, False)
 
+    async def _scroll(self, steps: int) -> None:
+        """
+        Scroll the pointer wheel.
+
+        Arguments:
+            steps: number of wheel steps, positive scrolls down.
+        """
+        self._virtual_pointer.scroll(steps)
+
     async def _connect(self) -> None:
         """
         Connect to the display.

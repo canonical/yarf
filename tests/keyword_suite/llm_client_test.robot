@@ -44,3 +44,25 @@ Default Server with image
     Should Contain          ${out}                  model qwen3-vl:2b-instruct
     Should Contain          ${out}                  This is my prompt
     Should Contain          ${out}                  data:image/webp;base64
+
+Usage Collection Disabled By Default
+    Prompt Llm              This is my prompt
+    Run Keyword And Expect Error                    *usage collection is disabled*
+    ...                     Get Llm Usage
+
+Collect Usage
+    Configure Llm Client    collect_usage=True
+    Prompt Llm              This is my prompt
+    Prompt Llm              This is my second prompt
+    ${usage}=               Get Llm Usage
+
+    # The stub server reports the same usage for every request
+    Should Be Equal         ${usage}[model]         qwen3-vl:2b-instruct
+    Should Be Equal As Integers                     ${usage}[requests]      2
+    Should Be Equal As Integers                     ${usage}[prompt_tokens]                         20
+    Should Be Equal As Integers                     ${usage}[completion_tokens]                     10
+    Should Be Equal As Integers                     ${usage}[reasoning_tokens]                      4
+    Should Be Equal As Integers                     ${usage}[total_tokens]                          30
+    Should Be Equal As Numbers                      ${usage}[cost]          0.5
+    Should Be Equal         ${usage}[nano_aiu]      ${None}
+    Should Be True          ${usage}[inference_time] > 0
