@@ -1,8 +1,9 @@
 import io
 import logging
 import re
+import termios
 from typing import Generator
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from robot.api import TestSuite as RobotSuite
@@ -26,10 +27,14 @@ def no_color_unset(
     monkeypatch: pytest.MonkeyPatch,
 ) -> Generator[None, None, None]:
     """
-    Run every test with NO_COLOR unset unless it sets it explicitly.
+    Run every test with NO_COLOR unset unless it sets it explicitly, and a dark
+    terminal background that is not queried.
     """
     monkeypatch.delenv("NO_COLOR", raising=False)
+    monkeypatch.setenv("COLORFGBG", "15;0")
+    console.light_background.cache_clear()
     yield
+    console.light_background.cache_clear()
 
 
 class TestUseColor:
@@ -100,6 +105,21 @@ class TestConsoleFormatter:
         assert (
             formatter.format(record)
             == "\033[1m\033[33mwarning: \033[0mthe platform is overridden"
+        )
+
+    def test_prefix_colour_on_a_light_background(
+        self, monkeypatch: pytest.MonkeyPatch, tty: MagicMock
+    ) -> None:
+        """
+        Test that warnings use magenta instead of yellow, which is hard to read
+        on a light background.
+        """
+        monkeypatch.setenv("COLORFGBG", "0;15")
+        formatter = console.ConsoleFormatter(tty)
+        record = self._record(logging.WARNING, "the platform is overridden")
+        assert (
+            formatter.format(record)
+            == "\033[1m\033[35mwarning: \033[0mthe platform is overridden"
         )
 
     def test_timestamps_are_iso_8601(self) -> None:
@@ -197,3 +217,119 @@ class TestRobotErrorConsole:
 
         assert result.return_code == 0
         assert stderr.getvalue() == "[ ERROR ] error text\n"
+
+
+class TestLightBackground:
+    @pytest.mark.parametrize(
+        "colorfgbg,expected",
+        [
+            ("15;0", False),
+            ("0;8", False),
+            ("0;7", True),
+            ("0;default;15", True),
+        ],
+    )
+    def test_colorfgbg(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        colorfgbg: str,
+        expected: bool,
+    ) -> None:
+        """
+        Test that COLORFGBG decides the background without a terminal query.
+        """
+        monkeypatch.setenv("COLORFGBG", colorfgbg)
+        with patch.object(console, "_query_terminal_background") as query:
+            assert console.light_background() is expected
+
+        query.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "reply,expected",
+        [
+            (b"\033]11;rgb:ffff/ffff/ffff\033\\\033[?62;22c", True),
+            (b"\033]11;rgb:1e1e/1e1e/1e1e\a\033[?62;22c", False),
+            (b"\033]11;rgb:f/f/e\033\\", True),
+            (b"\033[?62;22c", False),
+            (b"", False),
+        ],
+    )
+    def test_terminal_query(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        reply: bytes,
+        expected: bool,
+    ) -> None:
+        """
+        Test that the terminal reply decides the background when COLORFGBG is
+        unset, and that an unknown background counts as dark.
+        """
+        monkeypatch.delenv("COLORFGBG")
+        with patch.object(
+            console, "_query_terminal_background", return_value=reply
+        ):
+            assert console.light_background() is expected
+
+
+class TestQueryTerminalBackground:
+    def test_no_terminal(self) -> None:
+        """
+        Test that nothing is queried without a controlling terminal.
+        """
+        with patch.object(console.os, "open", side_effect=OSError):
+            assert console._query_terminal_background() == b""
+
+    @pytest.mark.parametrize(
+        "ready,chunks,expected",
+        [
+            (
+                [True, True],
+                [b"\033]11;rgb:ffff/ffff/ffff\033\\", b"\033[?62c"],
+                b"\033]11;rgb:ffff/ffff/ffff\033\\\033[?62c",
+            ),
+            ([False], [], b""),
+        ],
+    )
+    def test_query(
+        self, ready: list[bool], chunks: list[bytes], expected: bytes
+    ) -> None:
+        """
+        Test that the reply is read until the device attributes reply, or until
+        the terminal stops answering, and the terminal is restored.
+        """
+        with (
+            patch.object(console.os, "open", return_value=3),
+            patch.object(console.os, "close") as close,
+            patch.object(console.os, "write") as write,
+            patch.object(console.os, "read", side_effect=chunks),
+            patch.object(console.termios, "tcgetattr", return_value=["a"]),
+            patch.object(console.termios, "tcsetattr") as tcsetattr,
+            patch.object(console.tty, "setcbreak"),
+            patch.object(
+                console.select,
+                "select",
+                side_effect=[([3] if r else [], [], []) for r in ready],
+            ),
+        ):
+            assert console._query_terminal_background() == expected
+
+        write.assert_called_once_with(3, console._BACKGROUND_QUERY)
+        tcsetattr.assert_called_once_with(3, console.termios.TCSAFLUSH, ["a"])
+        close.assert_called_once_with(3)
+
+    def test_terminal_error(self) -> None:
+        """
+        Test that a terminal that cannot be configured is not queried.
+        """
+        with (
+            patch.object(console.os, "open", return_value=3),
+            patch.object(console.os, "close") as close,
+            patch.object(console.os, "write") as write,
+            patch.object(
+                console.termios, "tcgetattr", side_effect=termios.error
+            ),
+        ):
+            assert console._query_terminal_background() == b""
+
+        write.assert_not_called()
+        close.assert_called_once_with(3)

@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import tempfile
 import types
@@ -11,7 +12,7 @@ from unittest.mock import ANY, MagicMock, Mock, patch
 import pytest
 from pyfakefs.fake_filesystem_unittest import FakeFilesystem
 from robot.api import TestSuite as RobotSuite
-from robot.errors import Information
+from robot.errors import DataError, Information
 
 from yarf import main
 from yarf.console import RobotErrorConsole
@@ -50,6 +51,7 @@ class TestMain:
         replaced platform and module functions from leaking into other tests.
         """
         monkeypatch.delenv("NO_COLOR", raising=False)
+        monkeypatch.delenv("YARF_LOG_LEVEL", raising=False)
         monkeypatch.setattr(Vnc, "check_connection", Vnc.check_connection)
         for name in (
             "get_outdir_path",
@@ -153,10 +155,10 @@ class TestMain:
         args, _ = parse_arguments(argv)
         assert args.platform == "Vnc"
 
-    @patch("yarf.main.RobotFramework")
+    @patch("yarf.main.RobotOptionParser")
     def test_parse_robot_arguments_info(
         self,
-        mock_rf: MagicMock,
+        mock_parser: MagicMock,
         capsys: pytest.CaptureFixture,
     ) -> None:
         """
@@ -166,12 +168,83 @@ class TestMain:
         """
 
         info = Information("helper")
-        mock_rf.return_value.parse_arguments.side_effect = info
+        mock_parser.return_value.parse_args.side_effect = info
         with pytest.raises(SystemExit) as cm:
             parse_robot_arguments(["--help"])
 
         assert cm.value.code == 0
         assert capsys.readouterr().out == "helper\n"
+
+    def test_parse_robot_arguments_help_long_options_only(
+        self, capsys: pytest.CaptureFixture
+    ) -> None:
+        """
+        Test whether the Robot help lists long options only, aligned with the
+        options that never had a short form.
+        """
+        with pytest.raises(SystemExit) as cm:
+            parse_robot_arguments(["--help"])
+
+        assert cm.value.code == 0
+        out = capsys.readouterr().out
+        assert "\n    --test name *         Select tests" in out
+        assert "\n    --help                Print usage" in out
+        assert not re.search(r"^ {1,4}-[^-]", out, re.MULTILINE)
+
+    @pytest.mark.parametrize(
+        "args,error",
+        [
+            (["-t", "A"], "option -t not recognized"),
+            (["-A", "args.txt"], "option -A not recognized"),
+            (
+                ["--dryrun", "--nodryrun"],
+                "--dryrun and --nodryrun cannot be used together",
+            ),
+            (
+                ["--nostatusrc", "--statusrc"],
+                "--statusrc and --nostatusrc cannot be used together",
+            ),
+        ],
+    )
+    def test_parse_robot_arguments_rejected(
+        self,
+        args: list[str],
+        error: str,
+        capsys: pytest.CaptureFixture,
+    ) -> None:
+        """
+        Test whether short Robot options and opposing flags are rejected.
+        """
+        with pytest.raises(SystemExit) as cm:
+            parse_robot_arguments(args)
+
+        assert cm.value.code == 2
+        assert capsys.readouterr().err.startswith(f"yarf: error: {error}\n")
+
+    def test_parse_robot_arguments_variables(self) -> None:
+        """
+        Test whether variables are accepted as NAME=VALUE and NAME:VALUE, the
+        first separator deciding the form.
+        """
+        options = parse_robot_arguments(
+            [
+                "--variable",
+                "KEY=value",
+                "--variable",
+                "URL:http://host/?a=b",
+                "--variable",
+                "PAIR=a:b",
+                "--variable",
+                "PLAIN",
+            ]
+        )
+
+        assert options["variable"] == [
+            "KEY:value",
+            "URL:http://host/?a=b",
+            "PAIR:a:b",
+            "PLAIN",
+        ]
 
     @patch("yarf.main._owasp_logger")
     def test_parse_robot_arguments_invalid(
@@ -546,6 +619,21 @@ class TestMain:
                     Path("dummy/invalid_listener.py"), lib_cls=lib_cls
                 )
 
+    def test_get_listeners_quiet(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """
+        Test whether quiet mode leaves out the stack tracer, which prints
+        keyword failure tracebacks.
+        """
+        monkeypatch.setenv("YARF_LOG_LEVEL", "ERROR")
+
+        listeners = get_listeners(None)
+
+        assert [type(listener).__name__ for listener in listeners] == [
+            "MetadataListener"
+        ]
+
     @pytest.mark.parametrize(
         "additional_listener_paths, expected",
         [
@@ -878,6 +966,79 @@ class TestMain:
         with pytest.raises(SystemExit) as cm:
             main.main([])
         assert cm.value.code == YARFExitCode.CONNECTION_ERROR
+
+    def test_main_outdir_error(self, capsys: pytest.CaptureFixture) -> None:
+        """
+        Test whether an output directory that cannot be prepared is reported in
+        one line, without a traceback.
+        """
+        SUPPORTED_PLATFORMS.clear()
+        SUPPORTED_PLATFORMS["Vnc"] = Vnc
+        SUPPORTED_PLATFORMS["Vnc"].check_connection = MagicMock()
+        main.get_outdir_path = Mock(
+            side_effect=PermissionError(13, "Permission denied", "/root/out")
+        )
+
+        with pytest.raises(SystemExit) as cm:
+            main.main(["--outdir", "/root/out", "suite-path"])
+
+        assert cm.value.code == YARFExitCode.DATA_ERROR
+        assert capsys.readouterr().err == (
+            'error: cannot prepare the output directory "/root/out": '
+            "Permission denied\n"
+        )
+
+    def test_main_suite_error(
+        self,
+        capsys: pytest.CaptureFixture,
+        fs: FakeFilesystem,  # noqa: F811
+    ) -> None:
+        """
+        Test whether a suite without a .robot file is reported in one line,
+        without a traceback.
+        """
+        fs.create_file("suite-path/asset.png")
+        SUPPORTED_PLATFORMS.clear()
+        SUPPORTED_PLATFORMS["Vnc"] = Vnc
+        SUPPORTED_PLATFORMS["Vnc"].check_connection = MagicMock()
+        main.get_outdir_path = Mock(return_value=Path("/out"))
+
+        with pytest.raises(SystemExit) as cm:
+            main.main(["suite-path"])
+
+        assert cm.value.code == YARFExitCode.DATA_ERROR
+        assert capsys.readouterr().err == (
+            'error: cannot find a .robot file in "suite-path"\n'
+        )
+
+    @patch("yarf.main.TestSuite.from_file_system")
+    def test_main_robot_data_error(
+        self,
+        mock_test_suite: MagicMock,
+        capsys: pytest.CaptureFixture,
+        fs: FakeFilesystem,  # noqa: F811
+    ) -> None:
+        """
+        Test whether Robot Framework data errors, such as invalid option
+        values, are reported in one line, without a traceback.
+        """
+        fs.create_file("suite-path/test.robot")
+        SUPPORTED_PLATFORMS.clear()
+        SUPPORTED_PLATFORMS["Vnc"] = Vnc
+        SUPPORTED_PLATFORMS["Vnc"].check_connection = MagicMock()
+        main.get_outdir_path = Mock(return_value=Path("/out"))
+        main.run_robot_suite = Mock(
+            side_effect=DataError("Invalid value for option '--loglevel'")
+        )
+
+        with pytest.raises(SystemExit) as cm:
+            main.main(["suite-path"])
+
+        assert cm.value.code == YARFExitCode.DATA_ERROR
+        assert capsys.readouterr().err == (
+            "error: cannot run Robot Framework: "
+            "Invalid value for option '--loglevel'\n"
+        )
 
     @patch("yarf.main.TestSuite.from_file_system")
     def test_main_log_video(

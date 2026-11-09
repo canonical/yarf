@@ -40,7 +40,7 @@ class TestStyles:
     @pytest.mark.parametrize(
         "no_color,expected",
         [
-            ("", ColorDepth.DEPTH_24_BIT),
+            ("", ColorDepth.DEPTH_4_BIT),
             ("1", ColorDepth.DEPTH_1_BIT),
         ],
     )

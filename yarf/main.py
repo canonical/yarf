@@ -22,7 +22,9 @@ from packaging import version
 from robot import rebot
 from robot.api import TestSuite, TestSuiteBuilder
 from robot.errors import DATA_ERROR, DataError, Information
+from robot.run import USAGE as ROBOT_USAGE
 from robot.run import RobotFramework
+from robot.utils import ArgumentParser as RobotArgumentParser
 
 from yarf import LABEL_PREFIX
 from yarf.console import (
@@ -34,7 +36,11 @@ from yarf.console import (
     configure_logging,
     notice,
 )
-from yarf.errors.yarf_errors import YARFConnectionError
+from yarf.errors.yarf_errors import (
+    YARFConnectionError,
+    YARFError,
+    YARFExitCode,
+)
 from yarf.loggers.owasp_logger import get_owasp_logger
 from yarf.output import OUTPUT_FORMATS, get_outdir_path, output_converter
 from yarf.rf_libraries import robot_in_path
@@ -49,6 +55,52 @@ YARF_VERSION = version.parse(metadata.version("yarf"))
 VERSION_TAG_RE = re.compile(
     rf"{LABEL_PREFIX}version: +(?P<operator>[<>=!]+) +(?P<version>[0-9][0-9.]*)"
 )
+# A Robot usage option line: indent, short aliases and the long option spec.
+ROBOT_SHORT_OPTIONS_RE = re.compile(
+    r"^( {1,4})((?:-\S )+)(--\S+(?: \S+)?(?: \*)?)", re.MULTILINE
+)
+
+
+class RobotOptionParser(RobotArgumentParser):
+    """
+    Robot Framework option parser that only accepts long options and rejects
+    opposing flags given together, such as --dryrun and --nodryrun.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(
+            ROBOT_SHORT_OPTIONS_RE.sub(
+                lambda m: f"{'':4}{m[3]}{'':{len(m[1] + m[2]) - 4}}",
+                ROBOT_USAGE,
+            ),
+            arg_limits=(1,),
+            validator=RobotFramework().validate,
+            env_options="ROBOT_OPTIONS",
+        )
+
+    def _process_opts(
+        self, opt_tuple: list[tuple[str, str]]
+    ) -> dict[str, Any]:
+        """
+        Reject opposing flags, then convert the parsed options.
+
+        Args:
+            opt_tuple: the option names and values, in the given order
+
+        Returns:
+            the options by long name
+
+        Raises:
+            DataError: if a flag and its negation are both given
+        """
+        names = {self._get_name(name) for name, _ in opt_tuple}
+        for flag in self._flag_opts:
+            if flag in names and f"no{flag}" in names:
+                raise DataError(
+                    f"--{flag} and --no{flag} cannot be used together"
+                )
+
+        return super()._process_opts(opt_tuple)
 
 
 Operator = Enum(
@@ -220,6 +272,8 @@ def parse_robot_arguments(args: list[str]) -> dict[str, Any]:
     """
     Parse extra arguments using the Robot CLI argument parser.
 
+    Variables are accepted as NAME=VALUE as well as Robot's NAME:VALUE.
+
     Args:
         args: list of extra arguments got via CLI
     Returns:
@@ -231,7 +285,7 @@ def parse_robot_arguments(args: list[str]) -> dict[str, Any]:
     with tempfile.NamedTemporaryFile(suffix=".robot") as stub_robot_file:
         args.append(stub_robot_file.name)
         try:
-            options, _ = RobotFramework().parse_arguments(args)
+            options, _ = RobotOptionParser().parse_args(args)
         except Information as info:
             print(info)
             raise SystemExit(0)
@@ -243,7 +297,32 @@ def parse_robot_arguments(args: list[str]) -> dict[str, Any]:
                 file=sys.stderr,
             )
             raise SystemExit(2) from None
+
+    if "variable" in options:
+        options["variable"] = [
+            to_robot_variable(variable) for variable in options["variable"]
+        ]
     return options
+
+
+def to_robot_variable(variable: str) -> str:
+    """
+    Convert a NAME=VALUE variable to Robot's NAME:VALUE form.
+
+    The first separator decides the form, so NAME:VALUE variables whose
+    value contains "=" are kept as they are.
+
+    Args:
+        variable: the variable given with --variable
+
+    Returns:
+        the variable in NAME:VALUE form
+    """
+    name, equals, _ = variable.partition("=")
+    if equals and ":" not in name:
+        return variable.replace("=", ":", 1)
+
+    return variable
 
 
 def parse_arguments(
@@ -402,16 +481,16 @@ def _import_listener_from_path(path: Path, **kwargs) -> object:
 def get_listeners(
     additional_listener_paths: list[str] | None, **kwargs
 ) -> list[object]:
-    listeners = [
-        MetadataListener(),
-        RobotStackTracer(),
-    ]
+    listeners: list[object] = [MetadataListener()]
     _owasp_logger.sys_monitor_enabled(
         getpass.getuser(), "listener:MetadataListener"
     )
-    _owasp_logger.sys_monitor_enabled(
-        getpass.getuser(), "listener:RobotStackTracer"
-    )
+    # Quiet mode must not print keyword failure tracebacks.
+    if os.environ.get("YARF_LOG_LEVEL") != QUIET:
+        listeners.append(RobotStackTracer())
+        _owasp_logger.sys_monitor_enabled(
+            getpass.getuser(), "listener:RobotStackTracer"
+        )
 
     if additional_listener_paths is None:
         return listeners
@@ -580,9 +659,6 @@ def main(argv: Optional[list[str]] = None) -> None:
     Args:
         argv: list of arguments received via command line, defaults
             to None
-
-    Raises:
-        FileNotFoundError: If the start_console.robot file is not found
     """
     _owasp_logger.sys_startup(getpass.getuser())
 
@@ -619,9 +695,54 @@ def main(argv: Optional[list[str]] = None) -> None:
         "restricted",
         f"platform:{args.platform}",
     )
-    outdir = get_outdir_path(args.outdir)
+    try:
+        outdir = get_outdir_path(args.outdir)
+    except OSError as e:
+        _owasp_logger.sys_crash(f"cannot prepare the output directory: {e}")
+        _logger.error(
+            'cannot prepare the output directory "%s": %s',
+            e.filename,
+            e.strerror,
+        )
+        sys.exit(YARFExitCode.DATA_ERROR)
 
     _owasp_logger.session_created(getpass.getuser())
+    try:
+        ec = run_suite_or_console(args, lib_cls, outdir, cli_options)
+    except YARFError as e:
+        _logger.error("%s", e)
+        sys.exit(e.exit_code)
+    except DataError as e:
+        _owasp_logger.sys_crash(f"cannot run Robot Framework: {e}")
+        _logger.error("cannot run Robot Framework: %s", e)
+        sys.exit(YARFExitCode.DATA_ERROR)
+
+    _owasp_logger.sys_shutdown(getpass.getuser())
+    sys.exit(ec)
+
+
+def run_suite_or_console(
+    args: Namespace,
+    lib_cls: type[PlatformBase],
+    outdir: Path,
+    cli_options: dict[str, Any],
+) -> int:
+    """
+    Run the given suite, or the interactive console without a suite.
+
+    Args:
+        args: the parsed YARF arguments
+        lib_cls: The platform library class that the user has chosen
+            via the option `--platform`
+        outdir: Path to the output directory
+        cli_options: extra options given by CLI
+
+    Returns:
+        The exit code of the suite, 0 for the interactive console
+
+    Raises:
+        FileNotFoundError: If the start_console.robot file is not found
+    """
     ec = 0
     if args.suite:
         variables: Sequence[str] = []
@@ -672,8 +793,7 @@ def main(argv: Optional[list[str]] = None) -> None:
             getpass.getuser(), "interactive_console_completed"
         )
 
-    _owasp_logger.sys_shutdown(getpass.getuser())
-    sys.exit(ec)
+    return ec
 
 
 if __name__ == "__main__":

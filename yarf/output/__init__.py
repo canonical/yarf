@@ -46,6 +46,7 @@ def get_outdir_path(outdir: Optional[str] = None) -> Path:
             / "yarf-outdir"
         )
 
+    yarf_outdir.mkdir(parents=True, exist_ok=True)
     # Delete selected files if exists
     for file in [
         "output.xml",

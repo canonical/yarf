@@ -27,8 +27,8 @@ MODIFICATIONS:
   standalone shell and Robot Framework 6 compatibility code were removed
 - Variables assigned inside FOR, IF, WHILE and TRY blocks are reported
 - The `style` command reports unknown styles instead of failing
-- The prompt and the history viewer drop colour when NO_COLOR is set, instead
-  of always requesting 24-bit colour
+- The prompt and the history viewer use the 16 ANSI colours instead of
+  24-bit colour, and drop colour when NO_COLOR is set
 - The prompt-toolkit key bindings moved to keybindings.py, and the command
   loop was merged into ReplCmd in debugcmd.py
 - Added type hints and Google style docstrings
