@@ -24,7 +24,10 @@ from robot.libraries.BuiltIn import BuiltIn
 from yarf import LABEL_PREFIX
 from yarf.lib.images.utils import to_RGB
 from yarf.rf_libraries.libraries.image.cursor_detector import CursorDetector
-from yarf.rf_libraries.libraries.image.segmentation import SegmentationTool
+from yarf.rf_libraries.libraries.image.segmentation import (
+    MIN_OUTLIER_REGIONS,
+    SegmentationTool,
+)
 from yarf.rf_libraries.libraries.image.utils import (
     draw_point_on_image,
     log_image,
@@ -487,6 +490,11 @@ class VideoInputBase(ABC):
         text menus where a pointer is unavailable and the current selection
         has to be read from the screen.
 
+        At least three text lines must be visible: the highlight is found by
+        comparing each line against the common background of all of them, so
+        with only two lines neither can be told apart. Restrict ``region`` to
+        an area with three or more lines, for example including a menu title.
+
         Args:
             region: The region to restrict the search to.
             image: The image to analyze; a screenshot is grabbed when not
@@ -497,7 +505,8 @@ class VideoInputBase(ABC):
 
         Returns:
             The highlighted line as a dict with "text", "region" and
-            "confidence", or None if no highlight is detected.
+            "confidence", or None if fewer than three lines are read or no
+            highlight is detected.
         """
         if isinstance(region, dict):
             region = Region(**region)
@@ -508,7 +517,7 @@ class VideoInputBase(ABC):
             image = to_image(image)
 
         lines = read_lines(self.ocr, image, region=region)
-        if len(lines) < 2:
+        if len(lines) < MIN_OUTLIER_REGIONS:
             return None
 
         # Step 1: log every detected line and its box.
@@ -577,14 +586,17 @@ class VideoInputBase(ABC):
         region: Optional[Union[Region, dict]] = None,
         image: Optional[Union[Image.Image, str, Path]] = None,
         color_tolerance: int = 20,
+        partial: bool = False,
     ) -> bool:
         """
         Check whether the currently highlighted menu item matches text.
 
-        Uses `Get Highlighted Text` to read the selected item and checks
-        whether ``text`` appears within it, ignoring case, so the expected
-        label does not need to reproduce the full line exactly. Useful for
-        asserting or waiting on the selection while navigating a menu.
+        Uses `Get Highlighted Text` to read the selected item and compares it
+        with ``text``, ignoring case and surrounding whitespace. By default
+        the whole item must match, so "USB1" does not match "USB10". Set
+        ``partial`` to also accept ``text`` appearing anywhere within the
+        item. Useful for asserting or waiting on the selection while
+        navigating a menu.
 
         Args:
             text: The expected text of the highlighted item.
@@ -594,17 +606,27 @@ class VideoInputBase(ABC):
             color_tolerance: Background color tolerance in percent. A line
                 whose background differs beyond this is considered
                 highlighted.
+            partial: Also match when ``text`` is only part of the highlighted
+                item, instead of requiring the whole item to match.
 
         Returns:
             True if the highlighted item matches ``text``, False otherwise.
+
+        Raises:
+            ValueError: If ``text`` is empty.
         """
+        expected = text.strip().casefold()
+        if not expected:
+            raise ValueError("Empty search string")
+
         highlighted = await self.get_highlighted_text(
             region=region, image=image, color_tolerance=color_tolerance
         )
         if highlighted is None:
             return False
 
-        return text.strip().lower() in highlighted["text"].strip().lower()
+        actual = highlighted["text"].strip().casefold()
+        return expected in actual if partial else expected == actual
 
     @keyword
     async def match_text(

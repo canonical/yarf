@@ -450,17 +450,30 @@ Press ${button} Until ${target} Is Highlighted
     ...    screen to update. Default 0.3.
     ...    - ${color_tolerance} (optional): Background color tolerance in
     ...    percent for the highlight detection. Default 20.
+    ...    - ${partial} (optional): Also match when ${target} is only part of the
+    ...    highlighted item, instead of requiring the whole item to match.
+    ...    Default False.
+    ...
+    ...    The highlight is checked after every key press at log level WARN,
+    ...    so the log only embeds the images of the final check.
     [Arguments]
     ...                     ${max_steps}=50
     ...                     ${settle}=0.3
     ...                     ${color_tolerance}=20
-    ${reached}=             Is Highlighted Text     ${target}               color_tolerance=${color_tolerance}
-    FOR    ${index}    IN RANGE    ${max_steps}
-        IF    ${reached}    BREAK
-        Keys Combo              ${button}
-        Sleep                   ${settle}
-        ${reached}=             Is Highlighted Text     ${target}               color_tolerance=${color_tolerance}
+    ...                     ${partial}=${False}
+    ${previous_level}=      Set Log Level           WARN
+    TRY
+        ${reached}=             Is Highlighted Text     ${target}               color_tolerance=${color_tolerance}              partial=${partial}
+        FOR    ${index}    IN RANGE    ${max_steps}
+            IF    ${reached}    BREAK
+            Keys Combo              ${button}
+            Sleep                   ${settle}
+            ${reached}=             Is Highlighted Text     ${target}               color_tolerance=${color_tolerance}              partial=${partial}
+        END
+    FINALLY
+        Set Log Level           ${previous_level}
     END
+    ${reached}=             Is Highlighted Text     ${target}               color_tolerance=${color_tolerance}              partial=${partial}
     Should Be True          ${reached}
     ...                     Could not navigate the highlight to '${target}' within ${max_steps} presses.
 
@@ -486,16 +499,29 @@ Press Keys Until ${target} Is Highlighted
     ...    screen to update. Default 0.3.
     ...    - ${color_tolerance} (optional): Background color tolerance in
     ...    percent for the highlight detection. Default 20.
+    ...    - ${partial} (optional): Also match when ${target} is only part of the
+    ...    highlighted item, instead of requiring the whole item to match.
+    ...    Default False.
+    ...
+    ...    The highlight is checked after every key press at log level WARN,
+    ...    so the log only embeds the images of the final check.
     [Arguments]
     ...                     ${keys}
     ...                     ${settle}=0.3
     ...                     ${color_tolerance}=20
-    ${reached}=             Is Highlighted Text     ${target}               color_tolerance=${color_tolerance}
-    FOR    ${key}    IN    @{keys}
-        IF    ${reached}    BREAK
-        Keys Combo              ${key}
-        Sleep                   ${settle}
-        ${reached}=             Is Highlighted Text     ${target}               color_tolerance=${color_tolerance}
+    ...                     ${partial}=${False}
+    ${previous_level}=      Set Log Level           WARN
+    TRY
+        ${reached}=             Is Highlighted Text     ${target}               color_tolerance=${color_tolerance}              partial=${partial}
+        FOR    ${key}    IN    @{keys}
+            IF    ${reached}    BREAK
+            Keys Combo              ${key}
+            Sleep                   ${settle}
+            ${reached}=             Is Highlighted Text     ${target}               color_tolerance=${color_tolerance}              partial=${partial}
+        END
+    FINALLY
+        Set Log Level           ${previous_level}
     END
+    ${reached}=             Is Highlighted Text     ${target}               color_tolerance=${color_tolerance}              partial=${partial}
     Should Be True          ${reached}
     ...                     Could not navigate the highlight to '${target}' with the given keys.

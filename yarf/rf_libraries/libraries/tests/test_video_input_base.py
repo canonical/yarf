@@ -909,6 +909,7 @@ class TestVideoInputBase:
                 "region": Region(0, 2, 10, 4),
                 "confidence": 90,
             },
+            {"text": "Third", "region": Region(0, 4, 10, 6), "confidence": 90},
         ]
         stub_videoinput.segmentation_tool.find_outlier_region_index = Mock(
             return_value=1
@@ -938,6 +939,7 @@ class TestVideoInputBase:
         lines = [
             {"text": "A", "region": Region(0, 0, 10, 2), "confidence": 90},
             {"text": "B", "region": Region(0, 2, 10, 4), "confidence": 90},
+            {"text": "C", "region": Region(0, 4, 10, 6), "confidence": 90},
         ]
         stub_videoinput.segmentation_tool.find_outlier_region_index = Mock(
             return_value=0
@@ -970,6 +972,7 @@ class TestVideoInputBase:
         lines = [
             {"text": "A", "region": Region(0, 0, 10, 2), "confidence": 90},
             {"text": "B", "region": Region(0, 2, 10, 4), "confidence": 90},
+            {"text": "C", "region": Region(0, 4, 10, 6), "confidence": 90},
         ]
         stub_videoinput.segmentation_tool.find_outlier_region_index = Mock(
             return_value=1
@@ -990,38 +993,59 @@ class TestVideoInputBase:
         mock_to_image.assert_called_once_with("menu.png")
 
     @pytest.mark.parametrize(
-        "highlighted, expected",
+        "text, highlighted, partial, expected",
         [
-            ({"text": "USB1-1 (Samsung Type-C)"}, True),
-            ({"text": "HDD1-Ubuntu"}, False),
-            (None, False),
+            ("usb1-1 ", {"text": " USB1-1"}, False, True),
+            ("usb1", {"text": "USB10"}, False, False),
+            ("usb1-1", {"text": "USB1-1 (Samsung Type-C)"}, False, False),
+            ("usb1-1", {"text": "USB1-1 (Samsung Type-C)"}, True, True),
+            ("usb1-1", {"text": "HDD1-Ubuntu"}, True, False),
+            ("usb1-1", None, False, False),
         ],
     )
     @pytest.mark.asyncio
     async def test_is_highlighted_text(
-        self, stub_videoinput, highlighted, expected
+        self, stub_videoinput, text, highlighted, partial, expected
     ):
         """
-        The keyword reports whether the highlighted item matches the text.
+        The keyword reports whether the highlighted item matches the text,
+        requiring a whole-item match unless partial matching is enabled.
         """
         stub_videoinput.get_highlighted_text = AsyncMock(
             return_value=highlighted
         )
-        result = await stub_videoinput.is_highlighted_text("usb1-1")
+        result = await stub_videoinput.is_highlighted_text(
+            text, partial=partial
+        )
         assert result is expected
+
+    @pytest.mark.parametrize("text", ["", "   "])
+    @pytest.mark.asyncio
+    async def test_is_highlighted_text_empty(self, stub_videoinput, text):
+        """
+        An empty expected text is rejected instead of matching anything.
+        """
+        stub_videoinput.get_highlighted_text = AsyncMock()
+        with pytest.raises(ValueError, match="Empty search string"):
+            await stub_videoinput.is_highlighted_text(text)
+        stub_videoinput.get_highlighted_text.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_get_highlighted_text_too_few_lines(self, stub_videoinput):
         """
-        None is returned when fewer than two lines are detected.
+        None is returned when fewer than three lines are detected, as two lines
+        cannot be told apart.
         """
+        stub_videoinput.segmentation_tool.find_outlier_region_index = Mock()
         with patch(
             "yarf.rf_libraries.libraries.video_input_base.read_lines",
             return_value=[
-                {"text": "Only", "region": Region(0, 0, 1, 1), "confidence": 9}
+                {"text": "Yes", "region": Region(0, 0, 1, 1), "confidence": 9},
+                {"text": "No", "region": Region(0, 1, 1, 2), "confidence": 9},
             ],
         ):
             assert await stub_videoinput.get_highlighted_text() is None
+        stub_videoinput.segmentation_tool.find_outlier_region_index.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_get_highlighted_text_no_outlier(self, stub_videoinput):
@@ -1032,6 +1056,7 @@ class TestVideoInputBase:
         lines = [
             {"text": "A", "region": Region(0, 0, 10, 2), "confidence": 9},
             {"text": "B", "region": Region(0, 2, 10, 4), "confidence": 9},
+            {"text": "C", "region": Region(0, 4, 10, 6), "confidence": 9},
         ]
         stub_videoinput.segmentation_tool.find_outlier_region_index = Mock(
             return_value=None

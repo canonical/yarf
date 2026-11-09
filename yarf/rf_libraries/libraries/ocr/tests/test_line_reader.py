@@ -1,3 +1,4 @@
+from contextlib import suppress
 from dataclasses import dataclass
 from unittest.mock import MagicMock, Mock, patch
 
@@ -23,19 +24,25 @@ class MockRapidOCROutput:
 
 @pytest.fixture(autouse=True)
 def mock_to_image():
-    with patch("yarf.rf_libraries.libraries.ocr.line_reader.to_image") as p:
+    with (
+        patch("yarf.rf_libraries.libraries.ocr.line_reader.to_image") as p,
+        patch(
+            "yarf.rf_libraries.libraries.ocr.rapidocr.to_image",
+            new=p,
+        ),
+    ):
         p.return_value = MagicMock()
         yield p
 
 
 @pytest.fixture
 def rapid_ocr():
-    if hasattr(RapidOCRReader, "instance"):
+    with suppress(AttributeError):
         del RapidOCRReader.instance
     with patch("yarf.rf_libraries.libraries.ocr.rapidocr.RapidOCR"):
         reader = RapidOCRReader()
     yield reader
-    if hasattr(RapidOCRReader, "instance"):
+    with suppress(AttributeError):
         del RapidOCRReader.instance
 
 
@@ -156,5 +163,18 @@ class TestReadLinesTesseract:
             "yarf.rf_libraries.libraries.ocr.line_reader.pytesseract"
         ) as pt:
             pt.image_to_data.side_effect = TesseractNotFoundError()
-            with pytest.raises(EnvironmentError):
+            with pytest.raises(OSError):
                 line_reader.read_lines(Mock(), None)
+
+    def test_read_lines_language_and_configuration(self):
+        with patch(
+            "yarf.rf_libraries.libraries.ocr.line_reader.pytesseract"
+        ) as pt:
+            pt.image_to_data.return_value = _tesseract_data()
+            line_reader.read_lines(
+                Mock(), None, language="deu", configuration="--psm 6"
+            )
+
+        _, kwargs = pt.image_to_data.call_args
+        assert kwargs["lang"] == "deu"
+        assert kwargs["config"] == "--psm 6"

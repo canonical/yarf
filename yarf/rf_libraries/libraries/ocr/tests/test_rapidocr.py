@@ -69,11 +69,14 @@ class TestRapidOCR:
         assert result == ""
 
     def test_find(self, mock_reader):
-        mock_reader.reader.return_value = MockRapidOCROutput(
-            boxes=np.array([[[0, 0], [0, 0], [0, 0], [0, 0]]]),
-            txts=("Hello",),
-            scores=(90,),
-        )
+        ocr_results = [
+            OCRResult(
+                position=[[0, 0], [1, 0], [1, 1], [0, 1]],
+                text="Hello",
+                confidence=90,
+            )
+        ]
+        mock_reader.find_all.return_value = ocr_results
         mock_reader.get_matches.return_value = [
             {
                 "text": "Hello",
@@ -92,13 +95,16 @@ class TestRapidOCR:
                 "similarity": 100,
             }
         ]
+        assert mock_reader.get_matches.call_args.args[0] is ocr_results
 
     def test_find_threshold_override(self, mock_reader):
-        mock_reader.reader.return_value = MockRapidOCROutput(
-            boxes=np.array([[[0, 0], [0, 0], [0, 0], [0, 0]]]),
-            txts=("Hello",),
-            scores=(90,),
-        )
+        mock_reader.find_all.return_value = [
+            OCRResult(
+                position=[[0, 0], [1, 0], [1, 1], [0, 1]],
+                text="Hello",
+                confidence=90,
+            )
+        ]
         mock_reader.get_matches.return_value = []
 
         result = RapidOCRReader.find(
@@ -122,40 +128,55 @@ class TestRapidOCR:
             RapidOCRReader.find(mock_reader, None, "")
 
         assert str(e.value) == "Empty search string"
+        mock_reader.find_all.assert_not_called()
 
     def test_find_no_results(self, mock_reader):
-        mock_reader.reader.return_value = MockRapidOCROutput()
+        mock_reader.find_all.return_value = []
         result = RapidOCRReader.find(mock_reader, None, "Hello")
 
         assert result == []
+        mock_reader.get_matches.assert_not_called()
 
-    def test_find_in_region(self, mock_to_image, mock_reader):
+    def test_find_in_region(self, mock_reader):
+        mock_reader.find_all.return_value = []
+        region = Region(0, 0, 1, 1)
+        RapidOCRReader.find(mock_reader, None, "Hello", region=region)
+
+        mock_reader.find_all.assert_called_once_with(None, region=region)
+
+    def test_find_all(self, mock_reader):
+        mock_reader.reader.return_value = MockRapidOCROutput(
+            boxes=np.array([[[0, 0], [5, 0], [5, 2], [0, 2]]]),
+            txts=("Hello",),
+            scores=(0.9,),
+        )
+        result = RapidOCRReader.find_all(mock_reader, None)
+
+        assert len(result) == 1
+        assert result[0].text == "Hello"
+        assert result[0].confidence == pytest.approx(90.0)
+        assert result[0].position.to_region() == Region(0, 0, 5, 2)
+
+    def test_find_all_no_results(self, mock_reader):
+        mock_reader.reader.return_value = MockRapidOCROutput()
+        assert RapidOCRReader.find_all(mock_reader, None) == []
+
+    def test_find_all_in_region(self, mock_to_image, mock_reader):
         mock_to_image.return_value = MagicMock()
         mock_reader.reader.return_value = MockRapidOCROutput(
-            boxes=np.array([[[0, 0], [1, 0], [1, 1], [0, 1]]]),
-            txts=("Hello World",),
-            scores=(90,),
+            boxes=np.array([[[0, 0], [5, 0], [5, 2], [0, 2]]]),
+            txts=("Hello",),
+            scores=(0.9,),
         )
-        mock_reader.get_matches.return_value = [
-            {
-                "text": "Hello",
-                "region": Region(0, 0, 1, 1),
-                "confidence": 90,
-                "similarity": 100,
-            }
-        ]
-        result = RapidOCRReader.find(
-            mock_reader, None, "Hello", region=Region(0, 0, 1, 1)
+        result = RapidOCRReader.find_all(
+            mock_reader, None, region=Region(10, 20, 30, 40)
         )
 
-        assert result == [
-            {
-                "text": "Hello",
-                "region": Region(0, 0, 1, 1),
-                "confidence": 90,
-                "similarity": 100,
-            }
-        ]
+        mock_to_image.return_value.crop.assert_called_once_with(
+            (10, 20, 30, 40)
+        )
+        # Positions are moved back to the coordinates of the full image.
+        assert result[0].position.to_region() == Region(10, 20, 15, 22)
 
     def test_get_matches(self, mock_reader):
         items = [

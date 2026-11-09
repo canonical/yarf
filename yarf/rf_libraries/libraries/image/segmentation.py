@@ -13,6 +13,14 @@ from yarf.rf_libraries.libraries.image.utils import log_image
 from yarf.vendor.RPA.core.geometry import Region
 from yarf.vendor.RPA.Images import RGB
 
+# Below this chroma (saturation * value / 255, i.e. max(RGB) - min(RGB)) a
+# color is close to grey or black and its hue is mostly noise, so hue is not
+# compared.
+_MIN_HUE_CHROMA = 20.0
+
+# Minimum number of regions needed to tell a highlighted one from the rest.
+MIN_OUTLIER_REGIONS = 3
+
 
 class SegmentationTool:
     """
@@ -195,7 +203,8 @@ class SegmentationTool:
         Unlike `is_hsv_color_similar`, this accounts for OpenCV's 0-179
         circular hue range (including the 0/179 wraparound) and only compares
         hue and value, which is what distinguishes a highlighted background
-        from the common one.
+        from the common one. Hue is ignored when either color is near grey or
+        black (see `_hue_distance`).
 
         Args:
             color1: First color in HSV (h, s, v).
@@ -205,12 +214,35 @@ class SegmentationTool:
         Returns:
             True if the colors are within tolerance, False otherwise.
         """
-        hue_diff = abs(color1[0] - color2[0])
-        hue_diff = min(hue_diff, 180.0 - hue_diff)
+        hue_diff = self._hue_distance(color1, color2)
         value_diff = abs(color1[2] - color2[2])
         hue_threshold = 180.0 * tolerance / 100.0
         value_threshold = 255.0 * tolerance / 100.0
         return hue_diff <= hue_threshold and value_diff <= value_threshold
+
+    @staticmethod
+    def _hue_distance(color1: tuple, color2: tuple) -> float:
+        """
+        Compute the circular hue distance between two HSV colors.
+
+        OpenCV hue is in 0-179, so the distance wraps around at 180. When
+        either color has a low chroma (near grey or black) its hue is mostly
+        noise, so the distance is reported as 0.
+
+        Args:
+            color1: First color in HSV (h, s, v).
+            color2: Second color in HSV (h, s, v).
+
+        Returns:
+            The hue distance in 0-90, or 0 if hue is not meaningful.
+        """
+        chroma1 = color1[1] * color1[2] / 255.0
+        chroma2 = color2[1] * color2[2] / 255.0
+        if min(chroma1, chroma2) < _MIN_HUE_CHROMA:
+            return 0.0
+
+        hue_diff = abs(color1[0] - color2[0])
+        return min(hue_diff, 180.0 - hue_diff)
 
     def find_outlier_region_index(
         self,
@@ -227,6 +259,10 @@ class SegmentationTool:
         index of the one that deviates from the common background, without
         needing to know the highlight color in advance.
 
+        At least `MIN_OUTLIER_REGIONS` regions are required: the common
+        background is the median of all of them, so with only two regions it
+        falls halfway between both and neither can be told apart.
+
         Args:
             image: The image the regions were detected in (PIL Image, RGB).
             regions: The item regions to compare.
@@ -234,10 +270,10 @@ class SegmentationTool:
                 which a region is considered highlighted.
 
         Returns:
-            The index of the highlighted region, or None when fewer than two
-            regions are given or none stands out.
+            The index of the highlighted region, or None when fewer than
+            `MIN_OUTLIER_REGIONS` regions are given or none stands out.
         """
-        if len(regions) < 2:
+        if len(regions) < MIN_OUTLIER_REGIONS:
             return None
 
         backgrounds = [
@@ -254,9 +290,9 @@ class SegmentationTool:
         for index, background in enumerate(backgrounds):
             if self._is_background_similar(consensus, background, tolerance):
                 continue
-            hue_diff = abs(background[0] - consensus[0])
-            hue_diff = min(hue_diff, 180.0 - hue_diff)
-            deviation = hue_diff + abs(background[2] - consensus[2])
+            deviation = self._hue_distance(background, consensus) + abs(
+                background[2] - consensus[2]
+            )
             if deviation > best_deviation:
                 best_deviation = deviation
                 best_index = index
@@ -348,13 +384,28 @@ class SegmentationTool:
         Returns:
             A tuple of consensus (h, s, v) values.
         """
-        colors_arr = np.array(colors, dtype=np.float64)
-        saturation = float(np.median(colors_arr[:, 1]))
-        value = float(np.median(colors_arr[:, 2]))
+        return self._circular_median_hsv(np.array(colors, dtype=np.float64))
 
-        # Hue is circular (0..179): take the median of the angle so the
-        # 0/179 wraparound cannot distort the consensus.
-        hue_rad = colors_arr[:, 0] * (2.0 * np.pi / 180.0)
+    @staticmethod
+    def _circular_median_hsv(hsv: np.ndarray) -> tuple:
+        """
+        Compute the median HSV color of an (N, 3) array of HSV values.
+
+        Uses the median for saturation and value and a circular median for
+        hue: hue is circular (0..179 in OpenCV), so the median is taken on the
+        angle and the 0/179 wraparound cannot distort the result.
+
+        Args:
+            hsv: Array of shape (N, 3) holding (h, s, v) rows.
+
+        Returns:
+            A tuple of median (h, s, v) values.
+        """
+        hsv = hsv.astype(np.float64)
+        saturation = float(np.median(hsv[:, 1]))
+        value = float(np.median(hsv[:, 2]))
+
+        hue_rad = hsv[:, 0] * (2.0 * np.pi / 180.0)
         median_sin = np.median(np.sin(hue_rad))
         median_cos = np.median(np.cos(hue_rad))
         hue = (np.arctan2(median_sin, median_cos) % (2.0 * np.pi)) * (
@@ -386,19 +437,7 @@ class SegmentationTool:
         if pixels.size == 0:
             return cv2.mean(hsv_image, mask=mask)[:3]
 
-        s = float(np.median(pixels[:, 1]))
-        v = float(np.median(pixels[:, 2]))
-
-        # Hue is circular (0..179 in OpenCV): take the median of the angle
-        # so the 0/179 wraparound cannot distort the result.
-        hue_rad = pixels[:, 0].astype(np.float64) * (2.0 * np.pi / 180.0)
-        median_sin = np.median(np.sin(hue_rad))
-        median_cos = np.median(np.cos(hue_rad))
-        h = (np.arctan2(median_sin, median_cos) % (2.0 * np.pi)) * (
-            180.0 / (2.0 * np.pi)
-        )
-
-        return (h, s, v)
+        return self._circular_median_hsv(pixels)
 
     def postprocess_mask(
         self,

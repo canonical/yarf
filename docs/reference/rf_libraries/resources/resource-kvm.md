@@ -267,6 +267,11 @@ Press LEFT Button
 <li>${color_tolerance} (optional): Background color tolerance in</li>
 </ul>
 <p>percent for the highlight detection. Default 20.</p>
+<ul>
+<li>${partial} (optional): Also match when ${target} is only part of the</li>
+</ul>
+<p>highlighted item, instead of requiring the whole item to match. Default False.</p>
+<p>The highlight is checked after every key press at log level WARN, so the log only embeds the images of the final check.</p>
 
 #### Positional and named arguments
 
@@ -275,6 +280,7 @@ Press LEFT Button
 | max_steps       |      | 50            | POSITIONAL_OR_NAMED | No       |               |
 | settle          |      | 0.3           | POSITIONAL_OR_NAMED | No       |               |
 | color_tolerance |      | 20            | POSITIONAL_OR_NAMED | No       |               |
+| partial         |      | \$\{False}    | POSITIONAL_OR_NAMED | No       |               |
 
 <hr style="border:1px solid grey">
 
@@ -364,6 +370,11 @@ Press Key And Match    Down    ${CURDIR}/menu.png    tentatives=5
 <li>${color_tolerance} (optional): Background color tolerance in</li>
 </ul>
 <p>percent for the highlight detection. Default 20.</p>
+<ul>
+<li>${partial} (optional): Also match when ${target} is only part of the</li>
+</ul>
+<p>highlighted item, instead of requiring the whole item to match. Default False.</p>
+<p>The highlight is checked after every key press at log level WARN, so the log only embeds the images of the final check.</p>
 
 #### Positional and named arguments
 
@@ -372,6 +383,7 @@ Press Key And Match    Down    ${CURDIR}/menu.png    tentatives=5
 | keys            |      |               | POSITIONAL_OR_NAMED | Yes      |               |
 | settle          |      | 0.3           | POSITIONAL_OR_NAMED | No       |               |
 | color_tolerance |      | 20            | POSITIONAL_OR_NAMED | No       |               |
+| partial         |      | \$\{False}    | POSITIONAL_OR_NAMED | No       |               |
 
 <hr style="border:1px solid grey">
 

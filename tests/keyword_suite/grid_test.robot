@@ -55,8 +55,8 @@ Press Keys Until Target Is Highlighted Walks A Column
 
 Press Keys Until Target Is Highlighted Walks A Diagonal
     [Documentation]    Press Keys Until ${target} Is Highlighted presses the
-    ...    given sequence of keys, so a repeated Down + Right walks the
-    ...    highlight along the grid diagonal to the target.
+    ...    given sequence of keys, so a repeated Left + Up walks the
+    ...    highlight up and to the left along the grid diagonal to the target.
     [Tags]                  yarf:certification_status: blocker
     Press Keys Until ivory Is Highlighted           ${{ ['Left', 'Up'] * 4 }}                       color_tolerance=${COLOR_TOLERANCE}
     ${on_target}=           Is Highlighted Text     ivory                   color_tolerance=${COLOR_TOLERANCE}

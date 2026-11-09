@@ -93,9 +93,13 @@ class TestSegmentation:
         assert hue == pytest.approx(0.0, abs=1.0)
 
     def test_find_outlier_region_index_too_few(self):
+        # With two regions the consensus is their midpoint, so neither can be
+        # told apart and no outlier is reported.
         seg = SegmentationTool()
-        regions = [to_region("0,0,1,1")]
+        seg.get_background_color = Mock()
+        regions = [to_region("0,0,1,1"), to_region("0,1,1,2")]
         assert seg.find_outlier_region_index(Mock(), regions) is None
+        seg.get_background_color.assert_not_called()
 
     @patch("yarf.rf_libraries.libraries.image.segmentation.log_image")
     def test_find_outlier_region_index_found(self, mock_log_image):
@@ -122,15 +126,85 @@ class TestSegmentation:
         seg = SegmentationTool()
         seg.crop_image_with_padding = Mock(side_effect=lambda img, r, pad: r)
         seg.get_background_color = Mock(return_value=(0.0, 0.0, 100.0))
-        regions = [to_region("0,0,1,1"), to_region("0,1,1,2")]
+        regions = [
+            to_region("0,0,1,1"),
+            to_region("0,1,1,2"),
+            to_region("0,2,1,3"),
+        ]
         assert seg.find_outlier_region_index(Mock(), regions) is None
         mock_log_image.assert_called_once()
+
+    @patch("yarf.rf_libraries.libraries.image.segmentation.log_image")
+    def test_find_outlier_region_index_ignores_hue_on_dark(
+        self, mock_log_image
+    ):
+        # Near-black backgrounds have noisy hue (and saturation); an
+        # unhighlighted row whose hue drifts must not win over the real
+        # highlight, which stands out in value.
+        seg = SegmentationTool()
+        seg.crop_image_with_padding = Mock(side_effect=lambda img, r, pad: r)
+        seg.get_background_color = Mock(
+            side_effect=[
+                (65.0, 255.0, 9.0),
+                (150.0, 255.0, 10.0),
+                (63.0, 175.0, 50.0),
+                (66.0, 255.0, 8.0),
+            ]
+        )
+        regions = [to_region(f"0,{i},1,{i + 1}") for i in range(4)]
+        index = seg.find_outlier_region_index(Mock(), regions, tolerance=10)
+        assert index == 2
+
+    @patch("yarf.rf_libraries.libraries.image.segmentation.log_image")
+    def test_find_outlier_region_index_no_false_highlight_on_dark(
+        self, mock_log_image
+    ):
+        # Without a highlight, hue noise on a dark background is not reported
+        # as an outlier.
+        seg = SegmentationTool()
+        seg.crop_image_with_padding = Mock(side_effect=lambda img, r, pad: r)
+        seg.get_background_color = Mock(
+            side_effect=[
+                (65.0, 255.0, 9.0),
+                (150.0, 255.0, 10.0),
+                (66.0, 255.0, 8.0),
+            ]
+        )
+        regions = [to_region(f"0,{i},1,{i + 1}") for i in range(3)]
+        assert seg.find_outlier_region_index(Mock(), regions) is None
+
+    def test_hue_distance(self):
+        # Wraps around the 0-179 hue circle.
+        assert SegmentationTool._hue_distance(
+            (1.0, 200.0, 200.0), (179.0, 200.0, 200.0)
+        ) == pytest.approx(2.0)
+        assert SegmentationTool._hue_distance(
+            (0.0, 200.0, 200.0), (90.0, 200.0, 200.0)
+        ) == pytest.approx(90.0)
+        # Hue is ignored when either color is grey (low saturation)...
+        assert (
+            SegmentationTool._hue_distance(
+                (0.0, 5.0, 200.0), (90.0, 200.0, 200.0)
+            )
+            == 0.0
+        )
+        # ...or near black, even if saturation is high.
+        assert (
+            SegmentationTool._hue_distance(
+                (0.0, 255.0, 9.0), (90.0, 200.0, 200.0)
+            )
+            == 0.0
+        )
 
     def test_is_background_similar(self):
         seg = SegmentationTool()
         # Hues 1 and 179 are only 2 apart on the 0-179 circle, so similar.
         assert seg._is_background_similar(
-            (1.0, 0.0, 100.0), (179.0, 0.0, 100.0), 20
+            (1.0, 200.0, 100.0), (179.0, 200.0, 100.0), 20
+        )
+        # Distant hues on saturated colors are not similar.
+        assert not seg._is_background_similar(
+            (0.0, 200.0, 100.0), (90.0, 200.0, 100.0), 20
         )
         # A large value difference is not similar.
         assert not seg._is_background_similar(
