@@ -427,8 +427,7 @@ Type "help" for more information.\
         for lib in matched:
             print_output("< Keywords of library", lib.name)
             for keyword in get_lib_keywords(lib):
-                shortdoc = keyword.shortdoc.split("\n")[0]
-                print_output(f"   {keyword.name}\t", shortdoc)
+                print_output(f"   {keyword.name}\t", keyword.short_doc)
 
     do_k = do_keywords
 

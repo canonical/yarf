@@ -12,8 +12,8 @@ A copy of this license is included in the LICENSE file in this directory.
 
 MODIFICATIONS:
 - Applied fix from PR #21 (https://github.com/imbus/robotframework-debug/pull/21)
-  * Fixed AttributeError in keywords command when KeywordDoc lacks shortdoc attribute
-  * Superseded: Robot Framework 7 keyword documentation always has shortdoc
+  * Uses the Robot Framework 7 `KeywordDoc.short_doc` attribute in the
+    `keywords` command; it was renamed from `shortdoc`
 - Fixed the library and resource documentation builders for Robot Framework 7.5
   * Pass the doc_format now required by LibraryDocBuilder and ResourceDocBuilder
   * Use the library scope name, the resource keyword builder and the

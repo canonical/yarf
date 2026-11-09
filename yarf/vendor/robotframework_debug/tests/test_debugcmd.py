@@ -5,6 +5,7 @@ from unittest.mock import Mock, call, patch
 import pytest
 from prompt_toolkit.keys import Keys
 from robot.errors import ExecutionFailed, HandlerExecutionFailed
+from robot.libdocpkg.model import KeywordDoc
 from robot.utils import ErrorDetails
 
 from yarf.vendor.robotframework_debug import RobotDebug, debugcmd
@@ -314,11 +315,15 @@ class TestReplCmd:
         print_output, print_error = mock_print
         lib = Mock()
         lib.name = "Lib"
-        keyword = Mock(shortdoc="Short\nmore")
-        keyword.name = "Kw"
+        keyword = KeywordDoc(name="Kw", doc="Short\n\nmore")
+        keyword_without_shortdoc = KeywordDoc(name="Undocumented Kw")
         with (
             patch.object(debugcmd, "match_libs", side_effect=[[lib], []]),
-            patch.object(debugcmd, "get_lib_keywords", return_value=[keyword]),
+            patch.object(
+                debugcmd,
+                "get_lib_keywords",
+                return_value=[keyword, keyword_without_shortdoc],
+            ),
         ):
             repl.do_k("li")
             repl.do_keywords("unknown")
@@ -326,6 +331,7 @@ class TestReplCmd:
         assert print_output.call_args_list == [
             call("< Keywords of library", "Lib"),
             call("   Kw\t", "Short"),
+            call("   Undocumented Kw\t", ""),
         ]
         print_error.assert_called_once_with("< not found library", "unknown")
 
