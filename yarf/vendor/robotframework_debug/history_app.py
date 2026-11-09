@@ -18,10 +18,10 @@ from prompt_toolkit.layout.containers import HSplit, VSplit, Window
 from prompt_toolkit.layout.controls import BufferControl, FormattedTextControl
 from prompt_toolkit.layout.layout import Layout
 from prompt_toolkit.lexers import PygmentsLexer
-from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.styles import BaseStyle
 
 from .lexer import HEADER_MATCHER, RobotFrameworkLocalLexer
+from .styles import get_color_depth
 
 HORIZONTAL_LINE = "\u2501"
 VERTICAL_LINE = "\u2502"
@@ -157,7 +157,7 @@ def run_history(history: History, style: BaseStyle) -> None:
     )
     app: Application = Application(
         clipboard=PyperclipClipboard(),
-        color_depth=ColorDepth.DEPTH_24_BIT,
+        color_depth=get_color_depth(),
         cursor=CursorShape.BLINKING_BEAM,
         full_screen=True,
         include_default_pygments_style=False,

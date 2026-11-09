@@ -21,7 +21,7 @@ from owasp_logger import OWASPLogger
 from packaging import version
 from robot import rebot
 from robot.api import TestSuite, TestSuiteBuilder
-from robot.errors import DATA_ERROR, Information
+from robot.errors import DATA_ERROR, DataError, Information
 from robot.run import RobotFramework
 
 from yarf import LABEL_PREFIX
@@ -30,6 +30,7 @@ from yarf.console import (
     DEBUG,
     QUIET,
     VERBOSE,
+    RobotErrorConsole,
     configure_logging,
     notice,
 )
@@ -224,7 +225,7 @@ def parse_robot_arguments(args: list[str]) -> dict[str, Any]:
     Returns:
         A dictionary of arguments, parsed by the Robot argparse
     Raises:
-        SystemExit: informational arguments
+        SystemExit: informational or invalid arguments
     """
 
     with tempfile.NamedTemporaryFile(suffix=".robot") as stub_robot_file:
@@ -234,6 +235,14 @@ def parse_robot_arguments(args: list[str]) -> dict[str, Any]:
         except Information as info:
             print(info)
             raise SystemExit(0)
+        except DataError as err:
+            _owasp_logger.sys_crash("Error parsing Robot Framework arguments.")
+            print(
+                f"yarf: error: {err}\n"
+                "Run 'yarf -- --help' for the Robot Framework options.",
+                file=sys.stderr,
+            )
+            raise SystemExit(2) from None
     return options
 
 
@@ -289,7 +298,12 @@ def apply_robot_console_policy(
         cli_options["consolemarkers"] = "AUTO"
 
     if log_level == QUIET:
-        cli_options["quiet"] = True
+        # Robot's quiet console reports warnings too, so replace it.
+        cli_options.pop("quiet", None)
+        cli_options.pop("dotted", None)
+        cli_options["console"] = RobotErrorConsole(
+            colors=cli_options["consolecolors"]
+        )
 
 
 def get_yarf_settings(test_suite: TestSuite) -> dict[str, Any]:
@@ -483,6 +497,7 @@ def run_robot_suite(
     rebot(
         f"{outdir}/output.xml",
         outputdir=outdir,
+        console=options.get("console", "verbose"),
         consolecolors=options.get("consolecolors", "AUTO"),
         quiet=options.get("quiet", False),
     )
@@ -541,8 +556,7 @@ def run_interactive_console(
         suite.run(
             variable=variables,
             outputdir=outdir,
-            console="none",
-            **cli_options,
+            **(cli_options | {"console": "none"}),
         )
 
     notice(
@@ -553,6 +567,7 @@ def run_interactive_console(
     rebot(
         f"{outdir}/output.xml",
         outputdir=outdir,
+        console=cli_options.get("console", "verbose"),
         consolecolors=cli_options.get("consolecolors", "AUTO"),
         quiet=cli_options.get("quiet", False),
     )

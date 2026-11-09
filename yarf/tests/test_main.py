@@ -6,7 +6,7 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Any
 from unittest import mock
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pytest
 from pyfakefs.fake_filesystem_unittest import FakeFilesystem
@@ -14,6 +14,7 @@ from robot.api import TestSuite as RobotSuite
 from robot.errors import Information
 
 from yarf import main
+from yarf.console import RobotErrorConsole
 from yarf.errors.yarf_errors import YARFConnectionError, YARFExitCode
 from yarf.main import (
     YARF_VERSION,
@@ -45,10 +46,17 @@ class TestMain:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """
-        Stop CLI logging configuration and the caller's NO_COLOR setting from
-        leaking into tests.
+        Stop CLI logging configuration, the caller's NO_COLOR setting and
+        replaced platform and module functions from leaking into other tests.
         """
         monkeypatch.delenv("NO_COLOR", raising=False)
+        monkeypatch.setattr(Vnc, "check_connection", Vnc.check_connection)
+        for name in (
+            "get_outdir_path",
+            "run_interactive_console",
+            "run_robot_suite",
+        ):
+            monkeypatch.setattr(main, name, getattr(main, name))
 
     def test_version_is_development_placeholder(self) -> None:
         """
@@ -165,6 +173,27 @@ class TestMain:
         assert cm.value.code == 0
         assert capsys.readouterr().out == "helper\n"
 
+    @patch("yarf.main._owasp_logger")
+    def test_parse_robot_arguments_invalid(
+        self,
+        mock_owasp_logger: MagicMock,
+        capsys: pytest.CaptureFixture,
+    ) -> None:
+        """
+        Test whether invalid Robot options are reported concisely on stderr,
+        without a traceback, and exit with a usage error.
+        """
+        with pytest.raises(SystemExit) as cm:
+            parse_robot_arguments(["--not-a-valid-option"])
+
+        assert cm.value.code == 2
+        err = capsys.readouterr().err
+        assert err == (
+            "yarf: error: option --notavalidoption not recognized\n"
+            "Run 'yarf -- --help' for the Robot Framework options.\n"
+        )
+        mock_owasp_logger.sys_crash.assert_called_once()
+
     def test_parse_arguments_system_argv(self) -> None:
         """
         Test whether function picked up system arguments if argv is not
@@ -265,13 +294,13 @@ class TestMain:
                 {"consolecolors": "OFF", "consolemarkers": "OFF"},
             ),
             (
-                {},
+                {"quiet": True, "dotted": True},
                 "ERROR",
                 "",
                 {
                     "consolecolors": "AUTO",
                     "consolemarkers": "AUTO",
-                    "quiet": True,
+                    "console": ANY,
                 },
             ),
         ],
@@ -291,6 +320,8 @@ class TestMain:
             apply_robot_console_policy(cli_options, log_level)
 
         assert cli_options == expected
+        if log_level == "ERROR":
+            assert isinstance(cli_options["console"], RobotErrorConsole)
 
     def test_parse_arguments_conflicting_verbosity(self) -> None:
         """
@@ -671,6 +702,7 @@ class TestMain:
         mock_rebot.assert_called_once_with(
             f"{outdir}/output.xml",
             outputdir=outdir,
+            console="verbose",
             consolecolors="AUTO",
             quiet=False,
         )
@@ -765,11 +797,12 @@ class TestMain:
         supplied.
         """
         outdir = Path("/testoutdir")
+        error_console = RobotErrorConsole(colors="OFF")
         cli_options = {
             "variable": ["VAR3:value3"],
             "extra_arg": "extra_value",
             "consolecolors": "OFF",
-            "quiet": True,
+            "console": error_console,
         }
         rf_debug_log_path = outdir / "rfdebug_history.log"
         mock_console_suite = Mock()
@@ -786,11 +819,13 @@ class TestMain:
                 rf_debug_log_path,
                 cli_options,
             )
+        assert mock_console_suite.run.call_args.kwargs["console"] == "none"
         mock_rebot.assert_called_once_with(
             f"{outdir}/output.xml",
             outputdir=outdir,
+            console=error_console,
             consolecolors="OFF",
-            quiet=True,
+            quiet=False,
         )
         mock_logger.log.assert_called_once()
 

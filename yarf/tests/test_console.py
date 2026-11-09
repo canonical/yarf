@@ -5,6 +5,7 @@ from typing import Generator
 from unittest.mock import MagicMock
 
 import pytest
+from robot.api import TestSuite as RobotSuite
 
 from yarf import console
 from yarf.tests.fixtures import root_logger  # noqa: F401
@@ -168,3 +169,31 @@ class TestConfigureLogging:
             r"Selected assets\n",
             capsys.readouterr().out,
         )
+
+
+class TestRobotErrorConsole:
+    def test_reports_errors_only(self, tmp_path) -> None:
+        """
+        Test that a Robot suite run in quiet mode reports errors, but not
+        warnings or progress.
+        """
+        suite_path = tmp_path / "suite.robot"
+        suite_path.write_text(
+            "*** Test Cases ***\n"
+            "Task\n"
+            "    Log    warning text    WARN\n"
+            "    Log    error text    ERROR\n"
+        )
+        stderr = io.StringIO()
+        error_console = console.RobotErrorConsole(colors="OFF", stderr=stderr)
+
+        result = RobotSuite.from_file_system(suite_path).run(
+            outputdir=tmp_path,
+            output=None,
+            report=None,
+            log=None,
+            console=error_console,
+        )
+
+        assert result.return_code == 0
+        assert stderr.getvalue() == "[ ERROR ] error text\n"

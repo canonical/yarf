@@ -10,7 +10,12 @@ import logging
 import os
 import sys
 from datetime import datetime, timezone
-from typing import Any, Optional, TextIO
+from typing import TYPE_CHECKING, Any, Optional, TextIO
+
+from robot.output.console import QuietConsole
+
+if TYPE_CHECKING:
+    from robot.output import Message
 
 # The standard maps brief mode to syslog.notice, which Python lacks.
 NOTICE = 25
@@ -149,3 +154,22 @@ def notice(logger: logging.Logger, message: str, *args: Any) -> None:
         *args: Arguments for the format string.
     """
     logger.log(NOTICE, message, *args)
+
+
+class RobotErrorConsole(QuietConsole):
+    """
+    Robot Framework console that reports errors only, for quiet mode.
+
+    Robot's own quiet console also reports warnings, which quiet mode
+    must not show.
+    """
+
+    def message(self, msg: "Message") -> None:
+        """
+        Report a Robot message on stderr if it is an error.
+
+        Arguments:
+            msg: The message logged by Robot Framework.
+        """
+        if msg.level == "ERROR":
+            super().message(msg)

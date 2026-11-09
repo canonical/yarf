@@ -20,7 +20,6 @@ from prompt_toolkit.key_binding import (
     merge_key_bindings,
 )
 from prompt_toolkit.lexers import PygmentsLexer
-from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.shortcuts import CompleteStyle, clear, prompt
 from robot.api import logger
 from robot.errors import ExecutionFailed, HandlerExecutionFailed
@@ -49,6 +48,7 @@ from .robotlib import (
 )
 from .styles import (
     DEBUG_PROMPT_STYLE,
+    get_color_depth,
     get_print_style,
     get_prompt_style,
     get_pygments_styles,
@@ -193,7 +193,7 @@ Type "help" for more information.\
                 auto_suggest=KeywordAutoSuggestion(completer),
                 bottom_toolbar=self.bottom_toolbar,
                 clipboard=PyperclipClipboard(),
-                color_depth=ColorDepth.DEPTH_24_BIT,
+                color_depth=get_color_depth(),
                 completer=completer,
                 complete_style=CompleteStyle.COLUMN,
                 complete_while_typing=self.complete_while_typing,

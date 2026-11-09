@@ -161,15 +161,16 @@ following flags may be given:
 | `--debug`   | Internal diagnostic detail, and extra debugging artefacts. |
 
 Warnings and errors are written to standard error, everything else to standard
-output. In `--verbose` and `--debug` modes each line is prefixed with an
-ISO 8601 timestamp. Coloured output is used only when the stream is an
+output. In `--verbose` and `--debug` modes each YARF log message is prefixed
+with an ISO 8601 timestamp. Coloured output is used only when the stream is an
 interactive terminal and the [`NO_COLOR`](https://no-color.org/) environment
-variable is unset.
+variable is unset, including in the interactive console.
 
-These rules also apply to the Robot Framework console output. `--quiet`
-silences the Robot Framework progress and result file messages, and the
-Robot Framework `--consolecolors` and `--consolemarkers` options cannot force
-colours or progress markers onto a redirected stream.
+The verbosity and colour rules also apply to the Robot Framework console
+output, which has no timestamps. `--quiet` silences the Robot Framework
+progress, warnings and result file messages, and keeps its errors. The Robot
+Framework `--consolecolors` and `--consolemarkers` options cannot force colours
+or progress markers onto a redirected stream.
 
 ## Debug failing tests
 
