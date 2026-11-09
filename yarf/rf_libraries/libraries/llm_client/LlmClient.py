@@ -575,7 +575,7 @@ class LlmClient:
         platform_video_input = self._get_lib_instance("VideoInput")
         image = await platform_video_input.grab_screenshot()
         if image is None:
-            raise RuntimeError("Failed to grab screenshot.")
+            raise RuntimeError("cannot grab a screenshot")
         return image
 
     @keyword
@@ -738,7 +738,7 @@ class LlmClient:
                 llm_output[json_start : json_end + 1]
             )
         except json.JSONDecodeError:
-            error = f"Failed to parse LLM response as JSON: {llm_output}"
+            error = f"cannot parse the LLM response as JSON: {llm_output}"
             return {}, error
 
         error_messages: list[str] = []
@@ -1057,7 +1057,7 @@ class LlmClient:
 
         if action_type == "Failed":
             raise ValueError(
-                f"LLM indicated action can't be completed: {task}."
+                f"the LLM reports that the action cannot be completed: {task}"
             )
 
         if action_type in {"Write", "Press Key"} and not isinstance(
@@ -1385,6 +1385,6 @@ class LlmClient:
                 )
 
         raise RuntimeError(
-            "Failed to get a valid action from the LLM after "
+            "cannot get a valid action from the LLM after "
             f"{MAX_ATTEMPTS} attempts on step {step}."
         )

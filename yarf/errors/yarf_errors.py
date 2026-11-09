@@ -6,6 +6,7 @@ from enum import IntEnum
 
 
 class YARFExitCode(IntEnum):
+    DATA_ERROR = 252
     CONNECTION_ERROR = 253
     UNKNOWN_ERROR = 255
 
@@ -30,6 +31,17 @@ class YARFConnectionError(YARFError):
     """
 
     exit_code: YARFExitCode = YARFExitCode.CONNECTION_ERROR
+
+
+class YARFSuiteError(YARFError, ValueError):
+    """
+    Raised when the given suite cannot be used.
+
+    Attributes:
+        exit_code: The data error exit code associated with this error.
+    """
+
+    exit_code: YARFExitCode = YARFExitCode.DATA_ERROR
 
 
 class VQAValidationError(Exception):

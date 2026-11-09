@@ -4,6 +4,7 @@ from unittest.mock import Mock
 import pytest
 from pyfakefs.fake_filesystem_unittest import FakeFilesystem
 
+from yarf.errors.yarf_errors import YARFSuiteError
 from yarf.rf_libraries.suite_parser import SuiteParser
 from yarf.tests.fixtures import fs  # noqa: F401
 
@@ -162,7 +163,9 @@ class TestSuiteParser:
 
         mock_suite_parser_instance = Mock()
         SuiteParser.__init__(mock_suite_parser_instance, mock_suite_path)
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            YARFSuiteError, match='cannot find a .robot file in "suite"'
+        ):
             SuiteParser.read_suite(mock_suite_parser_instance)
 
     def test_suite_in_temp_folder(self, fs: FakeFilesystem) -> None:  # noqa: F811

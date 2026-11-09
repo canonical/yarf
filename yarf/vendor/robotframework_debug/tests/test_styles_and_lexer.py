@@ -1,6 +1,8 @@
 from unittest.mock import patch
 
+import pytest
 from prompt_toolkit.formatted_text import FormattedText
+from prompt_toolkit.output import ColorDepth
 from pygments.token import Token
 
 from yarf.vendor.robotframework_debug import styles
@@ -34,6 +36,20 @@ class TestStyles:
         assert "monokai" in styles.get_pygments_styles()
         assert styles.get_prompt_style("monokai").style_rules
         assert len(styles.get_print_style("monokai").style_rules) == 2
+
+    @pytest.mark.parametrize(
+        "no_color,expected",
+        [
+            ("", ColorDepth.DEPTH_4_BIT),
+            ("1", ColorDepth.DEPTH_1_BIT),
+        ],
+    )
+    def test_get_color_depth(self, monkeypatch, no_color, expected):
+        """
+        Test that the interactive views drop colour when NO_COLOR is set.
+        """
+        monkeypatch.setenv("NO_COLOR", no_color)
+        assert styles.get_color_depth() == expected
 
     def test_get_style_completions(self):
         """

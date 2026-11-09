@@ -2,11 +2,13 @@
 Output styles of the interactive shell.
 """
 
+import os
 from collections.abc import Iterator
 
 from prompt_toolkit import print_formatted_text
 from prompt_toolkit.completion import Completion
 from prompt_toolkit.formatted_text import FormattedText
+from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.styles import (
     BaseStyle,
     Style,
@@ -33,6 +35,20 @@ BASE_STYLE = Style.from_dict(
         "bottom-toolbar-key": "#333333 bg:#aaaaff",
     }
 )
+
+
+def get_color_depth() -> ColorDepth:
+    """
+    Get the colour depth of the interactive views.
+
+    Returns:
+        monochrome when NO_COLOR is set and not empty, the 16 ANSI colours
+        otherwise
+    """
+    if os.environ.get("NO_COLOR", ""):
+        return ColorDepth.DEPTH_1_BIT
+
+    return ColorDepth.DEPTH_4_BIT
 
 
 def get_prompt_style(name: str) -> BaseStyle:

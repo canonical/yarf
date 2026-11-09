@@ -1,8 +1,24 @@
+import logging
 import sys
 from typing import Generator
 
 import pytest
 from pyfakefs.fake_filesystem_unittest import FakeFilesystem, Patcher
+
+
+@pytest.fixture
+def root_logger() -> Generator[logging.Logger, None, None]:
+    """
+    Restore the root logger configuration after a test reconfigures it.
+    """
+    root = logging.getLogger()
+    handlers = list(root.handlers)
+    level = root.level
+    try:
+        yield root
+    finally:
+        root.handlers = handlers
+        root.setLevel(level)
 
 
 @pytest.fixture

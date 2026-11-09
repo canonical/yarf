@@ -63,7 +63,7 @@ class Interactive:
         """
         platform_video_input = self._get_lib_instance("VideoInput")
         if (image := await platform_video_input.grab_screenshot()) is None:
-            raise ValueError("Failed to grab screenshot.")
+            raise ValueError("cannot grab a screenshot")
 
         roi_selector = ROISelector(image, *names)
         roi_selector.start()

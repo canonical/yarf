@@ -262,31 +262,17 @@ We should see some output like below:
 caption: Output from running the yarf_test test suite.
 ---
 $ yarf --platform=Mir /path/to/yarf_tests
-INFO:yarf.rf_libraries.suite_parser:Selected assets:
-  button_tests.robot
-  simple_counter_toggled.png
-  simple_counter.png
-  buttons/+.png
-  buttons/toggle_theme.png
-  buttons/-.png
 ==============================================================================
 yarf_tests
 ==============================================================================
-INFO:RPA.core.certificates:Truststore not in use, HTTPS traffic validated against `certifi` package. (requires Python 3.10.12 and 'pip' 23.2.1 at minimum)
-2025-07-31 08:29:41,669 - RPA.core.certificates - INFO - Truststore not in use, HTTPS traffic validated against `certifi` package. (requires Python 3.10.12 and 'pip' 23.2.1 at minimum)
 yarf_tests.Button Tests
 ==============================================================================
-Assert simple counter started                                         INFO:root:Scanned image in 0.08 seconds
 Assert simple counter started                                         | PASS |
 ------------------------------------------------------------------------------
-Increase the counter and assert count                                 INFO:root:Scanned image in 0.06 seconds
 Increase the counter and assert count                                 | PASS |
 ------------------------------------------------------------------------------
-Decrease the counter and assert count                                 INFO:root:Scanned image in 0.06 seconds
 Decrease the counter and assert count                                 | PASS |
 ------------------------------------------------------------------------------
-Toggle theme and assert the theme changed                             INFO:root:Scanned image in 0.06 seconds
-.INFO:root:Scanned image in 0.07 seconds
 Toggle theme and assert the theme changed                             | PASS |
 ------------------------------------------------------------------------------
 Close the simple counter                                              | PASS |
@@ -302,7 +288,7 @@ yarf_tests                                                            | PASS |
 Output:  /path/to/yarf-outdir/output.xml
 Log:     /path/to/yarf-outdir/log.html
 Report:  /path/to/yarf-outdir/report.html
-INFO:yarf.main:Results exported to: /path/to/yarf-outdir
+Results exported to: /path/to/yarf-outdir
 ```
 
 We can see that the test suite runs successfully!
@@ -396,7 +382,7 @@ caption: YARF command for running the test suite with the light theme variant.
 $ yarf --platform=Mir --variant=light /path/to/yarf_tests
 ```
 
-We should see an output similar to the following, notice how the asset path changed when YARF collects the templates:
+The selected assets are reported in verbose mode. We should see an output similar to the following, notice how the asset path changed when YARF collects the templates:
 
 ```{code-block} bash
 ---
@@ -404,8 +390,8 @@ caption: Output from running the yarf_test test suite on the light theme
   variant.
 emphasize-lines: 2-8
 ---
-$ yarf --platform=Mir --variant=light /path/to/yarf_tests
-INFO:yarf.rf_libraries.suite_parser:Selected assets:
+$ yarf --verbose --platform=Mir --variant=light /path/to/yarf_tests
+2025-07-31T08:33:43Z yarf.rf_libraries.suite_parser: Selected assets:
   button_tests.robot
   variants/light/simple_counter_toggled.png
   variants/light/simple_counter.png
@@ -415,8 +401,6 @@ INFO:yarf.rf_libraries.suite_parser:Selected assets:
 ==============================================================================
 yarf_tests
 ==============================================================================
-INFO:RPA.core.certificates:Truststore not in use, HTTPS traffic validated against `certifi` package. (requires Python 3.10.12 and 'pip' 23.2.1 at minimum)
-2025-07-31 08:33:43,696 - RPA.core.certificates - INFO - Truststore not in use, HTTPS traffic validated against `certifi` package. (requires Python 3.10.12 and 'pip' 23.2.1 at minimum)
 yarf_tests.Button Tests
 ==============================================================================
 Assert simple counter started                                         INFO:root:Scanned image in 0.09 seconds
@@ -445,7 +429,7 @@ yarf_tests                                                            | PASS |
 Output:  /path/to/yarf-outdir/output.xml
 Log:     /path/to/yarf-outdir/log.html
 Report:  /path/to/yarf-outdir/report.html
-INFO:yarf.main:Results exported to: /path/to/yarf-outdir
+Results exported to: /path/to/yarf-outdir
 ```
 
 Now we have our test suite works for the light theme as well!

@@ -1,22 +1,26 @@
 import os
+import re
 import sys
 import tempfile
 import types
 from pathlib import Path
 from textwrap import dedent
+from typing import Any
 from unittest import mock
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pytest
 from pyfakefs.fake_filesystem_unittest import FakeFilesystem
 from robot.api import TestSuite as RobotSuite
-from robot.errors import Information
+from robot.errors import DataError, Information
 
 from yarf import main
+from yarf.console import RobotErrorConsole
 from yarf.errors.yarf_errors import YARFConnectionError, YARFExitCode
 from yarf.main import (
     YARF_VERSION,
     _import_listener_from_path,
+    apply_robot_console_policy,
     compare_version,
     get_listeners,
     get_robot_reserved_settings,
@@ -30,10 +34,32 @@ from yarf.output import OUTPUT_FORMATS
 from yarf.output.test_submission_schema import TestSubmissionSchema
 from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS
 from yarf.rf_libraries.libraries.vnc import Vnc
-from yarf.tests.fixtures import fs  # noqa: F401
+from yarf.tests.fixtures import fs, root_logger  # noqa: F401
+
+DEFAULT_ROBOT_CONSOLE = {"consolecolors": "AUTO", "consolemarkers": "AUTO"}
 
 
 class TestMain:
+    @pytest.fixture(autouse=True)
+    def _isolate_logging(
+        self,
+        root_logger,  # noqa: F811
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """
+        Stop CLI logging configuration, the caller's NO_COLOR setting and
+        replaced platform and module functions from leaking into other tests.
+        """
+        monkeypatch.delenv("NO_COLOR", raising=False)
+        monkeypatch.delenv("YARF_LOG_LEVEL", raising=False)
+        monkeypatch.setattr(Vnc, "check_connection", Vnc.check_connection)
+        for name in (
+            "get_outdir_path",
+            "run_interactive_console",
+            "run_robot_suite",
+        ):
+            monkeypatch.setattr(main, name, getattr(main, name))
+
     def test_version_is_development_placeholder(self) -> None:
         """
         Test that the version in the repository is the development placeholder
@@ -83,8 +109,11 @@ class TestMain:
         "argv,expected",
         [
             (["suite/", "--"], {"suite": "suite/"}),
+            ([], {"log_level": "NOTICE"}),
+            (["--brief"], {"log_level": "NOTICE"}),
+            (["--verbose"], {"log_level": "INFO"}),
             (["--debug"], {"log_level": "DEBUG"}),
-            (["--quiet"], {"log_level": "WARNING"}),
+            (["--quiet"], {"log_level": "ERROR"}),
             (["--variant", "var1/var2/var3"], {"variant": "var1/var2/var3"}),
             (["--outdir", "out/dir"], {"outdir": "out/dir"}),
         ],
@@ -126,20 +155,117 @@ class TestMain:
         args, _ = parse_arguments(argv)
         assert args.platform == "Vnc"
 
-    @patch("yarf.main.RobotFramework")
-    @patch("yarf.main._owasp_logger")
-    def test_parse_robot_arguments_info(self, mock_logger, mock_rf):
+    @patch("yarf.main.RobotOptionParser")
+    def test_parse_robot_arguments_info(
+        self,
+        mock_parser: MagicMock,
+        capsys: pytest.CaptureFixture,
+    ) -> None:
         """
         Test whether the parser catches the Information exception when raised
-        by Robot parser with --help or --version, prints the information and
-        exit w/o errors.
+        by Robot parser with --help or --version, prints the information to
+        stdout and exits successfully.
         """
 
         info = Information("helper")
-        mock_rf.return_value.parse_arguments.side_effect = info
-        with pytest.raises(SystemExit):
+        mock_parser.return_value.parse_args.side_effect = info
+        with pytest.raises(SystemExit) as cm:
             parse_robot_arguments(["--help"])
-        mock_logger.sys_crash.assert_called_once_with(info)
+
+        assert cm.value.code == 0
+        assert capsys.readouterr().out == "helper\n"
+
+    def test_parse_robot_arguments_help_long_options_only(
+        self, capsys: pytest.CaptureFixture
+    ) -> None:
+        """
+        Test whether the Robot help lists long options only, aligned with the
+        options that never had a short form.
+        """
+        with pytest.raises(SystemExit) as cm:
+            parse_robot_arguments(["--help"])
+
+        assert cm.value.code == 0
+        out = capsys.readouterr().out
+        assert "\n    --test name *         Select tests" in out
+        assert "\n    --help                Print usage" in out
+        assert not re.search(r"^ {1,4}-[^-]", out, re.MULTILINE)
+
+    @pytest.mark.parametrize(
+        "args,error",
+        [
+            (["-t", "A"], "option -t not recognized"),
+            (["-A", "args.txt"], "option -A not recognized"),
+            (
+                ["--dryrun", "--nodryrun"],
+                "--dryrun and --nodryrun cannot be used together",
+            ),
+            (
+                ["--nostatusrc", "--statusrc"],
+                "--statusrc and --nostatusrc cannot be used together",
+            ),
+        ],
+    )
+    def test_parse_robot_arguments_rejected(
+        self,
+        args: list[str],
+        error: str,
+        capsys: pytest.CaptureFixture,
+    ) -> None:
+        """
+        Test whether short Robot options and opposing flags are rejected.
+        """
+        with pytest.raises(SystemExit) as cm:
+            parse_robot_arguments(args)
+
+        assert cm.value.code == 2
+        assert capsys.readouterr().err.startswith(f"yarf: error: {error}\n")
+
+    def test_parse_robot_arguments_variables(self) -> None:
+        """
+        Test whether variables are accepted as NAME=VALUE and NAME:VALUE, the
+        first separator deciding the form.
+        """
+        options = parse_robot_arguments(
+            [
+                "--variable",
+                "KEY=value",
+                "--variable",
+                "URL:http://host/?a=b",
+                "--variable",
+                "PAIR=a:b",
+                "--variable",
+                "PLAIN",
+            ]
+        )
+
+        assert options["variable"] == [
+            "KEY:value",
+            "URL:http://host/?a=b",
+            "PAIR:a:b",
+            "PLAIN",
+        ]
+
+    @patch("yarf.main._owasp_logger")
+    def test_parse_robot_arguments_invalid(
+        self,
+        mock_owasp_logger: MagicMock,
+        capsys: pytest.CaptureFixture,
+    ) -> None:
+        """
+        Test whether invalid Robot options are reported concisely on stderr,
+        without a traceback, and exit with a usage error.
+        """
+        with pytest.raises(SystemExit) as cm:
+            parse_robot_arguments(["--not-a-valid-option"])
+
+        assert cm.value.code == 2
+        err = capsys.readouterr().err
+        assert err == (
+            "yarf: error: option --notavalidoption not recognized\n"
+            "Run 'yarf -- --help' for the Robot Framework options.\n"
+        )
+        mock_owasp_logger.sys_crash.assert_called_once()
 
     def test_parse_arguments_system_argv(self) -> None:
         """
@@ -176,6 +302,106 @@ class TestMain:
         argv = ["--platform", "InvalidPlatform", "suite-path"]
         with pytest.raises(SystemExit):
             parse_arguments(argv)
+
+    @patch("yarf.main._owasp_logger")
+    def test_parse_arguments_version(
+        self,
+        mock_owasp_logger: MagicMock,
+        capsys: pytest.CaptureFixture,
+    ) -> None:
+        """
+        Test whether "--version" reports the release version and exits
+        successfully without recording a crash.
+        """
+        with pytest.raises(SystemExit) as cm:
+            parse_arguments(["--version"])
+
+        assert cm.value.code == 0
+        assert capsys.readouterr().out.strip() == f"yarf {YARF_VERSION}"
+        mock_owasp_logger.sys_crash.assert_not_called()
+
+    @patch("yarf.main._owasp_logger")
+    def test_parse_arguments_help(
+        self,
+        mock_owasp_logger: MagicMock,
+        capsys: pytest.CaptureFixture,
+    ) -> None:
+        """
+        Test whether "--help" prints the YARF usage and exits successfully
+        without recording a crash.
+        """
+        with pytest.raises(SystemExit) as cm:
+            parse_arguments(["--help"])
+
+        assert cm.value.code == 0
+        out = capsys.readouterr().out
+        assert out.startswith("usage: yarf ")
+        assert "Run a Robot Framework suite" in out
+        mock_owasp_logger.sys_crash.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "cli_options,log_level,no_color,expected",
+        [
+            (
+                {},
+                "NOTICE",
+                "",
+                {"consolecolors": "AUTO", "consolemarkers": "AUTO"},
+            ),
+            (
+                {"consolecolors": "on", "consolemarkers": "on"},
+                "NOTICE",
+                "",
+                {"consolecolors": "AUTO", "consolemarkers": "AUTO"},
+            ),
+            (
+                {"consolecolors": "ansi"},
+                "INFO",
+                "1",
+                {"consolecolors": "OFF", "consolemarkers": "AUTO"},
+            ),
+            (
+                {"consolecolors": "off", "consolemarkers": "off"},
+                "DEBUG",
+                "",
+                {"consolecolors": "OFF", "consolemarkers": "OFF"},
+            ),
+            (
+                {"quiet": True, "dotted": True},
+                "ERROR",
+                "",
+                {
+                    "consolecolors": "AUTO",
+                    "consolemarkers": "AUTO",
+                    "console": ANY,
+                },
+            ),
+        ],
+    )
+    def test_apply_robot_console_policy(
+        self,
+        cli_options: dict[str, Any],
+        log_level: str,
+        no_color: str,
+        expected: dict[str, Any],
+    ) -> None:
+        """
+        Test whether Robot console options follow the YARF colour, ephemeral
+        feedback and verbosity rules.
+        """
+        with patch.dict(os.environ, {"NO_COLOR": no_color}):
+            apply_robot_console_policy(cli_options, log_level)
+
+        assert cli_options == expected
+        if log_level == "ERROR":
+            assert isinstance(cli_options["console"], RobotErrorConsole)
+
+    def test_parse_arguments_conflicting_verbosity(self) -> None:
+        """
+        Test whether the verbosity flags are mutually exclusive.
+        """
+        with pytest.raises(SystemExit):
+            parse_arguments(["--quiet", "--debug"])
 
     def test_get_yarf_settings(self, fs: FakeFilesystem) -> None:  # noqa: F811
         """
@@ -393,6 +619,21 @@ class TestMain:
                     Path("dummy/invalid_listener.py"), lib_cls=lib_cls
                 )
 
+    def test_get_listeners_quiet(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """
+        Test whether quiet mode leaves out the stack tracer, which prints
+        keyword failure tracebacks.
+        """
+        monkeypatch.setenv("YARF_LOG_LEVEL", "ERROR")
+
+        listeners = get_listeners(None)
+
+        assert [type(listener).__name__ for listener in listeners] == [
+            "MetadataListener"
+        ]
+
     @pytest.mark.parametrize(
         "additional_listener_paths, expected",
         [
@@ -547,7 +788,11 @@ class TestMain:
             extra_arg="extra_value",
         )
         mock_rebot.assert_called_once_with(
-            f"{outdir}/output.xml", outputdir=outdir
+            f"{outdir}/output.xml",
+            outputdir=outdir,
+            console="verbose",
+            consolecolors="AUTO",
+            quiet=False,
         )
 
     @patch("yarf.main.get_robot_reserved_settings")
@@ -640,7 +885,13 @@ class TestMain:
         supplied.
         """
         outdir = Path("/testoutdir")
-        cli_options = {"variable": ["VAR3:value3"], "extra_arg": "extra_value"}
+        error_console = RobotErrorConsole(colors="OFF")
+        cli_options = {
+            "variable": ["VAR3:value3"],
+            "extra_arg": "extra_value",
+            "consolecolors": "OFF",
+            "console": error_console,
+        }
         rf_debug_log_path = outdir / "rfdebug_history.log"
         mock_console_suite = Mock()
         mock_console_suite.run.return_value.return_code = 0
@@ -656,10 +907,15 @@ class TestMain:
                 rf_debug_log_path,
                 cli_options,
             )
+        assert mock_console_suite.run.call_args.kwargs["console"] == "none"
         mock_rebot.assert_called_once_with(
-            f"{outdir}/output.xml", outputdir=outdir
+            f"{outdir}/output.xml",
+            outputdir=outdir,
+            console=error_console,
+            consolecolors="OFF",
+            quiet=False,
         )
-        mock_logger.info.assert_called_once()
+        mock_logger.log.assert_called_once()
 
     @patch("yarf.main.TestSuite.from_file_system")
     def test_main(
@@ -691,10 +947,10 @@ class TestMain:
             lib_cls=SUPPORTED_PLATFORMS["Vnc"],
             variables=[],
             outdir=Path(tempfile.gettempdir()) / "yarf-outdir",
-            cli_options={},
+            cli_options=DEFAULT_ROBOT_CONSOLE,
             output_format=None,
         )
-        assert os.getenv("YARF_LOG_LEVEL") == "INFO"
+        assert os.getenv("YARF_LOG_LEVEL") == "NOTICE"
 
     def test_main_connection_error(self) -> None:
         """
@@ -710,6 +966,79 @@ class TestMain:
         with pytest.raises(SystemExit) as cm:
             main.main([])
         assert cm.value.code == YARFExitCode.CONNECTION_ERROR
+
+    def test_main_outdir_error(self, capsys: pytest.CaptureFixture) -> None:
+        """
+        Test whether an output directory that cannot be prepared is reported in
+        one line, without a traceback.
+        """
+        SUPPORTED_PLATFORMS.clear()
+        SUPPORTED_PLATFORMS["Vnc"] = Vnc
+        SUPPORTED_PLATFORMS["Vnc"].check_connection = MagicMock()
+        main.get_outdir_path = Mock(
+            side_effect=PermissionError(13, "Permission denied", "/root/out")
+        )
+
+        with pytest.raises(SystemExit) as cm:
+            main.main(["--outdir", "/root/out", "suite-path"])
+
+        assert cm.value.code == YARFExitCode.DATA_ERROR
+        assert capsys.readouterr().err == (
+            'error: cannot prepare the output directory "/root/out": '
+            "Permission denied\n"
+        )
+
+    def test_main_suite_error(
+        self,
+        capsys: pytest.CaptureFixture,
+        fs: FakeFilesystem,  # noqa: F811
+    ) -> None:
+        """
+        Test whether a suite without a .robot file is reported in one line,
+        without a traceback.
+        """
+        fs.create_file("suite-path/asset.png")
+        SUPPORTED_PLATFORMS.clear()
+        SUPPORTED_PLATFORMS["Vnc"] = Vnc
+        SUPPORTED_PLATFORMS["Vnc"].check_connection = MagicMock()
+        main.get_outdir_path = Mock(return_value=Path("/out"))
+
+        with pytest.raises(SystemExit) as cm:
+            main.main(["suite-path"])
+
+        assert cm.value.code == YARFExitCode.DATA_ERROR
+        assert capsys.readouterr().err == (
+            'error: cannot find a .robot file in "suite-path"\n'
+        )
+
+    @patch("yarf.main.TestSuite.from_file_system")
+    def test_main_robot_data_error(
+        self,
+        mock_test_suite: MagicMock,
+        capsys: pytest.CaptureFixture,
+        fs: FakeFilesystem,  # noqa: F811
+    ) -> None:
+        """
+        Test whether Robot Framework data errors, such as invalid option
+        values, are reported in one line, without a traceback.
+        """
+        fs.create_file("suite-path/test.robot")
+        SUPPORTED_PLATFORMS.clear()
+        SUPPORTED_PLATFORMS["Vnc"] = Vnc
+        SUPPORTED_PLATFORMS["Vnc"].check_connection = MagicMock()
+        main.get_outdir_path = Mock(return_value=Path("/out"))
+        main.run_robot_suite = Mock(
+            side_effect=DataError("Invalid value for option '--loglevel'")
+        )
+
+        with pytest.raises(SystemExit) as cm:
+            main.main(["suite-path"])
+
+        assert cm.value.code == YARFExitCode.DATA_ERROR
+        assert capsys.readouterr().err == (
+            "error: cannot run Robot Framework: "
+            "Invalid value for option '--loglevel'\n"
+        )
 
     @patch("yarf.main.TestSuite.from_file_system")
     def test_main_log_video(
@@ -741,7 +1070,7 @@ class TestMain:
             lib_cls=SUPPORTED_PLATFORMS["Vnc"],
             variables=[],
             outdir=Path(tempfile.gettempdir()) / "yarf-outdir",
-            cli_options={},
+            cli_options=DEFAULT_ROBOT_CONSOLE,
             output_format=None,
         )
         assert os.environ["YARF_LOG_VIDEO"] == "1"
@@ -779,7 +1108,7 @@ class TestMain:
             lib_cls=SUPPORTED_PLATFORMS["Vnc"],
             variables=[],
             outdir=Path(outdir),
-            cli_options={},
+            cli_options=DEFAULT_ROBOT_CONSOLE,
             output_format=None,
         )
 
@@ -809,7 +1138,7 @@ class TestMain:
             lib_cls=SUPPORTED_PLATFORMS["Vnc"],
             outdir=outdir,
             rf_debug_history_log_path=rf_debug_log_path,
-            cli_options={},
+            cli_options=DEFAULT_ROBOT_CONSOLE,
         )
 
     @patch("yarf.main.Path.exists")

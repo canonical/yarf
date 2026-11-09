@@ -181,6 +181,19 @@ class TestInit:
             assert not fs.exists(Path(mock_outdir) / file)
         assert fs.exists(Path(mock_outdir) / "test.txt")
 
+    def test_get_outdir_path_creates_outdir(
+        self,
+        fs: FakeFilesystem,  # noqa: F811
+    ) -> None:
+        """
+        Test whether get_outdir_path creates a missing output directory, so
+        that errors creating it are reported before the run.
+        """
+        result = get_outdir_path("new/outdir")
+
+        assert result == Path("new/outdir")
+        assert fs.isdir("new/outdir")
+
     @patch("yarf.output.json.dump")
     @patch("yarf.output.open")
     @patch("yarf.output.OutputConverterBase")

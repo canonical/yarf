@@ -74,9 +74,7 @@ class VideoInput(VideoInputBase):
                     sleep(self.screenshot_sleep_interval)
             if screenshot:
                 return screenshot
-        error_msg = (
-            "Failed to get screenshots via asyncvnc, something went wrong!"
-        )
+        error_msg = "cannot get a screenshot from the VNC server"
         raise TimeoutError(error_msg)
 
     @keyword

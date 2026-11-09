@@ -139,14 +139,50 @@ If you do not have a test suite, you can still use YARF to explore and come up w
 
 ### Robot CLI arguments
 
-The Robot Framework CLI provides several additional options, such as the `--variable` argument, which allows you to pass global variables into Robot tests. To ensure compatibility with these features, YARF will pass any option after the `--` separator directly to the Robot Framework parser. The user can view the complete list of supported Robot Framework arguments by running `yarf -- --help`, which will display the Robot Framework argument parser.
+The Robot Framework CLI provides several additional options, such as the `--variable` argument, which allows you to pass global variables into Robot tests. To ensure compatibility with these features, YARF will pass any option after the `--` separator to the Robot Framework parser. The user can view the complete list of supported Robot Framework arguments by running `yarf -- --help`, which will display the Robot Framework argument parser.
 
 ```{code-block} bash
 ---
 caption: '`yarf` command with Robot-specific argument provided'
 ---
-yarf <path-to-suite>/suite -- --variable KEY1:VALUE1 --variable KEY2:VALUE2
+yarf <path-to-suite>/suite -- --variable KEY1=VALUE1 --variable KEY2=VALUE2
 ```
+
+YARF applies these rules to the Robot Framework options:
+
+- Only the long form of each option is accepted, for example `--test` and not
+  `-t`.
+- A flag and its negation, such as `--dryrun` and `--nodryrun`, cannot be used
+  together.
+- Variables can be given as `NAME=VALUE` or as Robot Framework's `NAME:VALUE`.
+  The first `=` or `:` separates the name from the value.
+
+## Control the output verbosity
+
+YARF follows the Canonical CLI standard verbosity modes. Exactly one of the
+following flags may be given:
+
+| Flag        | Reports                                                    |
+| ----------- | ---------------------------------------------------------- |
+| `--quiet`   | Errors only.                                               |
+| `--brief`   | Progress and outcome only. This is the default.            |
+| `--verbose` | Intermediate execution steps, such as the assets selected. |
+| `--debug`   | Internal diagnostic detail, and extra debugging artefacts. |
+
+Warnings and errors are written to standard error, everything else to standard
+output. In `--verbose` and `--debug` modes each YARF log message is prefixed
+with an ISO 8601 timestamp. Coloured output is used only when the stream is an
+interactive terminal and the [`NO_COLOR`](https://no-color.org/) environment
+variable is unset, including in the interactive console, which uses the 16 ANSI
+colours. YARF reads the terminal background from the `COLORFGBG` environment
+variable, or asks the terminal for it, and uses darker colours on a light
+background.
+
+The verbosity and colour rules also apply to the Robot Framework console
+output, which has no timestamps. `--quiet` silences the Robot Framework
+progress, warnings, result file messages and keyword failure traces, and
+keeps its errors. The Robot Framework `--consolecolors` and `--consolemarkers`
+options cannot force colours or progress markers onto a redirected stream.
 
 ## Debug failing tests
 

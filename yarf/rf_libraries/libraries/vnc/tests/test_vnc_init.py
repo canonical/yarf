@@ -33,6 +33,10 @@ class TestVnc:
             with pytest.raises(YARFConnectionError) as exc_info:
                 vnc.check_connection()
             assert exc_info.value.exit_code == YARFExitCode.CONNECTION_ERROR
+            assert str(exc_info.value) == (
+                f"the VNC server at {vnc.host}:{vnc.port} "
+                "is not reachable: Connection refused"
+            )
 
     def test_check_connection_success(self) -> None:
         vnc = Vnc()
