@@ -265,6 +265,33 @@ def parse_arguments(
     return parse_yarf_arguments(yarf_argv), parse_robot_arguments(robot_argv)
 
 
+def apply_robot_console_policy(
+    cli_options: dict[str, Any], log_level: str
+) -> None:
+    """
+    Make the Robot console follow the YARF colour, ephemeral feedback and
+    verbosity rules, overriding conflicting Robot options.
+
+    Args:
+        cli_options: Robot options given by CLI, updated in place
+        log_level: the YARF verbosity level
+    """
+    colors = cli_options.get("consolecolors", "AUTO").upper()
+    # Robot's AUTO mode checks each output stream for a terminal.
+    if os.environ.get("NO_COLOR", "") or colors == "OFF":
+        cli_options["consolecolors"] = "OFF"
+    else:
+        cli_options["consolecolors"] = "AUTO"
+
+    if cli_options.get("consolemarkers", "AUTO").upper() == "OFF":
+        cli_options["consolemarkers"] = "OFF"
+    else:
+        cli_options["consolemarkers"] = "AUTO"
+
+    if log_level == QUIET:
+        cli_options["quiet"] = True
+
+
 def get_yarf_settings(test_suite: TestSuite) -> dict[str, Any]:
     """
     Get yarf settings based on yarf specific tags on each robot task.
@@ -453,7 +480,12 @@ def run_robot_suite(
         )
 
     # Generate HTML report.html and log.html using rebot().
-    rebot(f"{outdir}/output.xml", outputdir=outdir)
+    rebot(
+        f"{outdir}/output.xml",
+        outputdir=outdir,
+        consolecolors=options.get("consolecolors", "AUTO"),
+        quiet=options.get("quiet", False),
+    )
     # The return_code from suite.run is in range(0, 250), shouldn't just check for (0, 1)
     if result.return_code != 0:
         for error_message in result.errors.messages:
@@ -518,7 +550,12 @@ def run_interactive_console(
         "Interactive console log exported to: %s",
         rf_debug_history_log_path,
     )
-    rebot(f"{outdir}/output.xml", outputdir=outdir)
+    rebot(
+        f"{outdir}/output.xml",
+        outputdir=outdir,
+        consolecolors=cli_options.get("consolecolors", "AUTO"),
+        quiet=cli_options.get("quiet", False),
+    )
 
 
 def main(argv: Optional[list[str]] = None) -> None:
@@ -537,6 +574,7 @@ def main(argv: Optional[list[str]] = None) -> None:
     args, cli_options = parse_arguments(argv)
 
     configure_logging(args.log_level)
+    apply_robot_console_policy(cli_options, args.log_level)
     os.environ["YARF_LOG_LEVEL"] = args.log_level
     if args.log_video:
         os.environ["YARF_LOG_VIDEO"] = "1"

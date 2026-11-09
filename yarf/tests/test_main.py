@@ -4,6 +4,7 @@ import tempfile
 import types
 from pathlib import Path
 from textwrap import dedent
+from typing import Any
 from unittest import mock
 from unittest.mock import MagicMock, Mock, patch
 
@@ -17,6 +18,7 @@ from yarf.errors.yarf_errors import YARFConnectionError, YARFExitCode
 from yarf.main import (
     YARF_VERSION,
     _import_listener_from_path,
+    apply_robot_console_policy,
     compare_version,
     get_listeners,
     get_robot_reserved_settings,
@@ -32,16 +34,21 @@ from yarf.rf_libraries.libraries import SUPPORTED_PLATFORMS
 from yarf.rf_libraries.libraries.vnc import Vnc
 from yarf.tests.fixtures import fs, root_logger  # noqa: F401
 
+DEFAULT_ROBOT_CONSOLE = {"consolecolors": "AUTO", "consolemarkers": "AUTO"}
+
 
 class TestMain:
     @pytest.fixture(autouse=True)
     def _isolate_logging(
         self,
         root_logger,  # noqa: F811
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """
-        Stop CLI logging configuration from leaking between tests.
+        Stop CLI logging configuration and the caller's NO_COLOR setting from
+        leaking into tests.
         """
+        monkeypatch.delenv("NO_COLOR", raising=False)
 
     def test_version_is_development_placeholder(self) -> None:
         """
@@ -210,6 +217,80 @@ class TestMain:
         assert cm.value.code == 0
         assert capsys.readouterr().out.strip() == f"yarf {YARF_VERSION}"
         mock_owasp_logger.sys_crash.assert_not_called()
+
+    @patch("yarf.main._owasp_logger")
+    def test_parse_arguments_help(
+        self,
+        mock_owasp_logger: MagicMock,
+        capsys: pytest.CaptureFixture,
+    ) -> None:
+        """
+        Test whether "--help" prints the YARF usage and exits successfully
+        without recording a crash.
+        """
+        with pytest.raises(SystemExit) as cm:
+            parse_arguments(["--help"])
+
+        assert cm.value.code == 0
+        out = capsys.readouterr().out
+        assert out.startswith("usage: yarf ")
+        assert "Run a Robot Framework suite" in out
+        mock_owasp_logger.sys_crash.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "cli_options,log_level,no_color,expected",
+        [
+            (
+                {},
+                "NOTICE",
+                "",
+                {"consolecolors": "AUTO", "consolemarkers": "AUTO"},
+            ),
+            (
+                {"consolecolors": "on", "consolemarkers": "on"},
+                "NOTICE",
+                "",
+                {"consolecolors": "AUTO", "consolemarkers": "AUTO"},
+            ),
+            (
+                {"consolecolors": "ansi"},
+                "INFO",
+                "1",
+                {"consolecolors": "OFF", "consolemarkers": "AUTO"},
+            ),
+            (
+                {"consolecolors": "off", "consolemarkers": "off"},
+                "DEBUG",
+                "",
+                {"consolecolors": "OFF", "consolemarkers": "OFF"},
+            ),
+            (
+                {},
+                "ERROR",
+                "",
+                {
+                    "consolecolors": "AUTO",
+                    "consolemarkers": "AUTO",
+                    "quiet": True,
+                },
+            ),
+        ],
+    )
+    def test_apply_robot_console_policy(
+        self,
+        cli_options: dict[str, Any],
+        log_level: str,
+        no_color: str,
+        expected: dict[str, Any],
+    ) -> None:
+        """
+        Test whether Robot console options follow the YARF colour, ephemeral
+        feedback and verbosity rules.
+        """
+        with patch.dict(os.environ, {"NO_COLOR": no_color}):
+            apply_robot_console_policy(cli_options, log_level)
+
+        assert cli_options == expected
 
     def test_parse_arguments_conflicting_verbosity(self) -> None:
         """
@@ -588,7 +669,10 @@ class TestMain:
             extra_arg="extra_value",
         )
         mock_rebot.assert_called_once_with(
-            f"{outdir}/output.xml", outputdir=outdir
+            f"{outdir}/output.xml",
+            outputdir=outdir,
+            consolecolors="AUTO",
+            quiet=False,
         )
 
     @patch("yarf.main.get_robot_reserved_settings")
@@ -681,7 +765,12 @@ class TestMain:
         supplied.
         """
         outdir = Path("/testoutdir")
-        cli_options = {"variable": ["VAR3:value3"], "extra_arg": "extra_value"}
+        cli_options = {
+            "variable": ["VAR3:value3"],
+            "extra_arg": "extra_value",
+            "consolecolors": "OFF",
+            "quiet": True,
+        }
         rf_debug_log_path = outdir / "rfdebug_history.log"
         mock_console_suite = Mock()
         mock_console_suite.run.return_value.return_code = 0
@@ -698,7 +787,10 @@ class TestMain:
                 cli_options,
             )
         mock_rebot.assert_called_once_with(
-            f"{outdir}/output.xml", outputdir=outdir
+            f"{outdir}/output.xml",
+            outputdir=outdir,
+            consolecolors="OFF",
+            quiet=True,
         )
         mock_logger.log.assert_called_once()
 
@@ -732,7 +824,7 @@ class TestMain:
             lib_cls=SUPPORTED_PLATFORMS["Vnc"],
             variables=[],
             outdir=Path(tempfile.gettempdir()) / "yarf-outdir",
-            cli_options={},
+            cli_options=DEFAULT_ROBOT_CONSOLE,
             output_format=None,
         )
         assert os.getenv("YARF_LOG_LEVEL") == "NOTICE"
@@ -782,7 +874,7 @@ class TestMain:
             lib_cls=SUPPORTED_PLATFORMS["Vnc"],
             variables=[],
             outdir=Path(tempfile.gettempdir()) / "yarf-outdir",
-            cli_options={},
+            cli_options=DEFAULT_ROBOT_CONSOLE,
             output_format=None,
         )
         assert os.environ["YARF_LOG_VIDEO"] == "1"
@@ -820,7 +912,7 @@ class TestMain:
             lib_cls=SUPPORTED_PLATFORMS["Vnc"],
             variables=[],
             outdir=Path(outdir),
-            cli_options={},
+            cli_options=DEFAULT_ROBOT_CONSOLE,
             output_format=None,
         )
 
@@ -850,7 +942,7 @@ class TestMain:
             lib_cls=SUPPORTED_PLATFORMS["Vnc"],
             outdir=outdir,
             rf_debug_history_log_path=rf_debug_log_path,
-            cli_options={},
+            cli_options=DEFAULT_ROBOT_CONSOLE,
         )
 
     @patch("yarf.main.Path.exists")

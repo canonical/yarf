@@ -166,6 +166,11 @@ ISO 8601 timestamp. Coloured output is used only when the stream is an
 interactive terminal and the [`NO_COLOR`](https://no-color.org/) environment
 variable is unset.
 
+These rules also apply to the Robot Framework console output. `--quiet`
+silences the Robot Framework progress and result file messages, and the
+Robot Framework `--consolecolors` and `--consolemarkers` options cannot force
+colours or progress markers onto a redirected stream.
+
 ## Debug failing tests
 
 When developing tests, you will often need more feedback than the command line gives you. `yarf` will output
