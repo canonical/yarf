@@ -13,4 +13,6 @@ sudo apt-get --yes --no-install-recommends install \
   libadwaita-1-dev \
   gir1.2-adw-1
 
-python3 -m venv --system-site-packages tests/keyword_suite/grid/.venv
+# Use Ubuntu's interpreter because `python3-gi` is installed for it. The
+# actions/setup-python interpreter has a separate prefix and cannot import it.
+/usr/bin/python3 -m venv --system-site-packages tests/keyword_suite/grid/.venv
