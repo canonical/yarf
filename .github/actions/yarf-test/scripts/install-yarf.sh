@@ -37,8 +37,10 @@ fi
 # Built on an interpreter already on the runner so its site packages stay
 # visible, letting callers prepare dependencies before this action runs. pip is
 # seeded so a plain `pip install` in a caller's command lands in this venv
-# rather than escaping to the system one.
-uv --no-managed-python venv --seed --system-site-packages "${venv}"
+# rather than escaping to the system one. The interpreter is named explicitly
+# so a caller's .python-version cannot request one the runner lacks.
+uv --no-managed-python venv --python python3 --seed \
+  --system-site-packages "${venv}"
 
 if [ -n "${YARF_PATH}" ]; then
   echo "Installing YARF from '${YARF_PATH}'"
