@@ -9,8 +9,17 @@ import numpy as np
 from PIL import Image, ImageDraw
 from robot.api import logger
 
+from yarf.rf_libraries.libraries.image.utils import log_image
 from yarf.vendor.RPA.core.geometry import Region
 from yarf.vendor.RPA.Images import RGB
+
+# Below this chroma (saturation * value / 255, i.e. max(RGB) - min(RGB)) a
+# color is close to grey or black and its hue is mostly noise, so hue is not
+# compared.
+_MIN_HUE_CHROMA = 20.0
+
+# Minimum number of regions needed to tell a highlighted one from the rest.
+MIN_OUTLIER_REGIONS = 3
 
 
 class SegmentationTool:
@@ -161,6 +170,250 @@ class SegmentationTool:
         hsv_image = self.convert_image_to_hsv(image)
         return self._robust_hsv_color(hsv_image, mask)
 
+    def get_background_color(self, image: Image):
+        """
+        Sample the representative background (non-text) color of a crop.
+
+        The text strokes are masked out and the robust HSV color of the
+        remaining pixels is returned, so the value reflects the fill behind
+        the text (for example a selection highlight) rather than the text
+        itself.
+
+        Args:
+            image: input image (PIL Image, RGB)
+
+        Returns:
+            A tuple containing the representative HSV values (h, s, v) of the
+            background
+        """
+        text_mask = self.get_text_mask(image)
+        background_mask = cv2.bitwise_not(text_mask)
+        hsv_image = self.convert_image_to_hsv(image)
+        return self._robust_hsv_color(hsv_image, background_mask)
+
+    def _is_background_similar(
+        self,
+        color1: tuple,
+        color2: tuple,
+        tolerance: int,
+    ) -> bool:
+        """
+        Check whether two background colors match within tolerance.
+
+        Unlike `is_hsv_color_similar`, this accounts for OpenCV's 0-179
+        circular hue range (including the 0/179 wraparound) and only compares
+        hue and value, which is what distinguishes a highlighted background
+        from the common one. Hue is ignored when either color is near grey or
+        black (see `_hue_distance`).
+
+        Args:
+            color1: First color in HSV (h, s, v).
+            color2: Second color in HSV (h, s, v).
+            tolerance: Allowed difference in percent.
+
+        Returns:
+            True if the colors are within tolerance, False otherwise.
+        """
+        hue_diff = self._hue_distance(color1, color2)
+        value_diff = abs(color1[2] - color2[2])
+        hue_threshold = 180.0 * tolerance / 100.0
+        value_threshold = 255.0 * tolerance / 100.0
+        return hue_diff <= hue_threshold and value_diff <= value_threshold
+
+    @staticmethod
+    def _hue_distance(color1: tuple, color2: tuple) -> float:
+        """
+        Compute the circular hue distance between two HSV colors.
+
+        OpenCV hue is in 0-179, so the distance wraps around at 180. When
+        either color has a low chroma (near grey or black) its hue is mostly
+        noise, so the distance is reported as 0.
+
+        Args:
+            color1: First color in HSV (h, s, v).
+            color2: Second color in HSV (h, s, v).
+
+        Returns:
+            The hue distance in 0-90, or 0 if hue is not meaningful.
+        """
+        chroma1 = color1[1] * color1[2] / 255.0
+        chroma2 = color2[1] * color2[2] / 255.0
+        if min(chroma1, chroma2) < _MIN_HUE_CHROMA:
+            return 0.0
+
+        hue_diff = abs(color1[0] - color2[0])
+        return min(hue_diff, 180.0 - hue_diff)
+
+    def find_outlier_region_index(
+        self,
+        image: Image,
+        regions: list[Region],
+        tolerance: int = 20,
+    ) -> int | None:
+        """
+        Find the region whose background color stands out from the rest.
+
+        In a keyboard-driven menu the selected item is drawn with a distinct
+        background (an inverted or highlighted bar). Given the regions of the
+        menu items, this samples each item's background color and returns the
+        index of the one that deviates from the common background, without
+        needing to know the highlight color in advance.
+
+        At least `MIN_OUTLIER_REGIONS` regions are required: the common
+        background is the median of all of them, so with only two regions it
+        falls halfway between both and neither can be told apart.
+
+        Args:
+            image: The image the regions were detected in (PIL Image, RGB).
+            regions: The item regions to compare.
+            tolerance: Allowed background color difference in percent, beyond
+                which a region is considered highlighted.
+
+        Returns:
+            The index of the highlighted region, or None when fewer than
+            `MIN_OUTLIER_REGIONS` regions are given or none stands out.
+        """
+        if len(regions) < MIN_OUTLIER_REGIONS:
+            return None
+
+        backgrounds = [
+            self.get_background_color(
+                self.crop_image_with_padding(image, region, pad=2)
+            )
+            for region in regions
+        ]
+
+        consensus = self._consensus_hsv_color(backgrounds)
+
+        best_index = None
+        best_deviation = 0.0
+        for index, background in enumerate(backgrounds):
+            if self._is_background_similar(consensus, background, tolerance):
+                continue
+            deviation = self._hue_distance(background, consensus) + abs(
+                background[2] - consensus[2]
+            )
+            if deviation > best_deviation:
+                best_deviation = deviation
+                best_index = index
+
+        log_image(
+            self.create_background_comparison_image(
+                backgrounds, consensus, best_index
+            ),
+            "Highlight detection: line backgrounds vs consensus "
+            "(outlier boxed in red)",
+        )
+
+        return best_index
+
+    def create_background_comparison_image(
+        self,
+        backgrounds: list,
+        consensus: tuple,
+        outlier_index: int | None = None,
+        swatch_size: int = 80,
+    ) -> Image.Image:
+        """
+        Build an image comparing each line's background to the consensus.
+
+        The leftmost swatch shows the consensus (common) background color and
+        the numbered swatches show each line's sampled background, so the
+        highlighted line can be seen as the color outlier. The detected
+        outlier, if any, is boxed in red.
+
+        Args:
+            backgrounds: Per-line background colors in HSV (h, s, v).
+            consensus: The consensus background color in HSV (h, s, v).
+            outlier_index: Index of the detected outlier line, if any.
+            swatch_size: Side length in pixels of each color square.
+
+        Returns:
+            A PIL image with the consensus and per-line color swatches.
+        """
+        gap = 8
+        label_height = 20
+        count = len(backgrounds) + 1
+        width = count * (swatch_size + gap) + gap
+        height = swatch_size + label_height * 2
+        image = Image.new("RGB", (width, height), (255, 255, 255))
+        draw = ImageDraw.Draw(image)
+
+        def draw_swatch(x: int, hsv: tuple, label: str, boxed: bool) -> None:
+            rgb = self.convert_hsv_to_rgb(
+                (int(hsv[0]), int(hsv[1]), int(hsv[2]))
+            )
+            draw.rectangle(
+                (x, label_height, x + swatch_size, label_height + swatch_size),
+                fill=rgb,
+                outline=(0, 0, 0),
+            )
+            if boxed:
+                draw.rectangle(
+                    (
+                        x - 3,
+                        label_height - 3,
+                        x + swatch_size + 3,
+                        label_height + swatch_size + 3,
+                    ),
+                    outline=(255, 0, 0),
+                    width=3,
+                )
+            draw.text((x, 4), label, fill=(0, 0, 0))
+
+        x = gap
+        draw_swatch(x, consensus, "consensus", False)
+        x += swatch_size + gap
+        for index, background in enumerate(backgrounds):
+            draw_swatch(x, background, str(index), index == outlier_index)
+            x += swatch_size + gap
+
+        return image
+
+    def _consensus_hsv_color(self, colors: list):
+        """
+        Compute a representative HSV color shared by most of the given colors.
+
+        Uses the median for saturation and value and a circular median for
+        hue, so a highlighted minority cannot skew the consensus the way an
+        arithmetic mean would.
+
+        Args:
+            colors: Sequence of (h, s, v) tuples.
+
+        Returns:
+            A tuple of consensus (h, s, v) values.
+        """
+        return self._circular_median_hsv(np.array(colors, dtype=np.float64))
+
+    @staticmethod
+    def _circular_median_hsv(hsv: np.ndarray) -> tuple:
+        """
+        Compute the median HSV color of an (N, 3) array of HSV values.
+
+        Uses the median for saturation and value and a circular median for
+        hue: hue is circular (0..179 in OpenCV), so the median is taken on the
+        angle and the 0/179 wraparound cannot distort the result.
+
+        Args:
+            hsv: Array of shape (N, 3) holding (h, s, v) rows.
+
+        Returns:
+            A tuple of median (h, s, v) values.
+        """
+        hsv = hsv.astype(np.float64)
+        saturation = float(np.median(hsv[:, 1]))
+        value = float(np.median(hsv[:, 2]))
+
+        hue_rad = hsv[:, 0] * (2.0 * np.pi / 180.0)
+        median_sin = np.median(np.sin(hue_rad))
+        median_cos = np.median(np.cos(hue_rad))
+        hue = (np.arctan2(median_sin, median_cos) % (2.0 * np.pi)) * (
+            180.0 / (2.0 * np.pi)
+        )
+
+        return (hue, saturation, value)
+
     def _robust_hsv_color(
         self,
         hsv_image: np.ndarray,
@@ -184,19 +437,7 @@ class SegmentationTool:
         if pixels.size == 0:
             return cv2.mean(hsv_image, mask=mask)[:3]
 
-        s = float(np.median(pixels[:, 1]))
-        v = float(np.median(pixels[:, 2]))
-
-        # Hue is circular (0..179 in OpenCV): take the median of the angle
-        # so the 0/179 wraparound cannot distort the result.
-        hue_rad = pixels[:, 0].astype(np.float64) * (2.0 * np.pi / 180.0)
-        median_sin = np.median(np.sin(hue_rad))
-        median_cos = np.median(np.cos(hue_rad))
-        h = (np.arctan2(median_sin, median_cos) % (2.0 * np.pi)) * (
-            180.0 / (2.0 * np.pi)
-        )
-
-        return (h, s, v)
+        return self._circular_median_hsv(pixels)
 
     def postprocess_mask(
         self,

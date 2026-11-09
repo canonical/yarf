@@ -12,6 +12,7 @@ import tempfile
 import time
 from abc import ABC, abstractmethod
 from dataclasses import astuple
+from pathlib import Path
 from types import ModuleType
 from typing import List, Optional, Sequence, Union
 
@@ -23,11 +24,15 @@ from robot.libraries.BuiltIn import BuiltIn
 from yarf import LABEL_PREFIX
 from yarf.lib.images.utils import to_RGB
 from yarf.rf_libraries.libraries.image.cursor_detector import CursorDetector
-from yarf.rf_libraries.libraries.image.segmentation import SegmentationTool
+from yarf.rf_libraries.libraries.image.segmentation import (
+    MIN_OUTLIER_REGIONS,
+    SegmentationTool,
+)
 from yarf.rf_libraries.libraries.image.utils import (
     draw_point_on_image,
     log_image,
 )
+from yarf.rf_libraries.libraries.ocr.line_reader import read_lines
 from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
 from yarf.rf_libraries.variables.video_input_vars import (
     DEFAULT_CURSOR_DETECTION_CONFIDENCE,
@@ -468,6 +473,160 @@ class VideoInputBase(ABC):
                 )
 
         return matched_text_regions
+
+    @keyword
+    async def get_highlighted_text(
+        self,
+        region: Optional[Union[Region, dict]] = None,
+        image: Optional[Union[Image.Image, str, Path]] = None,
+        color_tolerance: int = 20,
+    ) -> Optional[dict]:
+        """
+        Detect the currently highlighted item in a keyboard-driven menu.
+
+        Reads every text line and returns the one whose background stands out
+        from the others, that is, the selection highlight, without needing to
+        know the highlight color in advance. This is useful for navigating
+        text menus where a pointer is unavailable and the current selection
+        has to be read from the screen.
+
+        At least three text lines must be visible: the highlight is found by
+        comparing each line against the common background of all of them, so
+        with only two lines neither can be told apart. Restrict ``region`` to
+        an area with three or more lines, for example including a menu title.
+
+        Args:
+            region: The region to restrict the search to.
+            image: The image to analyze; a screenshot is grabbed when not
+                given. A path to an image file may also be given.
+            color_tolerance: Background color tolerance in percent. A line
+                whose background differs beyond this is considered
+                highlighted.
+
+        Returns:
+            The highlighted line as a dict with "text", "region" and
+            "confidence", or None if fewer than three lines are read or no
+            highlight is detected.
+        """
+        if isinstance(region, dict):
+            region = Region(**region)
+
+        if image is None:
+            image = await self._grab_and_save_screenshot()
+        elif not isinstance(image, Image.Image):
+            image = to_image(image)
+
+        lines = read_lines(self.ocr, image, region=region)
+        if len(lines) < MIN_OUTLIER_REGIONS:
+            return None
+
+        # Step 1: log every detected line and its box.
+        log_image(
+            self._draw_line_boxes(image, lines),
+            f"Highlight detection: {len(lines)} OCR lines detected",
+        )
+
+        regions = [line["region"] for line in lines]
+        # Step 2: the background-vs-consensus swatches are logged inside
+        # find_outlier_region_index.
+        index = self.segmentation_tool.find_outlier_region_index(
+            image, regions, color_tolerance
+        )
+        if index is None:
+            return None
+
+        highlighted = lines[index]
+        logger.info(
+            f"Detected highlighted item: '{highlighted['text']}' "
+            f"at region {astuple(highlighted['region'])}"
+        )
+        # Step 3: log the selected line.
+        log_image(
+            self._draw_line_boxes(image, lines, highlight_index=index),
+            f"Highlight detection: selected '{highlighted['text']}'",
+        )
+
+        return highlighted
+
+    def _draw_line_boxes(
+        self,
+        image: Image.Image,
+        lines: list[dict],
+        highlight_index: Optional[int] = None,
+    ) -> Image.Image:
+        """
+        Draw a numbered box around every detected line for logging.
+
+        Args:
+            image: Image the lines were detected in.
+            lines: The detected lines, each with a "region".
+            highlight_index: Index of the line to emphasize in red, if any.
+
+        Returns:
+            A copy of the image with the line boxes drawn.
+        """
+        annotated = image.copy()
+        draw = ImageDraw.Draw(annotated)
+        for i, line in enumerate(lines):
+            r = line["region"]
+            selected = i == highlight_index
+            color = "red" if selected else "cyan"
+            draw.rectangle(
+                (r.left, r.top, r.right, r.bottom),
+                outline=color,
+                width=3 if selected else 1,
+            )
+            draw.text((r.left, max(r.top - 12, 0)), str(i), fill=color)
+        return annotated
+
+    @keyword
+    async def is_highlighted_text(
+        self,
+        text: str,
+        region: Optional[Union[Region, dict]] = None,
+        image: Optional[Union[Image.Image, str, Path]] = None,
+        color_tolerance: int = 20,
+        partial: bool = False,
+    ) -> bool:
+        """
+        Check whether the currently highlighted menu item matches text.
+
+        Uses `Get Highlighted Text` to read the selected item and compares it
+        with ``text``, ignoring case and surrounding whitespace. By default
+        the whole item must match, so "USB1" does not match "USB10". Set
+        ``partial`` to also accept ``text`` appearing anywhere within the
+        item. Useful for asserting or waiting on the selection while
+        navigating a menu.
+
+        Args:
+            text: The expected text of the highlighted item.
+            region: The region to restrict the search to.
+            image: The image to analyze; a screenshot is grabbed when not
+                given. A path to an image file may also be given.
+            color_tolerance: Background color tolerance in percent. A line
+                whose background differs beyond this is considered
+                highlighted.
+            partial: Also match when ``text`` is only part of the highlighted
+                item, instead of requiring the whole item to match.
+
+        Returns:
+            True if the highlighted item matches ``text``, False otherwise.
+
+        Raises:
+            ValueError: If ``text`` is empty.
+        """
+        expected = text.strip().casefold()
+        if not expected:
+            raise ValueError("Empty search string")
+
+        highlighted = await self.get_highlighted_text(
+            region=region, image=image, color_tolerance=color_tolerance
+        )
+        if highlighted is None:
+            return False
+
+        actual = highlighted["text"].strip().casefold()
+        return expected in actual if partial else expected == actual
 
     @keyword
     async def match_text(

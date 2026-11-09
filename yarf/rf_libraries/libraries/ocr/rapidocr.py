@@ -136,37 +136,51 @@ class RapidOCRReader:
         if confidence is not None:
             RapidOCRReader._validate_threshold("confidence", confidence)
 
-        image_obj = to_image(image)
-        if region is not None:
-            image_obj = image_obj.crop(region.as_tuple())  # type: ignore[union-attr]
-
         text = text.strip()
         if not text:
             raise ValueError("Empty search string")
+
+        result = self.find_all(image, region=region)
+        if not result:
+            return []
+
+        return self.get_matches(result, text, partial, similarity, confidence)
+
+    def find_all(
+        self,
+        image: Image.Image | Path,
+        region: Region | None = None,
+    ) -> list[OCRResult]:
+        """
+        Scan image for text and return every detected text item.
+
+        Args:
+            image: Path to image or Image object.
+            region: Limit the region of the screen where to look.
+
+        Returns:
+            The detected items, with positions in the coordinates of the full
+            image and confidence as a percentage (0-100).
+        """
+        image_obj = to_image(image)
+        if region is not None:
+            image_obj = image_obj.crop(region.as_tuple())  # type: ignore[union-attr]
 
         ocr_output = self.reader(np.array(image_obj))
         if not ocr_output.txts:
             return []
 
-        result = [
-            OCRResult(position=box, text=txt, confidence=score)
+        offset = (region.left, region.top) if region is not None else (0, 0)
+        return [
+            OCRResult(
+                position=np.asarray(box, dtype=np.float64) + offset,
+                text=txt,
+                confidence=float(score) * 100,
+            )
             for box, txt, score in zip(
                 ocr_output.boxes, ocr_output.txts, ocr_output.scores
             )
         ]
-        # Multiply the item confidence with 100 to convert it to percentage
-        for item in result:
-            item.confidence *= 100
-
-        matches = self.get_matches(
-            result, text, partial, similarity, confidence
-        )
-
-        if region is not None:
-            for match in matches:
-                match["region"] = match["region"].move(region.left, region.top)
-
-        return matches
 
     def get_matches(
         self,

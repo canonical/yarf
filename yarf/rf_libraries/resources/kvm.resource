@@ -427,3 +427,101 @@ Drag And Drop On ${destination}
     ${end_position}=        Walk Pointer To ${destination}                  ${step_distance}        ${delay}
     Release LEFT Button
     RETURN                  ${end_position}
+
+Press ${button} Until ${target} Is Highlighted
+    [Documentation]    Move the keyboard highlight of a grid or menu onto the
+    ...    item whose text matches ${target}, then leave it there.
+    ...
+    ...    Presses ${button} repeatedly until `Is Highlighted Text` reports the
+    ...    target as the highlighted item. The highlight is detected with
+    ...    computer vision (`Get Highlighted Text`), so no template or prior
+    ...    knowledge of the highlight color is needed. Useful for keyboard-only
+    ...    navigation where a pointer is unavailable.
+    ...
+    ...    Embedded arguments:
+    ...    - ${button}: The key that advances the highlight. A single direction
+    ...    that wraps around can reach any item, e.g. "Right".
+    ...    - ${target}: The text of the item to move the highlight to.
+    ...
+    ...    Arguments:
+    ...    - ${max_steps} (optional): Maximum number of key presses before
+    ...    giving up. Default 50.
+    ...    - ${settle} (optional): Seconds to wait after each key press for the
+    ...    screen to update. Default 0.3.
+    ...    - ${color_tolerance} (optional): Background color tolerance in
+    ...    percent for the highlight detection. Default 20.
+    ...    - ${partial} (optional): Also match when ${target} is only part of the
+    ...    highlighted item, instead of requiring the whole item to match.
+    ...    Default False.
+    ...
+    ...    The highlight is checked after every key press at log level WARN,
+    ...    so the log only embeds the images of the final check.
+    [Arguments]
+    ...                     ${max_steps}=50
+    ...                     ${settle}=0.3
+    ...                     ${color_tolerance}=20
+    ...                     ${partial}=${False}
+    ${previous_level}=      Set Log Level           WARN
+    TRY
+        ${reached}=             Is Highlighted Text     ${target}               color_tolerance=${color_tolerance}              partial=${partial}
+        FOR    ${index}    IN RANGE    ${max_steps}
+            IF    ${reached}    BREAK
+            Keys Combo              ${button}
+            Sleep                   ${settle}
+            ${reached}=             Is Highlighted Text     ${target}               color_tolerance=${color_tolerance}              partial=${partial}
+        END
+    FINALLY
+        Set Log Level           ${previous_level}
+    END
+    ${reached}=             Is Highlighted Text     ${target}               color_tolerance=${color_tolerance}              partial=${partial}
+    Should Be True          ${reached}
+    ...                     Could not navigate the highlight to '${target}' within ${max_steps} presses.
+
+Press Keys Until ${target} Is Highlighted
+    [Documentation]    Move the keyboard highlight of a grid or menu onto the
+    ...    item whose text matches ${target}, then leave it there.
+    ...
+    ...    Presses each key in ${keys}, in order, stopping as soon as
+    ...    `Is Highlighted Text` reports the target as the highlighted item.
+    ...    The caller supplies the full sequence of keys needed to reach the
+    ...    target, so no step counting is needed. The highlight is detected
+    ...    with computer vision (`Get Highlighted Text`), so no template or
+    ...    prior knowledge of the highlight color is needed. Useful for
+    ...    keyboard-only navigation where a pointer is unavailable.
+    ...
+    ...    Embedded arguments:
+    ...    - ${target}: The text of the item to move the highlight to.
+    ...
+    ...    Arguments:
+    ...    - ${keys}: The sequence of keys to press, in order, to reach the
+    ...    target.
+    ...    - ${settle} (optional): Seconds to wait after each key press for the
+    ...    screen to update. Default 0.3.
+    ...    - ${color_tolerance} (optional): Background color tolerance in
+    ...    percent for the highlight detection. Default 20.
+    ...    - ${partial} (optional): Also match when ${target} is only part of the
+    ...    highlighted item, instead of requiring the whole item to match.
+    ...    Default False.
+    ...
+    ...    The highlight is checked after every key press at log level WARN,
+    ...    so the log only embeds the images of the final check.
+    [Arguments]
+    ...                     ${keys}
+    ...                     ${settle}=0.3
+    ...                     ${color_tolerance}=20
+    ...                     ${partial}=${False}
+    ${previous_level}=      Set Log Level           WARN
+    TRY
+        ${reached}=             Is Highlighted Text     ${target}               color_tolerance=${color_tolerance}              partial=${partial}
+        FOR    ${key}    IN    @{keys}
+            IF    ${reached}    BREAK
+            Keys Combo              ${key}
+            Sleep                   ${settle}
+            ${reached}=             Is Highlighted Text     ${target}               color_tolerance=${color_tolerance}              partial=${partial}
+        END
+    FINALLY
+        Set Log Level           ${previous_level}
+    END
+    ${reached}=             Is Highlighted Text     ${target}               color_tolerance=${color_tolerance}              partial=${partial}
+    Should Be True          ${reached}
+    ...                     Could not navigate the highlight to '${target}' with the given keys.
