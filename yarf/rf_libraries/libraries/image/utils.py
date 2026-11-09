@@ -4,6 +4,8 @@ Image logging keyword for Robot Framework.
 
 import os
 import uuid
+from collections.abc import Sequence
+from typing import Any
 
 from PIL import Image, ImageDraw
 from robot.api import logger
@@ -82,19 +84,27 @@ def log_image(image: Image.Image | str, msg: str = "") -> None:
     logger.info(image_string, html=True)
 
 
-def normalize_point(point: list) -> list[float]:
+def normalize_point(
+    point: list, frame: Sequence[Any] = (1000, 1000)
+) -> list[float]:
     """
     Normalize a point to proportional screen coordinates.
 
     Args:
-        point: A point as [x, y] on a 1000x1000 grid
+        point: A point as [x, y] in ``frame``. A single nested point
+            ``[[x, y]]``, as returned by Qwen-VL models, is also accepted.
+        frame: The ``[width, height]`` of the point's coordinate system,
+            a 1000x1000 grid by default.
 
     Returns:
         The point as normalized ``[x, y]`` coordinates.
 
     Raises:
-        ValueError: If the point is not valid.
+        ValueError: If the point or the frame is not valid.
     """
+    if len(point) == 1 and isinstance(point[0], list):
+        point = point[0]
+
     if len(point) != 2:
         raise ValueError("Point must contain exactly two coordinates.")
 
@@ -104,11 +114,17 @@ def normalize_point(point: list) -> list[float]:
     except (TypeError, ValueError) as exc:
         raise ValueError("Point coordinates must be numeric.") from exc
 
-    if not 0 <= x <= 1000 or not 0 <= y <= 1000:
+    try:
+        width, height = (float(value) for value in frame)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"Invalid point frame: {frame}") from exc
+    if width <= 0 or height <= 0:
+        raise ValueError(f"Invalid point frame: {frame}")
+
+    if not 0 <= x <= width or not 0 <= y <= height:
         raise ValueError("Point coordinates must be inside the screen.")
 
-    point = [x / 1000, y / 1000]
-    return point
+    return [x / width, y / height]
 
 
 def draw_point_on_image(

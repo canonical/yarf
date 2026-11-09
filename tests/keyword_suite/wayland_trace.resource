@@ -215,3 +215,34 @@ Assert Pointer Movement Events
         END
     END
     RETURN                  ${idx}
+
+Assert Pointer Scroll Events
+    [Documentation]    This function asserts that the following calls are present in the Wayland trace for every scroll:
+    ...    zwlr_virtual_pointer_v1[#@]*.axis_source(0)
+    ...    zwlr_virtual_pointer_v1[#@]*.axis_discrete(*, 0, ${steps} * 15, ${steps})
+    ...    zwlr_virtual_pointer_v1[#@]*.frame()
+    ...    wl_display[#@]*.sync(new id wl_callback[#@]*)
+    [Arguments]             ${scrolls}
+
+    ${trace}=               Get Trace
+    ${n}=                   Get Length              ${trace}
+    ${idx}=                 Set Variable            0
+
+    FOR    ${steps}    IN    @{scrolls}
+        ${distance}=            Evaluate                ${steps} * 15
+        ${source_pattern}=      Set Variable
+        ...                     ^.*zwlr_virtual_pointer_v1[#@]\\d+\\.axis_source\\(0\\)$
+        ${axis_pattern}=        Set Variable
+        ...                     ^.*zwlr_virtual_pointer_v1[#@]\\d+\\.axis_discrete\\(\\d+, 0, ${distance}(\\.0+)?, ${steps}\\)$
+        ${frame_pattern}=       Set Variable            ^.*zwlr_virtual_pointer_v1[#@]\\d+\\.frame\\(\\)$
+        ${sync_pattern}=        Set Variable            ^.*wl_display[#@]\\d+\\.sync\\(new id wl_callback[#@]\\d+\\)$
+        FOR    ${step}    IN    ${source_pattern}    ${axis_pattern}    ${frame_pattern}    ${sync_pattern}
+            ${jdx}=                 Find Next Matching Line
+            ...                     ${trace}
+            ...                     ${idx}
+            ...                     ${step}
+            Should Be True          ${jdx} < ${n}
+            ${idx}=                 Evaluate                ${jdx} + 1
+        END
+    END
+    RETURN                  ${idx}

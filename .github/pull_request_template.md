@@ -15,11 +15,15 @@ The default merge method of this repository is Squash and Merge, please add a co
 ## Description
 
 <!--
-Describe your changes here:
+Start with a brief overview of the problem, change, and scope. Follow it
+with review-relevant details:
 
-- What's the problem solved (briefly, since the issue is where this is elaborated in more detail).
-- Introduce your implementation approach in a way that helps reviewing it well.
-- Alert the reviewer of any changes that involve data persistence: present examples of file format changes as part of the PR description (e.g. new fields of data stored in unit or submission output).
+- Changed behavior, interfaces, compatibility, and implementation decisions.
+- Persisted or output-data changes, with an example of each format change.
+- Documentation effect, including when there is no user-visible effect.
+
+Do not provide a line-by-line account of the diff. Describe verification in
+the Tests section.
 -->
 
 ## Resolved issues
@@ -32,18 +36,20 @@ Make sure that the linked issue titles & descriptions are also up to date.
 ## Documentation
 
 <!--
-Please make sure that...
-- Documentation impacted by the changes is up to date (becomes so, remains so).
-  - Documentation in the repository, including contribution guidelines.
-  - Process documentation outside the repository.
-- Tests are included for the changed functionality in this PR. If to be merged without tests, please elaborate why.
-- When breaking changes and other key changes are introduced, the PR having been merged should be broadcast (in demo sessions, IM, Discourse) with relevant references to documentation. This is an opportunity to gather feedback and confirm that the changes and how they are documented are understood.
+State the documentation updated, including repository or external process
+documentation. If the change has no user-visible documentation effect, say so.
+
+For a breaking or other significant change, state how affected users will learn
+about it and where its migration or replacement guidance is documented.
 -->
 
 ## Tests
 
 <!--
-- How was this PR tested? Please provide steps to follow so that the reviewer(s) can test on their end.
-- Please provide a list of what tests were run and on what platform/configuration.
-- Remember to check the test coverage of your PR as described in CONTRIBUTING.md
+- List automated checks run, their result, and the platform or configuration.
+- State relevant checks that were not run and why.
+- Provide reproducible manual validation steps when applicable, including the
+  expected result.
+- Include tests for changed functionality, or explain why they are not
+  practical. Check coverage as described in `CONTRIBUTING.md`.
 -->

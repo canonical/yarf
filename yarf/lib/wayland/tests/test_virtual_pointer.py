@@ -183,3 +183,22 @@ class TestVirtualPointer:
                 call.Display().roundtrip(),
             ]
         )
+
+    @pytest.mark.parametrize("steps", (3, -2))
+    def test_scroll(self, virtual_pointer, mock_pwc, steps):  # noqa:F811
+        virtual_pointer.timestamp = Mock()
+
+        virtual_pointer.connected()
+        virtual_pointer.scroll(steps)
+
+        pointer = call.zwlr_virtual_pointer_manager_v1.create_virtual_pointer_with_output()
+        mock_pwc.assert_has_calls(
+            [
+                pointer.axis_source(0),
+                pointer.axis_discrete(
+                    virtual_pointer.timestamp(), 0, steps * 15.0, steps
+                ),
+                pointer.frame(),
+                call.Display().roundtrip(),
+            ]
+        )

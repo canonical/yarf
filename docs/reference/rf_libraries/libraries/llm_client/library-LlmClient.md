@@ -71,6 +71,16 @@ ${result}=    Check For Visual Corruption
 ### Configure Llm Client
 
 <p>Configure the LLM client with the given parameters.</p>
+<p>Supported parameters are <code>model</code>, <code>server_url</code>, <code>endpoint</code>, <code>max_tokens</code>, <code>api_key_env</code>, <code>image_format</code>, <code>collect_usage</code> and <code>provider</code>.</p>
+<p><code>provider</code> applies a preset for a hosted service, which explicit parameters override:</p>
+<ul>
+<li><code>openrouter</code>: OpenRouter, key read from <code>OPENROUTER_API_KEY</code>.</li>
+<li><code>copilot</code>: GitHub Copilot, key read from <code>GITHUB_TOKEN</code> (e.g. <code>export GITHUB_TOKEN=$(gh auth token)</code>).</li>
+<li><code>gemini</code>: Google Gemini API, key read from <code>GEMINI_API_KEY</code>.</li>
+</ul>
+<p>The API key is sent as a bearer token and read from the environment variable named by <code>api_key_env</code> (default <code>YARF_LLM_API_KEY</code>), so that it never appears in the Robot logs. No <code>Authorization</code> header is sent if the variable is unset.</p>
+<p>Models that only support the OpenAI Responses API can be used by setting <code>endpoint=/responses</code>. For models that do not accept WEBP images, set <code>image_format</code> to <code>PNG</code> or <code>JPEG</code>.</p>
+<p>Set <code>collect_usage=True</code> to record the token usage, inference time and cost of each request, see <a class="name" href="#get-llm-usage" title='"Get Llm Usage" keyword'>Get Llm Usage</a>. It is off by default.</p>
 
 #### Return
 
@@ -81,7 +91,7 @@ None
 #### Raises
 
 - `TypeError`: If unknown parameters are provided.
-- `ValueError`: If parameter values are of incorrect type.
+- `ValueError`: If parameter values are of incorrect type or the provider is unknown.
 
 #### Positional and named arguments
 
@@ -95,6 +105,11 @@ None
 Configure Llm Client
 ...    model=qwen3-vl:2b-instruct
 ...    server_url=http://localhost:11434/v1
+Configure Llm Client    provider=copilot    model=gpt-4.1
+Configure Llm Client    provider=openrouter
+...    model=qwen/qwen3-vl-8b-instruct
+Configure Llm Client    provider=gemini    model=gemini-2.5-flash
+Configure Llm Client    collect_usage=True
 ```
 
 <hr style="border:1px solid grey">
@@ -115,16 +130,42 @@ None
 
 #### Positional and named arguments
 
-| Name        | Type       | Default Value | Kind                | Required | Documentation                                          |
-| ----------- | ---------- | ------------- | ------------------- | -------- | ------------------------------------------------------ |
-| action      | dictionary |               | POSITIONAL_OR_NAMED | Yes      | A dict containing the action_type, text, and point_2d. |
-| description | string     |               | POSITIONAL_OR_NAMED | No       | The description provided to the LLM.                   |
+| Name        | Type       | Default Value | Kind                | Required | Documentation                                                                                                                                                |
+| ----------- | ---------- | ------------- | ------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| action      | dictionary |               | POSITIONAL_OR_NAMED | Yes      | A dict containing the action_type, text and point, the proportional <code>[x, y]</code> position on the screen, e.g. <code>[0.5, 0.5]</code> for its center. |
+| description | string     |               | POSITIONAL_OR_NAMED | No       | The description provided to the LLM.                                                                                                                         |
 
 #### Example
 
 ```robotframework
 ${action}=    Get Single Gui Action    click the Continue button
 Execute Gui Action    ${action}    click the Continue button
+${action}=    Create Dictionary    action_type=Left Click
+...    text=${None}    point=${{[0.5, 0.5]}}
+Execute Gui Action    ${action}
+```
+
+<hr style="border:1px solid grey">
+
+### Get Llm Usage
+
+<p>Get the accumulated usage of all LLM requests made by this library instance, e.g. during the current test. Requires <code>collect_usage=True</code> in <a class="name" href="#configure-llm-client" title='"Configure Llm Client" keyword'>Configure Llm Client</a>.</p>
+<p><code>inference_time</code> is the summed wall-clock time of the requests in seconds, including network latency. Retries of transient server errors are counted separately in <code>retries</code>; only the final attempt of each request counts in <code>requests</code> and <code>inference_time</code>. <code>cost</code> (OpenRouter credits) and <code>nano_aiu</code> (Copilot billing units) are <code>None</code> if the server does not report them.</p>
+
+#### Return
+
+```
+dictionary[string, Any]
+```
+
+<p>A dict with the model, number of requests and retries, token counts, inference time, output throughput and cost.</p>
+
+#### Example
+
+```robotframework
+Configure Llm Client    collect_usage=True
+${usage}=    Get Llm Usage
+Log    ${usage}[total_tokens]
 ```
 
 <hr style="border:1px solid grey">
@@ -171,7 +212,7 @@ ${point}=    Get Object Position    the Continue button
 dictionary[string, Any]
 ```
 
-<p>The next GUI action as returned by the LLM. For pointer-based actions, <span class="name">point_2d</span> contains the raw coordinates from the LLM's 1000x1000 grid.</p>
+<p>The next GUI action, a dict with <code>action_type</code>, <code>text</code> and <code>point</code>. For pointer-based actions, <code>point</code> is the proportional <code>[x, y]</code> position on the screenshot, e.g. <code>[0.5, 0.5]</code> for its center; otherwise it is None.</p>
 
 #### Positional and named arguments
 

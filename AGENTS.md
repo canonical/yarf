@@ -1,7 +1,12 @@
-# AGENTS.md
+# Preface
 
-Fast repo guide for coding agents. Keep this file short; use `CONTRIBUTING.md`
-and `docs/CONTRIBUTING.md` for full contributor docs.
+Fast guide for coding agents working in YARF. Keep this file concise. Use
+`CONTRIBUTING.md`, `docs/CONTRIBUTING.md`, and `.kb/` for detailed contributor
+guidance.
+
+Read the top-level `.kb/agents.md` file before continuing below.
+
+# Overview
 
 ## What this repo is
 
@@ -22,6 +27,8 @@ and `docs/CONTRIBUTING.md` for full contributor docs.
 - `tests/canary_test/` - smoke tests
 - `**/tests/` under `yarf/` - Python unit tests are mostly colocated
 
+# Important
+
 ## Normal workflow
 
 ```bash
@@ -34,7 +41,7 @@ uv run prek run --all-files --hook-stage manual
 
 Notes:
 
-- `.python-version` is `3.12`, but tox targets 3.10, 3.12, 3.13, 3.14.
+- `.python-version` is `3.12`, but tox targets 3.12, 3.13, 3.14.
 - `tox` is the best "full repo" check: it runs manual `prek` hooks plus pytest
   with coverage. `prek` is the project's pre-commit tool (wraps
   `pre-commit`).
@@ -55,8 +62,11 @@ Notes:
 - Coverage for `yarf` is gated at **100%** in tox.
 - To exclude a keyword from keyword coverage, use `yarf: nocoverage` and explain
   why.
-- Avoid editing `yarf/vendor/` and `yarf/lib/wayland/protocols/` unless the task
-  is specifically about vendored/generated code.
+- Avoid editing `yarf/lib/wayland/protocols/` unless the task is specifically
+  about generated code.
+- `yarf/vendor/` is third-party code maintained in-tree: it follows the same
+  lint, typing, docstring and coverage rules as the rest of `yarf`. Record
+  modifications in the `NOTICE` file of the vendored package.
 
 ## Easy-to-miss checks
 
@@ -70,5 +80,34 @@ Notes:
 
 - Read `CONTRIBUTING.md` if the change affects packaging, Snap builds, docs, or
   keyword coverage policy.
-- Prefer surgical edits; this repo has vendored code, generated code, and several
-  CI-specific workflows under `.github/workflows/`.
+- Read `.kb/pull-requests.md` before opening, updating, or reviewing a pull
+  request.
+- Read `.kb/writing-style.md` before writing contributor documentation, pull
+  request text, review comments, commit messages, or agent replies.
+- Read `.kb/documentation.md` and `docs/AGENTS.md` before changing user-facing
+  behavior or documentation.
+- Read `.kb/spec-kit.md` before starting or reviewing Spec Kit feature work.
+  Committed feature contracts follow `requirements/AGENTS.md`.
+- Prefer surgical edits. This repository has vendored code, generated code, and
+  several CI-specific workflows under `.github/workflows/`.
+
+# Directory
+
+- `yarf/` - Python package, Robot Framework libraries, and internal helpers.
+- `tests/` - Robot keyword, platform plugin, and smoke test suites.
+- `docs/` - User documentation built with Sphinx and MyST.
+- `snap/` - Snap package definition and packaging support.
+- `requirements/` - Committed Spec Kit feature contracts.
+- `.github/` - CI workflows, actions, and pull request validation.
+
+# Documents
+
+- `.kb/agents.md` - Knowledge-base organization and header rules.
+- `.kb/documentation.md` - Documentation scope, location, validation, and maintenance.
+- `.kb/pull-requests.md` - Pull request scope, structure, review, and verification.
+- `.kb/spec-kit.md` - Spec Kit workflow, contract adoption, and feature delivery.
+- `.kb/writing-style.md` - Writing rules for contributor guidance and pull requests.
+- `CONTRIBUTING.md` - Development environment, testing, and Snap build instructions.
+- `docs/AGENTS.md` - Documentation-specific contributor guidance.
+- `docs/CONTRIBUTING.md` - Documentation build and quality-check instructions.
+- `requirements/AGENTS.md` - Feature contract format and lifecycle.

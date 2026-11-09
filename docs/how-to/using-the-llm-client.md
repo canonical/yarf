@@ -287,11 +287,16 @@ returned action can then be passed to `Execute Gui Action`.
 
 Supported action types are:
 
-- `Left Click`
-- `Right Click`
-- `Double Click`
-- `Write`
-- `Wait`
+- `Left Click`, `Right Click`, `Double Click`: click the given point.
+- `Scroll Down`, `Scroll Up`: scroll the mouse wheel over the given point, for
+  example to reveal a button below the visible area.
+- `Write`: type the given text into the focused field.
+- `Press Key`: press a key or a key combination given as text, using X11 key
+  names joined by `+`, for example `Return` or `Control_L+l`. Common names
+  such as `ctrl`, `enter` or `pagedown` are mapped to their X11 names.
+- `Wait`: wait for the interface to finish loading.
+
+Clicks and scrolls need a point. `Write` and `Press Key` need text.
 
 ```{code-block} robotframework
 ---
@@ -303,9 +308,11 @@ Click The OK Button
     Execute Gui Action    ${action}
 ```
 
-Pointer actions returned by `Get Single Gui Action` use the model's 1000x1000
-coordinate grid internally. `Execute Gui Action` normalizes that point before
-moving the pointer with the active `HID` library.
+Pointer actions returned by `Get Single Gui Action` contain a proportional
+point in the screenshot as `point`, like the point returned by
+`Get Object Position`: `[0.5, 0.5]` is the center of the screen.
+`Execute Gui Action` moves the pointer there with the active `HID` library.
+The model's raw answer is logged.
 
 For typing text directly, the action contains `action_type=Write` and the text
 to enter:
