@@ -950,10 +950,8 @@ class VideoInputBase(ABC):
         end_time = time.monotonic() + float(timeout)
         while (iteration_start_time := time.monotonic()) < end_time:
             try:
-                screenshot = await asyncio.wait_for(
-                    self._grab_and_save_screenshot(),
-                    end_time - iteration_start_time,
-                )
+                async with asyncio.timeout(end_time - iteration_start_time):
+                    screenshot = await self._grab_and_save_screenshot()
             except RuntimeError:
                 await self._sleep_for_minimum_iteration_time(
                     iteration_start_time, end_time
@@ -1177,4 +1175,4 @@ class VideoInputBase(ABC):
                     f"Screen did not remain still for {still_duration}s within {duration}s."
                 )
 
-            time.sleep(screenshot_interval)
+            await asyncio.sleep(screenshot_interval)

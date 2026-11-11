@@ -5,7 +5,7 @@ RPA.recognition OCR libraries.
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import ClassVar
+from typing import ClassVar, Self
 
 import numpy as np
 import onnxruntime as ort
@@ -52,7 +52,6 @@ class RapidOCRReader:
     This class is a singleton to avoid loading the model multiple times.
 
     Attributes:
-        instance: The shared singleton instance, set on first creation.
         DEFAULT_SIMILARITY_THRESHOLD: Minimum similarity percentage (0-100) for
           text matching. If the similarity between the found text and the target
           text is below this threshold, the match is discarded.
@@ -62,22 +61,23 @@ class RapidOCRReader:
           threshold, the match is discarded.
           Set ${OCR_CONFIDENCE_THRESHOLD} to override.
         SIMILARITY_LOG_THRESHOLD: Minimum similarity to log rejected matches.
+        instance: Cached singleton instance.
     """
 
-    instance: ClassVar["RapidOCRReader"]
     DEFAULT_SIMILARITY_THRESHOLD: float = 80.0
     DEFAULT_CONFIDENCE_THRESHOLD: float = 70.0
     SIMILARITY_LOG_THRESHOLD: float = 80.0
+    instance: ClassVar[Self | None] = None
 
     @staticmethod
     def _validate_threshold(name: str, value: float) -> None:
         if not 0 <= value <= 100:
             BuiltIn().fail(f"{name} must be between 0 and 100, got {value}")
 
-    def __new__(cls) -> "RapidOCRReader":
-        if not hasattr(cls, "instance"):
+    def __new__(cls) -> Self:
+        if cls.instance is None:
             print("Creating RapidOCR instance")
-            cls.instance = super(RapidOCRReader, cls).__new__(cls)
+            cls.instance = super().__new__(cls)
         print("Returning RapidOCR instance")
         return cls.instance
 
