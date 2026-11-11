@@ -5,6 +5,8 @@ on:
     branches: [ main ]
     paths:
       - '.github/workflows/*'
+      - '.github/actions/**'
+      - '.github/dependabot.yml'
 
 permissions:
   contents: read  # Required to check out repository code
@@ -18,12 +20,12 @@ jobs:
     name: Workflow validation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Install action-validator
         run: |
-          curl -sSL https://github.com/mpalmer/action-validator/releases/download/v0.6.0/action-validator_linux_amd64 -o /tmp/action-validator
+          curl -sSL https://github.com/mpalmer/action-validator/releases/download/v0.9.0/action-validator_linux_amd64 -o /tmp/action-validator
           chmod +x /tmp/action-validator
           sudo mv /tmp/action-validator /usr/local/bin/action-validator
       - name: Lint Actions
@@ -35,16 +37,16 @@ jobs:
     name: Workflow vulnerability scanning
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Install zizmor from crates.io
-        uses: baptiste0928/cargo-install@8195d4f734a149db85385bb4102b42efcd373759
+        uses: baptiste0928/cargo-install@8195d4f734a149db85385bb4102b42efcd373759 # v3.5.0
         with:
           crate: zizmor
-          version: '1.16.1'
-      - name: Scan all workflows
+          version: '1.32.0'
+      - name: Scan workflows, actions, and Dependabot config
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          zizmor --pedantic $(ls .github/workflows/*.{yaml,yml})
+          zizmor --pedantic .
