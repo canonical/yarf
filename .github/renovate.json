@@ -12,5 +12,15 @@
   "lockFileMaintenance": {
     "enabled": true
   },
-  "commitMessagePrefix": "[Infra] "
+  "commitMessagePrefix": "[Infra] ",
+  "packageRules": [
+    {
+      "matchPackageNames": [
+        "mypy",
+        "pre-commit/mirrors-mypy"
+      ],
+      "groupName": "mypy",
+      "groupSlug": "mypy"
+    }
+  ]
 }

@@ -51,8 +51,8 @@ repos:
   - id: mypy
     pass_filenames: false
     additional_dependencies:
-    - types-python-dateutil
-    - types-requests
+    - types-python-dateutil==2.9.0.20261029  # Keep in sync with the lockfile.
+    - types-requests==2.33.0.20261030  # Keep in sync with the lockfile.
     args:
     - --check-untyped-defs
     - --ignore-missing-imports  # Ref.: https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-library-stubs-or-py-typed-marker

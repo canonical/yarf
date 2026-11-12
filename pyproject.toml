@@ -63,6 +63,7 @@ dev = [
     "pytest-xdist",
     "tox",
     "types-python-dateutil",
+    "types-requests",
 ]
 
 [project.scripts]
