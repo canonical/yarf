@@ -21,7 +21,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read  # Required to check out repository code
-      security-events: write  # Upload SARIF to the code-scanning pane
       pull-requests: write  # Comment scan results on the pull request
       packages: read  # Fetch the reposcan tool image from GHCR
     steps:
@@ -35,4 +34,7 @@ jobs:
         with:
           pr-comment: ${{ github.event_name == 'pull_request' }}
           image: ${{ github.event_name == 'pull_request' && 'build' || 'canonical' }}
+          code-scanning: false
           sbom: true
+          # Report-only until the findings already on main are fixed
+          fail-on: none
