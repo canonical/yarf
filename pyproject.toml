@@ -54,7 +54,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "licensecheck",
-    "mypy",
+    "mypy==2.4.1",  # Keep in sync with .pre-commit-config.yaml.
     "prek",
     "pyfakefs",
     "pytest",

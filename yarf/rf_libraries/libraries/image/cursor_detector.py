@@ -5,6 +5,7 @@ Cursor detection using a YOLO ONNX model.
 from dataclasses import dataclass
 from enum import IntEnum
 from pathlib import Path
+from typing import ClassVar
 
 import numpy as np
 import onnxruntime as ort
@@ -63,7 +64,12 @@ class CursorDetector:
     Detects cursor position in images using a YOLO ONNX model.
 
     Singleton to avoid loading the model multiple times.
+
+    Attributes:
+        instance: The shared singleton instance, set on first creation.
     """
+
+    instance: ClassVar["CursorDetector"]
 
     def __new__(cls) -> "CursorDetector":
         if not hasattr(cls, "instance"):

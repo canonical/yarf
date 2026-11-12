@@ -2391,7 +2391,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "licensecheck" },
-    { name = "mypy" },
+    { name = "mypy", specifier = "==2.4.1" },
     { name = "prek" },
     { name = "pyfakefs" },
     { name = "pytest" },
