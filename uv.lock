@@ -2390,15 +2390,16 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "licensecheck" },
+    { name = "licensecheck", marker = "python_full_version < '3.12'", specifier = "==2025.1.0" },
+    { name = "licensecheck", marker = "python_full_version >= '3.12'", specifier = "==2026.0.8" },
     { name = "mypy", specifier = "==2.4.1" },
-    { name = "prek" },
-    { name = "pyfakefs" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-    { name = "pytest-xdist" },
-    { name = "tox" },
+    { name = "prek", specifier = "==0.5.7" },
+    { name = "pyfakefs", specifier = "==6.2.0" },
+    { name = "pytest", specifier = "==9.2.0" },
+    { name = "pytest-asyncio", specifier = "==1.4.1" },
+    { name = "pytest-cov", specifier = "==7.1.0" },
+    { name = "pytest-xdist", specifier = "==3.8.0" },
+    { name = "tox", specifier = "==4.67.4" },
     { name = "types-python-dateutil", specifier = "==2.9.0.20261029" },
     { name = "types-requests", specifier = "==2.33.0.20261030" },
 ]
