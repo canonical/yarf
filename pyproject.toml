@@ -62,8 +62,8 @@ dev = [
     "pytest-cov",
     "pytest-xdist",
     "tox",
-    "types-python-dateutil",
-    "types-requests",
+    "types-python-dateutil==2.9.0.20261029",  # Keep in sync with .pre-commit-config.yaml.
+    "types-requests==2.33.0.20261030",  # Keep in sync with .pre-commit-config.yaml.
 ]
 
 [project.scripts]

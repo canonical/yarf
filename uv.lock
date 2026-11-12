@@ -2399,6 +2399,6 @@ dev = [
     { name = "pytest-cov" },
     { name = "pytest-xdist" },
     { name = "tox" },
-    { name = "types-python-dateutil" },
-    { name = "types-requests" },
+    { name = "types-python-dateutil", specifier = "==2.9.0.20261029" },
+    { name = "types-requests", specifier = "==2.33.0.20261030" },
 ]

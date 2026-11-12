@@ -17,7 +17,9 @@
     {
       "matchPackageNames": [
         "mypy",
-        "pre-commit/mirrors-mypy"
+        "pre-commit/mirrors-mypy",
+        "types-python-dateutil",
+        "types-requests"
       ],
       "groupName": "mypy",
       "groupSlug": "mypy"
