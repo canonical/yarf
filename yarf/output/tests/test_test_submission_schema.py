@@ -415,7 +415,7 @@ class TestTestSubmissionSchema:
                             <tag>yarf:category_id: com.canonical.category::categoryA</tag>
                             <tag>yarf:certification_status: non-blocker</tag>
                             <tag>yarf:test_group_id: com.canonical.group::testGroupA</tag>
-                            <status status="PASS" starttime="2024-12-05T20:58:33.523Z" endtime="2024-12-05T20:58:33.540Z">
+                            <status status="PASS" starttime="20241205 20:58:33.523" endtime="20241205 20:58:33.540">
                             </status>
                         </test>
                         <test id="s1-s1-t2" name="TaskB" line="12">
