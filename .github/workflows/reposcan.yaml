@@ -21,7 +21,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read  # Required to check out repository code
-      pull-requests: write  # Comment scan results on the pull request
       packages: read  # Fetch the reposcan tool image from GHCR
     steps:
       - name: Checkout Repository
@@ -32,8 +31,6 @@ jobs:
       - name: Scan
         uses: canonical/reposcan@760e06d3db4a95bba2697fd586aa815975682428  # v0.2.1
         with:
-          pr-comment: ${{ github.event_name == 'pull_request' }}
-          image: ${{ github.event_name == 'pull_request' && 'build' || 'canonical' }}
           code-scanning: false
           sbom: true
           # Report-only until the findings already on main are fixed
