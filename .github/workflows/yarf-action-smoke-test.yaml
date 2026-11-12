@@ -78,14 +78,14 @@ jobs:
             upload-artifact: "yes"
     steps:
       - name: Checkout repo
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
       - name: Run the action
         id: action
         continue-on-error: true
-        uses: ./.github/actions/yarf-test
+        uses: $/.github/actions/yarf-test
         with:
           platform: Example
           platform-provider: ${{ matrix.platform-provider }}
@@ -136,14 +136,14 @@ jobs:
             upload-artifact: "false"
     steps:
       - name: Checkout repo
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           lfs: true
           persist-credentials: false
 
       - name: Run the action
         id: action
-        uses: ./.github/actions/yarf-test
+        uses: $/.github/actions/yarf-test
         with:
           platform: Example
           platform-provider: ${{ matrix.platform-provider }}
@@ -197,7 +197,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           lfs: true
           persist-credentials: false
@@ -206,7 +206,7 @@ jobs:
       # the action actually use, so this job fetches the source instead.
       - name: Run the action
         id: action
-        uses: ./.github/actions/yarf-test
+        uses: $/.github/actions/yarf-test
         with:
           platform: Example
           platform-provider: custom
@@ -232,7 +232,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           lfs: true
           persist-credentials: false
@@ -244,7 +244,7 @@ jobs:
 
       - name: Run the action
         id: action
-        uses: ./.github/actions/yarf-test
+        uses: $/.github/actions/yarf-test
         with:
           platform: Mir
           platform-provider: stock

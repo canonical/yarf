@@ -140,7 +140,7 @@ jobs:
       contents: read
       actions: write  # Required to trigger canary test workflow
 
-    uses: ./.github/workflows/canary-test.yaml
+    uses: $/.github/workflows/canary-test.yaml
     with:
       TRACK:   ${{ matrix.track }}
       CHANNEL: ${{ matrix.from }}

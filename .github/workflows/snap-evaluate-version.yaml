@@ -24,19 +24,19 @@ jobs:
       actions: write   # Required to trigger snap build workflow
       contents: read   # Required to check out repository code
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           fetch-tags: true
           persist-credentials: false
 
-      - uses: gittools/actions/gitversion/setup@7417b1089e2c7de93510f1901d656ddf60bb024f
+      - uses: gittools/actions/gitversion/setup@7417b1089e2c7de93510f1901d656ddf60bb024f # v4.7.0
         with:
           versionSpec: '6.7.0'
 
       - name: Evaluate semantic version
         id: gv
-        uses: gittools/actions/gitversion/execute@7417b1089e2c7de93510f1901d656ddf60bb024f
+        uses: gittools/actions/gitversion/execute@7417b1089e2c7de93510f1901d656ddf60bb024f # v4.7.0
         with:
           configFilePath: GitVersion.yaml
 
@@ -46,7 +46,7 @@ jobs:
         run: |
           echo "$GV_OUTPUTS"
 
-      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
 
       - name: Normalize version to comply with PEP 440
         id: nv
@@ -60,7 +60,7 @@ jobs:
           STEPS_GV_OUTPUTS_INFORMATIONALVERSION: ${{ steps.gv.outputs.informationalVersion }}
 
       - name: Trigger snap build
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           VERSION: ${{ steps.nv.outputs.version }}
           COMMIT_SHA: ${{ steps.gv.outputs.sha }}
