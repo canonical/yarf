@@ -3,13 +3,5 @@
   "extends": [
     "config:recommended"
   ],
-  "packageRules": [
-    {
-      "matchManagers": [
-        "github-actions"
-      ],
-      "enabled": false
-    }
-  ],
   "commitMessagePrefix": "[Infra] "
 }

@@ -6,7 +6,7 @@ on:
     paths:
       - '.github/workflows/*'
       - '.github/actions/**'
-      - '.github/dependabot.yml'
+      - '.github/renovate.json'
 
 permissions:
   contents: read  # Required to check out repository code
