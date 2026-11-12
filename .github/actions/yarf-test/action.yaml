@@ -128,6 +128,7 @@ runs:
       run: bash "${GITHUB_ACTION_PATH}/scripts/start-platform.sh"
 
     - name: Launch app/OS under test
+      id: launch
       if: inputs.launch-command != ''
       shell: bash
       env:
@@ -135,12 +136,13 @@ runs:
       run: |
         set -euo pipefail
         bash -c "${LAUNCH_COMMAND}" &
-        echo "YARF_APP_PID=$!" >> "${GITHUB_ENV}"
+        echo "app-pid=$!" >> "${GITHUB_OUTPUT}"
 
     - name: Run YARF
       id: run
       shell: bash
       env:
+        YARF_APP_PID: ${{ steps.launch.outputs.app-pid }}
         PLATFORM: ${{ inputs.platform }}
         TEST_PATH: ${{ inputs.test-path }}
         YARF_ARGS: ${{ inputs.yarf-args }}

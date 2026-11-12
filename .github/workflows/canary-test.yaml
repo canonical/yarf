@@ -79,7 +79,7 @@ jobs:
           sudo snap install yarf --channel="${TRACK}/${CHANNEL}"
 
       - name: Check out tests, examples and github workflows
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           lfs: true
           fetch-depth: 1
@@ -94,7 +94,7 @@ jobs:
         run: bash .github/scripts/canary-test/pin-yarf-version.sh
 
       - name: Build yarf-example-plugin snap
-        uses: snapcore/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79
+        uses: snapcore/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79 # v1.3.0
         with:
           path: examples/yarf-example-plugin
 
@@ -237,7 +237,7 @@ jobs:
           pkill -f grid-app || true
 
       - name: Set up Python
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
 
@@ -333,7 +333,7 @@ jobs:
 
       - if: failure()
         name: Collect test results
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: yarf-canary-output-${{ matrix.platform }}-${{ inputs.ARCH }}
           path: ~/snap/yarf/common/yarf-outdir/*

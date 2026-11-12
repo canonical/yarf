@@ -5,6 +5,8 @@ on:
     branches: [ main ]
     paths:
       - '.github/workflows/*'
+      - '.github/actions/**'
+      - '.github/dependabot.yml'
 
 permissions:
   contents: read  # Required to check out repository code
@@ -18,33 +20,30 @@ jobs:
     name: Workflow validation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Install action-validator
-        run: |
-          curl -sSL https://github.com/mpalmer/action-validator/releases/download/v0.6.0/action-validator_linux_amd64 -o /tmp/action-validator
-          chmod +x /tmp/action-validator
-          sudo mv /tmp/action-validator /usr/local/bin/action-validator
+      - name: Install action-validator with asdf
+        uses: asdf-vm/actions/install@b7bcd026f18772e44fe1026d729e1611cc435d47 # v4.0.1
+        with:
+          tool_versions: |
+            action-validator 0.9.0
       - name: Lint Actions
         run: |
-          find .github/workflows -type f \( -iname \*.yaml -o -iname \*.yml \) \
+          { find .github/workflows -type f \( -iname \*.yaml -o -iname \*.yml \)
+            find .github/actions -type f \( -name action.yaml -o -name action.yml \); } \
             | xargs -I {} action-validator --verbose {}
 
   workflow_vulnerability_scan:
     name: Workflow vulnerability scanning
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Install zizmor from crates.io
-        uses: baptiste0928/cargo-install@8195d4f734a149db85385bb4102b42efcd373759
+      - name: Run zizmor
+        uses: zizmorcore/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd # v0.8.1
         with:
-          crate: zizmor
-          version: '1.16.1'
-      - name: Scan all workflows
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          zizmor --pedantic $(ls .github/workflows/*.{yaml,yml})
+          version: v1.32.0
+          persona: pedantic
+          advanced-security: false
