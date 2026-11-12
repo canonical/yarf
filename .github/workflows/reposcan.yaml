@@ -35,4 +35,4 @@ jobs:
         with:
           pr-comment: ${{ github.event_name == 'pull_request' }}
           image: ${{ github.event_name == 'pull_request' && 'build' || 'canonical' }}
-          sbom: ${{ github.ref == 'refs/heads/main' }}
+          sbom: true
