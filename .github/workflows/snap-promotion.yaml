@@ -4,17 +4,16 @@ on:
   schedule:
     - cron: '00 00 * * *'
   workflow_dispatch:
-  # Pull requests only run the canary tests; the promote job is skipped.
+  # Pull requests that change the canary itself run it against the published
+  # edge snap. The promote job is skipped. Test changes are covered from
+  # source by yarf.yaml, so they would wrongly fail here for features that
+  # have not reached edge yet.
   pull_request:
     paths:
       - ".github/workflows/snap-promotion.yaml"
       - ".github/workflows/canary-test.yaml"
       - ".github/actions/setup-canary-env/**"
       - ".github/scripts/canary-test/**"
-      - "tests/canary_test/**"
-      - "tests/keyword_suite/**"
-      - "tests/plugin_suite/**"
-      - "examples/yarf-example-plugin/**"
 
 # Read access to repository contents
 permissions:
