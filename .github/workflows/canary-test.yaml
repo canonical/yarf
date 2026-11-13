@@ -202,13 +202,14 @@ jobs:
           - suite: hid_pointer_test
             hid-tests: |
               Test Button Press Actions
-              Test Keyword Type String Alphabets
-              Test Keyword Type String With Shift Key Symbols
-              Test Keyword Type String With Shift Key Capital Letters
-              Test Keys Combo Numbers
-              Test Keys Combo Alphabets
-              Test Keys Combo Function
-              Test Keys Combo Function
+              Test Button Release Actions
+              Test Button Click Actions
+              Test Release All Buttons
+              Test Keyword Move Pointer
+              Test Keyword Walk Pointer
+              Test Keyword Click Button On Destination
+              Test Keyword Drag And Drop On Destination
+              Test Keyword Scroll Pointer Wheel
           - suite: kvm_test
             launch-command: dbus-run-session -- gnome-calculator
           - suite: llm_client_test
