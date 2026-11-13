@@ -1,0 +1,56 @@
+name: Set up canary test environment
+description: >-
+  Install the YARF snap from a channel, the platform dependencies and a
+  headless Mir compositor for the canary tests. Caller must run
+  actions/checkout first and set WAYLAND_DISPLAY for the job.
+
+inputs:
+  track:
+    description: YARF track to install from (e.g., latest).
+    required: true
+  channel:
+    description: YARF channel to install from (e.g., edge).
+    required: true
+  platform:
+    description: YARF platform the tests use (Mir or Vnc).
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Install workflow dependencies
+      shell: bash
+      run: |
+        sudo apt update -qq
+        sudo apt install -y \
+          git-lfs \
+          libgl1 \
+          libxkbcommon-dev \
+          jq \
+          clang \
+          python3-tk \
+          tesseract-ocr \
+          mpv
+
+        pip install uv check-jsonschema
+
+    - name: Install YARF from channel
+      shell: bash
+      env:
+        TRACK: ${{ inputs.track }}
+        CHANNEL: ${{ inputs.channel }}
+      run: |
+        set -euo pipefail
+        sudo snap install yarf --channel="${TRACK}/${CHANNEL}"
+
+    - name: Install platform ${{ inputs.platform }} dependencies
+      shell: bash
+      env:
+        PLATFORM: ${{ inputs.platform }}
+      run: bash .github/scripts/canary-test/install-platform-dependencies.sh "${PLATFORM}"
+
+    - name: Start Global Mir Server
+      shell: bash
+      env:
+        PLATFORM: ${{ inputs.platform }}
+      run: bash .github/scripts/canary-test/prepare-platform.sh "${PLATFORM}" "${WAYLAND_DISPLAY}"

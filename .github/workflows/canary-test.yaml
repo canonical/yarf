@@ -49,26 +49,61 @@ jobs:
 
     env:
       TEST_SUITE_PATH: tests
+      WAYLAND_DISPLAY: wayland-99
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          lfs: true
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up canary test environment
+        uses: $/.github/actions/setup-canary-env
+        with:
+          track: ${{ inputs.TRACK }}
+          channel: ${{ inputs.CHANNEL }}
+          platform: ${{ matrix.platform }}
+
+      - name: Run canary test
+        id: test
+        shell: bash
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          dbus-run-session -- gnome-calculator &
+          snap run yarf --platform="${PLATFORM}" --output-format=TestSubmissionSchema "${TEST_SUITE_PATH}/canary_test"
+
+      - name: Download test submission schema and validate
+        run: |
+          version=$(jq -r '.version' ~/snap/yarf/common/yarf-outdir/TestSubmissionSchema_output.json)
+          check-jsonschema --schemafile https://raw.githubusercontent.com/canonical/test-submission-schema/refs/heads/main/test_submission_schema/schemas/v${version}.json ~/snap/yarf/common/yarf-outdir/TestSubmissionSchema_output.json
+
+      - if: failure()
+        name: Collect test results
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: yarf-canary-output-${{ matrix.platform }}-${{ inputs.ARCH }}
+          path: ~/snap/yarf/common/yarf-outdir/*
+          retention-days: 5
+
+      - if: failure() && runner.debug
+        name: Setup upterm session (restart with "Enable debug logging" to activate)
+        uses: canonical/action-tmate@a0e8caed3bba2ccb98901a274553bf1284ad96c2 # zizmor: ignore[stale-action-refs]
+        with:
+          limit-access-to-actor: true
+
+  plugin-test:
+    name: Plugin tests - yarf snap at channel ${{ inputs.TRACK }}/${{ inputs.CHANNEL }}
+    runs-on: ${{ inputs.RUNNER }}
+
+    env:
+      TEST_SUITE_PATH: tests
       EXAMPLE_PATH: examples
       GITHUB_WORKFLOWS: .github
 
     steps:
-      - name: Install workflow dependencies
-        shell: bash
-        run: |
-          sudo apt update -qq
-          sudo apt install -y \
-            git-lfs \
-            libgl1 \
-            libxkbcommon-dev \
-            jq \
-            clang \
-            python3-tk \
-            tesseract-ocr \
-            mpv
-
-          pip install uv check-jsonschema
-
       - name: Install YARF from channel
         shell: bash
         env:
@@ -81,7 +116,6 @@ jobs:
       - name: Check out tests, examples and github workflows
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          lfs: true
           fetch-depth: 1
           persist-credentials: false
           sparse-checkout: |
@@ -108,234 +142,134 @@ jobs:
         run: |
           sudo snap connect yarf-example-plugin:platform-plugins yarf:platform-plugins
 
-      - name: Check out the rest of the repository (need the full repo because this CI runs YARF from source to verify the test log for HID keyword tests)
-        run: git sparse-checkout disable
-
-      - name: Build and install architecture specific dependencies
-        shell: bash
-        env:
-          ARCH: ${{ inputs.ARCH }}
-        run: |
-          sudo apt update -qq
-
-          if [ "${ARCH}" == "arm64" ]; then
-              sudo apt-get --yes --no-install-recommends install \
-              libwayland-dev \
-              wayland-protocols \
-              scdoc \
-              meson \
-              ninja-build \
-              gcc
-
-              git clone https://git.sr.ht/~brocellous/wlrctl
-              meson setup wlrctl/build wlrctl
-              ninja -C wlrctl/build
-              sudo ninja -C wlrctl/build install
-
-          elif [ "${ARCH}" == "amd64" ]; then
-              sudo apt-get --yes --no-install-recommends install \
-              wlrctl
-          fi
-
-      - name: Install platform ${{ matrix.platform }} dependencies
-        shell: bash
-        env:
-          PLATFORM: ${{ matrix.platform }}
-        run: bash .github/scripts/canary-test/install-platform-dependencies.sh "${PLATFORM}"
-
-      - name: Start Global Mir Server
-        shell: bash
-        env:
-          PLATFORM: ${{ matrix.platform }}
-          WAYLAND_DISPLAY: wayland-99
-        run: |
-          bash .github/scripts/canary-test/prepare-platform.sh "${PLATFORM}" "${WAYLAND_DISPLAY}"
-          echo "WAYLAND_DISPLAY=${WAYLAND_DISPLAY}" >> $GITHUB_ENV
-
-      - name: Run canary test
-        id: test
-        shell: bash
-        env:
-          PLATFORM: ${{ matrix.platform }}
-          TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
-        run: |
-          dbus-run-session -- gnome-calculator &
-          snap run yarf --platform="${PLATFORM}" --output-format=TestSubmissionSchema "${TEST_SUITE_PATH}/canary_test"
-          pkill -f gnome-calculator || true
-          wlrctl pointer move -1280 -1024
-
-      - name: Download test submission schema and validate
-        run: |
-          version=$(jq -r '.version' ~/snap/yarf/common/yarf-outdir/TestSubmissionSchema_output.json)
-          check-jsonschema --schemafile https://raw.githubusercontent.com/canonical/test-submission-schema/refs/heads/main/test_submission_schema/schemas/v${version}.json ~/snap/yarf/common/yarf-outdir/TestSubmissionSchema_output.json
-
       - name: Run plugin tests
         run: |
-          snap run yarf --platform Example tests/plugin_suite
-
-      - name: Run Keyword tests - VideoInput imaging
-        env:
-          TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
-        run: |
-          dbus-run-session -- gnome-calculator &
-          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite video_image_test
-          pkill -f gnome-calculator || true
-          wlrctl pointer move -1280 -1024
-
-      - name: Run Keyword tests - VideoInput text
-        env:
-          TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
-        run: |
-          dbus-run-session -- eog -f tests/keyword_suite/text/text.png &
-          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite video_text_test
-          pkill -f eog || true
-          wlrctl pointer move -1280 -1024
-
-      - name: Run Keyword tests - VideoInput cursor detection
-        env:
-          TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
-        run: |
-          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite video_cursor_test
-          wlrctl pointer move -1280 -1024
-
-      - name: Run Keyword tests - VideoInput Video
-        env:
-          TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
-        run: |
-          mkdir -p tests/keyword_suite/videos
-          ffmpeg -f lavfi -i testsrc=duration=30:size=1280x720:rate=30 -c:v libx264 tests/keyword_suite/videos/video.mp4
-          dbus-run-session -- mpv --fs tests/keyword_suite/videos/video.mp4 &
-          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite video_video_test
-          pkill -f mpv || true
-          wlrctl pointer move -1280 -1024
-
-      - name: Run Keyword tests - Highlighted text grid
-        env:
-          TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
-        run: |
-          # The word grid is a GTK4/libadwaita app managed by uv. As with the
-          # other keyword suites, launch it from the workflow (outside the
-          # strict snap) so it renders on the shared Mir display; the snap yarf
-          # only captures and drives it.
-          sudo apt-get --yes --no-install-recommends install \
-            python3-gi \
-            gir1.2-gtk-4.0 \
-            libadwaita-1-dev \
-            gir1.2-adw-1
-          uv venv --python=/usr/bin/python3 --system-site-packages \
-            --project="${TEST_SUITE_PATH}/keyword_suite/grid"
-
-          dbus-run-session -- uv --project ${TEST_SUITE_PATH}/keyword_suite/grid \
-            run grid-app --contrast 0.85 &
-          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite grid_test
-          pkill -f grid-app || true
-
-          dbus-run-session -- uv --project ${TEST_SUITE_PATH}/keyword_suite/grid \
-            run grid-app --contrast 0.55 &
-          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- \
-            --suite grid_test --variable COLOR_TOLERANCE:10
-          pkill -f grid-app || true
-
-      - name: Set up Python
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version: "3.12"
-
-      - name: Run Keyword tests - Hid keyboard
-        env:
-          TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
-        run: |
-          # In canary test we are running tests on the snap built with the requested YARF version.
-          # Running wayland debug logging with the snap has a different behavior compared to running
-          # with the source code directly - the log will write only after the snap run is finished
-          # and the snap cannot read ~/wayland.trace while the snap is running. So, to workaround this,
-          # we run the test actions with the snap first and then we run the assertions with the source code.
-          # Therefore, we are running each tests and assertion pair one by one here.
-
-          set -x
-          export WAYLAND_DEBUG=client
-
-          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keyword Type String Numbers" 2> ~/wayland.trace
-          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keyword Type String Numbers"
-
-          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keyword Type String Alphabets" 2> ~/wayland.trace
-          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keyword Type String Alphabets"
-
-          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keyword Type String With Shift Key Symbols" 2> ~/wayland.trace
-          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keyword Type String With Shift Key Symbols"
-
-          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keyword Type String With Shift Key Capital Letters" 2> ~/wayland.trace
-          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keyword Type String With Shift Key Capital Letters"
-
-          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keys Combo Numbers" 2> ~/wayland.trace
-          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keys Combo Numbers"
-
-          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keys Combo Alphabets" 2> ~/wayland.trace
-          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keys Combo Alphabets"
-
-          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keys Combo Function" 2> ~/wayland.trace
-          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keys Combo Function"
-
-      - name: Run Keyword tests - Hid pointer
-        env:
-          TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
-        run: |
-          # In canary test we are running tests on the snap built with the requested YARF version.
-          # Running wayland debug logging with the snap has a different behavior compared to running
-          # with the source code directly - the log will write only after the snap run is finished
-          # and the snap cannot read ~/wayland.trace while the snap is running. So, to workaround this,
-          # we run the test actions with the snap first and then we run the assertions with the source code.
-          # Therefore, we are running each tests and assertion pair one by one here.
-
-          set -x
-          export WAYLAND_DEBUG=client
-
-          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Button Press Actions" 2> ~/wayland.trace
-          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Button Press Actions"
-
-          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keyword Type String Alphabets" 2> ~/wayland.trace
-          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keyword Type String Alphabets"
-
-          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keyword Type String With Shift Key Symbols" 2> ~/wayland.trace
-          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keyword Type String With Shift Key Symbols"
-
-          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keyword Type String With Shift Key Capital Letters" 2> ~/wayland.trace
-          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keyword Type String With Shift Key Capital Letters"
-
-          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keys Combo Numbers" 2> ~/wayland.trace
-          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keys Combo Numbers"
-
-          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keys Combo Alphabets" 2> ~/wayland.trace
-          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keys Combo Alphabets"
-
-          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keys Combo Function" 2> ~/wayland.trace
-          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keys Combo Function"
-
-          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Test Keys Combo Function" 2> ~/wayland.trace
-          uv run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite/ -- --test "Assert Test Keys Combo Function"
-          wlrctl pointer move -1280 -1024
-
-      - name: Run Keyword tests - KVM
-        env:
-          TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
-        run: |
-          dbus-run-session -- gnome-calculator &
-          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite kvm_test
-          pkill -f gnome-calculator || true
-
-      - name: Run Keyword tests - LLM client
-        env:
-          TEST_SUITE_PATH: ${{ env.TEST_SUITE_PATH }}
-        run: |
-          python3 ${TEST_SUITE_PATH}/keyword_suite/server/llm_stub_server.py  &
-          snap run yarf --platform Mir ${TEST_SUITE_PATH}/keyword_suite -- --suite llm_client_test
-          pkill -f llm_stub_server.py || true
+          snap run yarf --platform Example "${TEST_SUITE_PATH}/plugin_suite"
 
       - if: failure()
         name: Collect test results
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: yarf-canary-output-${{ matrix.platform }}-${{ inputs.ARCH }}
+          name: yarf-canary-output-plugin-${{ inputs.ARCH }}
+          path: ~/snap/yarf/common/yarf-outdir/*
+          retention-days: 5
+
+  keyword-tests:
+    name: Mir - Keyword tests (${{ matrix.suite }}) - yarf snap at channel ${{ inputs.TRACK }}/${{ inputs.CHANNEL }}
+    runs-on: ${{ inputs.RUNNER }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # The snap is strictly confined and cannot start the apps under test,
+        # so each suite's app is launched from the workflow instead.
+        include:
+          - suite: video_image_test
+            launch-command: dbus-run-session -- gnome-calculator
+          - suite: video_text_test
+            launch-command: dbus-run-session -- eog -f tests/keyword_suite/text/text.png
+          - suite: video_cursor_test
+          - suite: video_video_test
+            setup-command: >-
+              mkdir -p tests/keyword_suite/videos &&
+              ffmpeg -f lavfi -i testsrc=duration=30:size=1280x720:rate=30
+              -c:v libx264 tests/keyword_suite/videos/video.mp4
+            # Shared-memory output keeps the video visible to Mir screencopy.
+            launch-command: dbus-run-session -- mpv --fs --vo=wlshm tests/keyword_suite/videos/video.mp4
+          - suite: grid_test
+            setup-command: ./.github/scripts/yarf/setup-grid-app.sh
+            launch-command: dbus-run-session -- uv --project tests/keyword_suite/grid run grid-app --contrast 0.85
+          - suite: grid_test_low_contrast
+            robot-suite: grid_test
+            robot-args: --variable COLOR_TOLERANCE:10
+            setup-command: ./.github/scripts/yarf/setup-grid-app.sh
+            launch-command: dbus-run-session -- uv --project tests/keyword_suite/grid run grid-app --contrast 0.55
+          # The snap writes the Wayland trace only after it exits and cannot
+          # read ~/wayland.trace, so each HID test runs with the snap and its
+          # assertion runs from source afterwards.
+          - suite: hid_keyboard_test
+            hid-tests: |
+              Test Keyword Type String Numbers
+              Test Keyword Type String Alphabets
+              Test Keyword Type String With Shift Key Symbols
+              Test Keyword Type String With Shift Key Capital Letters
+              Test Keys Combo Numbers
+              Test Keys Combo Alphabets
+              Test Keys Combo Function
+          - suite: hid_pointer_test
+            hid-tests: |
+              Test Button Press Actions
+              Test Keyword Type String Alphabets
+              Test Keyword Type String With Shift Key Symbols
+              Test Keyword Type String With Shift Key Capital Letters
+              Test Keys Combo Numbers
+              Test Keys Combo Alphabets
+              Test Keys Combo Function
+              Test Keys Combo Function
+          - suite: kvm_test
+            launch-command: dbus-run-session -- gnome-calculator
+          - suite: llm_client_test
+            launch-command: python3 tests/keyword_suite/server/llm_stub_server.py
+
+    env:
+      TEST_SUITE_PATH: tests
+      WAYLAND_DISPLAY: wayland-99
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          lfs: true
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up canary test environment
+        uses: $/.github/actions/setup-canary-env
+        with:
+          track: ${{ inputs.TRACK }}
+          channel: ${{ inputs.CHANNEL }}
+          platform: Mir
+
+      - if: matrix.hid-tests
+        name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.14"
+
+      - name: Run Keyword tests - ${{ matrix.suite }}
+        shell: bash
+        env:
+          ROBOT_SUITE: ${{ matrix.robot-suite || matrix.suite }}
+          ROBOT_ARGS: ${{ matrix.robot-args }}
+          SETUP_COMMAND: ${{ matrix.setup-command }}
+          LAUNCH_COMMAND: ${{ matrix.launch-command }}
+          HID_TESTS: ${{ matrix.hid-tests }}
+        run: |
+          set -euo pipefail
+
+          if [[ -n "${SETUP_COMMAND}" ]]; then
+            bash -c "${SETUP_COMMAND}"
+          fi
+          if [[ -n "${LAUNCH_COMMAND}" ]]; then
+            bash -c "${LAUNCH_COMMAND}" &
+          fi
+
+          if [[ -n "${HID_TESTS}" ]]; then
+            export WAYLAND_DEBUG=client
+            while IFS= read -r hid_test; do
+              [[ -z "${hid_test}" ]] && continue
+              snap run yarf --platform Mir "${TEST_SUITE_PATH}/keyword_suite/" -- --test "${hid_test}" 2> ~/wayland.trace
+              uv run yarf --platform Mir "${TEST_SUITE_PATH}/keyword_suite/" -- --test "Assert ${hid_test}"
+            done <<< "${HID_TESTS}"
+          else
+            read -r -a robot_args <<< "${ROBOT_ARGS}"
+            snap run yarf --platform Mir "${TEST_SUITE_PATH}/keyword_suite" -- --suite "${ROBOT_SUITE}" "${robot_args[@]}"
+          fi
+
+      - if: failure()
+        name: Collect test results
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: yarf-canary-output-keyword-${{ matrix.suite }}-${{ inputs.ARCH }}
           path: ~/snap/yarf/common/yarf-outdir/*
           retention-days: 5
 
@@ -347,7 +281,11 @@ jobs:
 
   summarize:
     name: Summarize test results
-    needs: canary-test
+    needs:
+      - canary-test
+      - plugin-test
+      - keyword-tests
+    if: always()
     runs-on: ubuntu-latest
     outputs:
       passed: ${{ steps.set.outputs.passed }}
@@ -355,8 +293,12 @@ jobs:
       - id: set
         env:
           CANARY_TEST_RESULT: ${{ needs.canary-test.result }}
+          PLUGIN_TEST_RESULT: ${{ needs.plugin-test.result }}
+          KEYWORD_TESTS_RESULT: ${{ needs.keyword-tests.result }}
         run: |
-          if [[ "${CANARY_TEST_RESULT}" == "success" ]]; then
+          if [[ "${CANARY_TEST_RESULT}" == "success" &&
+                "${PLUGIN_TEST_RESULT}" == "success" &&
+                "${KEYWORD_TESTS_RESULT}" == "success" ]]; then
             echo "passed=true" >> "$GITHUB_OUTPUT"
           else
             echo "passed=false" >> "$GITHUB_OUTPUT"
