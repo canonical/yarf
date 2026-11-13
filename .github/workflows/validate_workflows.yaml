@@ -6,7 +6,6 @@ on:
     paths:
       - '.github/workflows/*'
       - '.github/actions/**'
-      - '.github/dependabot.yml'
 
 permissions:
   contents: read  # Required to check out repository code

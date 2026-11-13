@@ -3,13 +3,14 @@
   "extends": [
     "config:recommended"
   ],
-  "packageRules": [
-    {
-      "matchManagers": [
-        "github-actions"
-      ],
-      "enabled": false
-    }
+  "pre-commit": {
+    "enabled": true
+  },
+  "labels": [
+    "dependencies"
   ],
+  "lockFileMaintenance": {
+    "enabled": true
+  },
   "commitMessagePrefix": "[Infra] "
 }
