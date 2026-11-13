@@ -3,7 +3,7 @@ set -euo pipefail
 
 PLATFORM="$1"
 
-sudo snap install mir-test-tools
+bash "$(dirname "$0")/snap-install.sh" mir-test-tools
 sudo apt update -qq
 sudo apt-get --yes --no-install-recommends install \
 ffmpeg \

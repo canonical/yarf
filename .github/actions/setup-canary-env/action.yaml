@@ -41,7 +41,7 @@ runs:
         CHANNEL: ${{ inputs.channel }}
       run: |
         set -euo pipefail
-        sudo snap install yarf --channel="${TRACK}/${CHANNEL}"
+        bash .github/scripts/canary-test/snap-install.sh yarf --channel="${TRACK}/${CHANNEL}"
 
     - name: Install platform ${{ inputs.platform }} dependencies
       shell: bash

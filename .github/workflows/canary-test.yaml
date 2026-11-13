@@ -104,15 +104,6 @@ jobs:
       GITHUB_WORKFLOWS: .github
 
     steps:
-      - name: Install YARF from channel
-        shell: bash
-        env:
-          TRACK: ${{ inputs.TRACK }}
-          CHANNEL: ${{ inputs.CHANNEL }}
-        run: |
-          set -euo pipefail
-          sudo snap install yarf --channel="${TRACK}/${CHANNEL}"
-
       - name: Check out tests, examples and github workflows
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -123,6 +114,15 @@ jobs:
             ${{ env.EXAMPLE_PATH }}
             ${{ env.GITHUB_WORKFLOWS }}
           sparse-checkout-cone-mode: false
+
+      - name: Install YARF from channel
+        shell: bash
+        env:
+          TRACK: ${{ inputs.TRACK }}
+          CHANNEL: ${{ inputs.CHANNEL }}
+        run: |
+          set -euo pipefail
+          bash .github/scripts/canary-test/snap-install.sh yarf --channel="${TRACK}/${CHANNEL}"
 
       - name: Pin YARF to the requested version in yarf-example-plugin pyproject.toml
         run: bash .github/scripts/canary-test/pin-yarf-version.sh
@@ -176,13 +176,17 @@ jobs:
             # Shared-memory output keeps the video visible to Mir screencopy.
             launch-command: dbus-run-session -- mpv --fs --vo=wlshm tests/keyword_suite/videos/video.mp4
           - suite: grid_test
-            setup-command: ./.github/scripts/yarf/setup-grid-app.sh
-            launch-command: dbus-run-session -- uv --project tests/keyword_suite/grid run grid-app --contrast 0.85
+            setup-command: bash .github/scripts/canary-test/setup-grid-app.sh "${RUNNER_TEMP}/grid-venv"
+            launch-command: >-
+              UV_PROJECT_ENVIRONMENT="${RUNNER_TEMP}/grid-venv"
+              dbus-run-session -- uv --project tests/keyword_suite/grid run grid-app --contrast 0.85
           - suite: grid_test_low_contrast
             robot-suite: grid_test
             robot-args: --variable COLOR_TOLERANCE:10
-            setup-command: ./.github/scripts/yarf/setup-grid-app.sh
-            launch-command: dbus-run-session -- uv --project tests/keyword_suite/grid run grid-app --contrast 0.55
+            setup-command: bash .github/scripts/canary-test/setup-grid-app.sh "${RUNNER_TEMP}/grid-venv"
+            launch-command: >-
+              UV_PROJECT_ENVIRONMENT="${RUNNER_TEMP}/grid-venv"
+              dbus-run-session -- uv --project tests/keyword_suite/grid run grid-app --contrast 0.55
           # The snap writes the Wayland trace only after it exits and cannot
           # read ~/wayland.trace, so each HID test runs with the snap and its
           # assertion runs from source afterwards.
@@ -234,6 +238,15 @@ jobs:
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.14"
+
+      # The HID assertions run YARF from source, which builds pywayland from
+      # source where no wheel exists (arm64).
+      - if: matrix.hid-tests
+        name: Install build dependencies for YARF from source
+        run: |
+          sudo apt-get --yes --no-install-recommends install \
+            libwayland-dev \
+            wayland-protocols
 
       - name: Run Keyword tests - ${{ matrix.suite }}
         shell: bash
