@@ -5,6 +5,7 @@ RPA.recognition OCR libraries.
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import ClassVar
 
 import numpy as np
 import onnxruntime as ort
@@ -51,6 +52,7 @@ class RapidOCRReader:
     This class is a singleton to avoid loading the model multiple times.
 
     Attributes:
+        instance: The shared singleton instance, set on first creation.
         DEFAULT_SIMILARITY_THRESHOLD: Minimum similarity percentage (0-100) for
           text matching. If the similarity between the found text and the target
           text is below this threshold, the match is discarded.
@@ -62,6 +64,7 @@ class RapidOCRReader:
         SIMILARITY_LOG_THRESHOLD: Minimum similarity to log rejected matches.
     """
 
+    instance: ClassVar["RapidOCRReader"]
     DEFAULT_SIMILARITY_THRESHOLD: float = 80.0
     DEFAULT_CONFIDENCE_THRESHOLD: float = 70.0
     SIMILARITY_LOG_THRESHOLD: float = 80.0
