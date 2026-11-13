@@ -158,7 +158,7 @@ jobs:
       matrix: ${{ fromJSON(needs.define-matrix.outputs.matrix) }}
     permissions:
       contents: read
-      actions: write  # Required to trigger canary test workflow
+      actions: read  # Matches canary-test.yaml, which only reads run data
 
     uses: $/.github/workflows/canary-test.yaml
     with:
