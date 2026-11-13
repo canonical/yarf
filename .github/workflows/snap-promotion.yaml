@@ -4,6 +4,16 @@ on:
   schedule:
     - cron: '00 00 * * *'
   workflow_dispatch:
+  # Pull requests that change the canary itself run it against the published
+  # edge snap. The promote job is skipped. Test changes are covered from
+  # source by yarf.yaml, so they would wrongly fail here for features that
+  # have not reached edge yet.
+  pull_request:
+    paths:
+      - ".github/workflows/snap-promotion.yaml"
+      - ".github/workflows/canary-test.yaml"
+      - ".github/actions/setup-canary-env/**"
+      - ".github/scripts/canary-test/**"
 
 # Read access to repository contents
 permissions:
@@ -32,11 +42,11 @@ jobs:
             "include": [
               {
                 "arch": "amd64",
-                "runs_on": "ubuntu-24.04",
+                "runs_on": "ubuntu-26.04",
               },
               {
                 "arch": "arm64",
-                "runs_on": "ubuntu-24.04-arm",
+                "runs_on": "ubuntu-26.04-arm",
               },
               {
                 "lane": "edge_to_beta",
@@ -87,6 +97,7 @@ jobs:
           TRACK: ${{ matrix.track }}
           FROM: ${{ matrix.from }}
           TO: ${{ matrix.to }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
           echo "Fetching channel info for yarf..."
@@ -116,14 +127,23 @@ jobs:
 
           if [[ -n "${TO_VER:-}" ]] && dpkg --compare-versions "$FROM_VER" le "$TO_VER"; then
             echo "Versions match ($FROM_VER) in ${TRACK} (${FROM} vs ${TO}). Nothing to do."
-            echo "should_continue=false" >> "$GITHUB_OUTPUT"
+            SHOULD_CONTINUE=false
           else
             echo "Version in ${FROM}=$FROM_VER (rev $FROM_REV) > ${TO}=$TO_VER (rev ${TO_REV:-none}) in ${TRACK}."
             echo "${FROM} revision is $FROM_REV"
-            echo "should_continue=true" >> "$GITHUB_OUTPUT"
-            echo "from_version=$FROM_VER" >> "$GITHUB_OUTPUT"
-            echo "from_channel=${TRACK}/${FROM}" >> "$GITHUB_OUTPUT"
+            SHOULD_CONTINUE=true
           fi
+
+          if [[ "${EVENT_NAME}" == "pull_request" ]]; then
+            echo "Pull request run: running the canary test without promoting."
+            SHOULD_CONTINUE=true
+          fi
+
+          {
+            echo "should_continue=${SHOULD_CONTINUE}"
+            echo "from_version=${FROM_VER}"
+            echo "from_channel=${TRACK}/${FROM}"
+          } >> "$GITHUB_OUTPUT"
 
   canary:
     name: Canary Test
@@ -138,7 +158,7 @@ jobs:
       matrix: ${{ fromJSON(needs.define-matrix.outputs.matrix) }}
     permissions:
       contents: read
-      actions: write  # Required to trigger canary test workflow
+      actions: read  # Matches canary-test.yaml, which only reads run data
 
     uses: $/.github/workflows/canary-test.yaml
     with:
@@ -153,7 +173,9 @@ jobs:
     needs:
       - define-matrix
       - canary
-    if: needs.canary.outputs.passed == 'true'
+    if: >
+      github.event_name != 'pull_request' &&
+      needs.canary.outputs.passed == 'true'
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.define-matrix.outputs.matrix) }}
