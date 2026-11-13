@@ -162,12 +162,13 @@ repos:
   hooks:
     - id: licensecheck
       name: licensecheck
-      entry: licensecheck --zero --show-only-failing --requirements-paths=pyproject.toml
-      language: python
+      # Use the version selected from the locked dev group in uv.lock.
+      entry: >-
+        uv run --locked licensecheck --zero --show-only-failing
+        --requirements-paths=pyproject.toml
+      language: system
       types: [python]
       pass_filenames: false
-      additional_dependencies:
-      - licensecheck
 
     - id: docs-spelling
       name: Docs spell check
