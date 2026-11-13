@@ -32,11 +32,11 @@ jobs:
             "include": [
               {
                 "arch": "amd64",
-                "runs_on": "ubuntu-24.04",
+                "runs_on": "ubuntu-26.04",
               },
               {
                 "arch": "arm64",
-                "runs_on": "ubuntu-24.04-arm",
+                "runs_on": "ubuntu-26.04-arm",
               },
               {
                 "lane": "edge_to_beta",
