@@ -18,4 +18,8 @@ inotifywait --event create --include "^$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY\$" "$XD
 if [ "$PLATFORM" == "Vnc" ]; then
     # Start vnc session
     wayvnc &
+
+    # Work around wayvnc exiting when it restarts its capture between YARF's
+    # connections: https://github.com/any1/wayvnc/issues/401
+    python3 "$(dirname "$0")/hold_vnc_connection.py"
 fi
