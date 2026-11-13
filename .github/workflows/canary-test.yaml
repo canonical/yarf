@@ -104,6 +104,15 @@ jobs:
       GITHUB_WORKFLOWS: .github
 
     steps:
+      - name: Install YARF from channel
+        shell: bash
+        env:
+          TRACK: ${{ inputs.TRACK }}
+          CHANNEL: ${{ inputs.CHANNEL }}
+        run: |
+          set -euo pipefail
+          sudo snap install yarf --channel="${TRACK}/${CHANNEL}"
+
       - name: Check out tests, examples and github workflows
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -114,15 +123,6 @@ jobs:
             ${{ env.EXAMPLE_PATH }}
             ${{ env.GITHUB_WORKFLOWS }}
           sparse-checkout-cone-mode: false
-
-      - name: Install YARF from channel
-        shell: bash
-        env:
-          TRACK: ${{ inputs.TRACK }}
-          CHANNEL: ${{ inputs.CHANNEL }}
-        run: |
-          set -euo pipefail
-          bash .github/scripts/canary-test/snap-install.sh yarf --channel="${TRACK}/${CHANNEL}"
 
       - name: Pin YARF to the requested version in yarf-example-plugin pyproject.toml
         run: bash .github/scripts/canary-test/pin-yarf-version.sh
