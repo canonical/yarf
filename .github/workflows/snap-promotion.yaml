@@ -9,6 +9,7 @@ on:
     paths:
       - ".github/workflows/snap-promotion.yaml"
       - ".github/workflows/canary-test.yaml"
+      - ".github/actions/setup-canary-env/**"
       - ".github/scripts/canary-test/**"
       - "tests/canary_test/**"
       - "tests/keyword_suite/**"
