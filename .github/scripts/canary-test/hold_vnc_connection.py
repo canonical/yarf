@@ -77,20 +77,38 @@ def handshake(sock: socket.socket) -> None:
     """
     Complete the RFB handshake as a shared client without authentication.
 
+    Follows RFB 3.8 (RFC 6143), which wayvnc offers. All multi-byte numbers
+    in RFB are big-endian.
+
     Args:
         sock: The connected socket.
 
     Raises:
         ConnectionError: If the server rejects the client.
     """
+    # ProtocolVersion (7.1.1): the server sends a 12-byte version string,
+    # e.g. b"RFB 003.008\n". Echoing it back accepts that version.
     sock.sendall(receive(sock, 12))
+
+    # Security (7.1.2): one byte with the number of security types, followed
+    # by one byte per type.
     security_types = receive(sock, receive(sock, 1)[0])
     if NO_AUTHENTICATION not in security_types:
         raise ConnectionError("VNC server does not allow unauthenticated use")
+    # Choose security type 1, "None" (no password).
     sock.sendall(bytes([NO_AUTHENTICATION]))
+
+    # SecurityResult (7.1.3): a 4-byte integer, 0 for OK and 1 for failed.
     if receive(sock, 4) != SECURITY_RESULT_OK:
         raise ConnectionError("VNC server rejected the security handshake")
+
+    # ClientInit (7.3.1): a 1-byte shared flag. 1 shares the session, so
+    # wayvnc keeps YARF's own connections instead of dropping them for us.
     sock.sendall(SHARED_SESSION)
+
+    # ServerInit (7.3.2): a 24-byte header (width: 2, height: 2,
+    # pixel format: 16, name length: 4) followed by the desktop name.
+    # Read the name length from bytes 20-23, then read and discard the name.
     server_init = receive(sock, SERVER_INIT_HEADER_SIZE)
     receive(sock, int.from_bytes(server_init[20:24], "big"))
 
