@@ -440,8 +440,8 @@ class TestRobotDebug:
             patch("yarf.vendor.robotframework_debug.RobotDebug.print_output"),
             patch.object(sys, "stdout", captured),
         ):
-            repl_cmd.return_value.cmdloop.side_effect = (
-                lambda intro: shell_stdout.append(sys.stdout)
+            repl_cmd.return_value.cmdloop.side_effect = lambda intro: (
+                shell_stdout.append(sys.stdout)
             )
             library = RobotDebug()
             library.debug()
