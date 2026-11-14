@@ -1,4 +1,3 @@
-from contextlib import suppress
 from dataclasses import dataclass
 from unittest.mock import MagicMock, Mock, patch
 
@@ -37,13 +36,11 @@ def mock_to_image():
 
 @pytest.fixture
 def rapid_ocr():
-    with suppress(AttributeError):
-        del RapidOCRReader.instance
+    RapidOCRReader.instance = None
     with patch("yarf.rf_libraries.libraries.ocr.rapidocr.RapidOCR"):
         reader = RapidOCRReader()
     yield reader
-    with suppress(AttributeError):
-        del RapidOCRReader.instance
+    RapidOCRReader.instance = None
 
 
 def _tesseract_data():
