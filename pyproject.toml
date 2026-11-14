@@ -58,13 +58,13 @@ dev = [
     "licensecheck==2025.1.0; python_version < '3.12'",
     "mypy==2.4.1",
     "prek==0.5.7",
-    "pyfakefs==6.2.0",
+    "pyfakefs==6.3.2",
     "pytest==9.2.0",
     "pytest-asyncio==1.5.0",
     "pytest-cov==7.1.0",
     "pytest-xdist==3.8.0",
     "tox==4.67.13",
-    "types-python-dateutil==2.9.0.20261029",
+    "types-python-dateutil==2.9.0.20261104",
     "types-requests==2.33.0.20261030",
 ]
 
