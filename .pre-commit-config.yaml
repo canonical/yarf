@@ -145,6 +145,7 @@ repos:
       --arg-type-hints-in-docstring=False,
       --check-return-types=False,
       --check-yield-types=False,
+      --should-declare-assert-error-if-assert-statement-exists=True,
       --baseline=pydoclint-baseline.txt,
       # --generate-baseline=True,
     ]
