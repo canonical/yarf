@@ -1,4 +1,3 @@
-from contextlib import suppress
 from dataclasses import dataclass
 from unittest.mock import MagicMock, patch
 
@@ -28,8 +27,7 @@ def mock_to_image():
 
 
 def reset_reader():
-    with suppress(AttributeError):
-        del RapidOCRReader.instance
+    RapidOCRReader.instance = None
 
 
 @pytest.fixture(autouse=True)
