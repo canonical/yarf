@@ -30,7 +30,7 @@ concurrency:
 jobs:
   set-version:
     name: Set version
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: read      # Required to check out repository code
       actions: write      # Required to upload artifacts
