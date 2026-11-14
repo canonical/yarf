@@ -75,7 +75,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
       with:
-        python-version: "3.14"
+        python-version: "3.15"
 
     - name: Install the app under test
       run: |
@@ -124,7 +124,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
       with:
-        python-version: "3.14"
+        python-version: "3.15"
 
     - name: Set up the simple counter example
       run: ./.github/scripts/yarf/setup-tutorial-app.sh
@@ -183,7 +183,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
       with:
-        python-version: "3.14"
+        python-version: "3.15"
 
     - name: Install suite dependencies
       run: ./.github/scripts/yarf/install-suite-deps.sh
@@ -235,7 +235,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
       with:
-        python-version: "3.14"
+        python-version: "3.15"
 
     - name: Download per-suite coverage artifacts
       uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
