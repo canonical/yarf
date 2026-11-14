@@ -55,7 +55,7 @@ dependencies = [
 dev = [
     "licensecheck==2026.0.8; python_version >= '3.12'",
     # licensecheck 2026 dropped 3.11; 2025.1.0 is the last to support it
-    "licensecheck==2025.1.0; python_version < '3.12'",
+    "licensecheck==2026.0.8; python_version < '3.12'",
     "mypy==2.4.1",
     "prek==0.5.7",
     "pyfakefs==6.2.0",
