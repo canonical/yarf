@@ -19,7 +19,7 @@ env:
 jobs:
   evaluate-version-and-trigger-snap-build:
     name: Evaluate version and trigger snap build
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       actions: write   # Required to trigger snap build workflow
       contents: read   # Required to check out repository code
