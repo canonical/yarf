@@ -27,7 +27,7 @@ repos:
   - id: shellcheck
 
 - repo: https://github.com/executablebooks/mdformat
-  rev: 0.7.22
+  rev: 1.0.0
   hooks:
   - id: mdformat
     stages: [manual]
@@ -69,7 +69,7 @@ repos:
     - .
 
 - repo: https://github.com/MarketSquare/robotframework-robocop
-  rev: v8.8.0
+  rev: v9.4.0
   hooks:
   - id: robocop-format
     additional_dependencies:
@@ -135,7 +135,7 @@ repos:
     ]
 
 - repo: https://github.com/jsh9/pydoclint.git
-  rev: 0.6.2
+  rev: 0.12.0
   hooks:
   - id: pydoclint
     exclude: 'tests/.*'
@@ -145,6 +145,7 @@ repos:
       --arg-type-hints-in-docstring=False,
       --check-return-types=False,
       --check-yield-types=False,
+      --should-declare-assert-error-if-assert-statement-exists=True,
       --baseline=pydoclint-baseline.txt,
       # --generate-baseline=True,
     ]
