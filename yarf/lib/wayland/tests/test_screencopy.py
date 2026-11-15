@@ -6,9 +6,7 @@ import pytest
 
 from yarf.lib.wayland.protocols import WlOutput as wl_output
 from yarf.lib.wayland.protocols import WlShm as wl_shm
-from yarf.lib.wayland.protocols import (
-    ZwlrScreencopyFrameV1,
-)
+from yarf.lib.wayland.protocols import ZwlrScreencopyFrameV1
 from yarf.lib.wayland.protocols import (
     ZwlrScreencopyManagerV1 as screencopy_manager,
 )
