@@ -8,15 +8,9 @@ from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from yarf.lib import llm_tracing  # noqa: E402
-from yarf.lib.llm_tracing import (  # noqa: E402
-    CHAIN,
-    LLM,
-    TOOL,
-    LlmTracer,
-    RobotTestTrace,
-    llm_attributes,
-)
+# yarf is imported in the fixtures, not here: this conftest is loaded before
+# pytest collects the yarf package, and importing yarf now would import the
+# installed package rather than the checkout, whose tests it does not ship.
 
 USAGE = {
     "prompt_tokens": 1234,
@@ -34,16 +28,13 @@ def png(color: str) -> bytes:
     return buffer.getvalue()
 
 
-def record_test(
-    tracer: LlmTracer,
-    tracing: RobotTestTrace,
-    name: str,
-    matches: bool,
-    status: str = "PASS",
-) -> None:
+def record_test(tracer, tracing, name: str, matches: bool, status="PASS"):
     """
     Record a Robot test that asserts a state, then clicks.
     """
+    from yarf.lib import llm_tracing
+    from yarf.lib.llm_tracing import CHAIN, LLM, TOOL, llm_attributes
+
     tracing.start_test(name, {"documentation": "", "tags": ["smoke"]})
     tracing.enable(llm_tracing._RECORDER)
     tracing.start_keyword("Log", CHAIN, {"message": "start"})
@@ -83,6 +74,9 @@ def record_test(
 
 @pytest.fixture
 def traces_dir(tmp_path, monkeypatch):
+    from yarf.lib import llm_tracing
+    from yarf.lib.llm_tracing import LlmTracer, RobotTestTrace
+
     saved = llm_tracing._RECORDER
     tracing = RobotTestTrace()
     monkeypatch.setattr(llm_tracing, "TRACING", tracing)
