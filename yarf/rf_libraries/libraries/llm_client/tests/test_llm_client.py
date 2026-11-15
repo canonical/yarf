@@ -1962,11 +1962,10 @@ class TestLlmClientTracing:
     @pytest.mark.parametrize(
         "enabled, kwargs, expected_calls, expected_enabled",
         [
-            (False, {"tracing": True, "experiment": "exp"}, ["exp"], True),
-            (True, {"tracing": "False"}, [], False),
-            (True, {"experiment": "new"}, ["new"], True),
-            (False, {"experiment": "new"}, [], False),
-            (True, {"model": "m"}, [], True),
+            (False, {"tracing": True}, 1, True),
+            (False, {"tracing": "True", "model": "m"}, 1, True),
+            (True, {"tracing": "False"}, 0, False),
+            (True, {"model": "m"}, 0, True),
         ],
     )
     def test_configure_tracing(
@@ -1977,10 +1976,13 @@ class TestLlmClientTracing:
         with patch.object(client.tracer, "enable") as enable:
             client.configure_llm_client(**kwargs)
 
-        assert [c.args[0] for c in enable.call_args_list] == expected_calls
+        assert enable.call_count == expected_calls
         if not expected_calls:
             assert client.tracer.enabled is expected_enabled
-        assert client.experiment == kwargs.get("experiment", "yarf")
+
+    def test_configure_unknown_experiment(self):
+        with pytest.raises(TypeError, match="experiment"):
+            LlmClient().configure_llm_client(experiment="exp")
 
     def test_prompt_llm_spans(self, client, mock_post):
         data = {
@@ -2011,8 +2013,9 @@ class TestLlmClientTracing:
         self.span.set_outputs.assert_any_call(data)
         self.span.set_outputs.assert_called_with("answer")
         attributes = self.span.set_attributes.call_args.args[0]
-        assert attributes["mlflow.llm.model"] == client.model
-        assert attributes["mlflow.chat.tokenUsage"]["total_tokens"] == 5
+        assert attributes["gen_ai.request.model"] == client.model
+        assert attributes["gen_ai.usage.input_tokens"] == 3
+        assert attributes["yarf.total_tokens"] == 5
         assert attributes["yarf.attempts"] == 1
 
     @pytest.mark.asyncio
@@ -2047,9 +2050,25 @@ class TestLlmClientTracing:
             ),
         ]
         self.span.set_outputs.assert_called_with({"result": [0.5, 0.5]})
-        client.tracer.feedback.assert_called_once_with(
-            "valid_json_first_try", True, rationale=""
+        client.tracer.set_attributes.assert_called_once_with(
+            {"yarf.valid_json_first_try": True}
         )
+
+    @pytest.mark.asyncio
+    async def test_invalid_json_first_try(self, client):
+        with patch.object(
+            client,
+            "prompt_llm",
+            return_value='{"point_2d": [500, 500], "point_frame": null}',
+        ):
+            await client._verify_llm_json_response(
+                "not json",
+                {"point_2d": [list], "point_frame": [list, type(None)]},
+            )
+
+        attributes = client.tracer.set_attributes.call_args_list[0].args[0]
+        assert attributes["yarf.valid_json_first_try"] is False
+        assert attributes["yarf.json_errors"]
 
     @pytest.mark.asyncio
     async def test_assert_state_outputs(self, client):
@@ -2093,7 +2112,7 @@ class TestLlmClientTracing:
         assert keyword[:2] == ("Multiple Step Action", "AGENT")
         assert step[:2] == ("Step 1", "CHAIN")
         self.span.set_outputs.assert_called_once_with(action)
-        client.tracer.feedback.assert_called_once_with("steps", 1)
+        client.tracer.set_attributes.assert_called_once_with({"yarf.steps": 1})
         client.tracer.set_outputs.assert_called_once_with(
             {"actions": [action]}
         )
@@ -2183,6 +2202,10 @@ class TestLlmClientTracing:
         )
         assert [(c.args[0], c.kwargs["inputs"]) for c in tools] == tool_calls
         assert {c.args[1] for c in tools} <= {"TOOL"}
+        assert [c.kwargs["attributes"] for c in tools] == [
+            {"gen_ai.operation.name": "execute_tool", "gen_ai.tool.name": name}
+            for name, _ in tool_calls
+        ]
 
     @pytest.mark.asyncio
     async def test_execute_gui_action_logs_screenshots_when_tracing(
@@ -2300,49 +2323,4 @@ class TestLlmClientTracing:
 
         client.tracer.log_image.assert_called_once_with(
             screenshot, "Final screenshot"
-        )
-
-    def test_log_llm_feedback(self, client):
-        client.log_llm_feedback("correct", True, rationale="why")
-        client.tracer.log_feedback.assert_called_once_with(
-            "correct", True, "why"
-        )
-
-    def test_log_llm_expectation(self, client):
-        client.log_llm_expectation("answer", "4")
-        client.tracer.log_expectation.assert_called_once_with("answer", "4")
-
-    @pytest.mark.parametrize(
-        "api_key, expected_key", [("k", "k"), (None, "unused")]
-    )
-    def test_evaluate_llm_traces_default_judge(
-        self, client, monkeypatch, api_key, expected_key
-    ):
-        if api_key is None:
-            monkeypatch.delenv("YARF_LLM_API_KEY", raising=False)
-        else:
-            monkeypatch.setenv("YARF_LLM_API_KEY", api_key)
-        client.tracer.evaluate.return_value = {"guidelines/mean": 1.0}
-
-        metrics = client.evaluate_llm_traces("rule 1", "rule 2", scope="test")
-
-        assert metrics == {"guidelines/mean": 1.0}
-        client.tracer.evaluate.assert_called_once_with(
-            ["rule 1", "rule 2"],
-            f"openai:/{client.model}",
-            "test",
-            {
-                "OPENAI_BASE_URL": client.server_url,
-                "OPENAI_API_BASE": None,
-                "OPENAI_API_KEY": expected_key,
-            },
-            True,
-        )
-
-    def test_evaluate_llm_traces_custom_judge(self, client):
-        client.evaluate_llm_traces(
-            "rule", judge_model="openai:/gpt-4.1", screenshots=False
-        )
-        client.tracer.evaluate.assert_called_once_with(
-            ["rule"], "openai:/gpt-4.1", "suite", {}, False
         )

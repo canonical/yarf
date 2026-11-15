@@ -1,5 +1,5 @@
 """
-Record each Robot test as one MLflow trace, with a span per keyword.
+Record each Robot test as one OpenTelemetry trace, with a span per keyword.
 
 The listener does nothing until `Configure Llm Client` enables tracing,
 then records the test that enabled it and the following tests.
@@ -82,14 +82,14 @@ def assigned_outputs(result: robot_result.Keyword) -> dict[str, Any] | None:
 
 class LlmTraceListener:
     """
-    Record each Robot test as one MLflow trace, once tracing is enabled.
+    Record each Robot test as one OpenTelemetry trace, once tracing is enabled.
 
     The trace has a span for the test, and a child span for each keyword it
     runs, with the arguments as inputs and the assigned variables as outputs.
     The spans of the LLM Client keywords nest under their Robot keyword span.
     Keywords called from the suite, such as HID keywords, are recorded as
     context only: just the GUI actions the LLM Client takes are tool calls,
-    so that the evaluation only covers what the model decided.
+    so that an evaluation only covers what the model decided.
 
     Attributes:
         ROBOT_LISTENER_API_VERSION: The Robot Framework Listener API version

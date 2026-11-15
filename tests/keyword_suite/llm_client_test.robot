@@ -1,6 +1,7 @@
 *** Settings ***
 Library         yarf/rf_libraries/libraries/llm_client/LlmClient.py
 Library         yarf/rf_libraries/libraries/image/utils.py
+Library         OperatingSystem
 
 Task Tags
 ...    robot:stop-on-failure
@@ -67,11 +68,8 @@ Collect Usage
     Should Be Equal         ${usage}[nano_aiu]      ${None}
     Should Be True          ${usage}[inference_time] > 0
 
-Tracing Disabled By Default
+Tracing
+    Configure Llm Client    tracing=True
     Prompt Llm              This is my prompt
-    Run Keyword And Expect Error                    *tracing is disabled*
-    ...                     Log Llm Feedback        correct                 ${True}
-    Run Keyword And Expect Error                    *tracing is disabled*
-    ...                     Log Llm Expectation     answer                  4
-    Run Keyword And Expect Error                    *tracing is disabled*
-    ...                     Evaluate Llm Traces     The answer is polite.
+    ${traces}=              Get File                ${OUTPUT_DIR}/traces/traces.jsonl
+    Should Contain          ${traces}               Prompt Llm

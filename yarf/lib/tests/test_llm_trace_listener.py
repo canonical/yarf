@@ -2,7 +2,6 @@ from textwrap import dedent
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-import mlflow
 import pytest
 from PIL import Image
 from robot import run
@@ -13,7 +12,8 @@ from yarf.lib.llm_trace_listener import (
     assigned_outputs,
     keyword_inputs,
 )
-from yarf.lib.llm_tracing import TRACES, TRACING
+from yarf.lib.llm_tracing import TRACING
+from yarf.lib.tests.trace_reader import read_spans
 
 MODULE = "yarf.lib.llm_trace_listener"
 
@@ -34,8 +34,8 @@ class Llm:
     def __init__(self):
         self.tracer = LlmTracer()
 
-    def enable_tracing(self, experiment):
-        self.tracer.enable(experiment)
+    def enable_tracing(self):
+        self.tracer.enable()
 
     @keyword
     def ask_llm(self, question):
@@ -57,46 +57,42 @@ Not Traced
 Traced
     [Documentation]    Clicks
     [Tags]    smoke
-    Enable Tracing    {experiment}
+    Enable Tracing
     Click Twice    RIGHT
     Ask Llm    why
-    ${{answer}}=    Set Variable    42
+    ${answer}=    Set Variable    42
 
 Failing
-    Enable Tracing    {experiment}
+    Enable Tracing
     Fail    on purpose
     Click Pointer Button    LEFT
 
 *** Keywords ***
 Click Twice
-    [Arguments]    ${{button}}
-    Click Pointer Button    ${{button}}
-    Click Pointer Button    ${{button}}
+    [Arguments]    ${button}
+    Click Pointer Button    ${button}
+    Click Pointer Button    ${button}
 """
 
 
 @pytest.fixture(autouse=True)
 def reset_tracing():
-    saved = list(TRACES)
-    TRACES.clear()
+    saved = llm_tracing._RECORDER
     TRACING.__init__()
     yield
     TRACING.__init__()
-    TRACES[:] = saved
-
-
-def spans_by_name(trace):
-    return {span.name: span for span in trace.data.spans}
+    if llm_tracing._RECORDER is not saved:
+        llm_tracing._RECORDER.provider.shutdown()
+    llm_tracing._RECORDER = saved
 
 
 class TestListener:
     @pytest.fixture
-    def traces(self, tmp_path, monkeypatch):
-        monkeypatch.delenv("MLFLOW_TRACKING_URI", raising=False)
+    def traces(self, tmp_path):
         (tmp_path / "Hid.py").write_text(HID_LIBRARY)
         (tmp_path / "Llm.py").write_text(dedent(LLM_LIBRARY))
         suite = tmp_path / "suite.robot"
-        suite.write_text(SUITE.format(experiment="listener-test"))
+        suite.write_text(SUITE)
         run(
             str(suite),
             outputdir=str(tmp_path / "out"),
@@ -107,69 +103,77 @@ class TestListener:
             log=None,
             report=None,
         )
-        mlflow.set_tracking_uri(
-            f"sqlite:///{(tmp_path / 'out' / 'mlflow.db').resolve()}"
-        )
-        mlflow.flush_trace_async_logging()
-        return {
-            record.test: mlflow.get_trace(record.trace_id) for record in TRACES
-        }
+        spans = read_spans(tmp_path / "out" / "traces" / "traces.jsonl")
+        roots = {s["trace_id"]: s["name"] for s in spans if not s["parent_id"]}
+        traces: dict[str, list] = {}
+        for span in spans:
+            traces.setdefault(roots[span["trace_id"]], []).append(span)
+        return traces
+
+    def by_name(self, spans):
+        return {span["name"]: span for span in spans}
 
     def test_one_trace_per_traced_test(self, traces):
         assert sorted(traces) == ["Failing", "Traced"]
 
     def test_trace(self, traces):
-        spans = spans_by_name(traces["Traced"])
+        spans = self.by_name(traces["Traced"])
         test = spans["Traced"]
-        assert test.parent_id is None
-        assert test.inputs == {
+        assert test["parent_id"] is None
+        assert test["inputs"] == {
             "test": "Traced",
             "documentation": "Clicks",
             "tags": ["smoke"],
         }
-        assert spans["Click Twice"].parent_id == test.span_id
-        assert spans["Click Twice"].inputs == {"button": "RIGHT"}
+        assert test["outputs"] == {"status": "PASS", "message": ""}
+        assert test["attributes"]["yarf.test"] is True
+        assert test["attributes"]["robot.suite"] == "Suite"
+        assert test["attributes"]["robot.test"] == "Traced"
+        assert test["attributes"]["robot.status"] == "PASS"
+        assert test["attributes"]["session.id"].endswith(" Suite")
+        assert test["status"] == {"code": 1}
+        assert test["resource"]["service.name"] == "yarf"
+        assert spans["Click Twice"]["parent_id"] == test["span_id"]
+        assert spans["Click Twice"]["inputs"] == {"button": "RIGHT"}
         clicks = [
             span
-            for span in traces["Traced"].data.spans
-            if span.name == "Click Pointer Button"
+            for span in traces["Traced"]
+            if span["name"] == "Click Pointer Button"
         ]
-        assert [span.inputs for span in clicks] == [{"button": "RIGHT"}] * 2
-        assert {span.parent_id for span in clicks} == {
-            spans["Click Twice"].span_id
+        assert [span["inputs"] for span in clicks] == [{"button": "RIGHT"}] * 2
+        assert {span["parent_id"] for span in clicks} == {
+            spans["Click Twice"]["span_id"]
         }
-        assert spans["Set Variable"].outputs == {"${answer}": "42"}
-        assert traces["Traced"].info.request_preview == "Traced"
-        assert traces["Traced"].info.response_preview == "PASS"
+        assert spans["Set Variable"]["outputs"] == {"${answer}": "42"}
 
     def test_keywords_called_from_the_suite_are_not_tool_calls(self, traces):
-        assert llm_tracing.tool_calls(traces["Traced"]) == []
-        assert {span.span_type for span in traces["Traced"].data.spans} == {
-            llm_tracing.CHAIN
-        }
+        assert {
+            span["attributes"]["yarf.span.type"] for span in traces["Traced"]
+        } == {llm_tracing.CHAIN}
 
     def test_llm_keyword_records_its_own_span(self, traces):
-        spans = spans_by_name(traces["Traced"])
-        assert "Ask Llm" in spans
-        assert spans["Ask Llm"].parent_id == spans["Traced"].span_id
+        spans = self.by_name(traces["Traced"])
+        assert spans["Ask Llm"]["parent_id"] == spans["Traced"]["span_id"]
+        assert spans["Ask Llm"]["attributes"]["yarf.llm_keyword"] is True
         assert [
-            span.name
-            for span in traces["Traced"].data.spans
-            if span.inputs == {"question": "why"}
+            span["name"]
+            for span in traces["Traced"]
+            if span["inputs"] == {"question": "why"}
         ] == ["Ask Llm"]
 
     def test_failing_test(self, traces):
-        trace = traces["Failing"]
-        spans = spans_by_name(trace)
-        assert trace.info.state == "ERROR"
-        assert trace.info.request_preview == "Failing"
-        assert trace.info.response_preview == "FAIL: on purpose"
-        assert spans["Fail"].status.description == "on purpose"
+        spans = self.by_name(traces["Failing"])
+        assert spans["Failing"]["status"] == {
+            "code": 2,
+            "message": "on purpose",
+        }
+        assert spans["Fail"]["status"]["message"] == "on purpose"
         assert "Click Pointer Button" not in spans
-        assert spans["Failing"].outputs == {
+        assert spans["Failing"]["outputs"] == {
             "status": "FAIL",
             "message": "on purpose",
         }
+        assert spans["Failing"]["attributes"]["robot.status"] == "FAIL"
 
 
 class TestKeywordInputs:

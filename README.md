@@ -20,41 +20,25 @@ yarf --platform {Mir,Vnc}
 
 For more specific use-cases, refer to the [YARF how-to guides][how-to].
 
-## Tracing tests with MLflow
+## Tracing LLM tests
 
-YARF can record each Robot test as an [MLflow] trace: every keyword with its
-arguments, the prompts and screenshots sent to the LLM, its answers, token
-usage, latency and the GUI actions taken. Tracing needs the optional `mlflow`
-extra, which the snap does not include:
-
-```shell
-pip install "yarf[mlflow]"
-# Or, from source
-uv sync --extra mlflow
-```
-
-Enable tracing in your suite. Robot creates a new LLM Client for each test,
-so enable it in the test setup:
+YARF can record each Robot test that uses the LLM Client as an OpenTelemetry
+trace: every keyword with its arguments, the prompts and screenshots sent to
+the LLM, its answers, token usage, latency and the GUI actions taken. Enable
+tracing in your suite. Robot creates a new LLM Client for each test, so enable
+it in the test setup:
 
 ```robotframework
 *** Settings ***
 Library        yarf.rf_libraries.libraries.llm_client.LlmClient
-Test Setup     Configure Llm Client    tracing=True    experiment=my-suite
+Test Setup     Configure Llm Client    tracing=True
 ```
 
-Traces are saved in `mlflow.db` in the YARF output directory, set with
-`--outdir`. To view them, start the MLflow UI and open
-<http://localhost:5000>:
-
-```shell
-yarf --platform Mir --outdir ./out my-suite/
-mlflow ui --backend-store-uri sqlite:///$PWD/out/mlflow.db --port 5000
-```
-
-To collect traces from several runs, for example in CI, set
-`MLFLOW_TRACKING_URI` to an MLflow server before running YARF. See
-[Tracing and evaluating prompts][tracing] for feedback, LLM judges and checks of
-the GUI actions taken.
+Traces are saved in the `traces` directory of the YARF output directory, set
+with `--outdir`. The tools in [`scripts/llm_tracing`](./scripts/llm_tracing)
+upload them to [MLflow] and evaluate the recorded answers with [promptfoo],
+without installing either with YARF. See
+[Tracing and evaluating prompts][tracing].
 
 ## Installation
 
@@ -105,6 +89,7 @@ YARF is released under the [GNU General Public License Version 3.0](./LICENSE).
 [how-to]: https://canonical-yarf.readthedocs-hosted.com/en/latest/how-to/
 [mir]: https://github.com/canonical/mir
 [mlflow]: https://mlflow.org/
+[promptfoo]: https://www.promptfoo.dev/
 [robot framework]: https://robotframework.org/
 [rtd-badge]: https://readthedocs.com/projects/canonical-yarf/badge/?version=latest
 [rtd-latest]: https://canonical-yarf.readthedocs-hosted.com/en/latest/

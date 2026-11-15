@@ -1,28 +1,56 @@
 """
-Trace and evaluate the requests of the LLM Client with MLflow.
+Record the requests of the LLM Client as OpenTelemetry traces.
 
-MLflow is an optional dependency, installed with ``pip install yarf[mlflow]``.
-It is imported only once tracing is enabled.
+Each Robot test that enables tracing becomes one trace: a tree of spans for the
+test, its keywords, the LLM requests, the response parsing and the GUI actions.
+Traces are written to ``traces/traces.jsonl`` in the Robot output directory,
+one OTLP/JSON export request per line, and the images they show to
+``traces/blobs``, referenced from the spans by ``yarf-blob://`` URIs. The tools
+in ``scripts/llm_tracing`` upload them to MLflow and evaluate them with
+promptfoo.
 """
 
+import base64
+import binascii
+import hashlib
 import json
 import os
+import platform
+import re
+import secrets
+import threading
 import time
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
-from dataclasses import dataclass
 from datetime import datetime
+from importlib import metadata
 from pathlib import Path
 from typing import Any
 
+from google.protobuf.json_format import MessageToDict
+from opentelemetry import context as otel_context
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.common.trace_encoder import (
+    encode_spans,
+)
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
+from opentelemetry.sdk.trace.export import (
+    SimpleSpanProcessor,
+    SpanExporter,
+    SpanExportResult,
+)
+from opentelemetry.sdk.trace.id_generator import IdGenerator
+from opentelemetry.trace import Span, Status, StatusCode
 from PIL import Image
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn, RobotNotRunningError
+from robot.version import get_version as robot_version
 
 from yarf.lib.images.utils import to_base64
 from yarf.vendor.RPA.recognition.utils import to_image
 
-# MLflow span types
+# Span types, as named by MLflow
 AGENT = "AGENT"
 CHAIN = "CHAIN"
 LLM = "LLM"
@@ -30,47 +58,314 @@ PARSER = "PARSER"
 TOOL = "TOOL"
 UNKNOWN = "UNKNOWN"
 
-SOURCE_ID = "yarf"
-SCOPES = ("test", "suite", "run")
-GUIDELINES = "guidelines"
-TOOL_CALLS = "tool_calls"
-EXPECTED_TOOL_CALLS = "expected_tool_calls"
-JUDGE_VERDICTS = ("yes", "no")
-JUDGE_MAX_TOKENS = 4096
-IMAGE_URL_PREFIXES = ("data:image/", "mlflow-attachment://")
-# Identifies the traces recorded by this YARF process
-RUN_ID = datetime.now().isoformat(timespec="seconds")
-# Marks the LLM Client keywords that record their own span
-TRACED = "_yarf_traced"
+# Span attributes, JSON encoded for inputs and outputs
+SPAN_TYPE = "yarf.span.type"
+INPUTS = "yarf.inputs"
+OUTPUTS = "yarf.outputs"
 # Marks the span of an LLM Client keyword called from Robot
 KEYWORD_ATTRIBUTE = "yarf.llm_keyword"
 # Marks the span of a Robot test, the root of its trace
 TEST_ATTRIBUTE = "yarf.test"
 # The Robot status of a test: PASS, FAIL, SKIP or NOT RUN
-STATUS_TAG = "robot.status"
-STATUS_FEEDBACK = "robot_status"
-# Shown as the trace name in the trace list
-TRACE_NAME = "mlflow.traceName"
+STATUS_ATTRIBUTE = "robot.status"
+# Groups the traces of one suite in one run, an OpenTelemetry convention
+SESSION_ATTRIBUTE = "session.id"
+
+# Identifies the traces recorded by this YARF process
+RUN_ID = datetime.now().isoformat(timespec="seconds")
+# Marks the LLM Client keywords that record their own span
+TRACED = "_yarf_traced"
+
+TRACES_DIR = "traces"
+TRACES_FILE = "traces.jsonl"
+BLOB_SCHEME = "yarf-blob://"
+DATA_URL = re.compile(r"data:(image/[\w.+-]+);base64,([A-Za-z0-9+/=]+)")
+# OTLP/JSON encodes these IDs as hex, protobuf's JSON mapping as base64
+ID_FIELDS = ("traceId", "spanId", "parentSpanId")
 
 
-@dataclass(frozen=True)
-class TraceRecord:
+class OsRandomIdGenerator(IdGenerator):
     """
-    A trace recorded in this process.
+    Generate trace and span IDs from the operating system's random source.
 
-    Attributes:
-        trace_id: The MLflow trace ID.
-        suite: The Robot suite that recorded the trace, if any.
-        test: The Robot test that recorded the trace, if any.
+    OpenTelemetry's default generator uses Python's ``random`` module, which
+    repeats the same IDs in every run once a test calls ``random.seed()``.
     """
 
-    trace_id: str
-    suite: str | None
-    test: str | None
+    def generate_span_id(self) -> int:
+        """
+        Generate a span ID.
+
+        Returns:
+            A random, non-zero 64-bit ID.
+        """
+        return secrets.randbits(64) or self.generate_span_id()
+
+    def generate_trace_id(self) -> int:
+        """
+        Generate a trace ID.
+
+        Returns:
+            A random, non-zero 128-bit ID.
+        """
+        return secrets.randbits(128) or self.generate_trace_id()
 
 
-# Shared by all library instances, as Robot creates one per test
-TRACES: list[TraceRecord] = []
+class JsonLinesSpanExporter(SpanExporter):
+    """
+    Append spans to a file, one OTLP/JSON export request per line.
+
+    Args:
+        path: The file.
+    """
+
+    def __init__(self, path: Path) -> None:
+        self.path = path
+        self._lock = threading.Lock()
+
+    def export(self, spans: Sequence[ReadableSpan]) -> SpanExportResult:
+        """
+        Append spans to the file.
+
+        Args:
+            spans: The finished spans.
+
+        Returns:
+            Whether the spans were written.
+        """
+        request = MessageToDict(
+            encode_spans(spans), use_integers_for_enums=True
+        )
+        for resource_spans in request.get("resourceSpans", []):
+            for scope_spans in resource_spans.get("scopeSpans", []):
+                for span in scope_spans.get("spans", []):
+                    for field in ID_FIELDS:
+                        if field in span:
+                            span[field] = base64.b64decode(span[field]).hex()
+        line = json.dumps(request, separators=(",", ":"))
+        with self._lock, self.path.open("a") as file:
+            file.write(line + "\n")
+        return SpanExportResult.SUCCESS
+
+    def shutdown(self) -> None:
+        """
+        Nothing to release: the file is closed after each export.
+        """
+
+
+class BlobStore:
+    """
+    Store files by the SHA-256 of their content, so that each is stored once.
+
+    Args:
+        root: The directory of the files.
+    """
+
+    def __init__(self, root: Path) -> None:
+        self.root = root
+
+    def put(self, data: bytes, content_type: str) -> str:
+        """
+        Store a file.
+
+        Args:
+            data: The file content.
+            content_type: The MIME type, e.g. ``image/png``.
+
+        Returns:
+            The reference to the file, e.g.
+            ``yarf-blob://sha256/<hash>?content_type=image/png``.
+        """
+        digest = hashlib.sha256(data).hexdigest()
+        path = self.root / "sha256" / f"{digest}.{content_type.split('/')[-1]}"
+        if not path.exists():
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(data)
+        return f"{BLOB_SCHEME}sha256/{digest}?content_type={content_type}"
+
+
+class Recorder:
+    """
+    Write the traces and images of this process to a directory: the spans
+    to ``traces.jsonl``, the images to ``blobs``.
+
+    Args:
+        root: The directory, ``traces`` in the Robot output directory.
+    """
+
+    def __init__(self, root: Path) -> None:
+        self.root = root
+        self.path = root / TRACES_FILE
+        self.blobs = BlobStore(root / "blobs")
+        root.mkdir(parents=True, exist_ok=True)
+        self.provider = TracerProvider(
+            resource=Resource.create(resource_attributes()),
+            id_generator=OsRandomIdGenerator(),
+        )
+        # Writes each span when it ends, so that a crash loses nothing
+        self.provider.add_span_processor(
+            SimpleSpanProcessor(JsonLinesSpanExporter(self.path))
+        )
+        self.tracer = self.provider.get_tracer("yarf.llm_client")
+
+    def json(self, value: Any) -> str:
+        """
+        Encode a span input or output, storing the images it contains.
+
+        Args:
+            value: The value.
+
+        Returns:
+            The JSON, with ``yarf-blob://`` references instead of images.
+        """
+        return json.dumps(self.store_images(value), default=str)
+
+    def store_images(self, value: Any) -> Any:
+        """
+        Replace the base64 data URLs of images by references to stored files.
+
+        Args:
+            value: Any value, e.g. the payload of an LLM request.
+
+        Returns:
+            The value with the images replaced.
+        """
+        if isinstance(value, str):
+            match = DATA_URL.fullmatch(value)
+            if match is None:
+                return value
+            try:
+                data = base64.b64decode(match[2], validate=True)
+            except binascii.Error:
+                return value
+            return self.blobs.put(data, match[1])
+        if isinstance(value, dict):
+            return {k: self.store_images(v) for k, v in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [self.store_images(item) for item in value]
+        return value
+
+
+_RECORDER: Recorder | None = None
+
+
+def recorder(outdir: Path) -> Recorder:
+    """
+    Get the recorder of this process, writing to an output directory.
+
+    Args:
+        outdir: The Robot output directory.
+
+    Returns:
+        The recorder, created on first use.
+    """
+    global _RECORDER
+    root = outdir / TRACES_DIR
+    if _RECORDER is None or _RECORDER.root != root:
+        if _RECORDER is not None:
+            _RECORDER.provider.shutdown()
+        _RECORDER = Recorder(root)
+    return _RECORDER
+
+
+def resource_attributes() -> dict[str, str]:
+    """
+    Describe the YARF installation that records the traces.
+
+    Returns:
+        OpenTelemetry resource attributes: the YARF version, how it was
+        installed, and the versions of Python, Robot Framework and the OS.
+    """
+    return {
+        "service.name": "yarf",
+        "service.version": metadata.version("yarf"),
+        "yarf.distribution": "snap" if "SNAP" in os.environ else "python",
+        "process.runtime.version": platform.python_version(),
+        "yarf.robotframework.version": robot_version(),
+        "os.description": platform.platform(),
+    }
+
+
+def trace_attributes(suite: str | None, test: str | None) -> dict[str, Any]:
+    """
+    Get the attributes of the root span of a trace.
+
+    Args:
+        suite: The Robot suite name, if any.
+        test: The Robot test name, if any.
+
+    Returns:
+        The run, suite and test, and the session grouping the traces of the
+        suite in this run.
+    """
+    attributes: dict[str, Any] = {"yarf.run": RUN_ID}
+    session = RUN_ID
+    if suite is not None:
+        attributes["robot.suite"] = suite
+        session = f"{RUN_ID} {suite}"
+    if test is not None:
+        attributes["robot.test"] = test
+    attributes[SESSION_ATTRIBUTE] = session
+    return attributes
+
+
+class TracedSpan:
+    """
+    A span recording its inputs and outputs as JSON.
+
+    Args:
+        span: The OpenTelemetry span.
+        recorder: The recorder storing the images of the span.
+    """
+
+    def __init__(self, span: Span, recorder: Recorder) -> None:
+        self.span = span
+        self._recorder = recorder
+
+    def set_inputs(self, inputs: Any) -> None:
+        """
+        Record the span inputs.
+
+        Args:
+            inputs: The span inputs.
+        """
+        self.span.set_attribute(INPUTS, self._recorder.json(inputs))
+
+    def set_outputs(self, outputs: Any) -> None:
+        """
+        Record the span outputs.
+
+        Args:
+            outputs: The span outputs.
+        """
+        self.span.set_attribute(OUTPUTS, self._recorder.json(outputs))
+
+    def set_attributes(self, attributes: dict[str, Any]) -> None:
+        """
+        Record span attributes.
+
+        Args:
+            attributes: The span attributes.
+        """
+        self.span.set_attributes(attributes)
+
+    def end(self, outputs: Any, failed: bool, message: str) -> None:
+        """
+        End the span, with an error status if it failed.
+
+        Args:
+            outputs: The span outputs, if any.
+            failed: Whether the span failed.
+            message: The failure message.
+        """
+        if outputs is not None:
+            self.set_outputs(outputs)
+        self.span.set_status(
+            Status(StatusCode.ERROR, message)
+            if failed
+            else Status(StatusCode.OK)
+        )
+        self.span.end()
 
 
 class RobotTestTrace:
@@ -85,12 +380,13 @@ class RobotTestTrace:
 
     def __init__(self) -> None:
         self.enabled = False
+        self._recorder: Recorder | None = None
         self._test: tuple[str, dict[str, Any], int] | None = None
         self._context: tuple[str | None, str | None] = (None, None)
-        self._root: Any = None
+        self._root: TracedSpan | None = None
         self._root_token: Any = None
-        self._stack: list[tuple[Any, Any] | None] = []
-        self._spans: set[str] = set()
+        self._stack: list[tuple[TracedSpan, Any] | None] = []
+        self._spans: set[int] = set()
 
     @property
     def in_test(self) -> bool:
@@ -102,17 +398,17 @@ class RobotTestTrace:
         """
         return self._test is not None
 
-    @property
-    def trace_id(self) -> str | None:
+    def enable(self, recorder: Recorder) -> None:
         """
-        Get the ID of the trace of the running test.
+        Trace the running test.
 
-        Returns:
-            The trace ID, None if the test is not traced yet.
+        Args:
+            recorder: Where to write the trace.
         """
-        return self._root.trace_id if self._root is not None else None
+        self.enabled = True
+        self._recorder = recorder
 
-    def owns(self, span_id: str) -> bool:
+    def owns(self, span_id: int) -> bool:
         """
         Check whether a span is the test span or a Robot keyword span.
 
@@ -143,32 +439,27 @@ class RobotTestTrace:
         """
         if self._root is not None or self._test is None:
             return
+        if self._recorder is None:
+            return
 
-        import mlflow
-
-        name, inputs, start_time_ns = self._test
-        self._root = mlflow.start_span_no_context(
-            name=name,
-            span_type=CHAIN,
-            inputs={"test": name, **inputs},
-            attributes={TEST_ATTRIBUTE: True},
-            start_time_ns=start_time_ns,
+        name, inputs, start_time = self._test
+        suite, _ = self._context
+        span = self._recorder.tracer.start_span(
+            name,
+            # A new trace, whatever span is active
+            context=otel_context.Context(),
+            attributes={
+                SPAN_TYPE: CHAIN,
+                TEST_ATTRIBUTE: True,
+                **trace_attributes(suite, name),
+            },
+            start_time=start_time,
         )
-        # Makes the test span the parent of the keyword and LLM spans; MLflow
-        # has no public API to activate a span started without a context
-        self._root_token = _activate(self._root)
-        self._spans.add(self._root.span_id)
-        suite, test = self._context
-        tags = {"yarf.run": RUN_ID, "robot.test": name, TRACE_NAME: name}
-        if suite is not None:
-            tags["robot.suite"] = suite
-        # The Trace name column is hidden by default in the trace list, so
-        # the Input column shows the test name
-        mlflow.update_current_trace(
-            tags=tags,
-            session_id=f"{RUN_ID} {suite}" if suite is not None else None,
-            request_preview=name,
-        )
+        self._root = TracedSpan(span, self._recorder)
+        self._root.set_inputs({"test": name, **inputs})
+        # Makes the test span the parent of the keyword and LLM spans
+        self._root_token = _activate(span)
+        self._spans.add(span.get_span_context().span_id)
 
     def start_keyword(
         self, name: str, span_type: str, inputs: dict[str, Any]
@@ -178,24 +469,27 @@ class RobotTestTrace:
 
         Args:
             name: The keyword name.
-            span_type: The MLflow span type.
+            span_type: The span type.
             inputs: The keyword arguments.
         """
         if not self.enabled:
             self._stack.append(None)
             return
-
-        import mlflow
-
         self._ensure_root()
-        span = mlflow.start_span_no_context(
-            name=name,
-            span_type=span_type,
-            parent_span=mlflow.get_current_active_span(),
-            inputs=inputs,
+        recorder = self._recorder
+        if recorder is None:
+            self._stack.append(None)
+            return
+
+        span = TracedSpan(
+            recorder.tracer.start_span(
+                name, attributes={SPAN_TYPE: span_type}
+            ),
+            recorder,
         )
-        self._spans.add(span.span_id)
-        self._stack.append((span, _activate(span)))
+        span.set_inputs(inputs)
+        self._spans.add(span.span.get_span_context().span_id)
+        self._stack.append((span, _activate(span.span)))
 
     def skip_keyword(self) -> None:
         """
@@ -226,7 +520,7 @@ class RobotTestTrace:
             return
         span, token = entry
         _deactivate(token)
-        _end_span(span, outputs, failed, message)
+        span.end(outputs, failed, message)
 
     def end_test(self, status: str, message: str) -> None:
         """
@@ -241,62 +535,30 @@ class RobotTestTrace:
         while self._stack:
             self.end_keyword(None, False, "")
         if self._root is not None:
-            self._end_root(status, message)
+            self._root.set_attributes({STATUS_ATTRIBUTE: status})
+            _deactivate(self._root_token)
+            self._root.end(
+                {"status": status, "message": message},
+                status == "FAIL",
+                message,
+            )
         self.enabled = False
         self._test = None
         self._root = None
         self._spans.clear()
 
-    def _end_root(self, status: str, message: str) -> None:
-        """
-        End the test span, and record the trace for `Evaluate Llm Traces`.
 
-        Args:
-            status: The test status.
-            message: The test message.
-        """
-        import mlflow
-        from mlflow.entities import AssessmentSource, AssessmentSourceType
-
-        # The trace state can only be OK or ERROR, so the Robot status is a
-        # tag, a feedback, and the Output column of the trace list
-        mlflow.update_current_trace(
-            tags={STATUS_TAG: status},
-            response_preview=f"{status}: {message}" if message else status,
-        )
-        mlflow.log_feedback(
-            trace_id=self._root.trace_id,
-            name=STATUS_FEEDBACK,
-            value=status,
-            rationale=message or None,
-            source=AssessmentSource(
-                source_type=AssessmentSourceType.CODE, source_id=SOURCE_ID
-            ),
-        )
-        _deactivate(self._root_token)
-        _end_span(
-            self._root,
-            {"status": status, "message": message},
-            status == "FAIL",
-            message,
-        )
-        suite, test = self._context
-        TRACES.append(TraceRecord(self._root.trace_id, suite, test))
-
-
-def _activate(span: Any) -> Any:
+def _activate(span: Span) -> Any:
     """
     Make a span the parent of the spans started next in this context.
 
     Args:
-        span: The MLflow span.
+        span: The span.
 
     Returns:
         The token to deactivate the span with.
     """
-    from mlflow.tracing.provider import set_span_in_context
-
-    return set_span_in_context(span)
+    return otel_context.attach(trace.set_span_in_context(span))
 
 
 def _deactivate(token: Any) -> None:
@@ -306,31 +568,7 @@ def _deactivate(token: Any) -> None:
     Args:
         token: The token returned when activating the span.
     """
-    from mlflow.tracing.provider import detach_span_from_context
-
-    detach_span_from_context(token)
-
-
-def _end_span(
-    span: Any, outputs: dict[str, Any] | None, failed: bool, message: str
-) -> None:
-    """
-    End a span, with an error status if it failed.
-
-    Args:
-        span: The MLflow span.
-        outputs: The span outputs, if any.
-        failed: Whether the span failed.
-        message: The failure message.
-    """
-    from mlflow.entities import SpanStatus, SpanStatusCode
-
-    status = (
-        SpanStatus(SpanStatusCode.ERROR, message)
-        if failed
-        else SpanStatus(SpanStatusCode.OK)
-    )
-    span.end(outputs=outputs, status=status)
+    otel_context.detach(token)
 
 
 # Shared by the trace listener and all LLM Client instances
@@ -339,7 +577,7 @@ TRACING = RobotTestTrace()
 
 class NoopSpan:
     """
-    Stands in for an MLflow span when tracing is disabled.
+    Stands in for a span when tracing is disabled.
     """
 
     def set_inputs(self, inputs: Any) -> None:
@@ -384,8 +622,8 @@ def describe(value: Any) -> Any:
 
 def as_outputs(value: Any) -> Any:
     """
-    Wrap a keyword return value that is not a dict or a string, as MLflow's
-    judges fail to read lists of numbers.
+    Wrap a keyword return value that is not a dict or a string, so that the
+    outputs of all keywords are objects or text.
 
     Args:
         value: The keyword return value.
@@ -402,8 +640,8 @@ def llm_attributes(
     """
     Get the attributes of an LLM request span.
 
-    The model name and token usage use MLflow's attribute keys, so that MLflow
-    sums the tokens per trace and estimates the cost of known models.
+    The model and token usage follow the OpenTelemetry GenAI conventions, so
+    that tracing backends such as MLflow sum the tokens per trace.
 
     Args:
         model: The model name.
@@ -415,13 +653,12 @@ def llm_attributes(
         The span attributes, without the values not reported by the server.
     """
     attributes = {
-        "mlflow.llm.model": model,
-        "mlflow.chat.tokenUsage": {
-            "input_tokens": usage["prompt_tokens"],
-            "output_tokens": usage["completion_tokens"],
-            "total_tokens": usage["total_tokens"],
-        },
+        "gen_ai.operation.name": "chat",
+        "gen_ai.request.model": model,
+        "gen_ai.usage.input_tokens": usage["prompt_tokens"],
+        "gen_ai.usage.output_tokens": usage["completion_tokens"],
         "yarf.reasoning_tokens": usage["reasoning_tokens"],
+        "yarf.total_tokens": usage["total_tokens"],
         "yarf.inference_time": inference_time,
         "yarf.attempts": attempts,
         "yarf.cost": usage["cost"],
@@ -460,87 +697,28 @@ def output_dir() -> Path:
         return Path.cwd()
 
 
-@contextmanager
-def patched_env(values: dict[str, str | None]) -> Iterator[None]:
-    """
-    Temporarily set or, for None values, unset environment variables.
-
-    Args:
-        values: The environment variables to set.
-
-    Yields:
-        None, with the environment variables patched.
-    """
-    saved = {key: os.environ.get(key) for key in values}
-
-    def apply(items: dict[str, str | None]) -> None:
-        for key, value in items.items():
-            if value is None:
-                os.environ.pop(key, None)
-            else:
-                os.environ[key] = value
-
-    apply(values)
-    try:
-        yield
-    finally:
-        apply(saved)
-
-
 class LlmTracer:
     """
-    Record LLM Client keywords and requests as MLflow traces, and evaluate
-    them.
+    Record the LLM Client keywords and requests as OpenTelemetry spans.
 
-    Each LLM keyword called from Robot becomes a trace: a tree of spans for
-    the keyword, its LLM requests, response parsing and GUI actions. Traces
-    are tagged with the Robot suite and test, and grouped in one session per
-    test. Nothing is recorded until tracing is enabled.
+    Run with YARF's trace listener, the spans are part of the trace of
+    the running Robot test. Otherwise, each LLM keyword called from
+    Robot is a trace of its own. Nothing is recorded until tracing is
+    enabled.
     """
 
     def __init__(self) -> None:
         self.enabled = False
+        self._recorder: Recorder | None = None
 
-    def enable(self, experiment: str) -> None:
+    def enable(self) -> None:
         """
-        Start tracing to an MLflow experiment.
-
-        Traces are sent to ``MLFLOW_TRACKING_URI`` if set, otherwise to an
-        SQLite database in the Robot output directory.
-
-        Args:
-            experiment: The name of the MLflow experiment.
-
-        Raises:
-            ImportError: If MLflow is not installed.
+        Start recording traces to the Robot output directory.
         """
-        # MLflow telemetry can deadlock mlflow.genai.evaluate's scorers
-        os.environ.setdefault("MLFLOW_DISABLE_TELEMETRY", "true")
-        # Hints for coding agents, which clutter the test output
-        os.environ.setdefault("MLFLOW_DISABLE_AGENT_HINT", "1")
-        try:
-            import mlflow
-        except ImportError as e:
-            raise ImportError(
-                "LLM tracing requires MLflow, install it with: "
-                "pip install 'yarf[mlflow]'"
-            ) from e
-
-        if not os.getenv("MLFLOW_TRACKING_URI"):
-            outdir = output_dir().resolve()
-            mlflow.set_tracking_uri(f"sqlite:///{outdir / 'mlflow.db'}")
-            # By default, the artifacts would go to the working directory
-            if mlflow.get_experiment_by_name(experiment) is None:
-                mlflow.create_experiment(
-                    experiment, artifact_location=(outdir / "mlruns").as_uri()
-                )
-        mlflow.set_experiment(experiment)
+        self._recorder = recorder(output_dir().resolve())
         self.enabled = True
-        TRACING.enabled = True
-        logger.info(
-            f"Tracing LLM requests to MLflow experiment '{experiment}' "
-            f"at {mlflow.get_tracking_uri()}"
-        )
+        TRACING.enable(self._recorder)
+        logger.info(f"Recording LLM traces to {self._recorder.path}")
 
     @contextmanager
     def span(
@@ -549,80 +727,69 @@ class LlmTracer:
         span_type: str,
         inputs: Any = None,
         attributes: dict[str, Any] | None = None,
-    ) -> Iterator[Any]:
+    ) -> Iterator[TracedSpan | NoopSpan]:
         """
         Record a block of code as a span, if tracing is enabled.
 
-        Inside a Robot test, the span is part of the trace of the test.
-        Otherwise, a span without a parent starts a new trace. A keyword
-        called from Robot gets a ``keyword_passed`` feedback, with the error
-        as the rationale if the block raised.
+        A block that raises gets an error status, with the error as its
+        description.
 
         Args:
             name: The span name.
-            span_type: The MLflow span type.
+            span_type: The span type, e.g. ``LLM``.
             inputs: The span inputs.
-            attributes: The span attributes.
+            attributes: Other span attributes.
 
         Yields:
-            The MLflow span, or a NoopSpan if tracing is disabled.
+            The span, or a NoopSpan if tracing is disabled.
 
         Raises:
             Exception: Any error raised by the block, once recorded.
         """
-        if not self.enabled:
+        if not self.enabled or self._recorder is None:
             yield NoopSpan()
             return
 
-        import mlflow
-
-        parent = mlflow.get_current_active_span()
-        is_root = parent is None
+        parent = trace.get_current_span().get_span_context()
+        is_root = not parent.is_valid
+        span_attributes: dict[str, Any] = {
+            SPAN_TYPE: span_type,
+            **(attributes or {}),
+        }
         # A keyword called from Robot, rather than from another LLM keyword
-        is_keyword = is_root or TRACING.owns(parent.span_id)
-        with mlflow.start_span(
-            name=name, span_type=span_type, attributes=attributes
-        ) as span:
+        if is_root or TRACING.owns(parent.span_id):
+            span_attributes[KEYWORD_ATTRIBUTE] = True
+        if is_root:
+            span_attributes.update(trace_attributes(*robot_context()))
+        with self._recorder.tracer.start_as_current_span(
+            name,
+            attributes=span_attributes,
+            record_exception=False,
+            set_status_on_exception=False,
+        ) as otel_span:
+            span = TracedSpan(otel_span, self._recorder)
             if inputs is not None:
                 span.set_inputs(inputs)
-            if not is_keyword:
-                yield span
-                return
-
-            span.set_attribute(KEYWORD_ATTRIBUTE, True)
-            if is_root:
-                suite, test = robot_context()
-                self._tag_trace(suite, test)
             try:
                 yield span
             except Exception as e:
-                self.feedback("keyword_passed", False, rationale=str(e))
+                otel_span.set_status(Status(StatusCode.ERROR, str(e)))
                 raise
-            else:
-                self.feedback("keyword_passed", True)
-            finally:
-                if is_root:
-                    TRACES.append(TraceRecord(span.trace_id, suite, test))
+            otel_span.set_status(Status(StatusCode.OK))
 
-    def _tag_trace(self, suite: str | None, test: str | None) -> None:
+    def _current(self) -> TracedSpan | None:
         """
-        Tag the active trace with the Robot context.
+        Get the active span, if tracing is enabled.
 
-        Args:
-            suite: The Robot suite name.
-            test: The Robot test name.
+        Returns:
+            The active span, None if tracing is disabled or no span is active.
         """
-        import mlflow
-
-        tags = {"yarf.run": RUN_ID}
-        session_id = None
-        if suite is not None:
-            tags["robot.suite"] = suite
-            session_id = f"{RUN_ID} {suite}"
-        if test is not None:
-            tags["robot.test"] = test
-            session_id = f"{session_id} / {test}"
-        mlflow.update_current_trace(tags=tags, session_id=session_id)
+        span = trace.get_current_span()
+        if not self.enabled or self._recorder is None:
+            return None
+        if not span.is_recording():
+            return None
+        return TracedSpan(span, self._recorder)
 
     def set_outputs(self, outputs: Any) -> None:
         """
@@ -631,563 +798,35 @@ class LlmTracer:
         Args:
             outputs: The span outputs.
         """
-        if not self.enabled:
-            return
-
-        import mlflow
-
-        span = mlflow.get_current_active_span()
+        span = self._current()
         if span is not None:
             span.set_outputs(outputs)
+
+    def set_attributes(self, attributes: dict[str, Any]) -> None:
+        """
+        Set attributes of the active span, if tracing is enabled.
+
+        Args:
+            attributes: The span attributes, e.g. ``{"yarf.steps": 3}``.
+        """
+        span = self._current()
+        if span is not None:
+            span.set_attributes(attributes)
 
     def log_image(self, image: Image.Image | str, name: str) -> None:
         """
         Record an image in the active trace, if tracing is enabled.
 
         The image becomes the output of a child span of the active span, so
-        that it shows where it was taken, e.g. after a GUI action. MLflow
-        stores it as an attachment.
+        that it shows where it was taken, e.g. after a GUI action.
 
         Args:
             image: The image, or the path to an image file.
             name: The name of the span, describing the image.
         """
-        if not self.enabled:
-            return
-
-        import mlflow
-
         # A span without a parent would start a trace of its own
-        if mlflow.get_current_active_span() is None:
+        if self._current() is None:
             return
         url = f"data:image/webp;base64,{to_base64(to_image(image))}"
-        with mlflow.start_span(name=name, span_type=UNKNOWN) as span:
+        with self.span(name, UNKNOWN) as span:
             span.set_outputs({"image": url})
-
-    def feedback(
-        self, name: str, value: Any, rationale: str | None = None
-    ) -> None:
-        """
-        Attach an automatic feedback to the active span, if tracing is enabled.
-
-        Args:
-            name: The feedback name.
-            value: The feedback value.
-            rationale: Why the value was given.
-        """
-        if not self.enabled:
-            return
-
-        import mlflow
-        from mlflow.entities import AssessmentSource, AssessmentSourceType
-
-        span = mlflow.get_current_active_span()
-        if span is None:
-            return
-        mlflow.log_feedback(
-            trace_id=span.trace_id,
-            span_id=span.span_id,
-            name=name,
-            value=value,
-            rationale=rationale or None,
-            source=AssessmentSource(
-                source_type=AssessmentSourceType.CODE, source_id=SOURCE_ID
-            ),
-        )
-
-    def _require_enabled(self) -> None:
-        """
-        Check that tracing is enabled.
-
-        Raises:
-            RuntimeError: If tracing is disabled.
-        """
-        if not self.enabled:
-            raise RuntimeError(
-                "LLM tracing is disabled, enable it with "
-                "'Configure Llm Client    tracing=True'."
-            )
-
-    def _last_trace_id(self) -> str:
-        """
-        Get the trace of the running Robot test, or the last trace recorded by
-        the running test or suite.
-
-        Returns:
-            The trace ID.
-
-        Raises:
-            RuntimeError: If no trace was recorded yet.
-        """
-        if TRACING.trace_id is not None:
-            return TRACING.trace_id
-        context = robot_context()
-        for record in reversed(TRACES):
-            if (record.suite, record.test) == context:
-                return record.trace_id
-        raise RuntimeError("No LLM trace was recorded yet in this test.")
-
-    def log_feedback(
-        self, name: str, value: Any, rationale: str | None = None
-    ) -> None:
-        """
-        Attach a feedback to the last trace of the running test.
-
-        Args:
-            name: The feedback name.
-            value: The feedback value.
-            rationale: Why the value was given.
-        """
-        self._require_enabled()
-        import mlflow
-        from mlflow.entities import AssessmentSource, AssessmentSourceType
-
-        trace_id = self._last_trace_id()
-        mlflow.flush_trace_async_logging()
-        mlflow.log_feedback(
-            trace_id=trace_id,
-            name=name,
-            value=value,
-            rationale=rationale,
-            source=AssessmentSource(
-                source_type=AssessmentSourceType.CODE, source_id="robot"
-            ),
-        )
-
-    def log_expectation(self, name: str, value: Any) -> None:
-        """
-        Attach an expectation, the ground truth, to the last trace of the
-        running test.
-
-        Args:
-            name: The expectation name.
-            value: The expected value.
-        """
-        self._require_enabled()
-        import mlflow
-        from mlflow.entities import AssessmentSource, AssessmentSourceType
-
-        trace_id = self._last_trace_id()
-        mlflow.flush_trace_async_logging()
-        mlflow.log_expectation(
-            trace_id=trace_id,
-            name=name,
-            value=value,
-            source=AssessmentSource(
-                source_type=AssessmentSourceType.HUMAN, source_id="robot"
-            ),
-        )
-
-    def evaluate(
-        self,
-        guidelines: list[str],
-        judge_model: str,
-        scope: str = "suite",
-        judge_env: dict[str, str | None] | None = None,
-        screenshots: bool = True,
-    ) -> dict[str, Any]:
-        """
-        Evaluate the recorded traces against guidelines and expected tool
-        calls.
-
-        An LLM judges the traces with a model answer against the guidelines,
-        and the tool calls of the traces with an ``expected_tool_calls``
-        expectation are compared with it. The results are attached to the
-        traces as ``guidelines`` and ``tool_calls`` feedback, and logged as an
-        evaluation run in the MLflow experiment.
-
-        Args:
-            guidelines: The rules the keyword outputs must follow, if any.
-            judge_model: The MLflow model URI of the judge,
-                e.g. ``openai:/gpt-4.1-mini``.
-            scope: The traces to judge: the running ``test``, ``suite``, or
-                the whole ``run``.
-            judge_env: Environment variables to set while judging.
-            screenshots: Whether to show the judge the screenshots sent to the
-                model, which requires a vision model as the judge.
-
-        Returns:
-            The evaluation metrics, e.g. ``{"guidelines/mean": 0.8}``.
-
-        Raises:
-            ValueError: If an unknown scope is given, or if there is nothing
-                to evaluate: no guidelines and no expected tool calls.
-            RuntimeError: If no trace was recorded in the scope.
-        """
-        self._require_enabled()
-        if scope not in SCOPES:
-            raise ValueError(
-                f"Unknown scope: {scope}. Allowed: {', '.join(SCOPES)}"
-            )
-
-        suite, test = robot_context()
-        trace_ids = [
-            r.trace_id
-            for r in TRACES
-            if scope == "run"
-            or (r.suite == suite and (scope == "suite" or r.test == test))
-        ]
-
-        import mlflow
-        from mlflow.genai.scorers import scorer
-
-        @scorer(name=GUIDELINES)
-        def guidelines_judge(trace: Any) -> Any:
-            # Traces like Execute Gui Action have no model answer to judge
-            if not any(span.span_type == LLM for span in trace.data.spans):
-                return None
-            return judge_trace(trace, guidelines, judge_model, screenshots)
-
-        @scorer(name=TOOL_CALLS)
-        def tool_calls_check(
-            trace: Any, expectations: dict[str, Any] | None
-        ) -> Any:
-            expected = (expectations or {}).get(EXPECTED_TOOL_CALLS)
-            if expected is None:
-                return None
-            return check_tool_calls(trace, expected)
-
-        mlflow.flush_trace_async_logging()
-        traces = [mlflow.get_trace(trace_id) for trace_id in trace_ids]
-        if not traces:
-            hint = (
-                " The trace of a test ends with the test: evaluate it from "
-                "the suite teardown."
-                if TRACING.trace_id is not None
-                else ""
-            )
-            raise RuntimeError(
-                f"No LLM trace was recorded in this {scope}.{hint}"
-            )
-        scorers = [tool_calls_check]
-        if guidelines:
-            scorers.insert(0, guidelines_judge)
-        elif not any(map(has_expected_tool_calls, traces)):
-            raise ValueError(
-                "Nothing to evaluate: give guidelines, or log "
-                f"'{EXPECTED_TOOL_CALLS}' with Log Llm Expectation."
-            )
-        env: dict[str, str | None] = {
-            # A local server queues parallel judge calls until they time out
-            "MLFLOW_GENAI_EVAL_MAX_WORKERS": os.getenv(
-                "MLFLOW_GENAI_EVAL_MAX_WORKERS", "1"
-            ),
-            "MLFLOW_GENAI_EVAL_MAX_SCORER_WORKERS": os.getenv(
-                "MLFLOW_GENAI_EVAL_MAX_SCORER_WORKERS", "1"
-            ),
-            **(judge_env or {}),
-        }
-        with patched_env(env):
-            results = mlflow.genai.evaluate(data=traces, scorers=scorers)
-
-        table = results.tables["eval_results"]
-        for _, row in table.iterrows():
-            values = [
-                f"{s.name} {row.get(f'{s.name}/value')}"
-                for s in scorers
-                # Scorers that skipped the trace leave NaN
-                if isinstance(row.get(f"{s.name}/value"), str)
-            ]
-            logger.info(f"Trace {row['trace_id']}: {', '.join(values)}")
-        return {key: _plain(value) for key, value in results.metrics.items()}
-
-
-def has_expected_tool_calls(trace: Any) -> bool:
-    """
-    Check whether a trace has an ``expected_tool_calls`` expectation.
-
-    Args:
-        trace: The MLflow trace.
-
-    Returns:
-        Whether the tool calls of the trace can be checked.
-    """
-    return any(
-        a.name == EXPECTED_TOOL_CALLS and a.expectation is not None
-        for a in trace.info.assessments
-    )
-
-
-def llm_keywords(trace: Any) -> list[dict[str, Any]]:
-    """
-    Get the LLM Client keywords a test trace ran, in order.
-
-    These are the keyword spans with an LLM request, e.g. `Assert State`,
-    so that the judge reads what the model was asked and answered.
-
-    Args:
-        trace: The MLflow trace of a Robot test.
-
-    Returns:
-        The name, inputs and outputs of each LLM keyword.
-    """
-    spans = {span.span_id: span for span in trace.data.spans}
-    keywords: dict[str, Any] = {}
-    for span in trace.data.spans:
-        if span.span_type != LLM:
-            continue
-        parent = spans.get(span.parent_id)
-        while parent is not None and not parent.attributes.get(
-            KEYWORD_ATTRIBUTE
-        ):
-            parent = spans.get(parent.parent_id)
-        if parent is not None:
-            keywords[parent.span_id] = parent
-    return [
-        {"name": span.name, "inputs": span.inputs, "outputs": span.outputs}
-        for span in sorted(keywords.values(), key=lambda s: s.start_time_ns)
-    ]
-
-
-def tool_calls(trace: Any) -> list[dict[str, Any]]:
-    """
-    Get the tool calls of a trace, such as GUI actions, in order.
-
-    Args:
-        trace: The MLflow trace.
-
-    Returns:
-        The name and arguments of each tool call, and its error if it failed.
-    """
-    spans = sorted(
-        (span for span in trace.data.spans if span.span_type == TOOL),
-        key=lambda span: span.start_time_ns,
-    )
-    calls = []
-    for span in spans:
-        arguments = span.inputs if isinstance(span.inputs, dict) else {}
-        call: dict[str, Any] = {"name": span.name, "arguments": arguments}
-        if span.status.status_code == "ERROR":
-            call["error"] = span.status.description
-        calls.append(call)
-    return calls
-
-
-def expected_call(call: Any) -> dict[str, Any]:
-    """
-    Read an expected tool call.
-
-    Args:
-        call: A tool name, e.g. ``Click Pointer Button``, or a dict with the
-            ``name`` and optionally some ``arguments`` of the call.
-
-    Returns:
-        The name and arguments of the expected call.
-
-    Raises:
-        ValueError: If the call is neither a name nor such a dict.
-    """
-    if isinstance(call, str):
-        return {"name": call, "arguments": {}}
-    if isinstance(call, dict) and isinstance(call.get("name"), str):
-        arguments = call.get("arguments") or {}
-        if isinstance(arguments, dict):
-            return {"name": call["name"], "arguments": arguments}
-    raise ValueError(
-        f"Invalid expected tool call: {call!r}. Expected a tool name, or a "
-        "dict with a name and optional arguments."
-    )
-
-
-def format_call(call: dict[str, Any]) -> str:
-    """
-    Format a tool call for a rationale.
-
-    Args:
-        call: The name and arguments of the call.
-
-    Returns:
-        The call, e.g. ``Write(text='42')``.
-    """
-    arguments = ", ".join(f"{k}={v!r}" for k, v in call["arguments"].items())
-    return f"{call['name']}({arguments})"
-
-
-def check_tool_calls(trace: Any, expected: Any) -> Any:
-    """
-    Compare the tool calls of a trace with the expected ones, in order.
-
-    Only the arguments given in an expected call are compared, so that the
-    exact point of a click can be left out.
-
-    Args:
-        trace: The MLflow trace.
-        expected: The expected calls, see ``expected_call``.
-
-    Returns:
-        A ``tool_calls`` feedback, ``yes`` if all the calls match.
-
-    Raises:
-        ValueError: If the expected calls are not a list.
-    """
-    # Not MLflow's ToolCallCorrectness: even with exact matching, it asks an
-    # LLM for the available tools, and compares all arguments or none.
-    from mlflow.entities import (
-        AssessmentSource,
-        AssessmentSourceType,
-        Feedback,
-    )
-
-    if not isinstance(expected, list):
-        raise ValueError(
-            f"'{EXPECTED_TOOL_CALLS}' must be a list, got {expected!r}."
-        )
-    wanted = [expected_call(call) for call in expected]
-    actual = tool_calls(trace)
-    mismatches = [
-        f"call {i}: expected {format_call(e)}, got {format_call(a)}"
-        for i, (a, e) in enumerate(zip(actual, wanted), start=1)
-        if a["name"] != e["name"]
-        or any(a["arguments"].get(k) != v for k, v in e["arguments"].items())
-    ]
-    if len(actual) != len(wanted):
-        mismatches.append(
-            f"expected {len(wanted)} calls, got {len(actual)}: "
-            + ", ".join(map(format_call, actual))
-        )
-    return Feedback(
-        name=TOOL_CALLS,
-        value="no" if mismatches else "yes",
-        rationale="; ".join(mismatches)
-        or "The tool calls match the expected ones.",
-        source=AssessmentSource(
-            source_type=AssessmentSourceType.CODE, source_id=SOURCE_ID
-        ),
-    )
-
-
-def image_urls(value: Any) -> list[str]:
-    """
-    Find the images in span inputs, whatever the request format.
-
-    Args:
-        value: The span inputs.
-
-    Returns:
-        The image data URLs and MLflow attachment references, in order.
-    """
-    if isinstance(value, str):
-        return [value] if value.startswith(IMAGE_URL_PREFIXES) else []
-    if isinstance(value, dict):
-        value = list(value.values())
-    if isinstance(value, list):
-        return [url for item in value for url in image_urls(item)]
-    return []
-
-
-def trace_screenshots(trace: Any) -> list[str]:
-    """
-    Get the screenshots sent to the model in a trace.
-
-    MLflow stores images as trace attachments, which are downloaded here.
-
-    Args:
-        trace: The MLflow trace.
-
-    Returns:
-        The screenshots as data URLs, in the order they were sent.
-    """
-    from mlflow.genai.judges.tools.get_span_image import (
-        GetSpanImageTool,
-        SpanImageResult,
-    )
-
-    screenshots = []
-    for span in trace.data.spans:
-        if span.span_type != LLM:
-            continue
-        attachments = 0
-        for url in image_urls(span.inputs):
-            if url.startswith("data:"):
-                screenshots.append(url)
-                continue
-            result = GetSpanImageTool().invoke(
-                trace, span.span_id, attachment_index=attachments
-            )
-            attachments += 1
-            if isinstance(result, SpanImageResult):
-                screenshots.append(result.data_url)
-            else:
-                logger.warn(f"Screenshot not shown to the judge: {result}")
-    return screenshots
-
-
-def judge_trace(
-    trace: Any, guidelines: list[str], model: str, screenshots: bool
-) -> Any:
-    """
-    Ask an LLM judge whether a trace follows guidelines.
-
-    The judge gets MLflow's guidelines prompt, with the keyword inputs as the
-    request, its outputs as the response, the tool calls it made in order,
-    such as GUI actions, and optionally the screenshots sent to the model.
-
-    Args:
-        trace: The MLflow trace.
-        guidelines: The rules the keyword outputs must follow.
-        model: The MLflow model URI of the judge.
-        screenshots: Whether to show the screenshots to the judge.
-
-    Returns:
-        The judge's feedback, ``yes`` or ``no`` with a rationale.
-    """
-    from mlflow.genai.judges.prompts.guidelines import get_prompt
-    from mlflow.genai.judges.utils import invoke_judge_model
-    from mlflow.types.llm import ChatMessage
-
-    root = next(span for span in trace.data.spans if span.parent_id is None)
-    context = {
-        "request": json.dumps(root.inputs, default=str),
-        "response": json.dumps(root.outputs, default=str),
-    }
-    if root.attributes.get(TEST_ATTRIBUTE):
-        context["llm_keywords"] = json.dumps(llm_keywords(trace), default=str)
-    calls = tool_calls(trace)
-    if calls:
-        context["tool_calls"] = json.dumps(calls, default=str)
-    prompt = get_prompt(guidelines, context)
-    content: list[dict[str, Any]] = []
-    for i, url in enumerate(
-        trace_screenshots(trace) if screenshots else [], start=1
-    ):
-        content.append(
-            {"type": "text", "text": f"Screenshot {i} sent to the model:"}
-        )
-        content.append({"type": "image_url", "image_url": {"url": url}})
-    content.append({"type": "text", "text": prompt})
-    feedback = invoke_judge_model(
-        model,
-        [ChatMessage(role="user", content=content)],
-        assessment_name=GUIDELINES,
-        # Stops a judge stuck repeating itself well before the scorer timeout
-        inference_params={"max_tokens": JUDGE_MAX_TOKENS},
-    )
-    verdict = str(feedback.value).strip().lower()
-    if verdict not in JUDGE_VERDICTS:
-        from mlflow.entities import Feedback
-
-        # Small judges can derail, e.g. on many screenshots: record an error
-        # rather than a verdict that skews the metrics
-        return Feedback(
-            name=GUIDELINES,
-            error=ValueError(
-                f"The judge answered {verdict[:100]!r} instead of yes or no."
-            ),
-            source=feedback.source,
-            rationale=feedback.rationale,
-        )
-    feedback.value = verdict
-    return feedback
-
-
-def _plain(value: Any) -> Any:
-    """
-    Convert a NumPy scalar to a plain Python value for Robot.
-
-    Args:
-        value: The value to convert.
-
-    Returns:
-        The plain value.
-    """
-    return value.item() if hasattr(value, "item") else value

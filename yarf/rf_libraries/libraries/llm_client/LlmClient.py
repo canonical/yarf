@@ -288,7 +288,7 @@ def _traced(span_type: str) -> Callable[[F], F]:
     its return value as outputs.
 
     Args:
-        span_type: The MLflow span type.
+        span_type: The span type, e.g. ``CHAIN``.
 
     Returns:
         The decorator, for both sync and async keywords.
@@ -350,7 +350,6 @@ class LlmClient:
         self.max_tokens: int = 32768
         self.api_key_env: str = "YARF_LLM_API_KEY"
         self.image_format: str = "WEBP"
-        self.experiment: str = "yarf"
         self.usage = LlmUsage()
         self.tracer = LlmTracer()
 
@@ -361,7 +360,7 @@ class LlmClient:
 
         Supported parameters are ``model``, ``server_url``, ``endpoint``,
         ``max_tokens``, ``api_key_env``, ``image_format``, ``collect_usage``,
-        ``tracing``, ``experiment`` and ``provider``.
+        ``tracing`` and ``provider``.
 
         ``provider`` applies a preset for a hosted service, which explicit
         parameters override:
@@ -383,24 +382,18 @@ class LlmClient:
         and cost of each request, see `Get Llm Usage`. It is off by default.
 
         Set ``tracing=True`` to record the running test, and the next ones,
-        as MLflow traces in the experiment named by ``experiment`` (default
-        ``yarf``). Robot creates a new LLM Client for each test, so enable
-        tracing in the test setup. Run with YARF, a trace records a whole
-        test: each keyword with its arguments, the prompts and screenshots
-        sent to the model, its answers, token usage, latency, response
-        parsing and the GUI actions taken. The HID keywords that the LLM
-        Client calls are recorded as tool calls; keywords that the suite
-        calls itself are only context, left out of the evaluation. Traces are
-        named after the test, tagged with the Robot suite, test and status,
-        grouped in one session per suite, and get automatic feedback such as
-        ``robot_status``, ``keyword_passed`` and ``valid_json_first_try``.
-        Without YARF's listener, e.g. with ``robot``, each LLM keyword is a
-        trace of its own. Attach your own with
-        `Log Llm Feedback` and `Log Llm Expectation`, and judge them with
-        `Evaluate Llm Traces`. Tracing requires ``pip install yarf[mlflow]``.
-        Traces are sent to ``MLFLOW_TRACKING_URI`` if set, otherwise to
-        ``mlflow.db`` in the Robot output directory, viewed with
-        ``mlflow ui --backend-store-uri sqlite:///<outdir>/mlflow.db``.
+        as OpenTelemetry traces. Robot creates a new LLM Client for each
+        test, so enable tracing in the test setup. Run with YARF, a trace
+        records a whole test: each keyword with its arguments, the prompts
+        and screenshots sent to the model, its answers, token usage, latency,
+        response parsing and the GUI actions taken. The HID keywords that the
+        LLM Client calls are recorded as tool calls, while the keywords that
+        the suite calls itself are only context. Failed keywords and tests get an error
+        status. Without YARF's listener, e.g. with ``robot``, each LLM keyword
+        is a trace of its own. Traces are written to ``traces/traces.jsonl``
+        in the Robot output directory, and the screenshots to
+        ``traces/blobs``. The scripts in ``scripts/llm_tracing`` upload them
+        to MLflow and evaluate them with promptfoo.
 
         Args:
             **kwargs: Configuration parameters for the LLM client.
@@ -419,7 +412,7 @@ class LlmClient:
             | ...    model=qwen/qwen3-vl-8b-instruct
             | Configure Llm Client    provider=gemini    model=gemini-2.5-flash
             | Configure Llm Client    collect_usage=True
-            | Configure Llm Client    tracing=True    experiment=installer
+            | Configure Llm Client    tracing=True
         """
         config_fields = {
             "model",
@@ -430,7 +423,6 @@ class LlmClient:
             "image_format",
             "collect_usage",
             "tracing",
-            "experiment",
             "provider",
         }
 
@@ -454,10 +446,6 @@ class LlmClient:
             self.usage.enabled = is_truthy(kwargs.pop("collect_usage"))
 
         tracing = kwargs.pop("tracing", None)
-        if tracing is not None:
-            tracing = is_truthy(tracing)
-        elif "experiment" in kwargs:
-            tracing = self.tracer.enabled
 
         for k, v in kwargs.items():
             # Set the attribute if it's a valid configuration field
@@ -471,10 +459,11 @@ class LlmClient:
                     f"Expected type {field_type.__name__}"
                 )
 
-        if tracing:
-            self.tracer.enable(self.experiment)
-        elif tracing is not None:
-            self.tracer.enabled = False
+        if tracing is not None:
+            if is_truthy(tracing):
+                self.tracer.enable()
+            else:
+                self.tracer.enabled = False
 
     @keyword
     @_traced(CHAIN)
@@ -604,136 +593,6 @@ class LlmClient:
             | Log    ${usage}[total_tokens]
         """
         return {"model": self.model, **self.usage.summary()}
-
-    @keyword
-    def log_llm_feedback(
-        self, name: str, value: Any, rationale: str | None = None
-    ) -> None:
-        """
-        Attach a feedback, a judgement of the result, to the trace of the
-        current test, or to its last LLM trace without YARF's listener.
-        Requires ``tracing=True`` in `Configure Llm Client`.
-
-        MLflow aggregates feedback per name, e.g. to compare the accuracy of
-        prompts or models across runs.
-
-        Args:
-            name: The feedback name.
-            value: The feedback value, e.g. a boolean or a score.
-            rationale: Optional explanation of the value.
-
-        Example:
-            | ${point}=    Get Object Position    the OK button
-            | ${ok}=    Evaluate    0.4 < ${point}[0] < 0.6
-            | Log Llm Feedback    found_ok_button    ${ok}
-        """
-        self.tracer.log_feedback(name, value, rationale)
-
-    @keyword
-    def log_llm_expectation(self, name: str, value: Any) -> None:
-        """
-        Attach an expectation, the ground truth, to the trace of the current
-        test, or to its last LLM trace without YARF's listener. Requires
-        ``tracing=True`` in `Configure Llm Client`.
-
-        Expectations turn traces into an evaluation dataset, e.g. for judges
-        that compare the output with the expected facts.
-
-        Args:
-            name: The expectation name.
-            value: The expected value.
-
-        Example:
-            | ${action}=    Get Single Gui Action    click the OK button
-            | Log Llm Expectation    expected_action    Left Click
-        """
-        self.tracer.log_expectation(name, value)
-
-    @keyword
-    def evaluate_llm_traces(
-        self,
-        *guidelines: str,
-        judge_model: str | None = None,
-        scope: str = "suite",
-        screenshots: bool = True,
-    ) -> dict[str, Any]:
-        """
-        Evaluate the LLM traces against guidelines with an LLM judge, and
-        against their expected tool calls. Requires ``tracing=True`` in
-        `Configure Llm Client`.
-
-        The judge reads each trace: the test and its result, or the keyword
-        inputs and outputs, the LLM Client keywords it ran, the GUI actions
-        it took in order, and looks at the screenshots sent to the model,
-        then decides whether they follow all the guidelines. Its verdict and
-        rationale are attached to the traces as a ``guidelines`` feedback,
-        and the evaluation is logged as an MLflow run. Traces without an LLM
-        request are not judged. An answer other than yes or no is recorded as
-        an error, and left out of the metrics.
-
-        A test is traced until it ends, so its trace is evaluated from a
-        later test or from the ``Suite Teardown``, e.g. with the default
-        ``scope=suite``.
-
-        The trajectory of the traces with an ``expected_tool_calls``
-        expectation, see `Log Llm Expectation`, is checked without an LLM:
-        the HID keywords called by the GUI actions must match the expected
-        ones, in order. An expected call is a keyword name, e.g. ``Click
-        Pointer Button``, or a dict with a ``name`` and the ``arguments`` to
-        compare, e.g. ``{"name": "Type String", "arguments": {"string":
-        "42"}}``. The result is a ``tool_calls`` feedback, with the
-        mismatches as rationale. Guidelines are optional when such
-        expectations are logged.
-
-        Seeing the screenshots requires a vision model as the judge. Set
-        ``screenshots=False`` for a text-only judge, or to save tokens on
-        traces with many screenshots, e.g. from `Multiple Step Action`.
-
-        By default the judge is the configured model on the configured
-        server. Any MLflow model URI can be used instead, e.g.
-        ``openai:/gpt-4.1-mini``, with the provider credentials in the
-        environment, e.g. ``OPENAI_API_KEY`` and ``OPENAI_BASE_URL``. Judges
-        are called one at a time, unless ``MLFLOW_GENAI_EVAL_MAX_WORKERS`` and
-        ``MLFLOW_GENAI_EVAL_MAX_SCORER_WORKERS`` are set.
-
-        Args:
-            *guidelines: The rules that the keyword outputs must follow.
-            judge_model: Optional MLflow model URI of the judge.
-            scope: The traces to judge: those of the current ``test``,
-                ``suite`` or of the whole ``run``.
-            screenshots: Whether the judge sees the screenshots sent to the
-                model.
-
-        Returns:
-            The evaluation metrics, e.g. ``guidelines/mean`` for the share of
-            traces that follow the guidelines, ``tool_calls/mean`` for the
-            share of traces with the expected tool calls.
-
-        Example:
-            | ${metrics}=    Evaluate Llm Traces
-            | ...    The reasoning must describe the visible window.
-            | ...    A missing object must not be reported as found.
-            | Should Be True    ${metrics}[guidelines/mean] >= 0.8
-            | Evaluate Llm Traces    The answer is polite.    screenshots=False
-            | Multiple Step Action    compute 6 times 7
-            | Log Llm Expectation    expected_tool_calls
-            | ...    ${{["Move Pointer To Proportional", "Click Pointer Button"] * 4}}
-            | # In the Suite Teardown, as a test trace ends with its test
-            | ${metrics}=    Evaluate Llm Traces
-            | Should Be Equal As Numbers    ${metrics}[tool_calls/mean]    1
-        """
-        judge_env: dict[str, str | None] = {}
-        if judge_model is None:
-            judge_model = f"openai:/{self.model}"
-            judge_env = {
-                "OPENAI_BASE_URL": self.server_url,
-                # Takes precedence over OPENAI_BASE_URL
-                "OPENAI_API_BASE": None,
-                "OPENAI_API_KEY": os.getenv(self.api_key_env) or "unused",
-            }
-        return self.tracer.evaluate(
-            list(guidelines), judge_model, scope, judge_env, screenshots
-        )
 
     def _encode_image(self, image: Image.Image) -> str:
         """
@@ -955,8 +814,9 @@ class LlmClient:
         parsed_output, errors = self._parse_llm_json_response(
             llm_output, required_keys
         )
-        self.tracer.feedback(
-            "valid_json_first_try", not errors, rationale=errors
+        self.tracer.set_attributes(
+            {"yarf.valid_json_first_try": not errors}
+            | ({"yarf.json_errors": errors} if errors else {})
         )
 
         if errors:
@@ -1488,7 +1348,17 @@ class LlmClient:
             .arguments
         )
         arguments.pop("self")
-        with self.tracer.span(keyword_name(method), TOOL, inputs=arguments):
+        name = keyword_name(method)
+        with self.tracer.span(
+            name,
+            TOOL,
+            inputs=arguments,
+            # The OpenTelemetry GenAI convention for tool calls
+            attributes={
+                "gen_ai.operation.name": "execute_tool",
+                "gen_ai.tool.name": name,
+            },
+        ):
             await getattr(hid, method)(*args)
 
     @keyword
@@ -1631,7 +1501,7 @@ class LlmClient:
             )
 
             if history_item.action["action_type"] == "Finish":
-                self.tracer.feedback("steps", step)
+                self.tracer.set_attributes({"yarf.steps": step})
                 logger.info(
                     f"Task finished successfully in {step} steps. History:\n"
                     + "\n".join(str(item) for item in history)
