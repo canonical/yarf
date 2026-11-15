@@ -17,8 +17,7 @@ def reset_singleton():
     """
     from yarf.rf_libraries.libraries.image import cursor_detector as cd
 
-    if hasattr(cd.CursorDetector, "instance"):
-        del cd.CursorDetector.instance
+    cd.CursorDetector.instance = None
 
 
 def _make_mock_session(input_h=640, input_w=640):

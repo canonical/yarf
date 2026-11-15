@@ -5,6 +5,7 @@ Cursor detection using a YOLO ONNX model.
 from dataclasses import dataclass
 from enum import IntEnum
 from pathlib import Path
+from typing import ClassVar, Self
 
 import numpy as np
 import onnxruntime as ort
@@ -13,6 +14,9 @@ from PIL import Image
 from yarf.rf_libraries.variables.video_input_vars import (
     DEFAULT_CURSOR_DETECTION_CONFIDENCE,
 )
+
+# This additionally disables the platform telemetry provider used by Windows.
+ort.disable_telemetry_events()
 
 # Note: The model is trained to detect three cursor types: regular arrow,
 # hand pointer, and text I-beam. At the moment, the model is only reliable for
@@ -60,10 +64,15 @@ class CursorDetector:
     Detects cursor position in images using a YOLO ONNX model.
 
     Singleton to avoid loading the model multiple times.
+
+    Attributes:
+        instance: Cached singleton instance.
     """
 
-    def __new__(cls) -> "CursorDetector":
-        if not hasattr(cls, "instance"):
+    instance: ClassVar[Self | None] = None
+
+    def __new__(cls) -> Self:
+        if cls.instance is None:
             cls.instance = super().__new__(cls)
         return cls.instance
 

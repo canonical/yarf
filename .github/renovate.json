@@ -3,13 +3,24 @@
   "extends": [
     "config:recommended"
   ],
+  "pre-commit": {
+    "enabled": true
+  },
+  "labels": [
+    "dependencies"
+  ],
+  "lockFileMaintenance": {
+    "enabled": true
+  },
+  "commitMessagePrefix": "[Infra] ",
   "packageRules": [
     {
-      "matchManagers": [
-        "github-actions"
+      "matchPackageNames": [
+        "mypy",
+        "pre-commit/mirrors-mypy"
       ],
-      "enabled": false
+      "groupName": "mypy",
+      "groupSlug": "mypy"
     }
-  ],
-  "commitMessagePrefix": "[Infra] "
+  ]
 }

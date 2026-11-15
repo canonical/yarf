@@ -6,7 +6,7 @@ This document provides the information needed to contribute to YARF and its docu
 
 This repository requires the following dependencies:
 
-- [Python 3.12][python]
+- [Python 3.14][python]
 - [`uv`][uv]
 
 ## Set up your development environment

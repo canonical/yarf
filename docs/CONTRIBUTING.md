@@ -48,7 +48,7 @@ The documentation will be available at `http://localhost:8000`.
 
 ## Automatic checks
 
-To ensure consistency and quality, the documentation uses automatic checks on pull requests, including build checks and a Markdown linter. These checks are run automatically on pull requests in the `docs/` directory, but you can also run them locally using the provided `Makefile`. Please make sure to address any issues raised by these checks.
+To ensure consistency and quality, the documentation uses automatic checks on pull requests, including build checks and a Markdown formatter. These checks are run automatically on pull requests in the `docs/` directory, but you can also run them locally using the provided `Makefile`. Please make sure to address any issues raised by these checks.
 
 More details about each check can be found in the [Starter pack documentation](https://canonical-starter-pack.readthedocs-hosted.com/latest/reference/automatic_checks/).
 
@@ -78,17 +78,16 @@ If you have links in the documentation that should be ignored (for example, link
 
 You can add redirects to make sure existing links and bookmarks continue working when you move files around. To do so, specify the old and new paths in the `redirects` setting of the `custom_conf.py` file.
 
-### Markdown linting
+### Markdown formatting
 
-Check Markdown files for formatting issues:
+Format Markdown files with the configured manual hook:
 
 ```bash
-make lint-md
+uv run prek run mdformat --all-files --stage manual
 ```
 
-The Markdown linter uses [PyMarkdown] to ensure that the Markdown files follow the defined style and formatting rules. The linter checks for common issues such as inconsistent heading levels, missing links, and other formatting problems.
-
-Rules for the PyMarkdown Linter are defined in the `.sphinx/.pymarkdown.json` file.
+The formatter keeps Markdown files consistent with the project's configured
+MyST extensions.
 
 ### Inclusive language check
 
@@ -178,5 +177,4 @@ For more information on contributing to the documentation, refer to the followin
 [myst]: https://myst-parser.readthedocs.io/en/latest/index.html
 [myst-syntax-guide]: https://canonical-starter-pack.readthedocs-hosted.com/latest/reference/myst-syntax-reference/
 [pa11y]: https://github.com/pa11y/pa11y#command-line-configuration
-[pymarkdown]: https://pymarkdown.readthedocs.io/en/latest/
 [starter-pack-repo]: https://github.com/canonical/sphinx-docs-starter-pack

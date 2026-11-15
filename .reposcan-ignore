@@ -1,0 +1,8 @@
+# .reposcan-ignore
+# <tool> <ruleId> <path-glob> [content-regex]
+
+# treat the following as verified action creators
+poutine github_action_from_unverified_creator_used ** "uses: canonical/"
+poutine github_action_from_unverified_creator_used ** "uses: snapcore/"
+poutine github_action_from_unverified_creator_used ** "uses: astral-sh/"
+poutine github_action_from_unverified_creator_used ** "uses: tiobe/"

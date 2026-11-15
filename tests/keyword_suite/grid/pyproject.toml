@@ -1,0 +1,17 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "grid-app"
+version = "0.1.0"
+description = "A navigable 7x7 word grid for keyboard-navigation testing"
+authors = [{ name = "Canonical" }]
+readme = "README.md"
+requires-python = ">=3.12"
+
+[project.scripts]
+grid-app = "grid_app.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["grid_app"]

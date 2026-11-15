@@ -36,7 +36,7 @@ authors = [
     { name = "...", email = "..." }
 ]
 readme = "README.md"
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.11.4,<3.15"
 dependencies = [
     "yarf @ git+ssh://git@github.com/canonical/yarf.git@x.y.z",
     "...",

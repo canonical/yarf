@@ -14,5 +14,7 @@ sudo apt-get --yes --no-install-recommends install \
   gir1.2-adw-1 \
   gsettings-desktop-schemas
 
-python3 -m venv --system-site-packages \
+# Use Ubuntu's interpreter because `python3-gi` is installed for it. The
+# actions/setup-python interpreter has a separate prefix and cannot import it.
+/usr/bin/python3 -m venv --system-site-packages \
   examples/yarf-example-simple-counter/.venv

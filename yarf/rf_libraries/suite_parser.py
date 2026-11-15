@@ -12,6 +12,7 @@ from typing import Any, Final, Generator
 
 from owasp_logger import OWASPLogger
 
+from yarf.errors.yarf_errors import YARFSuiteError
 from yarf.loggers.owasp_logger import get_owasp_logger
 
 _owasp_logger = OWASPLogger(appid=__name__, logger=get_owasp_logger())
@@ -42,7 +43,7 @@ class SuiteParser:
         Get all assets and robot files from the suite top level directory.
 
         Raises:
-            ValueError: if no robot files are found in the suite directory.
+            YARFSuiteError: if no robot files are found in the suite directory.
         """
         has_robot_ext = False
         # This should be replaced by either:
@@ -67,11 +68,9 @@ class SuiteParser:
                     self.assets[relative_path] = path
 
         if not has_robot_ext:
-            msg = "Expected at least one <name>.robot file."
-            _owasp_logger.sys_crash(
-                f"Suite parsing failed: {msg} in {self.suite_path}"
-            )
-            raise ValueError(msg)
+            msg = f'cannot find a .robot file in "{self.suite_path}"'
+            _owasp_logger.sys_crash(f"Suite parsing failed: {msg}")
+            raise YARFSuiteError(msg)
 
     @contextmanager
     def suite_in_temp_folder(self, variant: str) -> Generator[Path, Any, None]:

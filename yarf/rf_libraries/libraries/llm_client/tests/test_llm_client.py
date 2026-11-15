@@ -438,7 +438,7 @@ class TestLlmClient:
                 "_get_lib_instance",
                 return_value=mock_video,
             ),
-            pytest.raises(RuntimeError, match="Failed to grab screenshot"),
+            pytest.raises(RuntimeError, match="cannot grab a screenshot"),
         ):
             await client._grab_screenshot()
 
@@ -566,7 +566,7 @@ class TestLlmClient:
     @pytest.mark.asyncio
     async def test_raises_when_screenshot_fails(self, mock_post):
         client = LlmClient()
-        exc = RuntimeError("Failed to grab screenshot")
+        exc = RuntimeError("cannot grab a screenshot")
 
         # LLM check raises error when screenshot cannot be grabbed
         with (
@@ -575,7 +575,7 @@ class TestLlmClient:
                 "_grab_screenshot",
                 AsyncMock(side_effect=exc),
             ),
-            pytest.raises(RuntimeError, match="Failed to grab screenshot"),
+            pytest.raises(RuntimeError, match="cannot grab a screenshot"),
         ):
             await client.check_for_visual_corruption()
 
@@ -809,7 +809,7 @@ class TestLlmClient:
             "{not json}",
             {"corrupted": [bool]},
         )
-        assert "Failed to parse LLM response" in errors
+        assert "cannot parse the LLM response" in errors
 
     @pytest.mark.asyncio
     @patch(f"{LLM_PATH}.log_image", MagicMock())
@@ -876,7 +876,7 @@ class TestLlmClient:
     @pytest.mark.asyncio
     async def test_get_object_position_raises_when_screenshot_fails(self):
         client = LlmClient()
-        exc = RuntimeError("Failed to grab screenshot")
+        exc = RuntimeError("cannot grab a screenshot")
 
         with (
             patch.object(
@@ -884,7 +884,7 @@ class TestLlmClient:
                 "_grab_screenshot",
                 AsyncMock(side_effect=exc),
             ),
-            pytest.raises(RuntimeError, match="Failed to grab screenshot"),
+            pytest.raises(RuntimeError, match="cannot grab a screenshot"),
         ):
             await client.get_object_position("the OK button")
 
@@ -985,7 +985,7 @@ class TestLlmClient:
     @pytest.mark.asyncio
     async def test_assert_state_raises_when_screenshot_fails(self):
         client = LlmClient()
-        exc = RuntimeError("Failed to grab screenshot")
+        exc = RuntimeError("cannot grab a screenshot")
 
         with (
             patch.object(
@@ -993,7 +993,7 @@ class TestLlmClient:
                 "_grab_screenshot",
                 AsyncMock(side_effect=exc),
             ),
-            pytest.raises(RuntimeError, match="Failed to grab screenshot"),
+            pytest.raises(RuntimeError, match="cannot grab a screenshot"),
         ):
             await client.assert_state("desktop is visible")
 
@@ -1092,7 +1092,7 @@ class TestLlmClient:
                     "text": None,
                     "point_2d": None,
                 },
-                "LLM indicated action can't be completed: fail the task",
+                "the LLM reports that the action cannot be completed: fail the task",
             ),
             (
                 "click OK",
@@ -1238,7 +1238,7 @@ class TestLlmClient:
                     "text": None,
                     "point_2d": None,
                 },
-                "LLM indicated action can't be completed: test task",
+                "the LLM reports that the action cannot be completed: test task",
             ),
             (
                 {
@@ -1935,7 +1935,7 @@ class TestLlmClient:
             pytest.raises(
                 RuntimeError,
                 match=(
-                    "Failed to get a valid action from the LLM after "
+                    "cannot get a valid action from the LLM after "
                     "3 attempts on step 4."
                 ),
             ),

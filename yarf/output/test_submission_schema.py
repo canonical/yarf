@@ -5,12 +5,12 @@ Test submission output schema and converter for YARF.
 import os
 import re
 import xml.etree.ElementTree as ET
+from datetime import datetime
 from importlib import metadata
 from pathlib import Path
 from typing import Any
 from xml.etree.ElementTree import Element
 
-from dateutil.parser import parse
 from robot.api import TestSuite as RobotTestSuite
 
 from yarf import LABEL_PREFIX
@@ -267,8 +267,12 @@ class TestSubmissionSchema(OutputConverterBase):
                 "io_log": "".join(io_log),
                 "duration": float(
                     (
-                        parse(status_tag.attrib["endtime"]).timestamp()
-                        - parse(status_tag.attrib["starttime"]).timestamp()
+                        datetime.fromisoformat(
+                            status_tag.attrib["endtime"]
+                        ).timestamp()
+                        - datetime.fromisoformat(
+                            status_tag.attrib["starttime"]
+                        ).timestamp()
                     )
                     if "endtime" in status_tag.attrib
                     and "starttime" in status_tag.attrib

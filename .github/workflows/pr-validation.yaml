@@ -22,7 +22,7 @@ jobs:
       contents: read  # Required to check out repository code
       pull-requests: write  # Required to update PR title if needed
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
     - name: Checking the presence of the traceability tag in the PR title
@@ -42,7 +42,7 @@ jobs:
       contents: read  # Required to check out repository code
       pull-requests: write  # Required to strip leftover template comments
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
     - name: Checking that the PR template sections are present

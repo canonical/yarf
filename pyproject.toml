@@ -20,16 +20,13 @@ bootstrap them locally, then work towards automated runs.
 # The version should be set during CI.
 version = "0.0.0"
 readme = "README.md"
-requires-python = ">=3.10.12,<3.15,!=3.11.0,!=3.11.1,!=3.11.2,!=3.11.3"
+requires-python = ">=3.11.4,<3.15"
 dependencies = [
     "keysymdef~=1.2.0",
-    # Target 3.11 through 3.14 with the newer version
-    "onnxruntime~=1.31.0; python_version >= '3.11'",
-    # Target 3.10 specifically with the last compatible version
-    "onnxruntime~=1.23.2; python_version < '3.11'",
+    "onnxruntime~=1.32.0",
     "opencv-python~=5.0.0.93",
     "owasp-logger~=0.1.3",
-    "Pillow~=12.3.0",
+    "Pillow~=13.0.0",
     "pytesseract~=0.3.10",
     # The custom build hook generates protocol bindings with the pywayland
     # scanner, and the output only works with the version that generated it.
@@ -38,7 +35,7 @@ dependencies = [
     "rapidfuzz>=3.12.1",
     "rapidocr~=3.10.0",
     "omegaconf<2.5",
-    "robotframework==7.5",
+    "robotframework==7.5.1",
     "robotframework-sshlibrary~=3.8.0",
     "paramiko>=5.0.0,<6",  # Keep SSHLibrary's transitive dependency safe.
     "prompt-toolkit>=3.0.38",
@@ -46,8 +43,7 @@ dependencies = [
     "pyperclip>=1.8.2",
     "numpy~=2.5.4; python_version >= '3.12'",  # latest, supports >=3.12
     # numpy 2.5 dropped 3.11; 2.4 is the last to support it
-    "numpy~=2.4.4; python_version >= '3.11' and python_version < '3.12'",
-    "numpy~=2.2.6; python_version < '3.11'",  # latest to support 3.10
+    "numpy~=2.4.4; python_version < '3.12'",
     "xkbcommon<1.5",  # ubuntu jammy supports up to 1.4.0
     "pyte~=0.8.2",
     "pyserial>=3.5",
@@ -63,17 +59,20 @@ mlflow = [
 
 [dependency-groups]
 dev = [
-    "licensecheck",
-    "mlflow~=3.17",
-    "mypy",
-    "prek",
-    "pyfakefs",
-    "pytest",
-    "pytest-asyncio",
-    "pytest-cov",
-    "pytest-xdist",
-    "tox",
-    "types-python-dateutil",
+    "licensecheck==2026.0.8; python_version >= '3.12'",
+    # licensecheck 2026 dropped 3.11; 2025.1.0 is the last to support it
+    "licensecheck==2025.1.0; python_version < '3.12'",
+    "mlflow==3.17.2",
+    "mypy==2.4.1",
+    "prek==0.5.10",
+    "pyfakefs==6.3.2",
+    "pytest==9.2.0",
+    "pytest-asyncio==1.5.0",
+    "pytest-cov==7.1.0",
+    "pytest-xdist==3.8.0",
+    "tox==4.67.13",
+    "types-python-dateutil==2.9.0.20261104",
+    "types-requests==2.33.0.20261030",
 ]
 
 [project.scripts]
@@ -102,6 +101,8 @@ extend-exclude = [
 ]
 
 [tool.ruff.lint]
+# Pin the pre-0.17 default rule set; isort owns import ordering.
+select = ["E4", "E7", "E9", "F"]
 extend-select = ["D100"]
 
 [tool.ruff.lint.per-file-ignores]

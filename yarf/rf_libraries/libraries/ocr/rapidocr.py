@@ -5,8 +5,10 @@ RPA.recognition OCR libraries.
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import ClassVar, Self
 
 import numpy as np
+import onnxruntime as ort
 import rapidfuzz
 from PIL import Image
 from rapidocr import RapidOCR
@@ -16,6 +18,10 @@ from robot.libraries.BuiltIn import BuiltIn
 from yarf.rf_libraries.libraries.geometry.quad import Quad
 from yarf.vendor.RPA.core.geometry import Region
 from yarf.vendor.RPA.recognition.utils import to_image
+
+# Cover the legacy Windows telemetry provider. The 1DS provider is disabled
+# before this import by yarf.__init__.
+ort.disable_telemetry_events()
 
 
 @dataclass
@@ -55,21 +61,23 @@ class RapidOCRReader:
           threshold, the match is discarded.
           Set ${OCR_CONFIDENCE_THRESHOLD} to override.
         SIMILARITY_LOG_THRESHOLD: Minimum similarity to log rejected matches.
+        instance: Cached singleton instance.
     """
 
     DEFAULT_SIMILARITY_THRESHOLD: float = 80.0
     DEFAULT_CONFIDENCE_THRESHOLD: float = 70.0
     SIMILARITY_LOG_THRESHOLD: float = 80.0
+    instance: ClassVar[Self | None] = None
 
     @staticmethod
     def _validate_threshold(name: str, value: float) -> None:
         if not 0 <= value <= 100:
             BuiltIn().fail(f"{name} must be between 0 and 100, got {value}")
 
-    def __new__(cls) -> "RapidOCRReader":
-        if not hasattr(cls, "instance"):
+    def __new__(cls) -> Self:
+        if cls.instance is None:
             print("Creating RapidOCR instance")
-            cls.instance = super(RapidOCRReader, cls).__new__(cls)
+            cls.instance = super().__new__(cls)
         print("Returning RapidOCR instance")
         return cls.instance
 
@@ -131,37 +139,51 @@ class RapidOCRReader:
         if confidence is not None:
             RapidOCRReader._validate_threshold("confidence", confidence)
 
-        image_obj = to_image(image)
-        if region is not None:
-            image_obj = image_obj.crop(region.as_tuple())  # type: ignore[union-attr]
-
         text = text.strip()
         if not text:
             raise ValueError("Empty search string")
+
+        result = self.find_all(image, region=region)
+        if not result:
+            return []
+
+        return self.get_matches(result, text, partial, similarity, confidence)
+
+    def find_all(
+        self,
+        image: Image.Image | Path,
+        region: Region | None = None,
+    ) -> list[OCRResult]:
+        """
+        Scan image for text and return every detected text item.
+
+        Args:
+            image: Path to image or Image object.
+            region: Limit the region of the screen where to look.
+
+        Returns:
+            The detected items, with positions in the coordinates of the full
+            image and confidence as a percentage (0-100).
+        """
+        image_obj = to_image(image)
+        if region is not None:
+            image_obj = image_obj.crop(region.as_tuple())  # type: ignore[union-attr]
 
         ocr_output = self.reader(np.array(image_obj))
         if not ocr_output.txts:
             return []
 
-        result = [
-            OCRResult(position=box, text=txt, confidence=score)
+        offset = (region.left, region.top) if region is not None else (0, 0)
+        return [
+            OCRResult(
+                position=np.asarray(box, dtype=np.float64) + offset,
+                text=txt,
+                confidence=float(score) * 100,
+            )
             for box, txt, score in zip(
                 ocr_output.boxes, ocr_output.txts, ocr_output.scores
             )
         ]
-        # Multiply the item confidence with 100 to convert it to percentage
-        for item in result:
-            item.confidence *= 100
-
-        matches = self.get_matches(
-            result, text, partial, similarity, confidence
-        )
-
-        if region is not None:
-            for match in matches:
-                match["region"] = match["region"].move(region.left, region.top)
-
-        return matches
 
     def get_matches(
         self,
