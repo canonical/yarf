@@ -4,10 +4,10 @@ This directory records notable architecture decisions for this repository.
 
 ## Index
 
-| #                                              | Title                                      | Status   | Date       |
-| ---------------------------------------------- | ------------------------------------------ | -------- | ---------- |
-| [0001](0001-yarf-github-action.md)             | YARF GitHub Action for running tests in CI | Accepted | 2026-08-12 |
-| [0002](0002-llm-test-tracing-opentelemetry.md) | Record LLM test traces with OpenTelemetry  | Proposed | 2026-11-15 |
+| #                                              | Title                                         | Status   | Date       |
+| ---------------------------------------------- | --------------------------------------------- | -------- | ---------- |
+| [0001](0001-yarf-github-action.md)             | YARF GitHub Action for running tests in CI    | Accepted | 2026-08-12 |
+| [0002](0002-llm-test-tracing-opentelemetry.md) | Record LLM test traces as OpenTelemetry files | Proposed | 2026-11-15 |
 
 ## Conventions
 
