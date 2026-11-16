@@ -16,8 +16,8 @@ This directory records notable architecture decisions for this repository.
   `Alternatives considered` when a reader would otherwise ask why an obvious
   option was rejected.
 - Statuses: `Proposed`, `Accepted`, `Superseded by NNNN`, `Deprecated`.
-- Never delete or rewrite a superseded ADR. Keep the file, change its status to
-  `Superseded by NNNN`, and let the new ADR explain what changed.
+- Never delete a superseded ADR or rewrite its decision. Change only its status
+  to `Superseded by NNNN`, and let the new ADR explain what changed.
 - Add a row to the index above when creating a new ADR.
 - Dates use ISO 8601 (`YYYY-MM-DD`) and record when the decision was made.
 
