@@ -88,6 +88,13 @@ Notes:
   behavior or documentation.
 - Read `.kb/spec-kit.md` before starting or reviewing Spec Kit feature work.
   Committed feature contracts follow `requirements/AGENTS.md`.
+- Record notable architecture decisions in `adr/`, one `NNNN-<adr-name>.md`
+  file per decision. Follow the writing rules in `adr/README.md`: one
+  decision, short human-readable prose, no implementation detail the decision
+  does not need, and no restatement of the requirements. Add a row to the index
+  in `adr/README.md` when you add one. Reach for an ADR when a change locks in
+  a non-obvious structural choice, such as a new process boundary, public
+  contract, or dependency direction, not for ordinary changes.
 - Prefer surgical edits. This repository has vendored code, generated code, and
   several CI-specific workflows under `.github/workflows/`.
 
@@ -98,6 +105,7 @@ Notes:
 - `docs/` - User documentation built with Sphinx and MyST.
 - `snap/` - Snap package definition and packaging support.
 - `requirements/` - Committed Spec Kit feature contracts.
+- `adr/` - Architecture decision records and their writing rules.
 - `.github/` - CI workflows, actions, and pull request validation.
 
 # Documents
