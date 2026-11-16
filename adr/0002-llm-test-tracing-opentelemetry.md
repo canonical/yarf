@@ -1,59 +1,50 @@
-# 0002 - Record LLM test traces with OpenTelemetry
+# 0002 - Record LLM test traces as OpenTelemetry files
 
 - Status: Proposed
 - Date: 2026-11-15
 
 ## Context
 
-Tests that use the LLM Client need a record of what the model saw and
-decided, for debugging and for evaluation. The feature contract is
+Tests that use the LLM Client need a record of what the model saw and decided,
+so that people can debug them and tools can evaluate them. The required
+behavior is in
 [`requirements/001-llm-test-tracing`](../requirements/001-llm-test-tracing/requirements.md).
 
-The experiment in canonical/yarf#374 first used the MLflow Python library
-inside YARF, both to record and to evaluate. That made MLflow, about 75
-packages, a dependency of every traced run. It also tied the recording to one
-trace viewer, required network access and viewer credentials on the test
-machine, and kept the snap without tracing.
+YARF often runs on test machines, and from a strictly confined snap, that have
+no access to a shared server and no credentials for one. The trace viewer we
+use first, MLflow, ships a Python library that adds about 75 packages to an
+installation. MLflow, promptfoo and most other tracing and evaluation tools
+read OpenTelemetry, the open standard for traces.
 
 ## Decision
 
-YARF records traces with the OpenTelemetry SDK and writes them to its output
-directory. It never talks to a trace viewer or an evaluation tool.
+YARF records each traced test as an OpenTelemetry trace and writes it as files
+in its output directory. YARF depends only on the OpenTelemetry SDK, and never
+connects to or imports a trace viewer or an evaluation tool.
 
-- **Format.** Each traced test is one OpenTelemetry trace. The spans are
-  written as OTLP/JSON export requests, one per line, to
-  `<outdir>/traces/traces.jsonl`. Images are stored once each under
-  `<outdir>/traces/blobs/sha256/`, and spans refer to them by
-  `yarf-blob://sha256/<hash>` links. LLM spans use the OpenTelemetry
-  conventions for generative AI. YARF-specific attributes use the `yarf.`
-  prefix.
-- **Dependency direction.** YARF depends only on the OpenTelemetry SDK. Tools
-  under `scripts/llm_tracing/`, outside the package and the snap, read the
-  recording and depend on the viewer and evaluation tool: they upload to
-  MLflow and serve recorded answers to promptfoo.
-- **Evaluation outside YARF.** YARF records outcomes, such as span status and
-  test status, but no judgements. Evaluation tools check the recording and
-  their results are attached to the traces by the tools.
-- **Identifiers.** Trace identifiers come from the operating system's random
-  source, so a fixed `random.seed()` in a test cannot repeat them.
+Separate tools, outside the YARF package, read these files. They upload the
+traces to a viewer and give the recorded answers to an evaluation tool. The
+dependency always points from those tools to the recorded files, never from
+YARF to a tool.
 
-## Alternatives
+## Alternatives considered
 
-- **The MLflow library in YARF.** Simplest to build and shows traces live, but
-  brings the dependency, coupling and machine requirements above.
-- **The lighter `mlflow-tracing` library.** Keeps image upload and feedback,
-  but still adds about 14 packages and ties the recording to MLflow.
-- **Sending OpenTelemetry spans live to a collector or viewer.** Possible later
-  on top of this decision, but MLflow's OpenTelemetry endpoint does not store
-  images, and the test machine would still need network access.
+- **Use the MLflow library in YARF.** It shows traces while a test runs, but
+  adds its dependencies to every installation, ties the recording to one
+  viewer, and needs a server and credentials on the test machine.
+- **Use MLflow's smaller tracing library.** It still ties the recording to
+  MLflow, and still adds about 14 packages.
+- **Send traces to a viewer over the network while the test runs.** The test
+  machine would still need network access, and MLflow drops the screenshots it
+  receives this way. It can be added later on top of the recorded files.
 
 ## Consequences
 
-- Tracing works offline and in the snap, and adds two small packages to YARF.
-- Any tool that reads OpenTelemetry can use the recording. Supporting a new
-  viewer or evaluation tool means a new script, not a YARF change.
-- Traces reach the viewer only when the upload tool runs, not during the test.
-- The upload tool uses MLflow internals to store images and spans, and must be
-  checked when MLflow is upgraded.
-- Checks written as Robot keywords move to the evaluation tool's
-  configuration.
+- YARF must not depend on a trace viewer or an evaluation tool. Supporting a
+  new tool means a new reader of the recorded files, not a change to YARF.
+- The recorded files are a public contract. A change to their structure must
+  keep existing readers working, or be called out as a breaking change.
+- YARF records what happened, not judgements of it. Checks of the model's
+  answers belong to the evaluation tool.
+- Traces reach a viewer only after an upload, not while the test runs.
+- Tracing works without network access and in the snap.
