@@ -24,9 +24,15 @@
       "groupSlug": "mypy"
     },
     {
-      "description": "Automerge development dependencies",
+      "description": "Automerge the dev dependency group",
+      "matchManagers": [
+        "pep621"
+      ],
       "matchDepTypes": [
         "dependency-groups"
+      ],
+      "matchJsonata": [
+        "managerData.depGroup = 'dev'"
       ],
       "automerge": true
     }
