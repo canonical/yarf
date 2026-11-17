@@ -41,6 +41,7 @@ from yarf.errors.yarf_errors import (
     YARFError,
     YARFExitCode,
 )
+from yarf.lib.llm_trace_listener import LlmTraceListener
 from yarf.loggers.owasp_logger import get_owasp_logger
 from yarf.output import OUTPUT_FORMATS, get_outdir_path, output_converter
 from yarf.rf_libraries import robot_in_path
@@ -491,6 +492,10 @@ def get_listeners(
         _owasp_logger.sys_monitor_enabled(
             getpass.getuser(), "listener:RobotStackTracer"
         )
+    listeners.append(LlmTraceListener())
+    _owasp_logger.sys_monitor_enabled(
+        getpass.getuser(), "listener:LlmTraceListener"
+    )
 
     if additional_listener_paths is None:
         return listeners
