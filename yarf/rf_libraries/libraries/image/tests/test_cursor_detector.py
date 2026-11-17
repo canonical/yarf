@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
+from yarf import ORT_NUM_THREADS
 from yarf.rf_libraries.libraries.image.cursor_detector import (
     CursorDetection,
     CursorType,
@@ -83,6 +84,17 @@ class TestCursorDetectorInit:
         CursorDetector()
         CursorDetector()
         mock_cls.assert_called_once()
+
+    def test_session_caps_threads(self, mock_cls):
+        mock_cls.return_value = _make_mock_session()
+        from yarf.rf_libraries.libraries.image.cursor_detector import (
+            CursorDetector,
+        )
+
+        CursorDetector()
+        options = mock_cls.call_args.kwargs["sess_options"]
+        assert options.intra_op_num_threads == ORT_NUM_THREADS
+        assert options.inter_op_num_threads == 1
 
     def test_reads_input_shape_from_model(self, mock_cls):
         mock_cls.return_value = _make_mock_session(input_h=320, input_w=416)
