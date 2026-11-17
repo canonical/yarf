@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
-from yarf import ORT_NUM_THREADS
 from yarf.rf_libraries.libraries.geometry.quad import Quad
 from yarf.rf_libraries.libraries.ocr.rapidocr import OCRResult, RapidOCRReader
 from yarf.vendor.RPA.core.geometry import Region
@@ -54,12 +53,14 @@ class TestRapidOCR:
         mock_reader.assert_called_once()
 
     def test_init_caps_onnxruntime_threads(self, mock_reader):
-        RapidOCRReader()
+        with patch(
+            "yarf.rf_libraries.libraries.ocr.rapidocr.inference_threads",
+            return_value=3,
+        ):
+            RapidOCRReader()
 
         params = mock_reader.call_args.kwargs["params"]
-        assert params["EngineConfig.onnxruntime.intra_op_num_threads"] == (
-            ORT_NUM_THREADS
-        )
+        assert params["EngineConfig.onnxruntime.intra_op_num_threads"] == 3
         assert params["EngineConfig.onnxruntime.inter_op_num_threads"] == 1
 
     def test_read(self, mock_reader):

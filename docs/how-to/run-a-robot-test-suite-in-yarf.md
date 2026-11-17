@@ -217,3 +217,13 @@ You can control when YARF logs videos using the `YARF_LOG_VIDEO` environment var
 - **`YARF_LOG_VIDEO=0`**: Never log video, even when tests fail
 
 Alternatively, use the `--log-video` CLI flag to always log video (equivalent to `YARF_LOG_VIDEO=1`).
+
+### Controlling CPU usage
+
+Text recognition and cursor detection use half of the available CPU cores, at least 1 and at most 4, so the machine under test stays responsive.
+
+To change this, set the `YARF_INFERENCE_THREADS` environment variable to the number of cores to use. For example, on a CI runner where speed matters more than a responsive machine:
+
+```shell
+YARF_INFERENCE_THREADS=8 yarf --platform=Mir /path/to/suite
+```
