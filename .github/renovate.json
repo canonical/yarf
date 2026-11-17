@@ -21,6 +21,13 @@
       ],
       "groupName": "mypy",
       "groupSlug": "mypy"
+    },
+    {
+      "description": "Automerge development dependencies",
+      "matchDepTypes": [
+        "dependency-groups"
+      ],
+      "automerge": true
     }
   ]
 }
