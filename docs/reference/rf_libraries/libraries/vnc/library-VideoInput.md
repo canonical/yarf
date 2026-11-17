@@ -51,15 +51,16 @@ list[dictionary]
 
 #### Positional and named arguments
 
-| Name            | Type    | Default Value | Kind                | Required | Documentation                                                                                                                              |
-| --------------- | ------- | ------------- | ------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| text            | string  |               | POSITIONAL_OR_NAMED | Yes      | text or regex to search for, use the format <span class="name">regex:\<regex-string></span> if the text we want to find is a regex.        |
-| region          | None    | None          | POSITIONAL_OR_NAMED | No       | region to search for the text.                                                                                                             |
-| image           | None    | None          | POSITIONAL_OR_NAMED | No       | image to search from.                                                                                                                      |
-| color           | None    | None          | POSITIONAL_OR_NAMED | No       | target color of the text. If set, matched text in the wrong color will be skipped.                                                         |
-| color_tolerance | integer | 20            | POSITIONAL_OR_NAMED | No       | Color tolerance threshold in %                                                                                                             |
-| similarity      | None    | None          | POSITIONAL_OR_NAMED | No       | Minimum similarity percentage (0-100) for a match when using RapidOCR. If set, overrides \$\{OCR_SIMILARITY_THRESHOLD} for this call only. |
-| confidence      | None    | None          | POSITIONAL_OR_NAMED | No       | Minimum confidence percentage (0-100) for a match when using RapidOCR. If set, overrides \$\{OCR_CONFIDENCE_THRESHOLD} for this call only. |
+| Name            | Type    | Default Value | Kind                | Required | Documentation                                                                                                                                               |
+| --------------- | ------- | ------------- | ------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| text            | string  |               | POSITIONAL_OR_NAMED | Yes      | text or regex to search for, use the format <span class="name">regex:\<regex-string></span> if the text we want to find is a regex.                         |
+| region          | None    | None          | POSITIONAL_OR_NAMED | No       | region to search for the text.                                                                                                                              |
+| image           | None    | None          | POSITIONAL_OR_NAMED | No       | image to search from.                                                                                                                                       |
+| color           | None    | None          | POSITIONAL_OR_NAMED | No       | target color of the text. If set, matched text in the wrong color will be skipped.                                                                          |
+| color_tolerance | integer | 20            | POSITIONAL_OR_NAMED | No       | Color tolerance threshold in %                                                                                                                              |
+| similarity      | None    | None          | POSITIONAL_OR_NAMED | No       | Minimum similarity percentage (0-100) for a match when using RapidOCR. If set, overrides \$\{OCR_SIMILARITY_THRESHOLD} for this call only.                  |
+| confidence      | None    | None          | POSITIONAL_OR_NAMED | No       | Minimum confidence percentage (0-100) for a match when using RapidOCR. If set, overrides \$\{OCR_CONFIDENCE_THRESHOLD} for this call only.                  |
+| window_fallback | None    | None          | POSITIONAL_OR_NAMED | No       | When the text is not found, search again inside each window found on screen. If set, overrides \$\{OCR_WINDOW_FALLBACK} (default: True) for this call only. |
 
 #### Example
 
@@ -317,15 +318,16 @@ tuple[list[dictionary], Image]
 
 #### Positional and named arguments
 
-| Name            | Type    | Default Value | Kind                | Required | Documentation                                                                                                                              |
-| --------------- | ------- | ------------- | ------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| text            | string  |               | POSITIONAL_OR_NAMED | Yes      | text or regex to match, use the format <span class="name">regex:\<regex-string></span> if the text we want to find is a regex.             |
-| timeout         | integer | 10            | POSITIONAL_OR_NAMED | No       | Time to wait for the text to appear                                                                                                        |
-| region          | None    | None          | POSITIONAL_OR_NAMED | No       | The region to search for the text                                                                                                          |
-| color           | None    | None          | POSITIONAL_OR_NAMED | No       | The color of the searched text                                                                                                             |
-| color_tolerance | integer | 20            | POSITIONAL_OR_NAMED | No       | The tolerance of the color of the searched text                                                                                            |
-| similarity      | None    | None          | POSITIONAL_OR_NAMED | No       | Minimum similarity percentage (0-100) for a match when using RapidOCR. If set, overrides \$\{OCR_SIMILARITY_THRESHOLD} for this call only. |
-| confidence      | None    | None          | POSITIONAL_OR_NAMED | No       | Minimum confidence percentage (0-100) for a match when using RapidOCR. If set, overrides \$\{OCR_CONFIDENCE_THRESHOLD} for this call only. |
+| Name            | Type    | Default Value | Kind                | Required | Documentation                                                                                                                                               |
+| --------------- | ------- | ------------- | ------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| text            | string  |               | POSITIONAL_OR_NAMED | Yes      | text or regex to match, use the format <span class="name">regex:\<regex-string></span> if the text we want to find is a regex.                              |
+| timeout         | integer | 10            | POSITIONAL_OR_NAMED | No       | Time to wait for the text to appear                                                                                                                         |
+| region          | None    | None          | POSITIONAL_OR_NAMED | No       | The region to search for the text                                                                                                                           |
+| color           | None    | None          | POSITIONAL_OR_NAMED | No       | The color of the searched text                                                                                                                              |
+| color_tolerance | integer | 20            | POSITIONAL_OR_NAMED | No       | The tolerance of the color of the searched text                                                                                                             |
+| similarity      | None    | None          | POSITIONAL_OR_NAMED | No       | Minimum similarity percentage (0-100) for a match when using RapidOCR. If set, overrides \$\{OCR_SIMILARITY_THRESHOLD} for this call only.                  |
+| confidence      | None    | None          | POSITIONAL_OR_NAMED | No       | Minimum confidence percentage (0-100) for a match when using RapidOCR. If set, overrides \$\{OCR_CONFIDENCE_THRESHOLD} for this call only.                  |
+| window_fallback | None    | None          | POSITIONAL_OR_NAMED | No       | When the text is not found, search again inside each window found on screen. If set, overrides \$\{OCR_WINDOW_FALLBACK} (default: True) for this call only. |
 
 #### Example
 
@@ -334,6 +336,7 @@ ${matches}    ${image}=    Match Text    Continue
 Match Text    Continue    timeout=60
 ${matches}    ${image}=    Match Text    Continue
 ...    similarity=90    confidence=70
+Match Text    Continue    window_fallback=False
 ```
 
 <hr style="border:1px solid grey">
@@ -352,9 +355,10 @@ string
 
 #### Positional and named arguments
 
-| Name  | Type | Default Value | Kind                | Required | Documentation           |
-| ----- | ---- | ------------- | ------------------- | -------- | ----------------------- |
-| image | None | None          | POSITIONAL_OR_NAMED | No       | image to read text from |
+| Name       | Type    | Default Value | Kind                | Required | Documentation                                                                                                                                     |
+| ---------- | ------- | ------------- | ------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| image      | None    | None          | POSITIONAL_OR_NAMED | No       | image to read text from                                                                                                                           |
+| in_windows | boolean | False         | POSITIONAL_OR_NAMED | No       | Also read inside each window found on screen, and add the lines found only there. This catches text missed when reading the whole screen. Slower. |
 
 #### Example
 
@@ -362,6 +366,7 @@ string
 ${text}=    Read Text
 ${image}=    Grab Screenshot
 ${text}=    Read Text    ${image}
+${text}=    Read Text    in_windows=True
 ```
 
 <hr style="border:1px solid grey">

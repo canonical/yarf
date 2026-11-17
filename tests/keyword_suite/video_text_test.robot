@@ -31,6 +31,7 @@ Test Text Keywords with Rapid Ocr
     Test Keyword Match Text
     Test Keyword Get Highlighted Text
     Test Keyword Is Highlighted Text
+    Test Keyword Text Window Fallback
     Test Keyword Text Threshold Overrides
 
 Test Text Keywords with Tesseract
@@ -224,3 +225,22 @@ Test Keyword Text Threshold Overrides
     Should Not Be Empty     ${matches}
     ${is_image}=            Evaluate                isinstance($image, __import__('PIL.Image').Image.Image)
     Should Be True          ${is_image}
+
+Test Keyword Text Window Fallback
+    [Documentation]    The text detector misses text in these screenshots
+    ...    unless it searches again inside the window holding it.
+    [Tags]                  yarf:certification_status: blocker
+    ${terminal}=            Evaluate
+    ...                     PIL.Image.open('${CURDIR}/text/terminal_window.png')
+    ...                     modules=PIL.Image
+    ${matched_text}=        Find Text               FINISHED-HIT            image=${terminal}
+    Should Be Equal As Strings                      ${matched_text[0]['text']}                      FINISHED-HIT
+
+    ${viewer}=              Evaluate
+    ...                     PIL.Image.open('${CURDIR}/text/document_viewer.png')
+    ...                     modules=PIL.Image
+    ${matched_text}=        Find Text               regex:Document \\w+     image=${viewer}
+    Should Be Equal As Strings                      ${matched_text[0]['text']}                      Document Viewer
+
+    ${text}=                Read Text               ${viewer}               in_windows=${True}
+    Should Contain          ${text}                 Open...
