@@ -10,7 +10,8 @@
     "dependencies"
   ],
   "lockFileMaintenance": {
-    "enabled": true
+    "enabled": true,
+    "automerge": true
   },
   "commitMessagePrefix": "[Infra] ",
   "packageRules": [
