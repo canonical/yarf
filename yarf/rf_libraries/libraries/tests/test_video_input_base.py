@@ -842,21 +842,44 @@ class TestVideoInputBase:
             )
             assert WINDOW_FALLBACK_ENABLED(value) is expected
 
-    def test_find_windows(self):
+    @pytest.mark.parametrize("log_level", ["INFO", "DEBUG"])
+    def test_find_windows(self, stub_videoinput, log_level):
         image = Mock()
-        with patch(
-            "yarf.rf_libraries.libraries.video_input_base.find_windows",
-            return_value=[Region(10, 20, 110, 220)],
-        ) as mock_find_windows:
-            assert VideoInputBase._find_windows(image) == [
+        with (
+            patch(
+                "yarf.rf_libraries.libraries.video_input_base.find_windows",
+                return_value=[Region(10, 20, 110, 220)],
+            ) as mock_find_windows,
+            patch.dict(os.environ, {"YARF_LOG_LEVEL": log_level}),
+            patch(
+                "yarf.rf_libraries.libraries.video_input_base.log_image"
+            ) as mock_log_image,
+            patch.object(
+                stub_videoinput, "_draw_region_on_image"
+            ) as mock_draw,
+        ):
+            assert stub_videoinput._find_windows(image) == [
                 Region(10, 20, 110, 220)
             ]
-            assert VideoInputBase._find_windows(
+            assert stub_videoinput._find_windows(
                 image, Region(5, 6, 500, 600)
             ) == [Region(15, 26, 115, 226)]
 
         mock_find_windows.assert_called_with(image.crop.return_value)
         image.crop.assert_called_once_with((5, 6, 500, 600))
+        if log_level == "DEBUG":
+            assert mock_draw.call_args_list == [
+                call(image.copy.return_value, Region(10, 20, 110, 220)),
+                call(image.copy.return_value, Region(15, 26, 115, 226)),
+            ]
+            mock_log_image.assert_called_with(
+                image.copy.return_value,
+                "Found 1 window(s) to search for text",
+            )
+            assert mock_log_image.call_count == 2
+        else:
+            mock_draw.assert_not_called()
+            mock_log_image.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_find_text_with_regex_validates_thresholds(

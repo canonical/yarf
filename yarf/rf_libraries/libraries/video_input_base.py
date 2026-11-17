@@ -285,16 +285,26 @@ class VideoInputBase(ABC):
             BuiltIn().get_variable_value("${OCR_WINDOW_FALLBACK}", True)
         )
 
-    @staticmethod
     def _find_windows(
-        image: Image.Image, region: Optional[Region] = None
+        self, image: Image.Image, region: Optional[Region] = None
     ) -> list[Region]:
         if region is None:
-            return find_windows(image)
-        return [
-            window.move(region.left, region.top)
-            for window in find_windows(image.crop(region.as_tuple()))
-        ]
+            windows = find_windows(image)
+        else:
+            windows = [
+                window.move(region.left, region.top)
+                for window in find_windows(image.crop(region.as_tuple()))
+            ]
+
+        if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
+            debug_image = image.copy()
+            for window in windows:
+                self._draw_region_on_image(debug_image, window)
+            log_image(
+                debug_image,
+                f"Found {len(windows)} window(s) to search for text",
+            )
+        return windows
 
     @staticmethod
     def _drop_duplicate_matches(matches: list[dict]) -> list[dict]:
