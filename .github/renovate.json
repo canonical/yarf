@@ -10,7 +10,8 @@
     "dependencies"
   ],
   "lockFileMaintenance": {
-    "enabled": true
+    "enabled": true,
+    "automerge": true
   },
   "commitMessagePrefix": "[Infra] ",
   "packageRules": [
@@ -21,6 +22,19 @@
       ],
       "groupName": "mypy",
       "groupSlug": "mypy"
+    },
+    {
+      "description": "Automerge the dev dependency group",
+      "matchManagers": [
+        "pep621"
+      ],
+      "matchDepTypes": [
+        "dependency-groups"
+      ],
+      "matchJsonata": [
+        "managerData.depGroup = 'dev'"
+      ],
+      "automerge": true
     }
   ]
 }
