@@ -20,6 +20,7 @@ from PIL import Image, ImageChops, ImageDraw
 from robot.api import logger
 from robot.api.deco import keyword
 from robot.libraries.BuiltIn import BuiltIn
+from robot.utils import is_truthy
 
 from yarf import LABEL_PREFIX
 from yarf.lib.images.utils import to_RGB
@@ -34,6 +35,10 @@ from yarf.rf_libraries.libraries.image.utils import (
 )
 from yarf.rf_libraries.libraries.ocr.line_reader import read_lines
 from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
+from yarf.rf_libraries.libraries.ocr.windows import (
+    find_windows,
+    intersection_area,
+)
 from yarf.rf_libraries.variables.video_input_vars import (
     DEFAULT_CURSOR_DETECTION_CONFIDENCE,
     DEFAULT_TEMPLATE_MATCHING_TOLERANCE,
@@ -235,6 +240,7 @@ class VideoInputBase(ABC):
     async def read_text(
         self,
         image: Optional[Image.Image] = None,
+        in_windows: bool = False,
     ) -> str:
         """
         Read the text from the provided image or grab a screenshot to read
@@ -242,6 +248,9 @@ class VideoInputBase(ABC):
 
         Args:
             image: image to read text from
+            in_windows: Also read inside each window found on screen, and add
+                the lines found only there. This catches text missed when
+                reading the whole screen. Slower.
 
         Returns:
             text read from the image
@@ -250,11 +259,77 @@ class VideoInputBase(ABC):
             | ${text}=    Read Text
             | ${image}=    Grab Screenshot
             | ${text}=    Read Text    ${image}
+            | ${text}=    Read Text    in_windows=True
         """
         if not image:
             image = await self._grab_and_save_screenshot()
 
-        return self.ocr.read(image)  # type: ignore[arg-type]
+        text = self.ocr.read(image)  # type: ignore[arg-type]
+        if not in_windows:
+            return text
+
+        lines = text.splitlines()
+        image = to_image(image)
+        for window in self._find_windows(image):  # type: ignore[arg-type]
+            window_text = self.ocr.read(image.crop(window.as_tuple()))  # type: ignore[union-attr]
+            for line in window_text.splitlines():
+                if line.strip() and line not in lines:
+                    lines.append(line)
+        return "\n".join(lines)
+
+    @staticmethod
+    def _window_fallback_enabled(window_fallback: Optional[bool]) -> bool:
+        if window_fallback is not None:
+            return window_fallback
+        return is_truthy(
+            BuiltIn().get_variable_value("${OCR_WINDOW_FALLBACK}", True)
+        )
+
+    def _find_windows(
+        self, image: Image.Image, region: Optional[Region] = None
+    ) -> list[Region]:
+        if region is None:
+            windows = find_windows(image)
+        else:
+            windows = [
+                window.move(region.left, region.top)
+                for window in find_windows(image.crop(region.as_tuple()))
+            ]
+
+        if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
+            debug_image = image.copy()
+            for window in windows:
+                self._draw_region_on_image(debug_image, window)
+            log_image(
+                debug_image,
+                f"Found {len(windows)} window(s) to search for text",
+            )
+        return windows
+
+    @staticmethod
+    def _drop_duplicate_matches(matches: list[dict]) -> list[dict]:
+        """
+        Keep the best match among matches that cover the same text, as when
+        nested windows contain it.
+
+        Args:
+            matches: Matches from several searches.
+
+        Returns:
+            The matches sorted by decreasing similarity, without duplicates.
+        """
+        kept: list[dict] = []
+        for match in sorted(
+            matches, key=lambda m: m["similarity"], reverse=True
+        ):
+            box = match["region"]
+            if all(
+                intersection_area(box, other["region"])
+                <= 0.5 * min(box.area, other["region"].area)
+                for other in kept
+            ):
+                kept.append(match)
+        return kept
 
     def _get_ocr_text_from_image(
         self,
@@ -263,8 +338,8 @@ class VideoInputBase(ABC):
         region: Optional[Region] = None,
         similarity: Optional[float] = None,
         confidence: Optional[float] = None,
+        window_fallback: Optional[bool] = None,
     ) -> list[dict]:
-        matched_text_regions: list[dict] = []
         regex_prefix = "regex:"
 
         if isinstance(self.ocr, RapidOCRReader):
@@ -273,32 +348,54 @@ class VideoInputBase(ABC):
             if confidence is not None:
                 RapidOCRReader._validate_threshold("confidence", confidence)
 
-        def find_match(match_text: str) -> list[dict]:
+        def find_match(
+            match_text: str, search_region: Optional[Region]
+        ) -> list[dict]:
             if isinstance(self.ocr, RapidOCRReader):
                 return self.ocr.find(
                     image,  # type: ignore[arg-type]
                     match_text,
-                    region=region,
+                    region=search_region,
                     similarity=similarity,
                     confidence=confidence,
                 )
             return self.ocr.find(
                 image,  # type: ignore[arg-type]
                 match_text,
-                region=region,
+                region=search_region,
             )
 
-        if text.startswith(regex_prefix):
-            image_text = self.ocr.read(image)  # type: ignore[arg-type]
-            unique_match_texts = set(
+        def search(
+            search_region: Optional[Region], read_image: Image.Image
+        ) -> list[dict]:
+            if not text.startswith(regex_prefix):
+                return find_match(text, search_region)
+            image_text = self.ocr.read(read_image)  # type: ignore[arg-type]
+            matches = []
+            for match_text in set(
                 re.findall(rf"{text[len(regex_prefix) :]}", image_text)
+            ):
+                matches.extend(find_match(match_text, search_region))
+            return matches
+
+        matched_text_regions = search(region, image)  # type: ignore[arg-type]
+        if matched_text_regions or not self._window_fallback_enabled(
+            window_fallback
+        ):
+            return matched_text_regions
+
+        # The text detector can miss text that it finds once the image is
+        # cropped to the window holding it, so search each window again.
+        image_obj = to_image(image)
+        for window in self._find_windows(image_obj, region):  # type: ignore[arg-type]
+            matched_text_regions.extend(
+                search(window, image_obj.crop(window.as_tuple()))  # type: ignore[union-attr]
             )
-            for match_text in unique_match_texts:
-                matched_text_regions.extend(find_match(match_text))
-
-        else:
-            matched_text_regions = find_match(text)
-
+        matched_text_regions = self._drop_duplicate_matches(
+            matched_text_regions
+        )
+        if matched_text_regions:
+            logger.info(f"Found '{text}' only after searching inside windows")
         return matched_text_regions
 
     @keyword
@@ -311,6 +408,7 @@ class VideoInputBase(ABC):
         color_tolerance: int = 20,
         similarity: Optional[float] = None,
         confidence: Optional[float] = None,
+        window_fallback: Optional[bool] = None,
     ) -> List[dict]:
         """
         Find the specified text in the provided image or grab a screenshot to
@@ -330,6 +428,10 @@ class VideoInputBase(ABC):
             confidence: Minimum confidence percentage (0-100) for a match when
                   using RapidOCR. If set, overrides
                   ${OCR_CONFIDENCE_THRESHOLD} for this call only.
+            window_fallback: When the text is not found, search again
+                  inside each window found on screen. If set, overrides
+                  ${OCR_WINDOW_FALLBACK} (default: True) for this call
+                  only.
 
         Returns:
             The list of matched text regions where the text was found. Each
@@ -357,6 +459,7 @@ class VideoInputBase(ABC):
             region=region,
             similarity=similarity,
             confidence=confidence,
+            window_fallback=window_fallback,
         )
         if color is None:
             matched_text_regions = ocr_text_regions
@@ -638,6 +741,7 @@ class VideoInputBase(ABC):
         color_tolerance: int = 20,
         similarity: float | None = None,
         confidence: float | None = None,
+        window_fallback: bool | None = None,
     ) -> tuple[list[dict], Image.Image]:
         """
         Wait for specified text to appear on screen and get the position of the
@@ -657,6 +761,10 @@ class VideoInputBase(ABC):
             confidence: Minimum confidence percentage (0-100) for a match when
                   using RapidOCR. If set, overrides
                   ${OCR_CONFIDENCE_THRESHOLD} for this call only.
+            window_fallback: When the text is not found, search again
+                  inside each window found on screen. If set, overrides
+                  ${OCR_WINDOW_FALLBACK} (default: True) for this call
+                  only.
         Returns:
             It returns a tuple with:
              - The list of matched text regions where the text was found,
@@ -671,6 +779,7 @@ class VideoInputBase(ABC):
             | Match Text    Continue    timeout=60
             | ${matches}    ${image}=    Match Text    Continue
             | ...    similarity=90    confidence=70
+            | Match Text    Continue    window_fallback=False
         """
         region = to_region(region)
         print(f"\nLooking for '{text}'")
@@ -702,6 +811,7 @@ class VideoInputBase(ABC):
                     region=region,
                     similarity=similarity,
                     confidence=confidence,
+                    window_fallback=window_fallback,
                 )
 
             else:  # a color was given.
@@ -713,6 +823,7 @@ class VideoInputBase(ABC):
                     color_tolerance=color_tolerance,
                     similarity=similarity,
                     confidence=confidence,
+                    window_fallback=window_fallback,
                 )
 
             if text_matches:

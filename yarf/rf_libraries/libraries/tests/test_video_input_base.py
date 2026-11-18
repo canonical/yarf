@@ -68,6 +68,35 @@ def mock_time():
         yield mock
 
 
+WINDOW_FALLBACK_ENABLED = VideoInputBase._window_fallback_enabled
+
+
+@pytest.fixture(autouse=True)
+def window_fallback_off():
+    """
+    Keep the window fallback off unless a test turns it on.
+    """
+    with patch.object(
+        VideoInputBase, "_window_fallback_enabled", return_value=False
+    ) as p:
+        yield p
+
+
+@pytest.fixture
+def window_fallback_on(window_fallback_off):
+    window_fallback_off.return_value = True
+    return window_fallback_off
+
+
+def match(text, region, similarity=100):
+    return {
+        "text": text,
+        "region": region,
+        "similarity": similarity,
+        "confidence": 90,
+    }
+
+
 @pytest.fixture(autouse=True)
 def mock_to_image():
     with patch("yarf.rf_libraries.libraries.video_input_base.to_image") as p:
@@ -657,6 +686,200 @@ class TestVideoInputBase:
             ],
             any_order=True,
         )
+
+    @pytest.mark.asyncio
+    async def test_read_text_in_windows(self, stub_videoinput, mock_to_image):
+        image = mock_to_image.return_value
+        stub_videoinput.ocr.read = Mock(
+            side_effect=["Oct 15\nFINIS", "FINIS\nFINISHED-HIT\n \nOct 15"]
+        )
+        with patch.object(
+            stub_videoinput,
+            "_find_windows",
+            return_value=[Region(10, 20, 300, 400)],
+        ):
+            text = await stub_videoinput.read_text(image, in_windows=True)
+
+        assert text == "Oct 15\nFINIS\nFINISHED-HIT"
+        image.crop.assert_called_once_with((10, 20, 300, 400))
+        stub_videoinput.ocr.read.assert_called_with(image.crop.return_value)
+
+    @pytest.mark.parametrize("method", ["rapidocr", "tesseract"])
+    @pytest.mark.asyncio
+    async def test_find_text_window_fallback(
+        self, stub_videoinput, window_fallback_on, mock_to_image, method
+    ):
+        """
+        Test that a missed text is searched again inside each window, with any
+        OCR method, and duplicates from nested windows are dropped.
+        """
+        stub_videoinput.set_ocr_method(method)
+        image = Mock()
+        outer = Region(0, 0, 500, 500)
+        inner = Region(10, 10, 400, 400)
+        found = match("FINISHED-HIT", Region(20, 20, 120, 40))
+        with (
+            patch.object(
+                stub_videoinput.ocr,
+                "find",
+                side_effect=[
+                    [],
+                    [match("FINISHED-H1T", Region(20, 20, 120, 40), 90)],
+                    [found],
+                ],
+            ) as mock_find,
+            patch.object(
+                stub_videoinput, "_find_windows", return_value=[outer, inner]
+            ) as mock_windows,
+        ):
+            result = await stub_videoinput.find_text(
+                "FINISHED-HIT", image=image
+            )
+
+        assert result == [found]
+        window_fallback_on.assert_called_once_with(None)
+        mock_windows.assert_called_once_with(mock_to_image.return_value, None)
+        assert [c.kwargs["region"] for c in mock_find.call_args_list] == [
+            None,
+            outer,
+            inner,
+        ]
+
+    @pytest.mark.asyncio
+    async def test_find_text_window_fallback_regex(
+        self, stub_videoinput, window_fallback_on, mock_to_image
+    ):
+        image = Mock()
+        window = Region(10, 20, 300, 400)
+        found = match("FINISHED-HIT", Region(20, 30, 120, 50))
+        stub_videoinput.ocr.read = Mock(side_effect=["Oct 15", "FINISHED-HIT"])
+        with (
+            patch.object(
+                stub_videoinput.ocr, "find", return_value=[found]
+            ) as mock_find,
+            patch.object(
+                stub_videoinput, "_find_windows", return_value=[window]
+            ),
+        ):
+            result = await stub_videoinput.find_text(
+                "regex:FINISHED-[A-Z]+", image=image
+            )
+
+        assert result == [found]
+        crop = mock_to_image.return_value.crop
+        crop.assert_called_once_with((10, 20, 300, 400))
+        assert stub_videoinput.ocr.read.call_args_list == [
+            call(image),
+            call(crop.return_value),
+        ]
+        mock_find.assert_called_once_with(
+            image,
+            "FINISHED-HIT",
+            region=window,
+            similarity=None,
+            confidence=None,
+        )
+
+    @pytest.mark.asyncio
+    async def test_find_text_window_fallback_not_needed(
+        self, stub_videoinput, window_fallback_on
+    ):
+        found = match("Hello", Region(0, 0, 1, 1))
+        with (
+            patch.object(stub_videoinput.ocr, "find", return_value=[found]),
+            patch.object(stub_videoinput, "_find_windows") as mock_windows,
+        ):
+            assert await stub_videoinput.find_text("Hello") == [found]
+
+        window_fallback_on.assert_not_called()
+        mock_windows.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_find_text_window_fallback_nothing_found(
+        self, stub_videoinput, window_fallback_on
+    ):
+        with (
+            patch.object(stub_videoinput.ocr, "find", return_value=[]),
+            patch.object(
+                stub_videoinput,
+                "_find_windows",
+                return_value=[Region(0, 0, 200, 200)],
+            ),
+        ):
+            assert await stub_videoinput.find_text("Hello") == []
+
+    @pytest.mark.asyncio
+    async def test_match_text_passes_window_fallback(self, stub_videoinput):
+        found = match("Hello", Region(0, 0, 1, 1))
+        with patch.object(
+            stub_videoinput, "find_text", return_value=[found]
+        ) as mock_find_text:
+            await stub_videoinput.match_text("Hello", window_fallback=False)
+            await stub_videoinput.match_text(
+                "Hello", color=(0, 0, 0), window_fallback=True
+            )
+
+        assert [
+            c.kwargs["window_fallback"] for c in mock_find_text.call_args_list
+        ] == [False, True]
+
+    @pytest.mark.parametrize(
+        ("value", "variable", "expected"),
+        [
+            (True, "False", True),
+            (False, None, False),
+            (None, None, True),
+            (None, "False", False),
+            (None, "true", True),
+        ],
+    )
+    def test_window_fallback_enabled(self, value, variable, expected):
+        with patch(
+            "yarf.rf_libraries.libraries.video_input_base.BuiltIn"
+        ) as mock_builtin:
+            mock_builtin.return_value.get_variable_value.side_effect = (
+                lambda name, default: default if variable is None else variable
+            )
+            assert WINDOW_FALLBACK_ENABLED(value) is expected
+
+    @pytest.mark.parametrize("log_level", ["INFO", "DEBUG"])
+    def test_find_windows(self, stub_videoinput, log_level):
+        image = Mock()
+        with (
+            patch(
+                "yarf.rf_libraries.libraries.video_input_base.find_windows",
+                return_value=[Region(10, 20, 110, 220)],
+            ) as mock_find_windows,
+            patch.dict(os.environ, {"YARF_LOG_LEVEL": log_level}),
+            patch(
+                "yarf.rf_libraries.libraries.video_input_base.log_image"
+            ) as mock_log_image,
+            patch.object(
+                stub_videoinput, "_draw_region_on_image"
+            ) as mock_draw,
+        ):
+            assert stub_videoinput._find_windows(image) == [
+                Region(10, 20, 110, 220)
+            ]
+            assert stub_videoinput._find_windows(
+                image, Region(5, 6, 500, 600)
+            ) == [Region(15, 26, 115, 226)]
+
+        mock_find_windows.assert_called_with(image.crop.return_value)
+        image.crop.assert_called_once_with((5, 6, 500, 600))
+        if log_level == "DEBUG":
+            assert mock_draw.call_args_list == [
+                call(image.copy.return_value, Region(10, 20, 110, 220)),
+                call(image.copy.return_value, Region(15, 26, 115, 226)),
+            ]
+            mock_log_image.assert_called_with(
+                image.copy.return_value,
+                "Found 1 window(s) to search for text",
+            )
+            assert mock_log_image.call_count == 2
+        else:
+            mock_draw.assert_not_called()
+            mock_log_image.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_find_text_with_regex_validates_thresholds(
