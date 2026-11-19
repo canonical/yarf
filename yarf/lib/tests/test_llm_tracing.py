@@ -193,7 +193,7 @@ class TestIdGenerator:
 
     def test_ids_are_never_zero(self):
         generator = OsRandomIdGenerator()
-        with patch(f"{MODULE}.secrets.randbits", side_effect=[0, 7, 0, 9]):
+        with patch(f"{MODULE}.secrets.randbits", side_effect=[0, 0, 7, 0, 9]):
             assert generator.generate_trace_id() == 7
             assert generator.generate_span_id() == 9
 
@@ -476,7 +476,9 @@ class TestRobotTestTrace:
         tracing.skip_keyword()
         tracing.end_test("FAIL", "aborted")
 
-        assert [s["name"] for s in spans()] == ["Outer", "Test"]
+        outer, test = spans()
+        assert (outer["name"], test["name"]) == ("Outer", "Test")
+        assert outer["status"] == {"code": 2, "message": "aborted"}
 
     def test_enabled_without_keywords(self, tracing, spans):
         tracing.end_test("PASS", "")

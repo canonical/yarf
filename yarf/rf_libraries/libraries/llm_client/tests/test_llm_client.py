@@ -1490,7 +1490,13 @@ class TestLlmClient:
             )
 
     @pytest.mark.asyncio
-    async def test_execute_gui_action_logs_screenshot_in_debug(self):
+    @pytest.mark.parametrize(
+        "description, label",
+        [("", "Left Click"), ("the OK button", "the OK button")],
+    )
+    async def test_execute_gui_action_logs_screenshot_in_debug(
+        self, description, label
+    ):
         client = LlmClient()
         screenshot = Image.new("RGB", (10, 10))
         annotated = Image.new("RGB", (10, 10))
@@ -1522,18 +1528,19 @@ class TestLlmClient:
                     "action_type": "Left Click",
                     "text": None,
                     "point": [0.25, 0.5],
-                }
+                },
+                description,
             )
 
         assert mock_video.grab_screenshot.await_count == 2
         mock_draw_point.assert_called_once_with(
             screenshot,
             [0.25, 0.5],
-            label="Left Click",
+            label=label,
         )
         mock_log_image.assert_any_call(
             annotated,
-            "LLM indicated action point for: Left Click",
+            f"LLM indicated action point for: {label}",
         )
         mock_log_image.assert_any_call(
             image=screenshot,
