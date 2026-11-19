@@ -377,9 +377,10 @@ class RobotTestTrace:
     The trace of the running Robot test, shared by the trace listener and the
     LLM Client.
 
-    The trace starts with the first keyword run once a test enables tracing,
-    so that the keywords before `Configure Llm Client` are not recorded.
-    ``enabled`` tells whether the running test enabled tracing.
+    Tracing is shared by the whole run: once enabled, it stays enabled for
+    the following tests until it is disabled. A test is traced from its first
+    keyword run with tracing enabled, so that the keywords before
+    `Configure Llm Client` are not recorded.
     """
 
     def __init__(self) -> None:
@@ -402,21 +403,31 @@ class RobotTestTrace:
         """
         return self._test is not None
 
+    @property
+    def recorder(self) -> Recorder | None:
+        """
+        Get where the traces are written.
+
+        Returns:
+            The recorder, None until tracing is first enabled.
+        """
+        return self._recorder
+
     def enable(self, recorder: Recorder) -> None:
         """
-        Trace the running test.
+        Trace the running test, and the next ones.
 
         Args:
-            recorder: Where to write the trace.
+            recorder: Where to write the traces.
         """
         self.enabled = True
         self._recorder = recorder
 
     def disable(self) -> None:
         """
-        Stop tracing the running test.
+        Stop tracing.
 
-        Its trace ends with the test.
+        The trace of the running test ends with the test.
         """
         self.enabled = False
 
@@ -440,8 +451,6 @@ class RobotTestTrace:
             name: The test name.
             inputs: The inputs of the test span.
         """
-        # Robot creates a new LLM Client, with tracing disabled, per test
-        self.enabled = False
         self._test = (name, inputs, time.time_ns())
         self._context = robot_context()
 
@@ -555,7 +564,6 @@ class RobotTestTrace:
                 status == "FAIL",
                 message,
             )
-        self.enabled = False
         self._test = None
         self._root = None
         self._spans.clear()
@@ -764,28 +772,42 @@ class LlmTracer:
     Run with YARF's trace listener, the spans are part of the trace of
     the running Robot test. Otherwise, each LLM keyword called from
     Robot is a trace of its own. Nothing is recorded until tracing is
-    enabled.
+    enabled. Tracing is shared by all the tracers of the run, through
+    ``TRACING``.
     """
 
-    def __init__(self) -> None:
-        self.enabled = False
-        self._recorder: Recorder | None = None
+    @property
+    def enabled(self) -> bool:
+        """
+        Whether tracing is enabled.
+
+        Returns:
+            True from `enable` until `disable`.
+        """
+        return TRACING.enabled
+
+    @property
+    def _recorder(self) -> Recorder | None:
+        """
+        Get where the traces are written.
+
+        Returns:
+            The recorder, None until tracing is first enabled.
+        """
+        return TRACING.recorder
 
     def enable(self) -> None:
         """
         Start recording traces to the Robot output directory.
         """
-        self._recorder = recorder(output_dir().resolve())
-        self.enabled = True
-        TRACING.enable(self._recorder)
-        logger.info(f"Recording LLM traces to {self._recorder.path}")
+        rec = recorder(output_dir().resolve())
+        TRACING.enable(rec)
+        logger.info(f"Recording LLM traces to {rec.path}")
 
     def disable(self) -> None:
         """
-        Stop recording traces, including the keywords that the trace listener
-        records.
+        Stop recording traces.
         """
-        self.enabled = False
         TRACING.disable()
 
     @contextmanager

@@ -398,9 +398,12 @@ part of the YARF package or snap.
 
 ### Enabling tracing
 
-Enable tracing in the client configuration. Robot creates a new LLM Client for
-each test, so enable it in the test setup. A test is recorded from the moment
-it enables tracing:
+Enable tracing in the client configuration. Tracing stays on for the
+following tests until `Configure Llm Client    tracing=False`, so you can
+enable it once, for example in the suite setup. The other settings, such as
+the provider and model, apply to the running test only: Robot creates a new
+LLM Client for each test, so set them in the test setup. A test is recorded
+from its first keyword run with tracing on:
 
 ```{code-block} robotframework
 ---
@@ -408,7 +411,8 @@ caption: Enable tracing for every test
 ---
 *** Settings ***
 Library        yarf.rf_libraries.libraries.llm_client.LlmClient
-Test Setup     Configure Llm Client    tracing=True
+Suite Setup    Configure Llm Client    tracing=True
+Test Setup     Configure Llm Client    provider=copilot    model=gpt-4.1
 ```
 
 The traces are saved in the `traces` directory of the YARF output directory:
