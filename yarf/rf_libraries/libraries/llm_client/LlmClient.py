@@ -137,7 +137,8 @@ class LlmUsage:
 
         Returns:
             A dict with the prompt, completion, reasoning and total token
-            counts, the cost and the nano AIU, None if not reported.
+            counts, 0 if not reported, and the cost and the nano AIU, None
+            if not reported.
         """
         usage = data.get("usage") or {}
         details = (
@@ -1283,7 +1284,7 @@ class LlmClient:
             x, y = normalize_point(action["point"], (1, 1))
             if capture:
                 image = await self._grab_screenshot()
-                label = action.get("description", action_type)
+                label = description or action.get("description", action_type)
                 annotated = draw_point_on_image(image, [x, y], label=label)
                 if debug:
                     log_image(

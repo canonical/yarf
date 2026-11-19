@@ -93,8 +93,11 @@ def find_keyword(
         The keyword span.
 
     Raises:
+        ValueError: If the occurrence is less than 1.
         LookupError: If the test did not call the keyword that many times.
     """
+    if occurrence < 1:
+        raise ValueError(f"The occurrence starts from 1, not {occurrence}.")
     calls = [
         span
         for span in descendants(spans, test_span)

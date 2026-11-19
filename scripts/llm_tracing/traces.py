@@ -32,7 +32,11 @@ def read_requests(traces_dir: Path) -> list[dict[str, Any]]:
         The export requests, in the order they were written.
     """
     path = traces_dir / TRACES_FILE
-    return [json.loads(line) for line in path.read_text().splitlines()]
+    return [
+        json.loads(line)
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
 
 
 def blob_path(traces_dir: Path, digest: str, content_type: str) -> Path:

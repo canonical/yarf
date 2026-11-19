@@ -103,7 +103,9 @@ class OsRandomIdGenerator(IdGenerator):
         Returns:
             A random, non-zero 64-bit ID.
         """
-        return secrets.randbits(64) or self.generate_span_id()
+        while not (span_id := secrets.randbits(64)):
+            pass
+        return span_id
 
     def generate_trace_id(self) -> int:
         """
@@ -112,7 +114,9 @@ class OsRandomIdGenerator(IdGenerator):
         Returns:
             A random, non-zero 128-bit ID.
         """
-        return secrets.randbits(128) or self.generate_trace_id()
+        while not (trace_id := secrets.randbits(128)):
+            pass
+        return trace_id
 
 
 class JsonLinesSpanExporter(SpanExporter):
@@ -147,7 +151,10 @@ class JsonLinesSpanExporter(SpanExporter):
                         if field in span:
                             span[field] = base64.b64decode(span[field]).hex()
         line = json.dumps(request, separators=(",", ":"))
-        with self._lock, self.path.open("a") as file:
+        with (
+            self._lock,
+            self.path.open("a", encoding="utf-8", newline="\n") as file,
+        ):
             file.write(line + "\n")
         return SpanExportResult.SUCCESS
 
@@ -554,8 +561,9 @@ class RobotTestTrace:
         """
         if self.enabled:
             self._ensure_root()
+        # Keywords still running when the test ends share its result
         while self._stack:
-            self.end_keyword(None, False, "")
+            self.end_keyword(None, status == "FAIL", message)
         if self._root is not None:
             self._root.set_attributes({STATUS_ATTRIBUTE: status})
             _deactivate(self._root_token)

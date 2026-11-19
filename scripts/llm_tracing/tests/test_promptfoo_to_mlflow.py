@@ -91,6 +91,20 @@ def test_running_again_adds_nothing(results_file, capsys):
     assert "Logged 0 promptfoo feedback" in capsys.readouterr().out
 
 
+def test_result_without_span(results_file, tracking_uri, capsys):
+    results = json.loads(results_file.read_text())
+    del results["results"]["results"][0]["response"]["metadata"]["span_id"]
+    results_file.write_text(json.dumps(results))
+
+    assert (
+        promptfoo_to_mlflow.main(
+            [str(results_file), "--tracking-uri", tracking_uri]
+        )
+        == 0
+    )
+    assert "Logged 0 promptfoo feedback" in capsys.readouterr().out
+
+
 def test_trace_not_uploaded(results_file, tracking_uri, capsys):
     results = json.loads(results_file.read_text())
     results["results"]["results"][0]["response"]["metadata"]["trace_id"] = (

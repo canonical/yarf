@@ -94,6 +94,15 @@ def test_errors(traces_dir, tmp_path):
         )["error"]
     )
     assert "error" in call(tmp_path / "missing", test="Calculator is shown")
+    assert (
+        "from 1, not 0"
+        in call(
+            traces_dir,
+            test="Calculator is shown",
+            keyword="Assert State",
+            occurrence=0,
+        )["error"]
+    )
 
 
 def test_test_in_a_parent_trace(parent_traces_dir):

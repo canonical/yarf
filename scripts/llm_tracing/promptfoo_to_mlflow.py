@@ -65,7 +65,8 @@ def attach(results: dict[str, Any]) -> tuple[int, list[str]]:
     missing = []
     for result in results["results"]["results"]:
         metadata = (result.get("response") or {}).get("metadata") or {}
-        if "trace_id" not in metadata:
+        # Only the answers of the YARF provider identify a span
+        if "trace_id" not in metadata or "span_id" not in metadata:
             continue
         trace_id = f"tr-{metadata['trace_id']}"
         trace = mlflow.get_trace(trace_id, silent=True)
