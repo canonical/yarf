@@ -12,6 +12,12 @@ suite, test, status and run of each test become trace tags, with the test
 name as the trace name. The screenshots become trace attachments. Uploading
 again is safe: MLflow replaces the spans with the same IDs, and attachment IDs
 are derived from the trace and the image.
+
+A run recorded inside a parent trace, given in ``TRACEPARENT``, is one trace
+in MLflow, with the parent's trace ID. As the parent span is not in the
+recording, a stand-in span named ``YARF run`` takes its place, so that MLflow
+sees a complete trace. Uploading the real parent span to the same experiment
+replaces it.
 """
 
 import argparse
@@ -42,6 +48,8 @@ ATTRIBUTES = {
 }
 TRACE_TAGS = ("robot.suite", "robot.test", "robot.status", "yarf.run")
 TAG_PREFIX = "mlflow.traceTag."
+STATUS_OK = 1
+STATUS_ERROR = 2
 ID_FIELDS = ("traceId", "spanId", "parentSpanId")
 
 
@@ -57,6 +65,83 @@ def attachment_id(trace_id: str, digest: str) -> str:
         An ID that is the same each time the trace is uploaded.
     """
     return str(uuid.uuid5(uuid.NAMESPACE_URL, f"{trace_id}/{digest}"))
+
+
+def stand_in_parents(requests: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """
+    Make stand-in spans for the parents missing from a recording.
+
+    The parent of the tests recorded inside a parent trace is not in the
+    recording, nor is the test span of a test that did not end, e.g. when
+    Robot was killed. MLflow needs a root span to show a trace.
+
+    Args:
+        requests: The OTLP/JSON export requests of the recording.
+
+    Returns:
+        Export requests with one stand-in root span per missing parent,
+        covering the time of its children, with an error status if one of
+        them failed.
+    """
+    spans = [
+        (resource_spans.get("resource", {}), span)
+        for request in requests
+        for resource_spans in request.get("resourceSpans", [])
+        for scope_spans in resource_spans.get("scopeSpans", [])
+        for span in scope_spans.get("spans", [])
+    ]
+    known = {span["spanId"] for _, span in spans}
+    children: dict[tuple[str, str], list[tuple[dict, dict]]] = {}
+    for resource, span in spans:
+        parent = span.get("parentSpanId")
+        if parent and parent not in known:
+            key = (span["traceId"], parent)
+            children.setdefault(key, []).append((resource, span))
+
+    stand_ins = []
+    for (trace_id, span_id), found in children.items():
+        attributes = {
+            item["key"]: item["value"]
+            for _, child in found
+            for item in child.get("attributes", [])
+        }
+        failed = any(
+            child.get("status", {}).get("code") == STATUS_ERROR
+            for _, child in found
+        )
+        span = {
+            "traceId": trace_id,
+            "spanId": span_id,
+            "name": "YARF run",
+            "kind": 1,
+            "startTimeUnixNano": min(
+                int(child["startTimeUnixNano"]) for _, child in found
+            ),
+            "endTimeUnixNano": max(
+                int(child["endTimeUnixNano"]) for _, child in found
+            ),
+            "attributes": [
+                {"key": "yarf.span.type", "value": string("CHAIN")},
+                {"key": "yarf.stand_in", "value": {"boolValue": True}},
+            ]
+            + [
+                {"key": key, "value": attributes[key]}
+                for key in ("yarf.run", "robot.suite")
+                if key in attributes
+            ],
+            "status": {"code": STATUS_ERROR if failed else STATUS_OK},
+        }
+        stand_ins.append(
+            {
+                "resourceSpans": [
+                    {
+                        "resource": found[0][0],
+                        "scopeSpans": [{"spans": [span]}],
+                    }
+                ]
+            }
+        )
+    return stand_ins
 
 
 def string(value: str) -> dict[str, Any]:
@@ -179,7 +264,8 @@ def upload(traces_dir: Path, experiment: str) -> list[str]:
     experiment_id = mlflow.set_experiment(experiment).experiment_id
     client = TracingClient()
     attachments: dict[str, dict[str, Path]] = {}
-    for request in read_requests(traces_dir):
+    requests = read_requests(traces_dir)
+    for request in requests + stand_in_parents(requests):
         for trace_id, found in convert(request, traces_dir).items():
             attachments.setdefault(trace_id, {}).update(found)
         spans = to_mlflow_spans(request)

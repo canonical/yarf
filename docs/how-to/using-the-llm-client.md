@@ -440,6 +440,26 @@ listener. With `robot`, add `--listener yarf.lib.llm_trace_listener.LlmTraceList
 to do the same, otherwise each LLM Client keyword is a trace of its own.
 ```
 
+### Joining a parent trace
+
+To record a run inside a trace started outside YARF, for example by a CI
+pipeline, set the context of the parent span in the `TRACEPARENT` environment
+variable, and optionally `TRACESTATE`, in the
+[W3C Trace Context](https://www.w3.org/TR/trace-context/) format. Tools that
+use OpenTelemetry pass it on this way to the processes they start:
+
+```{code-block} bash
+---
+caption: Record a run inside a parent trace
+---
+export TRACEPARENT=00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
+yarf --platform Mir --outdir out my-suite/
+```
+
+Each traced test is then a child of that parent span, in its trace, instead of
+a trace of its own. If `TRACEPARENT` is invalid, YARF logs a warning and each
+test starts a trace of its own.
+
 ### Viewing traces in MLflow
 
 The tools need a checkout of the YARF repository and its development
@@ -476,6 +496,12 @@ In MLflow, each trace is named after its test, and tagged with the Robot
 suite, test and status, `robot.suite`, `robot.test` and `robot.status`. The
 screenshots are shown with the prompts, and MLflow sums the tokens and
 estimates the cost of known models.
+
+A run recorded inside a parent trace is one trace in MLflow, with the
+parent's trace ID, and each test is a step inside it. The parent span is not
+in the recording, so a stand-in span named `YARF run` takes its place, with an
+error status if a test failed. Uploading the real parent span to the same
+experiment replaces the stand-in.
 
 ### Evaluating traces with promptfoo
 
