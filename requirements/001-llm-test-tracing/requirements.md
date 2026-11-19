@@ -13,6 +13,8 @@ viewer or an evaluation tool to record. Separate tools in the repository
 upload the recordings to a shared trace viewer, and let an evaluation tool
 check the recorded answers without running a test or calling the model again.
 The evaluation results are attached to the same traces in the viewer.
+A user can also make a run part of a larger trace, such as a CI pipeline, by
+giving YARF a parent trace context.
 
 The first trace viewer is MLflow and the first evaluation tool is promptfoo.
 The recording format does not depend on either. ADR 0002 records the choice
@@ -63,9 +65,18 @@ across runs are not misleading.
 
 - **Given** a recorded trace, **When** it is inspected, **Then** it states the YARF version, whether YARF ran from the snap or a Python installation, the Python, Robot Framework and operating system versions, and the model of each LLM request.
 
+### US-05: Join a trace started outside YARF (Priority: P5)
+
+As a CI maintainer, I want a YARF run to join a trace that my pipeline
+started, so that the tests appear inside the larger operation that ran them.
+
+- **Given** a parent trace context in the standard OpenTelemetry environment variables, **When** a traced suite runs, **Then** each traced test is recorded as a child of that parent, in the parent's trace.
+- **Given** an invalid parent trace context, **When** a traced suite runs, **Then** YARF reports it and records each traced test as a trace of its own.
+- **Given** no parent trace context, **When** a traced suite runs, **Then** each traced test is recorded as a trace of its own.
+
 ## Functional Requirements
 
-- **FR-001**: Where tracing is enabled for a test, the system MUST record the test as one trace, from the moment tracing is enabled until the test ends.
+- **FR-001**: Where tracing is enabled for a test, the system MUST record the test as one tree of steps, from the moment tracing is enabled until the test ends.
 - **FR-002**: The system MUST keep tracing disabled unless a test enables it.
 - **FR-003**: The system MUST record each keyword run by a traced test as a step with its arguments, the variables it assigned, its duration and its status.
 - **FR-004**: The system MUST record each LLM request with its prompt, images, answer, model, token usage, duration and number of attempts.
@@ -77,7 +88,7 @@ across runs are not misleading.
 - **FR-010**: The system MUST NOT record API keys or other credentials sent to the model server.
 - **FR-011**: The system MUST generate trace identifiers that do not repeat when a test sets a fixed random seed.
 - **FR-012**: The system MUST record traces without network access and without a trace viewer or evaluation tool installed.
-- **FR-013**: When a recording is uploaded to the trace viewer, the system MUST show each test as one trace named after the test, with its recorded images viewable.
+- **FR-013**: When a recording without a parent trace context is uploaded to the trace viewer, the system MUST show each test as one trace named after the test, with its recorded images viewable.
 - **FR-014**: When a recording is uploaded again, the system MUST replace the traces already uploaded rather than add duplicates.
 - **FR-015**: When a recording is uploaded, the system MUST leave the recording files unchanged.
 - **FR-016**: If an image referenced by a recording is missing, then the system MUST upload the rest of the recording and report the missing image.
@@ -85,6 +96,9 @@ across runs are not misleading.
 - **FR-018**: When evaluation results are attached to uploaded traces, the system MUST attach each check result to the step it checked, identified as coming from the evaluation tool.
 - **FR-019**: When evaluation results are attached again, the system MUST NOT duplicate a result already attached.
 - **FR-020**: If evaluation results refer to a trace that is not in the viewer, then the system MUST report the missing trace and exit with a failure status.
+- **FR-021**: Where a valid parent trace context is set in the `TRACEPARENT` environment variable, and optionally `TRACESTATE`, the system MUST record each traced test as a child of that parent, in the parent's trace.
+- **FR-022**: If the parent trace context in the environment is invalid, then the system MUST report it and record each traced test as a trace of its own.
+- **FR-023**: When a recording with a parent trace context is uploaded to the trace viewer, the system MUST show the run inside one trace with the parent's identifier, with each test named after the test.
 
 ## Success Criteria
 
@@ -95,3 +109,4 @@ across runs are not misleading.
 - **SC-005**: 100% of the evaluation results of an uploaded run are attached to the step they checked.
 - **SC-006**: Searching a recording for the API key used by the run finds it in 0 files.
 - **SC-007**: Recording a run opens 0 connections beyond those the test itself makes.
+- **SC-008**: With a valid parent trace context, 100% of the traced tests of a run are recorded in the parent's trace.
