@@ -5,7 +5,9 @@ Each Robot test that enables tracing becomes one trace: a tree of spans for the
 test, its keywords, the LLM requests, the response parsing and the GUI actions.
 Traces are written to ``traces/traces.jsonl`` in the Robot output directory,
 one OTLP/JSON export request per line, and the images they show to
-``traces/blobs``, referenced from the spans by ``yarf-blob://`` URIs.
+``traces/blobs``, referenced from the spans by ``yarf-blob://`` URIs. The tools
+in ``scripts/llm_tracing`` upload them to MLflow and evaluate them with
+promptfoo.
 """
 
 import base64
