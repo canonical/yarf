@@ -398,9 +398,11 @@ part of the YARF package or snap.
 
 ### Enabling tracing
 
-Enable tracing in the client configuration. Robot creates a new LLM Client for
-each test, so enable it in the test setup. A test is recorded from the moment
-it enables tracing:
+Enable tracing in the client configuration. The LLM Client and its
+configuration are shared by all the tests of a run, so tracing stays on for
+the following tests until `Configure Llm Client    tracing=False`. Enable it
+once, for example in the suite setup. A test is recorded from its first
+keyword run with tracing on:
 
 ```{code-block} robotframework
 ---
@@ -408,7 +410,7 @@ caption: Enable tracing for every test
 ---
 *** Settings ***
 Library        yarf.rf_libraries.libraries.llm_client.LlmClient
-Test Setup     Configure Llm Client    tracing=True
+Suite Setup    Configure Llm Client    tracing=True
 ```
 
 The traces are saved in the `traces` directory of the YARF output directory:
@@ -435,6 +437,26 @@ Traces record whole tests when run with `yarf`, which registers the trace
 listener. With `robot`, add `--listener yarf.lib.llm_trace_listener.LlmTraceListener`
 to do the same, otherwise each LLM Client keyword is a trace of its own.
 ```
+
+### Joining a parent trace
+
+To record a run inside a trace started outside YARF, for example by a CI
+pipeline, set the context of the parent span in the `TRACEPARENT` environment
+variable, and optionally `TRACESTATE`, in the
+[W3C Trace Context](https://www.w3.org/TR/trace-context/) format. Tools that
+use OpenTelemetry pass it on this way to the processes they start:
+
+```{code-block} bash
+---
+caption: Record a run inside a parent trace
+---
+export TRACEPARENT=00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
+yarf --platform Mir --outdir out my-suite/
+```
+
+Each traced test is then a child of that parent span, in its trace, instead of
+a trace of its own. If `TRACEPARENT` is invalid, YARF logs a warning and each
+test starts a trace of its own.
 
 ### Viewing traces in MLflow
 
@@ -472,6 +494,12 @@ In MLflow, each trace is named after its test, and tagged with the Robot
 suite, test and status, `robot.suite`, `robot.test` and `robot.status`. The
 screenshots are shown with the prompts, and MLflow sums the tokens and
 estimates the cost of known models.
+
+A run recorded inside a parent trace is one trace in MLflow, with the
+parent's trace ID, and each test is a step inside it. The parent span is not
+in the recording, so a stand-in span named `YARF run` takes its place, with an
+error status if a test failed. Uploading the real parent span to the same
+experiment replaces the stand-in.
 
 ### Evaluating traces with promptfoo
 

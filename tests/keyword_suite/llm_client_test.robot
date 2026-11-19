@@ -69,6 +69,7 @@ Collect Usage
     Should Be True          ${usage}[inference_time] > 0
 
 Tracing
+    [Teardown]              Configure Llm Client    tracing=False
     Configure Llm Client    tracing=True
     Prompt Llm              This is my prompt
     ${traces}=              Get File                ${OUTPUT_DIR}/traces/traces.jsonl

@@ -382,8 +382,9 @@ class LlmClient:
         and cost of each request, see `Get Llm Usage`. It is off by default.
 
         Set ``tracing=True`` to record the running test, and the next ones,
-        as OpenTelemetry traces. Robot creates a new LLM Client for each
-        test, so enable tracing in the test setup. Run with YARF, a trace
+        as OpenTelemetry traces, until ``tracing=False``. Enable it once, for
+        example in the suite setup: the LLM Client and its configuration are
+        shared by all the tests of a run. Run with YARF, a trace
         records a whole test: each keyword with its arguments, the prompts
         and screenshots sent to the model, its answers, token usage, latency,
         response parsing and the GUI actions taken. The HID keywords that the
@@ -393,7 +394,10 @@ class LlmClient:
         is a trace of its own. Traces are written to ``traces/traces.jsonl``
         in the Robot output directory, and the screenshots to
         ``traces/blobs``. The scripts in ``scripts/llm_tracing`` upload them
-        to MLflow and evaluate them with promptfoo.
+        to MLflow and evaluate them with promptfoo. To record the tests
+        inside a trace started outside YARF, set its context in the
+        ``TRACEPARENT`` environment variable, and optionally ``TRACESTATE``,
+        in the W3C Trace Context format.
 
         Args:
             **kwargs: Configuration parameters for the LLM client.
@@ -463,7 +467,7 @@ class LlmClient:
             if is_truthy(tracing):
                 self.tracer.enable()
             else:
-                self.tracer.enabled = False
+                self.tracer.disable()
 
     @keyword
     @_traced(CHAIN)

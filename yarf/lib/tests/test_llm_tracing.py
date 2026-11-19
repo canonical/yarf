@@ -42,7 +42,10 @@ def png_bytes() -> bytes:
 
 
 @pytest.fixture(autouse=True)
-def reset_tracing():
+def reset_tracing(monkeypatch):
+    monkeypatch.delenv("TRACEPARENT", raising=False)
+    monkeypatch.delenv("TRACESTATE", raising=False)
+    llm_tracing._parent_context.cache_clear()
     saved = llm_tracing._RECORDER
     TRACING.__init__()
     yield
@@ -283,7 +286,15 @@ class TestSpan:
     def test_enable(self, tracer, outdir):
         assert tracer.enabled
         assert TRACING.enabled
+        assert tracer._recorder is TRACING.recorder
+        assert LlmTracer().enabled
         assert (outdir / "traces").is_dir()
+
+    def test_disable(self, tracer):
+        LlmTracer().disable()
+
+        assert not tracer.enabled
+        assert not TRACING.enabled
 
     def test_root_span(self, tracer, spans, context):
         with tracer.span(
@@ -408,8 +419,20 @@ class TestRobotTestTrace:
         assert tool["parent_id"] == keyword["span_id"]
         assert tool["attributes"]["yarf.span.type"] == "TOOL"
         assert not tracing.in_test
-        assert not tracing.enabled
+        assert tracing.enabled
         assert trace.get_current_span() is trace.INVALID_SPAN
+
+    def test_tracing_continues_in_the_next_test(self, tracing, spans):
+        tracing.end_test("PASS", "")
+        tracing.start_test("Next", {})
+        tracing.start_keyword("Keyword", llm_tracing.CHAIN, {})
+        tracing.end_keyword(None, False, "")
+        tracing.end_test("PASS", "")
+
+        first, keyword, second = spans()
+        assert (first["name"], second["name"]) == ("Test", "Next")
+        assert keyword["parent_id"] == second["span_id"]
+        assert first["trace_id"] != second["trace_id"]
 
     def test_failure(self, tracing, spans):
         tracing.start_keyword("Fail", llm_tracing.CHAIN, {})
@@ -431,6 +454,7 @@ class TestRobotTestTrace:
     def test_disabled_keywords(self, tracer, context):
         tracing = RobotTestTrace()
         tracing.enable(llm_tracing._RECORDER)
+        tracing.disable()
         tracing.start_test("Test", {})
         tracing.start_keyword("Before Tracing", llm_tracing.CHAIN, {})
         tracing.skip_keyword()
@@ -480,3 +504,64 @@ class TestRobotTestTrace:
         assert "yarf.llm_keyword" not in found["Prompt Llm"]["attributes"]
         assert "robot.test" not in found["Assert State"]["attributes"]
         assert len({s["trace_id"] for s in found.values()}) == 1
+
+
+PARENT_TRACE = "4bf92f3577b34da6a3ce929d0e0e4736"
+PARENT_SPAN = "00f067aa0ba902b7"
+TRACEPARENT = f"00-{PARENT_TRACE}-{PARENT_SPAN}-01"
+
+
+class TestParentContext:
+    def test_test_joins_the_parent_trace(
+        self, tracer, context, spans, monkeypatch
+    ):
+        monkeypatch.setenv("TRACEPARENT", TRACEPARENT)
+        monkeypatch.setenv("TRACESTATE", "vendor=value")
+        tracing = RobotTestTrace()
+        tracing.enable(llm_tracing._RECORDER)
+        for name in ("First", "Second"):
+            tracing.start_test(name, {})
+            tracing.start_keyword("Keyword", llm_tracing.CHAIN, {})
+            tracing.end_keyword(None, False, "")
+            tracing.end_test("PASS", "")
+
+        tests = [s for s in spans() if s["name"] in ("First", "Second")]
+        assert [s["trace_id"] for s in tests] == [PARENT_TRACE] * 2
+        assert [s["parent_id"] for s in tests] == [PARENT_SPAN] * 2
+        assert "vendor=value" in llm_tracing._RECORDER.path.read_text()
+
+    def test_standalone_keyword_joins_the_parent_trace(
+        self, tracer, spans, monkeypatch
+    ):
+        monkeypatch.setenv("TRACEPARENT", TRACEPARENT)
+        with tracer.span("Assert State", llm_tracing.CHAIN):
+            with tracer.span("chat/completions", llm_tracing.LLM):
+                pass
+
+        llm, keyword = spans()
+        assert keyword["trace_id"] == PARENT_TRACE
+        assert keyword["parent_id"] == PARENT_SPAN
+        assert llm["parent_id"] == keyword["span_id"]
+
+    @pytest.mark.parametrize(
+        "traceparent", ["garbage", f"00-{'0' * 32}-{PARENT_SPAN}-01"]
+    )
+    def test_invalid_parent(self, tracer, spans, monkeypatch, traceparent):
+        monkeypatch.setenv("TRACEPARENT", traceparent)
+        with patch(f"{MODULE}.logger") as mock_logger:
+            for _ in range(2):
+                with tracer.span("Keyword", llm_tracing.CHAIN):
+                    pass
+
+        first, second = spans()
+        assert first["parent_id"] is None
+        assert first["trace_id"] != second["trace_id"]
+        mock_logger.warn.assert_called_once()
+        assert traceparent in mock_logger.warn.call_args.args[0]
+
+    def test_tracestate_without_traceparent(self, monkeypatch):
+        monkeypatch.setenv("TRACESTATE", "vendor=value")
+
+        assert (
+            llm_tracing.parent_context() == llm_tracing.otel_context.Context()
+        )

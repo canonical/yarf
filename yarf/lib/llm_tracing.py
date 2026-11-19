@@ -12,6 +12,7 @@ promptfoo.
 
 import base64
 import binascii
+import functools
 import hashlib
 import json
 import os
@@ -42,6 +43,9 @@ from opentelemetry.sdk.trace.export import (
 )
 from opentelemetry.sdk.trace.id_generator import IdGenerator
 from opentelemetry.trace import Span, Status, StatusCode
+from opentelemetry.trace.propagation.tracecontext import (
+    TraceContextTextMapPropagator,
+)
 from PIL import Image
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn, RobotNotRunningError
@@ -373,9 +377,10 @@ class RobotTestTrace:
     The trace of the running Robot test, shared by the trace listener and the
     LLM Client.
 
-    The trace starts with the first keyword run once a test enables tracing,
-    so that the keywords before `Configure Llm Client` are not recorded.
-    ``enabled`` tells whether the running test enabled tracing.
+    Tracing is shared by the whole run: once enabled, it stays enabled for
+    the following tests until it is disabled. A test is traced from its first
+    keyword run with tracing enabled, so that the keywords before
+    `Configure Llm Client` are not recorded.
     """
 
     def __init__(self) -> None:
@@ -398,15 +403,33 @@ class RobotTestTrace:
         """
         return self._test is not None
 
+    @property
+    def recorder(self) -> Recorder | None:
+        """
+        Get where the traces are written.
+
+        Returns:
+            The recorder, None until tracing is first enabled.
+        """
+        return self._recorder
+
     def enable(self, recorder: Recorder) -> None:
         """
-        Trace the running test.
+        Trace the running test, and the next ones.
 
         Args:
-            recorder: Where to write the trace.
+            recorder: Where to write the traces.
         """
         self.enabled = True
         self._recorder = recorder
+
+    def disable(self) -> None:
+        """
+        Stop tracing.
+
+        The trace of the running test ends with the test.
+        """
+        self.enabled = False
 
     def owns(self, span_id: int) -> bool:
         """
@@ -428,8 +451,6 @@ class RobotTestTrace:
             name: The test name.
             inputs: The inputs of the test span.
         """
-        # Robot creates a new LLM Client, with tracing disabled, per test
-        self.enabled = False
         self._test = (name, inputs, time.time_ns())
         self._context = robot_context()
 
@@ -446,8 +467,9 @@ class RobotTestTrace:
         suite, _ = self._context
         span = self._recorder.tracer.start_span(
             name,
-            # A new trace, whatever span is active
-            context=otel_context.Context(),
+            # A new trace, or the parent trace given in the environment,
+            # whatever span is active
+            context=parent_context(),
             attributes={
                 SPAN_TYPE: CHAIN,
                 TEST_ATTRIBUTE: True,
@@ -542,10 +564,56 @@ class RobotTestTrace:
                 status == "FAIL",
                 message,
             )
-        self.enabled = False
         self._test = None
         self._root = None
         self._spans.clear()
+
+
+def parent_context() -> otel_context.Context:
+    """
+    Get the parent trace context given in the environment.
+
+    The context is read from the ``TRACEPARENT`` and ``TRACESTATE``
+    environment variables, in the W3C Trace Context format, as OpenTelemetry
+    does for processes started by another traced process.
+
+    Returns:
+        The context with the parent span, or an empty context if none is
+        given or it is invalid.
+    """
+    return _parent_context(
+        os.environ.get("TRACEPARENT"), os.environ.get("TRACESTATE")
+    )
+
+
+@functools.cache
+def _parent_context(
+    traceparent: str | None, tracestate: str | None
+) -> otel_context.Context:
+    """
+    Parse a parent trace context, warning once about an invalid one.
+
+    Args:
+        traceparent: The ``traceparent`` value, if any.
+        tracestate: The ``tracestate`` value, if any.
+
+    Returns:
+        The context with the parent span, or an empty context.
+    """
+    empty = otel_context.Context()
+    if not traceparent:
+        return empty
+    carrier = {"traceparent": traceparent}
+    if tracestate:
+        carrier["tracestate"] = tracestate
+    context = TraceContextTextMapPropagator().extract(carrier, context=empty)
+    if not trace.get_current_span(context).get_span_context().is_valid:
+        logger.warn(
+            f"Ignoring the invalid trace context TRACEPARENT={traceparent}: "
+            "each traced test starts a trace of its own."
+        )
+        return empty
+    return context
 
 
 def _activate(span: Span) -> Any:
@@ -704,21 +772,43 @@ class LlmTracer:
     Run with YARF's trace listener, the spans are part of the trace of
     the running Robot test. Otherwise, each LLM keyword called from
     Robot is a trace of its own. Nothing is recorded until tracing is
-    enabled.
+    enabled. Tracing is shared by all the tracers of the run, through
+    ``TRACING``.
     """
 
-    def __init__(self) -> None:
-        self.enabled = False
-        self._recorder: Recorder | None = None
+    @property
+    def enabled(self) -> bool:
+        """
+        Whether tracing is enabled.
+
+        Returns:
+            True from `enable` until `disable`.
+        """
+        return TRACING.enabled
+
+    @property
+    def _recorder(self) -> Recorder | None:
+        """
+        Get where the traces are written.
+
+        Returns:
+            The recorder, None until tracing is first enabled.
+        """
+        return TRACING.recorder
 
     def enable(self) -> None:
         """
         Start recording traces to the Robot output directory.
         """
-        self._recorder = recorder(output_dir().resolve())
-        self.enabled = True
-        TRACING.enable(self._recorder)
-        logger.info(f"Recording LLM traces to {self._recorder.path}")
+        rec = recorder(output_dir().resolve())
+        TRACING.enable(rec)
+        logger.info(f"Recording LLM traces to {rec.path}")
+
+    def disable(self) -> None:
+        """
+        Stop recording traces.
+        """
+        TRACING.disable()
 
     @contextmanager
     def span(
@@ -763,6 +853,7 @@ class LlmTracer:
             span_attributes.update(trace_attributes(*robot_context()))
         with self._recorder.tracer.start_as_current_span(
             name,
+            context=parent_context() if is_root else None,
             attributes=span_attributes,
             record_exception=False,
             set_status_on_exception=False,

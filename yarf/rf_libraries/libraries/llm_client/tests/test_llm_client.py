@@ -1960,25 +1960,24 @@ class TestLlmClientTracing:
         return [c.args for c in client.tracer.span.call_args_list]
 
     @pytest.mark.parametrize(
-        "enabled, kwargs, expected_calls, expected_enabled",
+        "kwargs, enables, disables",
         [
-            (False, {"tracing": True}, 1, True),
-            (False, {"tracing": "True", "model": "m"}, 1, True),
-            (True, {"tracing": "False"}, 0, False),
-            (True, {"model": "m"}, 0, True),
+            ({"tracing": True}, 1, 0),
+            ({"tracing": "True", "model": "m"}, 1, 0),
+            ({"tracing": "False"}, 0, 1),
+            ({"model": "m"}, 0, 0),
         ],
     )
-    def test_configure_tracing(
-        self, enabled, kwargs, expected_calls, expected_enabled
-    ):
+    def test_configure_tracing(self, kwargs, enables, disables):
         client = LlmClient()
-        client.tracer.enabled = enabled
-        with patch.object(client.tracer, "enable") as enable:
+        with (
+            patch.object(client.tracer, "enable") as enable,
+            patch.object(client.tracer, "disable") as disable,
+        ):
             client.configure_llm_client(**kwargs)
 
-        assert enable.call_count == expected_calls
-        if not expected_calls:
-            assert client.tracer.enabled is expected_enabled
+        assert enable.call_count == enables
+        assert disable.call_count == disables
 
     def test_configure_unknown_experiment(self):
         with pytest.raises(TypeError, match="experiment"):

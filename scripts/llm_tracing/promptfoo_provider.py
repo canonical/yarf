@@ -64,8 +64,8 @@ def find_test(
     found = [
         span
         for span in spans
+        # Only the test span, or a standalone LLM keyword, has these
         if span["attributes"].get("robot.test") == test
-        and not span["parent_id"]
         and (suite is None or span["attributes"].get("robot.suite") == suite)
     ]
     if not found:

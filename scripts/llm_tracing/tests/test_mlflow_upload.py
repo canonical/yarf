@@ -3,6 +3,7 @@ import json
 import mlflow
 import mlflow_upload
 import pytest
+from conftest import PARENT_SPAN, PARENT_TRACE
 from mlflow.genai.judges.tools.get_span_image import (
     GetSpanImageTool,
     SpanImageResult,
@@ -123,3 +124,49 @@ def test_attachment_id_is_stable():
     assert mlflow_upload.attachment_id("tr-1", "a") != (
         mlflow_upload.attachment_id("tr-2", "a")
     )
+
+
+def test_run_in_a_parent_trace(parent_traces_dir, tracking_uri):
+    mlflow_upload.main([str(parent_traces_dir), "--experiment", "yarf-test"])
+
+    (trace,) = mlflow.search_traces(
+        locations=[mlflow.get_experiment_by_name("yarf-test").experiment_id],
+        return_type="list",
+    )
+    spans = by_name(trace)
+    root = spans["YARF run"]
+    assert trace.info.trace_id == f"tr-{PARENT_TRACE}"
+    assert trace.info.state == "ERROR"
+    assert trace.info.tags["mlflow.traceName"] == "YARF run"
+    assert trace.info.tags["robot.suite"] == "Canary"
+    assert root.parent_id is None
+    assert root.span_id == PARENT_SPAN
+    assert root.get_attribute("yarf.stand_in") is True
+    for test in ("Calculator is shown", "Calculator is closed"):
+        assert spans[test].parent_id == PARENT_SPAN
+    assert len(trace.data.spans) == 15
+
+
+def test_stand_in_for_a_test_that_did_not_end(traces_dir):
+    requests = read_requests(traces_dir)
+    test_spans = {
+        span["spanId"]
+        for request in requests
+        for rs in request["resourceSpans"]
+        for ss in rs["scopeSpans"]
+        for span in ss["spans"]
+        if span["name"] == "Calculator is shown"
+    }
+    unended = [
+        r
+        for r in requests
+        if r["resourceSpans"][0]["scopeSpans"][0]["spans"][0]["spanId"]
+        not in test_spans
+    ]
+
+    (stand_in,) = mlflow_upload.stand_in_parents(unended)
+
+    span = stand_in["resourceSpans"][0]["scopeSpans"][0]["spans"][0]
+    assert span["spanId"] in test_spans
+    assert span["name"] == "YARF run"
+    assert span["status"] == {"code": 1}

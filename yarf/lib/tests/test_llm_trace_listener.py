@@ -37,6 +37,9 @@ class Llm:
     def enable_tracing(self):
         self.tracer.enable()
 
+    def disable_tracing(self):
+        self.tracer.disable()
+
     @keyword
     def ask_llm(self, question):
         with self.tracer.span("Ask Llm", CHAIN, {"question": question}):
@@ -63,8 +66,17 @@ Traced
     ${answer}=    Set Variable    42
 
 Failing
-    Enable Tracing
     Fail    on purpose
+    Click Pointer Button    LEFT
+
+Still Traced
+    Click Pointer Button    LEFT
+
+Disabled
+    Disable Tracing
+    Click Pointer Button    LEFT
+
+After Disabled
     Click Pointer Button    LEFT
 
 *** Keywords ***
@@ -114,7 +126,22 @@ class TestListener:
         return {span["name"]: span for span in spans}
 
     def test_one_trace_per_traced_test(self, traces):
-        assert sorted(traces) == ["Failing", "Traced"]
+        assert sorted(traces) == [
+            "Disabled",
+            "Failing",
+            "Still Traced",
+            "Traced",
+        ]
+
+    def test_tracing_stays_enabled_until_disabled(self, traces):
+        assert [s["name"] for s in traces["Still Traced"]] == [
+            "Click Pointer Button",
+            "Still Traced",
+        ]
+        assert [s["name"] for s in traces["Disabled"]] == [
+            "Disable Tracing",
+            "Disabled",
+        ]
 
     def test_trace(self, traces):
         spans = self.by_name(traces["Traced"])
