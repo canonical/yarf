@@ -398,11 +398,9 @@ part of the YARF package or snap.
 
 ### Enabling tracing
 
-Enable tracing in the client configuration. The LLM Client and its
-configuration are shared by all the tests of a run, so tracing stays on for
-the following tests until `Configure Llm Client    tracing=False`. Enable it
-once, for example in the suite setup. A test is recorded from its first
-keyword run with tracing on:
+Enable tracing in the client configuration. Robot creates a new LLM Client for
+each test, so enable it in the test setup. A test is recorded from the moment
+it enables tracing:
 
 ```{code-block} robotframework
 ---
@@ -410,7 +408,7 @@ caption: Enable tracing for every test
 ---
 *** Settings ***
 Library        yarf.rf_libraries.libraries.llm_client.LlmClient
-Suite Setup    Configure Llm Client    tracing=True
+Test Setup     Configure Llm Client    tracing=True
 ```
 
 The traces are saved in the `traces` directory of the YARF output directory:

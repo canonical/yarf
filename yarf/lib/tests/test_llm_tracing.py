@@ -286,12 +286,10 @@ class TestSpan:
     def test_enable(self, tracer, outdir):
         assert tracer.enabled
         assert TRACING.enabled
-        assert tracer._recorder is TRACING.recorder
-        assert LlmTracer().enabled
         assert (outdir / "traces").is_dir()
 
     def test_disable(self, tracer):
-        LlmTracer().disable()
+        tracer.disable()
 
         assert not tracer.enabled
         assert not TRACING.enabled
@@ -419,20 +417,8 @@ class TestRobotTestTrace:
         assert tool["parent_id"] == keyword["span_id"]
         assert tool["attributes"]["yarf.span.type"] == "TOOL"
         assert not tracing.in_test
-        assert tracing.enabled
+        assert not tracing.enabled
         assert trace.get_current_span() is trace.INVALID_SPAN
-
-    def test_tracing_continues_in_the_next_test(self, tracing, spans):
-        tracing.end_test("PASS", "")
-        tracing.start_test("Next", {})
-        tracing.start_keyword("Keyword", llm_tracing.CHAIN, {})
-        tracing.end_keyword(None, False, "")
-        tracing.end_test("PASS", "")
-
-        first, keyword, second = spans()
-        assert (first["name"], second["name"]) == ("Test", "Next")
-        assert keyword["parent_id"] == second["span_id"]
-        assert first["trace_id"] != second["trace_id"]
 
     def test_failure(self, tracing, spans):
         tracing.start_keyword("Fail", llm_tracing.CHAIN, {})
@@ -454,7 +440,6 @@ class TestRobotTestTrace:
     def test_disabled_keywords(self, tracer, context):
         tracing = RobotTestTrace()
         tracing.enable(llm_tracing._RECORDER)
-        tracing.disable()
         tracing.start_test("Test", {})
         tracing.start_keyword("Before Tracing", llm_tracing.CHAIN, {})
         tracing.skip_keyword()
@@ -518,9 +503,9 @@ class TestParentContext:
         monkeypatch.setenv("TRACEPARENT", TRACEPARENT)
         monkeypatch.setenv("TRACESTATE", "vendor=value")
         tracing = RobotTestTrace()
-        tracing.enable(llm_tracing._RECORDER)
         for name in ("First", "Second"):
             tracing.start_test(name, {})
+            tracing.enable(llm_tracing._RECORDER)
             tracing.start_keyword("Keyword", llm_tracing.CHAIN, {})
             tracing.end_keyword(None, False, "")
             tracing.end_test("PASS", "")

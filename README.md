@@ -25,12 +25,13 @@ For more specific use-cases, refer to the [YARF how-to guides][how-to].
 YARF can record each Robot test that uses the LLM Client as an OpenTelemetry
 trace: every keyword with its arguments, the prompts and screenshots sent to
 the LLM, its answers, token usage, latency and the GUI actions taken. Enable
-tracing once in your suite, and it stays on for the rest of the run:
+tracing in your suite. Robot creates a new LLM Client for each test, so enable
+it in the test setup:
 
 ```robotframework
 *** Settings ***
 Library        yarf.rf_libraries.libraries.llm_client.LlmClient
-Suite Setup    Configure Llm Client    tracing=True
+Test Setup     Configure Llm Client    tracing=True
 ```
 
 Traces are saved in the `traces` directory of the YARF output directory, set

@@ -381,10 +381,9 @@ class LlmClient:
         Set ``collect_usage=True`` to record the token usage, inference time
         and cost of each request, see `Get Llm Usage`. It is off by default.
 
-        Set ``tracing=True`` to record the running test, and the next ones,
-        as OpenTelemetry traces, until ``tracing=False``. Enable it once, for
-        example in the suite setup: the LLM Client and its configuration are
-        shared by all the tests of a run. Run with YARF, a trace
+        Set ``tracing=True`` to record the running test as an OpenTelemetry
+        trace. Robot creates a new LLM Client for each test, so enable
+        tracing in the test setup. Run with YARF, a trace
         records a whole test: each keyword with its arguments, the prompts
         and screenshots sent to the model, its answers, token usage, latency,
         response parsing and the GUI actions taken. The HID keywords that the
