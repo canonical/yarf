@@ -20,6 +20,22 @@ yarf --platform {Mir,Vnc}
 
 For more specific use-cases, refer to the [YARF how-to guides][how-to].
 
+## Tracing LLM tests
+
+YARF can record each Robot test that uses the LLM Client as an OpenTelemetry
+trace: every keyword with its arguments, the prompts and screenshots sent to
+the LLM, its answers, token usage, latency and the GUI actions taken. Enable
+tracing once in your suite, and it stays on for the rest of the run:
+
+```robotframework
+*** Settings ***
+Library        yarf.rf_libraries.libraries.llm_client.LlmClient
+Suite Setup    Configure Llm Client    tracing=True
+```
+
+Traces are saved in the `traces` directory of the YARF output directory, set
+with `--outdir`. See [Tracing prompts][tracing].
+
 ## Installation
 
 YARF is available on all major Linux distributions.
@@ -75,5 +91,6 @@ YARF is released under the [GNU General Public License Version 3.0](./LICENSE).
 [ruff-site]: https://github.com/astral-sh/ruff
 [snapcraft-badge]: https://snapcraft.io/yarf/badge.svg
 [snapcraft-site]: https://snapcraft.io/yarf
+[tracing]: https://canonical-yarf.readthedocs-hosted.com/en/latest/how-to/using-the-llm-client/#tracing-prompts
 [uv-badge]: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json
 [uv-site]: https://github.com/astral-sh/uv
