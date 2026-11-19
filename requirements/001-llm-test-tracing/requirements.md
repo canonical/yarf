@@ -35,7 +35,7 @@ recorded with its prompts, screenshots, answers and GUI actions, so that I can
 see why it passed or failed without rerunning it.
 
 - **Given** a suite whose tests enable tracing, **When** the suite runs, **Then** each test is recorded as one trace in the output directory, with a step for each keyword and each LLM request.
-- **Given** a traced test whose keyword fails, **When** the test ends, **Then** the failing step and the test carry an error status with the failure message.
+- **Given** a traced test whose keyword fails, **When** the test ends, **Then** the failing step carries an error status with the failure message, and the test's status and message match Robot Framework's final test result.
 - **Given** a suite that does not enable tracing, **When** it runs, **Then** no trace is written.
 
 ### US-02: Browse recorded runs in a shared viewer (Priority: P2)
@@ -77,7 +77,7 @@ started, so that the tests appear inside the larger operation that ran them.
 ## Functional Requirements
 
 - **FR-001**: Where tracing is enabled for a test, the system MUST record the test as one tree of steps, from the moment tracing is enabled until the test ends.
-- **FR-002**: The system MUST keep tracing disabled unless a test enables it.
+- **FR-002**: The system MUST keep tracing disabled by default, allow it to be enabled in suite setup or a test, and keep it enabled for subsequent tests until explicitly disabled.
 - **FR-003**: The system MUST record each keyword run by a traced test as a step with its arguments, the variables it assigned, its duration and its status.
 - **FR-004**: The system MUST record each LLM request with its prompt, images, answer, model, token usage, duration and number of attempts.
 - **FR-005**: The system MUST record the GUI actions that the LLM Client performs as tool calls with their arguments, distinct from the keywords that the suite calls itself.
@@ -104,7 +104,7 @@ started, so that the tests appear inside the larger operation that ran them.
 
 - **SC-001**: 100% of the LLM requests made by a traced test appear in its trace with their prompt, images and answer.
 - **SC-002**: A traced test that sends the same screenshot in 5 requests stores 1 image file for it.
-- **SC-003**: Uploading the recording of 7 tests twice leaves exactly 7 traces in the viewer, 1 per test.
+- **SC-003**: Uploading the recording of 7 tests without a parent trace context twice leaves exactly 7 traces in the viewer, 1 per test.
 - **SC-004**: Evaluating the recording of a run makes 0 model requests and runs 0 tests.
 - **SC-005**: 100% of the evaluation results of an uploaded run are attached to the step they checked.
 - **SC-006**: Searching a recording for the API key used by the run finds it in 0 files.
