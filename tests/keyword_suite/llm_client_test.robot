@@ -1,6 +1,7 @@
 *** Settings ***
 Library         yarf/rf_libraries/libraries/llm_client/LlmClient.py
 Library         yarf/rf_libraries/libraries/image/utils.py
+Library         OperatingSystem
 
 Task Tags
 ...    robot:stop-on-failure
@@ -66,3 +67,10 @@ Collect Usage
     Should Be Equal As Numbers                      ${usage}[cost]          0.5
     Should Be Equal         ${usage}[nano_aiu]      ${None}
     Should Be True          ${usage}[inference_time] > 0
+
+Tracing
+    [Teardown]              Configure Llm Client    tracing=False
+    Configure Llm Client    tracing=True
+    Prompt Llm              This is my prompt
+    ${traces}=              Get File                ${OUTPUT_DIR}/traces/traces.jsonl
+    Should Contain          ${traces}               Prompt Llm

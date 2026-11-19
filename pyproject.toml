@@ -35,6 +35,9 @@ dependencies = [
     "rapidfuzz>=3.12.1",
     "rapidocr~=3.10.0",
     "omegaconf<2.5",
+    # Tracing of LLM Client prompts, see `Configure Llm Client`.
+    "opentelemetry-exporter-otlp-proto-common~=1.45.2",
+    "opentelemetry-sdk~=1.45.2",
     "robotframework==7.5.1",
     "robotframework-sshlibrary~=3.8.0",
     "paramiko>=5.0.0,<6",  # Keep SSHLibrary's transitive dependency safe.

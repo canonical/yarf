@@ -71,7 +71,7 @@ ${result}=    Check For Visual Corruption
 ### Configure Llm Client
 
 <p>Configure the LLM client with the given parameters.</p>
-<p>Supported parameters are <code>model</code>, <code>server_url</code>, <code>endpoint</code>, <code>max_tokens</code>, <code>api_key_env</code>, <code>image_format</code>, <code>collect_usage</code> and <code>provider</code>.</p>
+<p>Supported parameters are <code>model</code>, <code>server_url</code>, <code>endpoint</code>, <code>max_tokens</code>, <code>api_key_env</code>, <code>image_format</code>, <code>collect_usage</code>, <code>tracing</code> and <code>provider</code>.</p>
 <p><code>provider</code> applies a preset for a hosted service, which explicit parameters override:</p>
 <ul>
 <li><code>openrouter</code>: OpenRouter, key read from <code>OPENROUTER_API_KEY</code>.</li>
@@ -81,6 +81,7 @@ ${result}=    Check For Visual Corruption
 <p>The API key is sent as a bearer token and read from the environment variable named by <code>api_key_env</code> (default <code>YARF_LLM_API_KEY</code>), so that it never appears in the Robot logs. No <code>Authorization</code> header is sent if the variable is unset.</p>
 <p>Models that only support the OpenAI Responses API can be used by setting <code>endpoint=/responses</code>. For models that do not accept WEBP images, set <code>image_format</code> to <code>PNG</code> or <code>JPEG</code>.</p>
 <p>Set <code>collect_usage=True</code> to record the token usage, inference time and cost of each request, see <a class="name" href="#get-llm-usage" title='"Get Llm Usage" keyword'>Get Llm Usage</a>. It is off by default.</p>
+<p>Set <code>tracing=True</code> to record the running test, and the next ones, as OpenTelemetry traces, until <code>tracing=False</code>. It can be enabled once, for example in the suite setup. The other settings apply to the running test only: Robot creates a new LLM Client for each test, so set them in the test setup. Run with YARF, a trace records a whole test: each keyword with its arguments, the prompts and screenshots sent to the model, its answers, token usage, latency, response parsing and the GUI actions taken. The HID keywords that the LLM Client calls are recorded as tool calls, while the keywords that the suite calls itself are only context. Failed keywords and tests get an error status. Without YARF's listener, e.g. with <code>robot</code>, each LLM keyword is a trace of its own. Traces are written to <code>traces/traces.jsonl</code> in the Robot output directory, and the screenshots to <code>traces/blobs</code>.</p>
 
 #### Return
 
@@ -110,6 +111,7 @@ Configure Llm Client    provider=openrouter
 ...    model=qwen/qwen3-vl-8b-instruct
 Configure Llm Client    provider=gemini    model=gemini-2.5-flash
 Configure Llm Client    collect_usage=True
+Configure Llm Client    tracing=True
 ```
 
 <hr style="border:1px solid grey">
@@ -117,6 +119,7 @@ Configure Llm Client    collect_usage=True
 ### Execute Gui Action
 
 <p>Execute a GUI action as specified by the LLM response.</p>
+<p>When tracing, each HID keyword the action calls is recorded as a tool call with its arguments, e.g. <code>Move Pointer To Proportional</code> then <code>Click Pointer Button</code> for a <code>Left Click</code>.</p>
 
 #### Return
 

@@ -12,6 +12,7 @@ In this guide, we will cover:
 1. [Using images in prompts](#using-images-in-prompts)
 1. [Using LLM GUI keywords](#using-llm-gui-keywords)
 1. [Using multi-step GUI navigation](#using-multi-step-gui-navigation)
+1. [Tracing prompts](#tracing-prompts)
 1. [Configuring the client](#configuring-the-client)
 
 ## Setting up an LLM server
@@ -364,6 +365,77 @@ Open Settings Panel
 
 You can use multi-step navigation for workflows where the exact number of
 clicks depends on the current UI state.
+
+## Tracing prompts
+
+To understand why a prompt works or fails, YARF can record each Robot test as
+an [OpenTelemetry](https://opentelemetry.io/) trace. A trace is a tree of
+steps, called spans, with their inputs, outputs, duration and errors. It has a
+span for the test, and one for each keyword the test runs, with its arguments:
+
+```{code-block} text
+---
+caption: Spans of a traced test
+---
+Click OK Button                    test -> status, message
+├── Get Single Gui Action          task -> action
+│   ├── Prompt Llm                 prompt, system prompt -> answer
+│   │   └── chat/completions       messages and screenshot -> reply, tokens
+│   └── Verify Llm Json Response   answer -> parsed JSON
+└── Execute Gui Action             action
+    ├── Move Pointer To Proportional   x, y
+    └── Click Pointer Button           button
+```
+
+The HID keywords that the LLM Client calls, such as `Click Pointer Button`,
+are recorded as tool calls: the actions the model took on the system.
+
+YARF records the traces to its output directory, without network access, in
+an open format that tracing tools can read.
+
+### Enabling tracing
+
+Enable tracing in the client configuration. Tracing stays on for the
+following tests until `Configure Llm Client    tracing=False`, so you can
+enable it once, for example in the suite setup. The other settings, such as
+the provider and model, apply to the running test only: Robot creates a new
+LLM Client for each test, so set them in the test setup. A test is recorded
+from its first keyword run with tracing on:
+
+```{code-block} robotframework
+---
+caption: Enable tracing for every test
+---
+*** Settings ***
+Library        yarf.rf_libraries.libraries.llm_client.LlmClient
+Suite Setup    Configure Llm Client    tracing=True
+Test Setup     Configure Llm Client    provider=copilot    model=gpt-4.1
+```
+
+The traces are saved in the `traces` directory of the YARF output directory:
+
+- `traces.jsonl`: the spans, in the OpenTelemetry protocol (OTLP) JSON format,
+  one export request per line.
+- `blobs/sha256/`: the screenshots sent to the model and taken after the GUI
+  actions, stored once each and referenced from the spans by `yarf-blob://`
+  links.
+
+Each test is one trace, with a random trace ID. The test span records the
+Robot suite, test and status, and the traces of a suite in one run share a
+session ID. Failed keywords and tests have an error status, with the failure
+message. The spans of the LLM requests record the model, token usage, latency
+and retries, using the OpenTelemetry conventions for generative AI. The
+keywords also record whether the model answered with the expected JSON on the
+first try, `yarf.valid_json_first_try`, and how many steps
+`Multiple Step Action` took, `yarf.steps`. Every trace records the YARF
+version, whether YARF runs from the snap or Python, and the versions of
+Python, Robot Framework and the operating system.
+
+```{note}
+Traces record whole tests when run with `yarf`, which registers the trace
+listener. With `robot`, add `--listener yarf.lib.llm_trace_listener.LlmTraceListener`
+to do the same, otherwise each LLM Client keyword is a trace of its own.
+```
 
 ## Configuring the client
 
