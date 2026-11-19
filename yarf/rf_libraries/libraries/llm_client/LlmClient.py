@@ -395,7 +395,10 @@ class LlmClient:
         is a trace of its own. Traces are written to ``traces/traces.jsonl``
         in the Robot output directory, and the screenshots to
         ``traces/blobs``. The scripts in ``scripts/llm_tracing`` upload them
-        to MLflow and evaluate them with promptfoo.
+        to MLflow and evaluate them with promptfoo. To record the tests
+        inside a trace started outside YARF, set its context in the
+        ``TRACEPARENT`` environment variable, and optionally ``TRACESTATE``,
+        in the W3C Trace Context format.
 
         Args:
             **kwargs: Configuration parameters for the LLM client.

@@ -72,11 +72,23 @@ def record_test(tracer, tracing, name: str, matches: bool, status="PASS"):
     tracing.end_test(status, "" if status == "PASS" else "failed")
 
 
-@pytest.fixture
-def traces_dir(tmp_path, monkeypatch):
+PARENT_TRACE = "4bf92f3577b34da6a3ce929d0e0e4736"
+PARENT_SPAN = "00f067aa0ba902b7"
+
+
+def record_run(tmp_path, monkeypatch, traceparent=None):
+    """
+    Record two tests, the second failing, optionally in a parent trace.
+    """
     from yarf.lib import llm_tracing
     from yarf.lib.llm_tracing import LlmTracer, RobotTestTrace
 
+    if traceparent:
+        monkeypatch.setenv("TRACEPARENT", traceparent)
+    else:
+        monkeypatch.delenv("TRACEPARENT", raising=False)
+    monkeypatch.delenv("TRACESTATE", raising=False)
+    llm_tracing._parent_context.cache_clear()
     saved = llm_tracing._RECORDER
     tracing = RobotTestTrace()
     monkeypatch.setattr(llm_tracing, "TRACING", tracing)
@@ -91,6 +103,18 @@ def traces_dir(tmp_path, monkeypatch):
     yield tmp_path / "out" / "traces"
     llm_tracing._RECORDER.provider.shutdown()
     llm_tracing._RECORDER = saved
+
+
+@pytest.fixture
+def traces_dir(tmp_path, monkeypatch):
+    yield from record_run(tmp_path, monkeypatch)
+
+
+@pytest.fixture
+def parent_traces_dir(tmp_path, monkeypatch):
+    yield from record_run(
+        tmp_path, monkeypatch, f"00-{PARENT_TRACE}-{PARENT_SPAN}-01"
+    )
 
 
 @pytest.fixture

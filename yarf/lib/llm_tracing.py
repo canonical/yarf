@@ -12,6 +12,7 @@ promptfoo.
 
 import base64
 import binascii
+import functools
 import hashlib
 import json
 import os
@@ -42,6 +43,9 @@ from opentelemetry.sdk.trace.export import (
 )
 from opentelemetry.sdk.trace.id_generator import IdGenerator
 from opentelemetry.trace import Span, Status, StatusCode
+from opentelemetry.trace.propagation.tracecontext import (
+    TraceContextTextMapPropagator,
+)
 from PIL import Image
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn, RobotNotRunningError
@@ -463,8 +467,9 @@ class RobotTestTrace:
         suite, _ = self._context
         span = self._recorder.tracer.start_span(
             name,
-            # A new trace, whatever span is active
-            context=otel_context.Context(),
+            # A new trace, or the parent trace given in the environment,
+            # whatever span is active
+            context=parent_context(),
             attributes={
                 SPAN_TYPE: CHAIN,
                 TEST_ATTRIBUTE: True,
@@ -562,6 +567,53 @@ class RobotTestTrace:
         self._test = None
         self._root = None
         self._spans.clear()
+
+
+def parent_context() -> otel_context.Context:
+    """
+    Get the parent trace context given in the environment.
+
+    The context is read from the ``TRACEPARENT`` and ``TRACESTATE``
+    environment variables, in the W3C Trace Context format, as OpenTelemetry
+    does for processes started by another traced process.
+
+    Returns:
+        The context with the parent span, or an empty context if none is
+        given or it is invalid.
+    """
+    return _parent_context(
+        os.environ.get("TRACEPARENT"), os.environ.get("TRACESTATE")
+    )
+
+
+@functools.cache
+def _parent_context(
+    traceparent: str | None, tracestate: str | None
+) -> otel_context.Context:
+    """
+    Parse a parent trace context, warning once about an invalid one.
+
+    Args:
+        traceparent: The ``traceparent`` value, if any.
+        tracestate: The ``tracestate`` value, if any.
+
+    Returns:
+        The context with the parent span, or an empty context.
+    """
+    empty = otel_context.Context()
+    if not traceparent:
+        return empty
+    carrier = {"traceparent": traceparent}
+    if tracestate:
+        carrier["tracestate"] = tracestate
+    context = TraceContextTextMapPropagator().extract(carrier, context=empty)
+    if not trace.get_current_span(context).get_span_context().is_valid:
+        logger.warn(
+            f"Ignoring the invalid trace context TRACEPARENT={traceparent}: "
+            "each traced test starts a trace of its own."
+        )
+        return empty
+    return context
 
 
 def _activate(span: Span) -> Any:
@@ -801,6 +853,7 @@ class LlmTracer:
             span_attributes.update(trace_attributes(*robot_context()))
         with self._recorder.tracer.start_as_current_span(
             name,
+            context=parent_context() if is_root else None,
             attributes=span_attributes,
             record_exception=False,
             set_status_on_exception=False,

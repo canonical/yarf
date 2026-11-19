@@ -94,3 +94,17 @@ def test_errors(traces_dir, tmp_path):
         )["error"]
     )
     assert "error" in call(tmp_path / "missing", test="Calculator is shown")
+
+
+def test_test_in_a_parent_trace(parent_traces_dir):
+    from conftest import PARENT_SPAN, PARENT_TRACE
+
+    response = call(
+        parent_traces_dir, test="Calculator is shown", keyword="Assert State"
+    )
+
+    assert response["metadata"]["trace_id"] == PARENT_TRACE
+    assert json.loads(response["output"])["matches_description"] is True
+    test = call(parent_traces_dir, test="Calculator is closed")
+    assert test["metadata"]["status"] == "ERROR"
+    assert test["metadata"]["span_id"] != PARENT_SPAN
