@@ -116,6 +116,14 @@ def test_missing_image(traces_dir, capsys):
     assert "yarf-blob://" in json.dumps(request)
 
 
+def test_blank_lines_are_ignored(traces_dir):
+    path = traces_dir / "traces.jsonl"
+    count = len(read_requests(traces_dir))
+    path.write_text(path.read_text() + "\n \n")
+
+    assert len(read_requests(traces_dir)) == count
+
+
 def test_attachment_id_is_stable():
     assert mlflow_upload.attachment_id("tr-1", "a") == (
         mlflow_upload.attachment_id("tr-1", "a")
