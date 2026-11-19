@@ -40,6 +40,9 @@ parts:
   scripts:
     plugin: dump
     source: scripts
+    stage:
+      # The LLM trace tools run from a checkout of YARF, not from the snap
+      - -llm_tracing
 
   yarf:
     plugin: python
