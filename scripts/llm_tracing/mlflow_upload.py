@@ -22,6 +22,7 @@ replaces it.
 
 import argparse
 import base64
+import itertools
 import sys
 import uuid
 from pathlib import Path
@@ -90,12 +91,13 @@ def stand_in_parents(requests: list[dict[str, Any]]) -> list[dict[str, Any]]:
         for scope_spans in resource_spans.get("scopeSpans", [])
         for span in scope_spans.get("spans", [])
     ]
-    known = {span["spanId"] for _, span in spans}
+    # Span IDs are only unique within a trace
+    known = {(span["traceId"], span["spanId"]) for _, span in spans}
     children: dict[tuple[str, str], list[tuple[dict, dict]]] = {}
     for resource, span in spans:
         parent = span.get("parentSpanId")
-        if parent and parent not in known:
-            key = (span["traceId"], parent)
+        key = (span["traceId"], parent)
+        if parent and key not in known:
             children.setdefault(key, []).append((resource, span))
 
     stand_ins = []
@@ -265,7 +267,7 @@ def upload(traces_dir: Path, experiment: str) -> list[str]:
     client = TracingClient()
     attachments: dict[str, dict[str, Path]] = {}
     requests = read_requests(traces_dir)
-    for request in requests + stand_in_parents(requests):
+    for request in itertools.chain(requests, stand_in_parents(requests)):
         for trace_id, found in convert(request, traces_dir).items():
             attachments.setdefault(trace_id, {}).update(found)
         spans = to_mlflow_spans(request)

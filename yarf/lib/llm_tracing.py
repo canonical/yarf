@@ -474,8 +474,8 @@ class RobotTestTrace:
         suite, _ = self._context
         span = self._recorder.tracer.start_span(
             name,
-            # A new trace, or the parent trace given in the environment,
-            # whatever span is active
+            # The parent given in the environment, or a new trace, rather
+            # than the active span
             context=parent_context(),
             attributes={
                 SPAN_TYPE: CHAIN,

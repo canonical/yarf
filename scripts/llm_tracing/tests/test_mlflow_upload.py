@@ -125,6 +125,24 @@ def test_blank_lines_are_ignored(traces_dir):
     assert len(read_requests(traces_dir)) == count
 
 
+def test_stand_in_for_a_parent_known_in_another_trace():
+    def span(trace_id, span_id, parent_id=None):
+        return {
+            "traceId": trace_id,
+            "spanId": span_id,
+            "parentSpanId": parent_id,
+            "startTimeUnixNano": "1",
+            "endTimeUnixNano": "2",
+        }
+
+    spans = [span("a" * 32, "1" * 16), span("b" * 32, "2" * 16, "1" * 16)]
+    requests = [{"resourceSpans": [{"scopeSpans": [{"spans": spans}]}]}]
+
+    (stand_in,) = mlflow_upload.stand_in_parents(requests)
+    root = stand_in["resourceSpans"][0]["scopeSpans"][0]["spans"][0]
+    assert (root["traceId"], root["spanId"]) == ("b" * 32, "1" * 16)
+
+
 def test_attachment_id_is_stable():
     assert mlflow_upload.attachment_id("tr-1", "a") == (
         mlflow_upload.attachment_id("tr-1", "a")
