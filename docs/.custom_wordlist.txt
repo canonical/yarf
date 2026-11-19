@@ -12,6 +12,7 @@ LLM
 msg
 Ocr
 Ollama
+promptfoo
 Qwen
 rapidocr
 screencopy

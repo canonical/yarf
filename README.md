@@ -34,7 +34,10 @@ Suite Setup    Configure Llm Client    tracing=True
 ```
 
 Traces are saved in the `traces` directory of the YARF output directory, set
-with `--outdir`. See [Tracing prompts][tracing].
+with `--outdir`. The tools in [`scripts/llm_tracing`](./scripts/llm_tracing)
+upload them to [MLflow] and evaluate the recorded answers with [promptfoo],
+without installing either with YARF. See
+[Tracing and evaluating prompts][tracing].
 
 ## Installation
 
@@ -84,6 +87,8 @@ YARF is released under the [GNU General Public License Version 3.0](./LICENSE).
 [github]: https://github.com/canonical/yarf
 [how-to]: https://canonical-yarf.readthedocs-hosted.com/en/latest/how-to/
 [mir]: https://github.com/canonical/mir
+[mlflow]: https://mlflow.org/
+[promptfoo]: https://www.promptfoo.dev/
 [robot framework]: https://robotframework.org/
 [rtd-badge]: https://readthedocs.com/projects/canonical-yarf/badge/?version=latest
 [rtd-latest]: https://canonical-yarf.readthedocs-hosted.com/en/latest/
@@ -91,6 +96,6 @@ YARF is released under the [GNU General Public License Version 3.0](./LICENSE).
 [ruff-site]: https://github.com/astral-sh/ruff
 [snapcraft-badge]: https://snapcraft.io/yarf/badge.svg
 [snapcraft-site]: https://snapcraft.io/yarf
-[tracing]: https://canonical-yarf.readthedocs-hosted.com/en/latest/how-to/using-the-llm-client/#tracing-prompts
+[tracing]: https://canonical-yarf.readthedocs-hosted.com/en/latest/how-to/using-the-llm-client/#tracing-and-evaluating-prompts
 [uv-badge]: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json
 [uv-site]: https://github.com/astral-sh/uv

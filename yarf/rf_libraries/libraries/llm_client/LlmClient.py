@@ -394,7 +394,8 @@ class LlmClient:
         status. Without YARF's listener, e.g. with ``robot``, each LLM keyword
         is a trace of its own. Traces are written to ``traces/traces.jsonl``
         in the Robot output directory, and the screenshots to
-        ``traces/blobs``.
+        ``traces/blobs``. The scripts in ``scripts/llm_tracing`` upload them
+        to MLflow and evaluate them with promptfoo.
 
         Args:
             **kwargs: Configuration parameters for the LLM client.

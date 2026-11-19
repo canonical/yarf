@@ -59,6 +59,8 @@ dev = [
     "licensecheck==2026.0.8; python_version >= '3.12'",
     # licensecheck 2026 dropped 3.11; 2025.1.0 is the last to support it
     "licensecheck==2025.1.0; python_version < '3.12'",
+    # For the LLM trace tools in scripts/llm_tracing and their tests
+    "mlflow==3.17.2",
     "mypy==2.4.1",
     "prek==0.5.10",
     "pyfakefs==6.3.2",

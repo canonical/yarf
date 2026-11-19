@@ -12,7 +12,7 @@ In this guide, we will cover:
 1. [Using images in prompts](#using-images-in-prompts)
 1. [Using LLM GUI keywords](#using-llm-gui-keywords)
 1. [Using multi-step GUI navigation](#using-multi-step-gui-navigation)
-1. [Tracing prompts](#tracing-prompts)
+1. [Tracing and evaluating prompts](#tracing-and-evaluating-prompts)
 1. [Configuring the client](#configuring-the-client)
 
 ## Setting up an LLM server
@@ -366,7 +366,7 @@ Open Settings Panel
 You can use multi-step navigation for workflows where the exact number of
 clicks depends on the current UI state.
 
-## Tracing prompts
+## Tracing and evaluating prompts
 
 To understand why a prompt works or fails, YARF can record each Robot test as
 an [OpenTelemetry](https://opentelemetry.io/) trace. A trace is a tree of
@@ -390,8 +390,11 @@ Click OK Button                    test -> status, message
 The HID keywords that the LLM Client calls, such as `Click Pointer Button`,
 are recorded as tool calls: the actions the model took on the system.
 
-YARF records the traces to its output directory, without network access, in
-an open format that tracing tools can read.
+YARF only records the traces, to its output directory. Tools in the
+`scripts/llm_tracing` directory of the YARF repository then upload them to
+[MLflow](https://mlflow.org/), to browse the prompts and screenshots, and mark
+the answers with [promptfoo](https://www.promptfoo.dev/). The tools are not
+part of the YARF package or snap.
 
 ### Enabling tracing
 
@@ -435,6 +438,158 @@ Python, Robot Framework and the operating system.
 Traces record whole tests when run with `yarf`, which registers the trace
 listener. With `robot`, add `--listener yarf.lib.llm_trace_listener.LlmTraceListener`
 to do the same, otherwise each LLM Client keyword is a trace of its own.
+```
+
+### Viewing traces in MLflow
+
+The tools need a checkout of the YARF repository and its development
+dependencies, which include MLflow:
+
+```{code-block} bash
+---
+caption: Install the tools
+---
+git clone https://github.com/canonical/yarf.git
+cd yarf
+uv sync
+```
+
+Upload the traces of a run to an MLflow experiment, created if it does not
+exist. Without an MLflow server, use a local database and its web interface,
+then open `http://localhost:5000`:
+
+```{code-block} bash
+---
+caption: Upload a run and browse it locally
+---
+uv run python scripts/llm_tracing/mlflow_upload.py <outdir>/traces \
+    --experiment installer --tracking-uri sqlite:///mlflow.db
+uv run mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5000
+```
+
+To collect the traces of several runs in one place, for example from CI, set
+`--tracking-uri` or `MLFLOW_TRACKING_URI` to an MLflow server instead. The
+upload keeps the recorded files unchanged, and uploading a run again replaces
+its traces rather than adding new ones.
+
+In MLflow, each trace is named after its test, and tagged with the Robot
+suite, test and status, `robot.suite`, `robot.test` and `robot.status`. The
+screenshots are shown with the prompts, and MLflow sums the tokens and
+estimates the cost of known models.
+
+### Evaluating traces with promptfoo
+
+promptfoo checks the answers that YARF recorded. It never runs a test or calls
+the model: `scripts/llm_tracing/promptfoo_provider.py` returns the recorded
+outputs of a test or keyword to promptfoo. The variables of each promptfoo
+test select what to check:
+
+- `test`: the Robot test name, the prompt by default.
+- `suite`: the Robot suite name, if test names repeat across suites.
+- `keyword`: a keyword the test ran, for example `Assert State`. Without it,
+  the output is the test result, its status and message.
+- `occurrence`: which call of the keyword to check, from 1, the default.
+
+The output is the outputs of the selected span, as JSON. In `javascript`
+assertions, `context.providerResponse.metadata` also gives its `inputs`, its
+`status` and `error`, and the `tool_calls` made under it, the HID keywords
+with their arguments. If a test was recorded more than once, the last
+recording is checked.
+
+```{code-block} yaml
+---
+caption: promptfooconfig.yaml, checking two recorded tests
+---
+prompts:
+  - '{{test}}'
+
+providers:
+  - id: file://scripts/llm_tracing/promptfoo_provider.py
+    config:
+      traces: out/traces
+
+tests:
+  - vars: { test: Calculator is shown, keyword: Assert State }
+    assert:
+      - type: is-json
+        metric: valid_json
+      - type: javascript
+        value: JSON.parse(output).matches_description === true
+        metric: state_matches
+  - vars: { test: Compute With Clicks }
+    assert:
+      - type: javascript
+        value: |
+          const calls = context.providerResponse.metadata.tool_calls;
+          return calls.every(c => c.name !== 'Type String');
+        metric: clicks_only
+```
+
+Run promptfoo, then attach its results to the traces in MLflow:
+
+```{code-block} bash
+---
+caption: Evaluate the recorded answers and attach the results
+---
+npx promptfoo eval -o results.json
+uv run python scripts/llm_tracing/promptfoo_to_mlflow.py results.json \
+    --tracking-uri sqlite:///mlflow.db
+```
+
+Each assertion becomes a feedback on the checked span in MLflow, named
+`promptfoo.` and its metric, or its type without a metric, for example
+`promptfoo.state_matches`. Its source is promptfoo, and its metadata gives the
+promptfoo evaluation ID and assertion type. Upload the traces before attaching
+the results. Running it again does not add the same feedback twice.
+
+### Checking the GUI actions taken
+
+`Execute Gui Action` records each HID keyword it calls as a tool call, with
+the keyword arguments as inputs. Only these are tool calls: the keywords that
+the suite calls itself, such as `Click Pointer Button`, are in the trace for
+context, but they are not in `tool_calls`. For example, a `Left Click` calls
+`Move Pointer To Proportional` then `Click Pointer Button`, and a `Write`
+calls `Type String`. The trace also has screenshots: the click point drawn on
+the screen before a pointer action, and the screen after each action. The
+tool calls of a test form its trajectory, for example the actions of a
+`Multiple Step Action`:
+
+```{code-block} text
+---
+caption: Spans of a test with a Multiple Step Action
+---
+Compute With Clicks                    test -> status
+└── Multiple Step Action               task -> actions
+    ├── Step 1                         prompt -> action
+    │   ├── Prompt Llm
+    │   ├── Verify Llm Json Response
+    │   └── Execute Gui Action         action
+    │       ├── Action point                    screenshot
+    │       ├── Move Pointer To Proportional    x, y
+    │       ├── Click Pointer Button            button
+    │       └── Screenshot after action         screenshot
+    └── Step 2                         prompt -> Finish
+```
+
+To check the trajectory, compare the `tool_calls` of the test with the
+expected ones in a `javascript` assertion. Compare only the arguments that
+matter, and leave out those that can vary, such as the exact position of a
+click:
+
+```{code-block} yaml
+---
+caption: Check that the calculator was driven with four left clicks
+---
+tests:
+  - vars: { test: Compute With Clicks }
+    assert:
+      - type: javascript
+        value: |
+          const clicks = context.providerResponse.metadata.tool_calls
+            .filter(c => c.name === 'Click Pointer Button');
+          return clicks.length === 4
+            && clicks.every(c => c.arguments.button === 'LEFT');
+        metric: four_left_clicks
 ```
 
 ## Configuring the client
