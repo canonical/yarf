@@ -50,7 +50,18 @@ class TestRapidOCR:
 
         assert first is second
         assert first.reader == mock_reader.return_value
-        mock_reader.assert_called_once_with()
+        mock_reader.assert_called_once()
+
+    def test_init_caps_onnxruntime_threads(self, mock_reader):
+        with patch(
+            "yarf.rf_libraries.libraries.ocr.rapidocr.inference_threads",
+            return_value=3,
+        ):
+            RapidOCRReader()
+
+        params = mock_reader.call_args.kwargs["params"]
+        assert params["EngineConfig.onnxruntime.intra_op_num_threads"] == 3
+        assert params["EngineConfig.onnxruntime.inter_op_num_threads"] == 1
 
     def test_read(self, mock_reader):
         mock_reader.reader.return_value = MockRapidOCROutput(
