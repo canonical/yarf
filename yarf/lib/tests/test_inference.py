@@ -55,7 +55,7 @@ def test_override(monkeypatch, value) -> None:
     assert inference_threads() == int(value)
 
 
-@pytest.mark.parametrize("value", ["0", "-2", "two", "1.5", " 4"])
+@pytest.mark.parametrize("value", ["", "0", "-2", "two", "1.5", " 4", "²"])
 def test_override_rejects_invalid_values(monkeypatch, value) -> None:
     """
     Reject values that are not positive integers.

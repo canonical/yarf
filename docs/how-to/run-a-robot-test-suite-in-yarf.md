@@ -220,7 +220,7 @@ Alternatively, use the `--log-video` CLI flag to always log video (equivalent to
 
 ### Controlling CPU usage
 
-Text recognition and cursor detection use half of the available CPU cores, at least 1 and at most 4, so the machine under test stays responsive.
+Text recognition with RapidOCR, the default OCR method, and cursor detection use half of the available CPU cores, at least 1 and at most 4, so the machine under test stays responsive. This limit does not apply to the Tesseract OCR method.
 
 To change this, set the `YARF_INFERENCE_THREADS` environment variable to the number of cores to use. For example, on a CI runner where speed matters more than a responsive machine:
 

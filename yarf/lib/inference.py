@@ -21,8 +21,8 @@ def inference_threads() -> int:
     Raises:
         ValueError: If YARF_INFERENCE_THREADS is not a positive integer.
     """
-    if override := os.environ.get(THREADS_ENV):
-        if not override.isdigit() or int(override) < 1:
+    if (override := os.environ.get(THREADS_ENV)) is not None:
+        if not override.isdecimal() or int(override) < 1:
             raise ValueError(
                 f"{THREADS_ENV} must be a positive integer, got {override!r}"
             )
