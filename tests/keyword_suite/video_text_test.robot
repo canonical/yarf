@@ -31,6 +31,7 @@ Test Text Keywords with Rapid Ocr
     Test Keyword Match Text
     Test Keyword Get Highlighted Text
     Test Keyword Is Highlighted Text
+    Test Keyword Text Window Fallback
     Test Keyword Text Threshold Overrides
 
 Test Text Keywords with Tesseract
@@ -50,6 +51,26 @@ Test Set Ocr Method with Invalid Method
     [Tags]                  yarf:certification_status: blocker
     Run Keyword And Expect Error                    ValueError: *
     ...                     Set Ocr Method          invalid
+
+Test Window Fallback Removal Check
+    [Documentation]    Removal check for the OCR window fallback (ADR 0002).
+    ...    It fails today and is therefore skipped. Unskip it after a
+    ...    RapidOCR update: once the bundled models find the regression text
+    ...    with the fallback disabled, the fallback can be removed.
+    [Tags]                  robot:skip
+    Set Ocr Method          rapidocr
+    Set Test Variable       \${OCR_WINDOW_FALLBACK}                         ${False}
+    ${terminal}=            Evaluate
+    ...                     PIL.Image.open('${CURDIR}/text/terminal_window.png')
+    ...                     modules=PIL.Image
+    ${matched_text}=        Find Text               FINISHED-HIT            image=${terminal}
+    Should Be Equal As Strings                      ${matched_text[0]['text']}                      FINISHED-HIT
+
+    ${viewer}=              Evaluate
+    ...                     PIL.Image.open('${CURDIR}/text/document_viewer.png')
+    ...                     modules=PIL.Image
+    ${matched_text}=        Find Text               regex:Document \\w+     image=${viewer}
+    Should Be Equal As Strings                      ${matched_text[0]['text']}                      Document Viewer
 
 
 *** Keywords ***
@@ -224,3 +245,20 @@ Test Keyword Text Threshold Overrides
     Should Not Be Empty     ${matches}
     ${is_image}=            Evaluate                isinstance($image, __import__('PIL.Image').Image.Image)
     Should Be True          ${is_image}
+
+Test Keyword Text Window Fallback
+    [Documentation]    The text detector misses text in these screenshots
+    ...    unless it searches again inside the window holding it.
+    [Tags]                  yarf:certification_status: blocker
+    ${terminal}=            Evaluate
+    ...                     PIL.Image.open('${CURDIR}/text/terminal_window.png')
+    ...                     modules=PIL.Image
+    # The fallback is on by default.
+    ${matched_text}=        Find Text               FINISHED-HIT            image=${terminal}
+    Should Be Equal As Strings                      ${matched_text[0]['text']}                      FINISHED-HIT
+
+    ${viewer}=              Evaluate
+    ...                     PIL.Image.open('${CURDIR}/text/document_viewer.png')
+    ...                     modules=PIL.Image
+    ${matched_text}=        Find Text               regex:Document \\w+     image=${viewer}
+    Should Be Equal As Strings                      ${matched_text[0]['text']}                      Document Viewer
