@@ -659,6 +659,57 @@ class TestVideoInputBase:
         )
 
     @pytest.mark.asyncio
+    async def test_find_text_regex_reads_region(
+        self, stub_videoinput, mock_to_image
+    ):
+        """
+        A regex search in a region reads only that region.
+        """
+        image = Mock()
+        region = Region(10, 20, 300, 400)
+        stub_videoinput.ocr.read = Mock(return_value="FINISHED-HIT")
+        stub_videoinput.ocr.find = Mock(return_value=[])
+        await stub_videoinput.find_text(
+            "regex:FINISHED-[A-Z]+", image=image, region=region
+        )
+
+        crop = mock_to_image.return_value.crop
+        crop.assert_called_once_with((10, 20, 300, 400))
+        stub_videoinput.ocr.read.assert_called_once_with(crop.return_value)
+        stub_videoinput.ocr.find.assert_called_once_with(
+            image,
+            "FINISHED-HIT",
+            region=region,
+            similarity=None,
+            confidence=None,
+        )
+
+    @pytest.mark.asyncio
+    async def test_find_text_region_string(
+        self, stub_videoinput, mock_to_image
+    ):
+        """
+        A "left,top,right,bottom" region string is converted to a Region.
+        """
+        image = Mock()
+        stub_videoinput.ocr.read = Mock(return_value="FINISHED-HIT")
+        stub_videoinput.ocr.find = Mock(return_value=[])
+        await stub_videoinput.find_text(
+            "regex:FINISHED-[A-Z]+", image=image, region="10,20,300,400"
+        )
+
+        mock_to_image.return_value.crop.assert_called_once_with(
+            (10, 20, 300, 400)
+        )
+        stub_videoinput.ocr.find.assert_called_once_with(
+            image,
+            "FINISHED-HIT",
+            region=Region(10, 20, 300, 400),
+            similarity=None,
+            confidence=None,
+        )
+
+    @pytest.mark.asyncio
     async def test_find_text_with_regex_validates_thresholds(
         self, stub_videoinput
     ):

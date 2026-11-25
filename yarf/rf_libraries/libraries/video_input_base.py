@@ -289,7 +289,12 @@ class VideoInputBase(ABC):
             )
 
         if text.startswith(regex_prefix):
-            image_text = self.ocr.read(image)  # type: ignore[arg-type]
+            read_image = (
+                to_image(image).crop(region.as_tuple())  # type: ignore[union-attr]
+                if region is not None
+                else image
+            )
+            image_text = self.ocr.read(read_image)  # type: ignore[arg-type]
             unique_match_texts = set(
                 re.findall(rf"{text[len(regex_prefix) :]}", image_text)
             )
@@ -344,8 +349,9 @@ class VideoInputBase(ABC):
             | ${matches}=    Find Text    Continue
             | ...    similarity=90    confidence=70
         """
-        if isinstance(region, dict):
-            region = Region(**region)
+        region = (
+            Region(**region) if isinstance(region, dict) else to_region(region)
+        )
 
         if not image:
             image = await self._grab_and_save_screenshot()
