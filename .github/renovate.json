@@ -16,6 +16,12 @@
   "commitMessagePrefix": "[Infra] ",
   "packageRules": [
     {
+      "description": "Python minor and major upgrades depend on downstream support, so update them manually",
+      "matchPackageNames": ["python"],
+      "matchUpdateTypes": ["major", "minor"],
+      "enabled": false
+    },
+    {
       "matchPackageNames": [
         "mypy",
         "pre-commit/mirrors-mypy"
