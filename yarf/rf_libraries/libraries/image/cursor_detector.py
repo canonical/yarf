@@ -11,6 +11,7 @@ import numpy as np
 import onnxruntime as ort
 from PIL import Image
 
+from yarf.lib.inference import inference_threads
 from yarf.rf_libraries.variables.video_input_vars import (
     DEFAULT_CURSOR_DETECTION_CONFIDENCE,
 )
@@ -79,7 +80,12 @@ class CursorDetector:
     def __init__(self) -> None:
         if hasattr(self, "_session"):
             return
-        self._session = ort.InferenceSession(str(_MODEL_PATH))
+        options = ort.SessionOptions()
+        options.intra_op_num_threads = inference_threads()
+        options.inter_op_num_threads = 1
+        self._session = ort.InferenceSession(
+            str(_MODEL_PATH), sess_options=options
+        )
         self._input_name = self._session.get_inputs()[0].name
         shape = self._session.get_inputs()[0].shape
         # Shape is [batch, channels, height, width] — fall back if dynamic

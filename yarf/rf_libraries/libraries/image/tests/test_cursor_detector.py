@@ -84,6 +84,22 @@ class TestCursorDetectorInit:
         CursorDetector()
         mock_cls.assert_called_once()
 
+    def test_session_caps_threads(self, mock_cls):
+        mock_cls.return_value = _make_mock_session()
+        from yarf.rf_libraries.libraries.image.cursor_detector import (
+            CursorDetector,
+        )
+
+        with patch(
+            "yarf.rf_libraries.libraries.image.cursor_detector"
+            ".inference_threads",
+            return_value=3,
+        ):
+            CursorDetector()
+        options = mock_cls.call_args.kwargs["sess_options"]
+        assert options.intra_op_num_threads == 3
+        assert options.inter_op_num_threads == 1
+
     def test_reads_input_shape_from_model(self, mock_cls):
         mock_cls.return_value = _make_mock_session(input_h=320, input_w=416)
         from yarf.rf_libraries.libraries.image.cursor_detector import (

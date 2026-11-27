@@ -15,6 +15,7 @@ from rapidocr import RapidOCR
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
 
+from yarf.lib.inference import inference_threads
 from yarf.rf_libraries.libraries.geometry.quad import Quad
 from yarf.vendor.RPA.core.geometry import Region
 from yarf.vendor.RPA.recognition.utils import to_image
@@ -84,7 +85,14 @@ class RapidOCRReader:
     def __init__(self) -> None:
         if hasattr(self, "reader"):
             return
-        self.reader = RapidOCR()
+        self.reader = RapidOCR(
+            params={
+                "EngineConfig.onnxruntime.intra_op_num_threads": (
+                    inference_threads()
+                ),
+                "EngineConfig.onnxruntime.inter_op_num_threads": 1,
+            }
+        )
 
     def read(self, image: Image.Image | Path) -> str:
         """
