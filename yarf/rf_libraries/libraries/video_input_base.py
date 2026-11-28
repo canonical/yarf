@@ -11,7 +11,8 @@ import subprocess
 import tempfile
 import time
 from abc import ABC, abstractmethod
-from dataclasses import astuple
+from contextvars import ContextVar
+from dataclasses import astuple, dataclass
 from pathlib import Path
 from types import ModuleType
 from typing import List, Optional, Sequence, Union
@@ -19,7 +20,8 @@ from typing import List, Optional, Sequence, Union
 from PIL import Image, ImageChops, ImageDraw
 from robot.api import logger
 from robot.api.deco import keyword
-from robot.libraries.BuiltIn import BuiltIn
+from robot.libraries.BuiltIn import BuiltIn, RobotNotRunningError
+from robot.utils import is_truthy
 
 from yarf import LABEL_PREFIX
 from yarf.lib.images.utils import to_RGB
@@ -31,6 +33,10 @@ from yarf.rf_libraries.libraries.image.segmentation import (
 from yarf.rf_libraries.libraries.image.utils import (
     draw_point_on_image,
     log_image,
+)
+from yarf.rf_libraries.libraries.image.windows import (
+    find_windows,
+    intersection_area,
 )
 from yarf.rf_libraries.libraries.ocr.line_reader import read_lines
 from yarf.rf_libraries.libraries.ocr.rapidocr import RapidOCRReader
@@ -47,6 +53,25 @@ DISPLAY_PATTERN = r"((?P<id>[\w-]+)\:)?(?P<resolution>\d+x\d+)(\s+|$)"
 DISPLAY_RE = re.compile(rf"{DISPLAY_PATTERN}")
 DISPLAYS_RE = re.compile(rf"^({DISPLAY_PATTERN})+$")
 MIN_MATCH_ITERATION_TIME = 0.1
+
+
+@dataclass
+class _WindowSearch:
+    """
+    State shared by the window searches of one Match Text call.
+
+    Attributes:
+        deadline: Monotonic time after which no more windows are searched.
+        logged: Whether the debug image of the windows was already logged.
+    """
+
+    deadline: float
+    logged: bool = False
+
+
+_WINDOW_SEARCH: ContextVar[Optional[_WindowSearch]] = ContextVar(
+    "_WINDOW_SEARCH", default=None
+)
 
 
 class VideoInputBase(ABC):
@@ -256,6 +281,68 @@ class VideoInputBase(ABC):
 
         return self.ocr.read(image)  # type: ignore[arg-type]
 
+    @staticmethod
+    def _window_fallback_enabled() -> bool:
+        try:
+            value = BuiltIn().get_variable_value(
+                "${OCR_WINDOW_FALLBACK}", True
+            )
+        except RobotNotRunningError:
+            return True
+        return is_truthy(value)
+
+    def _find_windows(
+        self, image: Image.Image, region: Optional[Region] = None
+    ) -> list[Region]:
+        if region is None:
+            windows = find_windows(image)
+        else:
+            windows = [
+                window.move(region.left, region.top)
+                for window in find_windows(image.crop(region.as_tuple()))
+            ]
+
+        # Match Text searches the windows on every poll. Log them once.
+        window_search = _WINDOW_SEARCH.get()
+        if os.getenv("YARF_LOG_LEVEL") == "DEBUG" and not (
+            window_search and window_search.logged
+        ):
+            if window_search:
+                window_search.logged = True
+            debug_image = image.copy()
+            for window in windows:
+                self._draw_region_on_image(debug_image, window)
+            log_image(
+                debug_image,
+                f"Found {len(windows)} window(s) to search for text",
+            )
+        return windows
+
+    @staticmethod
+    def _drop_duplicate_matches(matches: list[dict]) -> list[dict]:
+        """
+        Keep the best match among matches that cover the same text, as when
+        nested windows contain it.
+
+        Args:
+            matches: Matches from several searches.
+
+        Returns:
+            The matches sorted by decreasing similarity, without duplicates.
+        """
+        kept: list[dict] = []
+        for match in sorted(
+            matches, key=lambda m: m["similarity"], reverse=True
+        ):
+            box = match["region"]
+            if all(
+                intersection_area(box, other["region"])
+                <= 0.5 * min(box.area, other["region"].area)
+                for other in kept
+            ):
+                kept.append(match)
+        return kept
+
     def _get_ocr_text_from_image(
         self,
         text: str,
@@ -263,8 +350,9 @@ class VideoInputBase(ABC):
         region: Optional[Region] = None,
         similarity: Optional[float] = None,
         confidence: Optional[float] = None,
+        color: Optional[Union[RGB, tuple[int, int, int]]] = None,
+        color_tolerance: int = 20,
     ) -> list[dict]:
-        matched_text_regions: list[dict] = []
         regex_prefix = "regex:"
 
         if isinstance(self.ocr, RapidOCRReader):
@@ -273,32 +361,87 @@ class VideoInputBase(ABC):
             if confidence is not None:
                 RapidOCRReader._validate_threshold("confidence", confidence)
 
-        def find_match(match_text: str) -> list[dict]:
+        def find_match(
+            match_text: str, search_region: Optional[Region]
+        ) -> list[dict]:
             if isinstance(self.ocr, RapidOCRReader):
                 return self.ocr.find(
                     image,  # type: ignore[arg-type]
                     match_text,
-                    region=region,
+                    region=search_region,
                     similarity=similarity,
                     confidence=confidence,
                 )
             return self.ocr.find(
                 image,  # type: ignore[arg-type]
                 match_text,
-                region=region,
+                region=search_region,
             )
 
-        if text.startswith(regex_prefix):
-            image_text = self.ocr.read(image)  # type: ignore[arg-type]
-            unique_match_texts = set(
+        window_search = _WINDOW_SEARCH.get()
+
+        def past_deadline() -> bool:
+            return (
+                window_search is not None
+                and time.monotonic() >= window_search.deadline
+            )
+
+        def search(
+            search_region: Optional[Region], in_window: bool = False
+        ) -> list[dict]:
+            if not text.startswith(regex_prefix):
+                return find_match(text, search_region)
+            read_image = (
+                to_image(image).crop(search_region.as_tuple())  # type: ignore[union-attr]
+                if search_region is not None
+                else image
+            )
+            image_text = self.ocr.read(read_image)  # type: ignore[arg-type]
+            matches = []
+            for match_text in set(
                 re.findall(rf"{text[len(regex_prefix) :]}", image_text)
+            ):
+                # Each lookup is an OCR pass, so a window search stops at
+                # the Match Text timeout between lookups too.
+                if in_window and past_deadline():
+                    break
+                if match_text:
+                    matches.extend(find_match(match_text, search_region))
+            return matches
+
+        matched_text_regions = search(region)
+        if color is not None:
+            matched_text_regions = self._find_text_with_color(
+                text,
+                image,
+                matched_text_regions,
+                color,
+                color_tolerance,  # type: ignore[arg-type]
             )
-            for match_text in unique_match_texts:
-                matched_text_regions.extend(find_match(match_text))
+        if matched_text_regions or not self._window_fallback_enabled():
+            return matched_text_regions
 
-        else:
-            matched_text_regions = find_match(text)
-
+        # The text detector can miss text that it finds once the image is
+        # cropped to the window holding it, so search each window again.
+        image_obj = to_image(image)
+        for window in self._find_windows(image_obj, region):  # type: ignore[arg-type]
+            if past_deadline():
+                logger.info(
+                    f"Stopped searching windows for '{text}' at the timeout"
+                )
+                break
+            window_matches = search(window, in_window=True)
+            if color is not None:
+                # Regions are in the coordinates of the full image.
+                window_matches = self._find_text_with_color(
+                    text, image_obj, window_matches, color, color_tolerance
+                )
+            matched_text_regions.extend(window_matches)
+        matched_text_regions = self._drop_duplicate_matches(
+            matched_text_regions
+        )
+        if matched_text_regions:
+            logger.info(f"Found '{text}' only after searching inside windows")
         return matched_text_regions
 
     @keyword
@@ -316,6 +459,12 @@ class VideoInputBase(ABC):
         Find the specified text in the provided image or grab a screenshot to
         search from. The region can be specified directly in the robot file
         using `RPA.core.geometry.to_region`
+
+        When the text is not found, the search is repeated inside each window
+        found on screen, which catches text that OCR misses on the whole
+        screen but makes a miss slower. With `color` set, matches in the
+        wrong color count as not found. Set ${OCR_WINDOW_FALLBACK} to False
+        to turn this off.
 
         Args:
             text: text or regex to search for, use the format `regex:<regex-string>`
@@ -344,30 +493,22 @@ class VideoInputBase(ABC):
             | ${matches}=    Find Text    Continue
             | ...    similarity=90    confidence=70
         """
-        if isinstance(region, dict):
-            region = Region(**region)
+        region = (
+            Region(**region) if isinstance(region, dict) else to_region(region)
+        )
 
         if not image:
             image = await self._grab_and_save_screenshot()
 
-        matched_text_regions: list[dict] = []
-        ocr_text_regions: list[dict] = self._get_ocr_text_from_image(
+        matched_text_regions: list[dict] = self._get_ocr_text_from_image(
             text,
             image=image,
             region=region,
             similarity=similarity,
             confidence=confidence,
+            color=color,
+            color_tolerance=color_tolerance,
         )
-        if color is None:
-            matched_text_regions = ocr_text_regions
-        else:
-            matched_text_regions = self._find_text_with_color(
-                text,
-                image,
-                ocr_text_regions,
-                color,
-                color_tolerance,
-            )
 
         # Log all the matches if in debug mode (If there are any matches)
         if os.getenv("YARF_LOG_LEVEL") == "DEBUG":
@@ -644,6 +785,11 @@ class VideoInputBase(ABC):
         best match. The region can be specified directly in the robot file
         using `RPA.core.geometry.to_region`.
 
+        As in `Find Text`, a poll that misses the text searches again inside
+        each window found on screen. This makes each such poll slower, so the
+        screen is checked less often, and the window search stops at the
+        timeout. Set ${OCR_WINDOW_FALLBACK} to False to turn this off.
+
         Args:
             text: text or regex to match, use the format `regex:<regex-string>`
                   if the text we want to find is a regex.
@@ -676,50 +822,55 @@ class VideoInputBase(ABC):
         print(f"\nLooking for '{text}'")
         print(region)
         start_time = time.monotonic()
-        first_iteration = True
-        while True:
-            iteration_start_time = time.monotonic()
-            if (
-                not first_iteration
-                and iteration_start_time - start_time >= timeout
-            ):
-                break
-            first_iteration = False
-            image = await self._grab_and_save_screenshot()
-            # Save the cropped image for debugging
-            cropped_image = (
-                image.crop(region.as_tuple())
-                if isinstance(region, Region)
-                else image
-            )
-
-            color_rgb = to_RGB(color)
-            # if no color was given, simply find any text
-            if color_rgb is None:
-                text_matches = await self.find_text(
-                    text,
-                    image=image,
-                    region=region,
-                    similarity=similarity,
-                    confidence=confidence,
+        # Bound the window fallback by this call's timeout.
+        token = _WINDOW_SEARCH.set(_WindowSearch(start_time + timeout))
+        try:
+            first_iteration = True
+            while True:
+                iteration_start_time = time.monotonic()
+                if (
+                    not first_iteration
+                    and iteration_start_time - start_time >= timeout
+                ):
+                    break
+                first_iteration = False
+                image = await self._grab_and_save_screenshot()
+                # Save the cropped image for debugging
+                cropped_image = (
+                    image.crop(region.as_tuple())
+                    if isinstance(region, Region)
+                    else image
                 )
 
-            else:  # a color was given.
-                text_matches = await self.find_text(
-                    text=text,
-                    image=image,
-                    region=region,
-                    color=color_rgb,
-                    color_tolerance=color_tolerance,
-                    similarity=similarity,
-                    confidence=confidence,
-                )
+                color_rgb = to_RGB(color)
+                # if no color was given, simply find any text
+                if color_rgb is None:
+                    text_matches = await self.find_text(
+                        text,
+                        image=image,
+                        region=region,
+                        similarity=similarity,
+                        confidence=confidence,
+                    )
 
-            if text_matches:
-                return text_matches, cropped_image
-            await self._sleep_for_minimum_iteration_time(
-                iteration_start_time, start_time + timeout
-            )
+                else:  # a color was given.
+                    text_matches = await self.find_text(
+                        text=text,
+                        image=image,
+                        region=region,
+                        color=color_rgb,
+                        color_tolerance=color_tolerance,
+                        similarity=similarity,
+                        confidence=confidence,
+                    )
+
+                if text_matches:
+                    return text_matches, cropped_image
+                await self._sleep_for_minimum_iteration_time(
+                    iteration_start_time, start_time + timeout
+                )
+        finally:
+            _WINDOW_SEARCH.reset(token)
 
         read_text = await self.read_text(cropped_image)
 

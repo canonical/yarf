@@ -39,6 +39,7 @@ ${position}=    Find Cursor Position    confidence=0.8
 ### Find Text
 
 <p>Find the specified text in the provided image or grab a screenshot to search from. The region can be specified directly in the robot file using <span class="name">RPA.core.geometry.to_region</span></p>
+<p>When the text is not found, the search is repeated inside each window found on screen, which catches text that OCR misses on the whole screen but makes a miss slower. With <span class="name">color</span> set, matches in the wrong color count as not found. Set ${OCR_WINDOW_FALLBACK} to False to turn this off.</p>
 
 #### Return
 
@@ -310,6 +311,7 @@ ${matches}=    Match Any    ${templates}    timeout=30
 ### Match Text
 
 <p>Wait for specified text to appear on screen and get the position of the best match. The region can be specified directly in the robot file using <span class="name">RPA.core.geometry.to_region</span>.</p>
+<p>As in <a class="name" href="#find-text" title='"Find Text" keyword'>Find Text</a>, a poll that misses the text searches again inside each window found on screen. This makes each such poll slower, so the screen is checked less often, and the window search stops at the timeout. Set ${OCR_WINDOW_FALLBACK} to False to turn this off.</p>
 
 #### Return
 
